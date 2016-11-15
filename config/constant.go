@@ -27,7 +27,6 @@ type DbConfig struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
 	SslMode  string `json:"ssl_mode"`
-	LogMode  string `json:"log_mode"`
 }
 
 func init() {
