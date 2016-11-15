@@ -17,6 +17,7 @@ import (
 	"bitbucket.org/go-mis/modules/investor"
 	"bitbucket.org/go-mis/modules/loan"
 	"bitbucket.org/go-mis/modules/notification"
+	"bitbucket.org/go-mis/modules/product-pricing"
 	"bitbucket.org/go-mis/modules/wallet"
 	"bitbucket.org/go-mis/modules/wallet-transaction"
 )
@@ -37,6 +38,7 @@ func initializeAll() {
 	investor.Init(config.DefaultApiPath)
 	loan.Init(config.DefaultApiPath)
 	notification.Init(config.DefaultApiPath)
+	productPricing.Init(config.DefaultApiPath)
 	wallet.Init(config.DefaultApiPath)
 	walletTransaction.Init(config.DefaultApiPath)
 	fmt.Println("[INFO] All domain have been initialized")
@@ -69,6 +71,8 @@ func Init() {
 		loan.Init(config.DefaultApiPath)
 	case "notification":
 		notification.Init(config.DefaultApiPath)
+	case "product-pricing":
+		productPricing.Init(config.DefaultApiPath)
 	case "wallet":
 		wallet.Init(config.DefaultApiPath)
 	case "wallet-transaction":
