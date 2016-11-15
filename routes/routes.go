@@ -20,6 +20,8 @@ import (
 	"bitbucket.org/go-mis/modules/wallet-transaction"
 )
 
+// If domain is NOT specified,
+// then it will automatically initialize all domain
 func initializeAll() {
 	fmt.Println("[INFO] Initializing all domain")
 	account.Init(config.DefaultApiPath)
