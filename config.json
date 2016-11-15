@@ -1,0 +1,19 @@
+{
+	"psql": {
+		"db": "amartha-fin",
+		"host": "192.168.99.100",
+		"port": "32004",
+		"username": "postgres",
+    "password": null,
+		"ssl_mode": "disable"
+	},
+
+  "mysql": {
+		"db": "db_mis_amartha",
+		"host": "192.168.99.100",
+		"port": "32002",
+		"username": "root",
+    "password": null,
+		"ssl_mode": "disable"
+	}
+}
