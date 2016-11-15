@@ -1,10 +1,10 @@
 {
 	"psql": {
-		"db": "amartha-fin",
+		"db": "mis_amartha",
 		"host": "192.168.99.100",
-		"port": "32004",
+		"port": "32003",
 		"username": "postgres",
-    "password": null,
+    "password": "postgres",
 		"ssl_mode": "disable"
 	},
 
