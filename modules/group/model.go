@@ -16,3 +16,10 @@ type Group struct {
 	UpdatedAt time.Time        `gorm:"column:updatedAt" json:"updatedAt"`
 	DeletedAt *time.Time       `gorm:"column:deletedAt" json:"deletedAt"`
 }
+
+func (g *Group) SetGeopoint() {
+	g.Geopoint = gormGIS.GeoPoint{
+		Lat: g.Lat,
+		Lng: g.Lng,
+	}
+}

@@ -27,3 +27,10 @@ type Agent struct {
 	UpdatedAt   time.Time        `gorm:"column:updatedAt" json:"updatedAt"`
 	DeletedAt   *time.Time       `gorm:"column:deletedAt" json:"deletedAt"`
 }
+
+func (a *Agent) SetGeopoint() {
+	a.Geopoint = gormGIS.GeoPoint{
+		Lat: a.Lat,
+		Lng: a.Lng,
+	}
+}
