@@ -5,7 +5,8 @@
 		"port": "32004",
 		"username": "postgres",
     "password": null,
-		"ssl_mode": "disable"
+		"ssl_mode": "disable",
+		"log_mode": true
 	},
 
   "mysql": {
@@ -14,6 +15,7 @@
 		"port": "32002",
 		"username": "root",
     "password": null,
-		"ssl_mode": "disable"
+		"ssl_mode": "disable",
+		"log_mode": true
 	}
 }

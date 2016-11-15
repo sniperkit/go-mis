@@ -20,7 +20,10 @@ func init() {
 		return
 	}
 
+	con.LogMode(config.LogMode)
 	con.SingularTable(true)
+	con.Exec("CREATE EXTENSION postgis")
+	con.Exec("CREATE EXTENSION postgis_topology")
 
 	DBCPsql = con
 	fmt.Println("Connected to PSQL. Config=" + config.PsqlHostAddress)

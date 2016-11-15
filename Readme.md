@@ -15,4 +15,5 @@ $ go get -u gopkg.in/iris-contrib/middleware.v4/recovery
 $ go get -u gopkg.in/iris-contrib/middleware.v4/logger
 $ go get -u github.com/jinzhu/gorm
 $ go get -u github.com/jinzhu/gorm/dialects/postgres
+$ go get -u github.com/nferruzzi/gormGIS
 ```
