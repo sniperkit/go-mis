@@ -27,22 +27,22 @@ import (
 // then it will automatically initialize all domain
 func initializeAll() {
 	fmt.Println("[INFO] Initializing all domain")
-	account.Init(config.DefaultApiPath)
-	agent.Init(config.DefaultApiPath)
-	borrower.Init(config.DefaultApiPath)
-	branch.Init(config.DefaultApiPath)
-	campaign.Init(config.DefaultApiPath)
-	cif.Init(config.DefaultApiPath)
-	disbursement.Init(config.DefaultApiPath)
-	group.Init(config.DefaultApiPath)
-	installment.Init(config.DefaultApiPath)
-	investor.Init(config.DefaultApiPath)
-	loan.Init(config.DefaultApiPath)
-	notification.Init(config.DefaultApiPath)
-	productPricing.Init(config.DefaultApiPath)
-	sector.Init(config.DefaultApiPath)
-	wallet.Init(config.DefaultApiPath)
-	walletTransaction.Init(config.DefaultApiPath)
+	account.Init()
+	agent.Init()
+	borrower.Init()
+	branch.Init()
+	campaign.Init()
+	cif.Init()
+	disbursement.Init()
+	group.Init()
+	installment.Init()
+	investor.Init()
+	loan.Init()
+	notification.Init()
+	productPricing.Init()
+	sector.Init()
+	wallet.Init()
+	walletTransaction.Init()
 	fmt.Println("[INFO] All domain have been initialized")
 }
 
@@ -50,37 +50,37 @@ func initializeAll() {
 func Init() {
 	switch config.Domain {
 	case "account":
-		account.Init(config.DefaultApiPath)
+		account.Init()
 	case "agent":
-		agent.Init(config.DefaultApiPath)
+		agent.Init()
 	case "borrower":
-		borrower.Init(config.DefaultApiPath)
+		borrower.Init()
 	case "branch":
-		branch.Init(config.DefaultApiPath)
+		branch.Init()
 	case "campaign":
-		campaign.Init(config.DefaultApiPath)
+		campaign.Init()
 	case "cif":
-		cif.Init(config.DefaultApiPath)
+		cif.Init()
 	case "disbursement":
-		disbursement.Init(config.DefaultApiPath)
+		disbursement.Init()
 	case "group":
-		group.Init(config.DefaultApiPath)
+		group.Init()
 	case "installment":
-		installment.Init(config.DefaultApiPath)
+		installment.Init()
 	case "investor":
-		investor.Init(config.DefaultApiPath)
+		investor.Init()
 	case "loan":
-		loan.Init(config.DefaultApiPath)
+		loan.Init()
 	case "notification":
-		notification.Init(config.DefaultApiPath)
+		notification.Init()
 	case "product-pricing":
-		productPricing.Init(config.DefaultApiPath)
+		productPricing.Init()
 	case "sector":
-		sector.Init(config.DefaultApiPath)
+		sector.Init()
 	case "wallet":
-		wallet.Init(config.DefaultApiPath)
+		wallet.Init()
 	case "wallet-transaction":
-		walletTransaction.Init(config.DefaultApiPath)
+		walletTransaction.Init()
 	default:
 		initializeAll()
 	}

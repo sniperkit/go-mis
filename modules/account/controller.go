@@ -1,25 +1,22 @@
 package account
 
 import (
+	"bitbucket.org/go-mis/config"
 	"bitbucket.org/go-mis/services"
 	"gopkg.in/kataras/iris.v4"
 )
 
-func Init(defaultApiPath string) {
-	BASE_URL := defaultApiPath + "/account"
+func test(ctx *iris.Context) {
+	ctx.Write("haeee")
+}
 
-	services.DomainStructSingle = Account{}
-	services.DomainStructArray = []Account{}
-
+func Init() {
+	baseUrl := config.DefaultApiPath + "/" + config.Domain
 	services.DBCPsql.AutoMigrate(&Account{})
+	services.BaseCrudInit(Account{}, []Account{})
 
-	account := iris.Party(BASE_URL)
+	account := iris.Party(baseUrl)
 	{
-		account.Get("", services.Get)
-		account.Get("/get/:id", services.GetById)
-		account.Get("/q", services.GetByQuery)
-		account.Post("", services.Post)
-		account.Put("/set/:id", services.Put)
-		account.Delete("/delete/:id", services.Delete)
+		account.Get("/test", test)
 	}
 }

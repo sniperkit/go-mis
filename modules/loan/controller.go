@@ -1,25 +1,8 @@
 package loan
 
-import (
-	"bitbucket.org/go-mis/services"
-	"gopkg.in/kataras/iris.v4"
-)
+import "bitbucket.org/go-mis/services"
 
-func Init(defaultApiPath string) {
-	BASE_URL := defaultApiPath + "/loan"
-
-	services.DomainStructSingle = Loan{}
-	services.DomainStructArray = []Loan{}
-
+func Init() {
 	services.DBCPsql.AutoMigrate(&Loan{})
-
-	loan := iris.Party(BASE_URL)
-	{
-		loan.Get("", services.Get)
-		loan.Get("/get/:id", services.GetById)
-		loan.Get("/q", services.GetByQuery)
-		loan.Post("", services.Post)
-		loan.Put("/set/:id", services.Put)
-		loan.Delete("/delete/:id", services.Delete)
-	}
+	services.BaseCrudInit(Loan{}, []Loan{})
 }
