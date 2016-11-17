@@ -104,3 +104,22 @@ func BaseCrudInit(singleObj interface{}, arrayObj interface{}) {
 		crudParty.Delete("/delete/:id", DeleteById(model))
 	}
 }
+
+// Initialize Base CRUD
+func BaseCrudInitWithDomain(domain string, singleObj interface{}, arrayObj interface{}) {
+	BASE_URL := config.DefaultApiPath + "/" + domain
+
+	model := new(Container)
+	model.SingleObj = singleObj
+	model.ArrayObj = arrayObj
+
+	crudParty := iris.Party(BASE_URL)
+	{
+		crudParty.Get("", Get(model))
+		crudParty.Get("/get/:id", GetById(model))
+		crudParty.Get("/q", GetByQuery(model))
+		crudParty.Post("", Post(model))
+		crudParty.Put("/set/:id", Put(model))
+		crudParty.Delete("/delete/:id", DeleteById(model))
+	}
+}

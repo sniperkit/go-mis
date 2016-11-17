@@ -13,11 +13,14 @@ import (
 	"bitbucket.org/go-mis/modules/cif"
 	"bitbucket.org/go-mis/modules/disbursement"
 	"bitbucket.org/go-mis/modules/group"
+	"bitbucket.org/go-mis/modules/incentive"
 	"bitbucket.org/go-mis/modules/installment"
+	"bitbucket.org/go-mis/modules/installment-presence"
 	"bitbucket.org/go-mis/modules/investor"
 	"bitbucket.org/go-mis/modules/loan"
 	"bitbucket.org/go-mis/modules/notification"
 	"bitbucket.org/go-mis/modules/product-pricing"
+	"bitbucket.org/go-mis/modules/r"
 	"bitbucket.org/go-mis/modules/sector"
 	"bitbucket.org/go-mis/modules/wallet"
 	"bitbucket.org/go-mis/modules/wallet-transaction"
@@ -35,11 +38,14 @@ func initializeAll() {
 	cif.Init()
 	disbursement.Init()
 	group.Init()
+	incentive.Init()
 	installment.Init()
+	installmentPresence.Init()
 	investor.Init()
 	loan.Init()
 	notification.Init()
 	productPricing.Init()
+	r.Init()
 	sector.Init()
 	wallet.Init()
 	walletTransaction.Init()
@@ -65,8 +71,12 @@ func Init() {
 		disbursement.Init()
 	case "group":
 		group.Init()
+	case "incentive":
+		incentive.Init()
 	case "installment":
 		installment.Init()
+	case "installment-presence":
+		installmentPresence.Init()
 	case "investor":
 		investor.Init()
 	case "loan":
@@ -75,6 +85,8 @@ func Init() {
 		notification.Init()
 	case "product-pricing":
 		productPricing.Init()
+	case "r":
+		r.Init()
 	case "sector":
 		sector.Init()
 	case "wallet":
