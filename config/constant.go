@@ -7,6 +7,7 @@ import (
 )
 
 var (
+	ApiKey           string
 	DefaultApiPath   string
 	Domain           string
 	Port             string
@@ -30,6 +31,8 @@ type DbConfig struct {
 }
 
 func init() {
+	ApiKey = "$2a$06$20EpVmcNvVg0heEijxLEP.Aw0hhoC7kJyuGltJnYZMStuhOLwPB7W"
+
 	// Command flags
 	defaultApiPath := flag.String("api-path", "/api/v1", "Default API path")
 	domain := flag.String("domain", "default", "Service domain")

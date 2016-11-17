@@ -30,25 +30,63 @@ import (
 // then it will automatically initialize all domain
 func initializeAll() {
 	fmt.Println("[INFO] Initializing all domain")
+
+	config.Domain = "account"
 	account.Init()
+
+	config.Domain = "agent"
 	agent.Init()
+
+	config.Domain = "borrower"
 	borrower.Init()
+
+	config.Domain = "branch"
 	branch.Init()
+
+	config.Domain = "campaign"
 	campaign.Init()
+
+	config.Domain = "cif"
 	cif.Init()
+
+	config.Domain = "disbursement"
 	disbursement.Init()
+
+	config.Domain = "group"
 	group.Init()
+
+	config.Domain = "incentive"
 	incentive.Init()
+
+	config.Domain = "installment"
 	installment.Init()
+
+	config.Domain = "installment-presence"
 	installmentPresence.Init()
+
+	config.Domain = "investor"
 	investor.Init()
+
+	config.Domain = "loan"
 	loan.Init()
+
+	config.Domain = "notification"
 	notification.Init()
+
+	config.Domain = "product-pricing"
 	productPricing.Init()
+
 	r.Init()
+
+	config.Domain = "sector"
 	sector.Init()
+
+	config.Domain = "wallet"
 	wallet.Init()
+
+	config.Domain = "wallet-transcation"
 	walletTransaction.Init()
+
 	fmt.Println("[INFO] All domain have been initialized")
 }
 

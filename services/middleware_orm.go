@@ -86,6 +86,16 @@ func DeleteById(model interface{}) func(ctx *iris.Context) {
 	}
 }
 
+// Chech Authentication
+func CheckAuth(ctx *iris.Context) {
+	if ctx.URLParam("apiKey") != config.ApiKey {
+		ctx.JSON(iris.StatusUnauthorized, iris.Map{"error": "Unauthorized access."})
+		return
+	}
+
+	ctx.Next()
+}
+
 // Initialize Base CRUD
 func BaseCrudInit(singleObj interface{}, arrayObj interface{}) {
 	BASE_URL := config.DefaultApiPath + "/" + config.Domain
@@ -96,12 +106,12 @@ func BaseCrudInit(singleObj interface{}, arrayObj interface{}) {
 
 	crudParty := iris.Party(BASE_URL)
 	{
-		crudParty.Get("", Get(model))
-		crudParty.Get("/get/:id", GetById(model))
-		crudParty.Get("/q", GetByQuery(model))
-		crudParty.Post("", Post(model))
-		crudParty.Put("/set/:id", Put(model))
-		crudParty.Delete("/delete/:id", DeleteById(model))
+		crudParty.Get("", CheckAuth, Get(model))
+		crudParty.Get("/get/:id", CheckAuth, GetById(model))
+		crudParty.Get("/q", CheckAuth, GetByQuery(model))
+		crudParty.Post("", CheckAuth, Post(model))
+		crudParty.Put("/set/:id", CheckAuth, Put(model))
+		crudParty.Delete("/delete/:id", CheckAuth, DeleteById(model))
 	}
 }
 
@@ -115,11 +125,11 @@ func BaseCrudInitWithDomain(domain string, singleObj interface{}, arrayObj inter
 
 	crudParty := iris.Party(BASE_URL)
 	{
-		crudParty.Get("", Get(model))
-		crudParty.Get("/get/:id", GetById(model))
-		crudParty.Get("/q", GetByQuery(model))
-		crudParty.Post("", Post(model))
-		crudParty.Put("/set/:id", Put(model))
-		crudParty.Delete("/delete/:id", DeleteById(model))
+		crudParty.Get("", CheckAuth, Get(model))
+		crudParty.Get("/get/:id", CheckAuth, GetById(model))
+		crudParty.Get("/q", CheckAuth, GetByQuery(model))
+		crudParty.Post("", CheckAuth, Post(model))
+		crudParty.Put("/set/:id", CheckAuth, Put(model))
+		crudParty.Delete("/delete/:id", CheckAuth, DeleteById(model))
 	}
 }
