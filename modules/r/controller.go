@@ -19,7 +19,7 @@ func Init() {
 	services.DBCPsql.AutoMigrate(&R_GroupAgent{})
 	services.DBCPsql.AutoMigrate(&R_AgentBranch{})
 	services.DBCPsql.AutoMigrate(&R_AgentIncentive{})
-	services.DBCPsql.Automigrate(&R_AgentBorrowerProspective{})
+	services.DBCPsql.AutoMigrate(&R_AgentBorrowerProspective{})
 
 	services.BaseCrudInitWithDomain("cif-investor-borrower", R_CifInvestorBorrower{}, []R_CifInvestorBorrower{})
 	services.BaseCrudInitWithDomain("borrower-account", R_BorrowerAccount{}, []R_BorrowerAccount{})

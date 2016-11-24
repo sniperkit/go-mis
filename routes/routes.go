@@ -22,7 +22,9 @@ import (
 	"bitbucket.org/go-mis/modules/notification"
 	"bitbucket.org/go-mis/modules/product-pricing"
 	"bitbucket.org/go-mis/modules/r"
+	"bitbucket.org/go-mis/modules/role"
 	"bitbucket.org/go-mis/modules/sector"
+	"bitbucket.org/go-mis/modules/user"
 	"bitbucket.org/go-mis/modules/wallet"
 	"bitbucket.org/go-mis/modules/wallet-transaction"
 )
@@ -42,7 +44,7 @@ func initializeAll() {
 	borrower.Init()
 
 	config.Domain = "borrower-prospective"
-	borrowerPerspective.Init()
+	borrowerProspective.Init()
 
 	config.Domain = "branch"
 	branch.Init()
@@ -82,8 +84,14 @@ func initializeAll() {
 
 	r.Init()
 
+	config.Domain = "role"
+	role.Init()
+
 	config.Domain = "sector"
 	sector.Init()
+
+	config.Domain = "user"
+	user.Init()
 
 	config.Domain = "wallet"
 	wallet.Init()
@@ -131,8 +139,12 @@ func Init() {
 		productPricing.Init()
 	case "r":
 		r.Init()
+	case "role":
+		role.Init()
 	case "sector":
 		sector.Init()
+	case "user":
+		user.Init()
 	case "wallet":
 		wallet.Init()
 	case "wallet-transaction":
