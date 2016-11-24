@@ -8,6 +8,7 @@ import (
 	"bitbucket.org/go-mis/modules/account"
 	"bitbucket.org/go-mis/modules/agent"
 	"bitbucket.org/go-mis/modules/borrower"
+	"bitbucket.org/go-mis/modules/borrower-prospective"
 	"bitbucket.org/go-mis/modules/branch"
 	"bitbucket.org/go-mis/modules/campaign"
 	"bitbucket.org/go-mis/modules/cif"
@@ -39,6 +40,9 @@ func initializeAll() {
 
 	config.Domain = "borrower"
 	borrower.Init()
+
+	config.Domain = "borrower-prospective"
+	borrowerPerspective.Init()
 
 	config.Domain = "branch"
 	branch.Init()
@@ -99,6 +103,8 @@ func Init() {
 		agent.Init()
 	case "borrower":
 		borrower.Init()
+	case "borrower-prospective":
+		borrowerProspective.Init()
 	case "branch":
 		branch.Init()
 	case "campaign":

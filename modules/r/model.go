@@ -175,3 +175,13 @@ type R_AgentIncentive struct {
 	UpdatedAt   time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
 	DeletedAt   *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
 }
+
+// Relation `agent` to borrower-prospective
+type R_AgentBorrowerProspective struct {
+	ID                    uint       `gorm:"primary_key" gorm:"column:_id" json:"_id"`
+	AgentId               uint       `gorm:"column:agentInd" json:"agentId"`
+	BorrowerProspectiveId uint       `gorm:"column:borrowerProspectiveId" json:"borrowerProspectiveId"`
+	CreatedAt             time.Time  `gorm:"column:createdAt" json:"createdAt"`
+	UpdatedAt             time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
+	DeletedAt             *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
+}

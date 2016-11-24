@@ -2,7 +2,7 @@
 	"psql": {
 		"db": "mis_amartha",
 		"host": "192.168.99.100",
-		"port": "32003",
+		"port": "32001",
 		"username": "postgres",
     "password": "postgres",
 		"ssl_mode": "disable"
@@ -11,7 +11,7 @@
   "mysql": {
 		"db": "db_mis_amartha",
 		"host": "192.168.99.100",
-		"port": "32002",
+		"port": "32003",
 		"username": "root",
     "password": null,
 		"ssl_mode": "disable"
