@@ -96,6 +96,21 @@ func CheckAuth(ctx *iris.Context) {
 	ctx.Next()
 }
 
+type objApiKey struct {
+	ApiKey string `json:"apiKey"`
+}
+
+func CheckAuthForm(ctx *iris.Context) {
+	apiKey := ctx.FormValueString("apiKey")
+
+	if apiKey != config.ApiKey {
+		ctx.JSON(iris.StatusUnauthorized, iris.Map{"error": "Unauthorized access."})
+		return
+	}
+
+	ctx.Next()
+}
+
 // Initialize Base CRUD
 func BaseCrudInit(singleObj interface{}, arrayObj interface{}) {
 	BASE_URL := config.DefaultApiPath + "/" + config.Domain
@@ -109,7 +124,7 @@ func BaseCrudInit(singleObj interface{}, arrayObj interface{}) {
 		crudParty.Get("", CheckAuth, Get(model))
 		crudParty.Get("/get/:id", CheckAuth, GetById(model))
 		crudParty.Get("/q", CheckAuth, GetByQuery(model))
-		crudParty.Post("", CheckAuth, Post(model))
+		crudParty.Post("", CheckAuthForm, Post(model))
 		crudParty.Put("/set/:id", CheckAuth, Put(model))
 		crudParty.Delete("/delete/:id", CheckAuth, DeleteById(model))
 	}
@@ -128,7 +143,7 @@ func BaseCrudInitWithDomain(domain string, singleObj interface{}, arrayObj inter
 		crudParty.Get("", CheckAuth, Get(model))
 		crudParty.Get("/get/:id", CheckAuth, GetById(model))
 		crudParty.Get("/q", CheckAuth, GetByQuery(model))
-		crudParty.Post("", CheckAuth, Post(model))
+		crudParty.Post("", CheckAuthForm, Post(model))
 		crudParty.Put("/set/:id", CheckAuth, Put(model))
 		crudParty.Delete("/delete/:id", CheckAuth, DeleteById(model))
 	}
