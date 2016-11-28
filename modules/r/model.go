@@ -185,3 +185,13 @@ type R_AgentBorrowerProspective struct {
 	UpdatedAt             time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
 	DeletedAt             *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
 }
+
+// Relation `user-mis` to `role`
+type R_UserMisRole struct {
+	ID        uint       `gorm:"primary_key" gorm:"column:_id" json:"_id"`
+	UserMisId uint       `gorm:"column:userMisId" json:"userMisId"`
+	RoleId    uint       `gorm:"column:roleId" json:"roleId"`
+	CreatedAt time.Time  `gorm:"column:createdAt" json:"createdAt"`
+	UpdatedAt time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
+	DeletedAt *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
+}
