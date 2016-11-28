@@ -1,4 +1,4 @@
-package user
+package userMis
 
 import "bitbucket.org/go-mis/services"
 

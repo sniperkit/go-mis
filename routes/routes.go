@@ -24,7 +24,7 @@ import (
 	"bitbucket.org/go-mis/modules/r"
 	"bitbucket.org/go-mis/modules/role"
 	"bitbucket.org/go-mis/modules/sector"
-	"bitbucket.org/go-mis/modules/user"
+	"bitbucket.org/go-mis/modules/user-mis"
 	"bitbucket.org/go-mis/modules/wallet"
 	"bitbucket.org/go-mis/modules/wallet-transaction"
 )
@@ -90,8 +90,8 @@ func initializeAll() {
 	config.Domain = "sector"
 	sector.Init()
 
-	config.Domain = "user"
-	user.Init()
+	config.Domain = "user-mis"
+	userMis.Init()
 
 	config.Domain = "wallet"
 	wallet.Init()
@@ -143,8 +143,8 @@ func Init() {
 		role.Init()
 	case "sector":
 		sector.Init()
-	case "user":
-		user.Init()
+	case "user-mis":
+		userMis.Init()
 	case "wallet":
 		wallet.Init()
 	case "wallet-transaction":
