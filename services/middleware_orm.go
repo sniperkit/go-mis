@@ -96,10 +96,6 @@ func CheckAuth(ctx *iris.Context) {
 	ctx.Next()
 }
 
-type objApiKey struct {
-	ApiKey string `json:"apiKey"`
-}
-
 func CheckAuthForm(ctx *iris.Context) {
 	apiKey := ctx.FormValueString("apiKey")
 
