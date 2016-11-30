@@ -11,6 +11,7 @@ type Loan struct {
 	Rate             float64    `gorm:"column:rate" json:"rate"`
 	Installment      float64    `gorm:"column:installment" json:"installment"`
 	Plafond          float64    `gorm:"column:plafond" json:"plafond"`
+	IsPublish        bool       `gorm:"column:isPublish" json:"isPublish"`
 	CreatedAt        time.Time  `gorm:"column:createdAt" json:"createdAt"`
 	UpdatedAt        time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
 	DeletedAt        *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
