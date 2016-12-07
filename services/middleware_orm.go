@@ -2,6 +2,7 @@ package services
 
 import (
 	"reflect"
+	"time"
 
 	"bitbucket.org/go-mis/config"
 	"gopkg.in/kataras/iris.v4"
@@ -81,7 +82,7 @@ func Put(model interface{}) func(ctx *iris.Context) {
 func DeleteById(model interface{}) func(ctx *iris.Context) {
 	return func(ctx *iris.Context) {
 		m := reflect.New(reflect.TypeOf((model.(*Container)).SingleObj)).Interface()
-		DBCPsql.Where("id = ?", ctx.Param("id")).Delete(m)
+		DBCPsql.Model(m).Where("id = ?", ctx.Param("id")).UpdateColumn("deletedAt", time.Now())
 		ctx.JSON(iris.StatusOK, iris.Map{"data": m})
 	}
 }
