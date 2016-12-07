@@ -17,7 +17,7 @@ type Container struct {
 func Get(model interface{}) func(ctx *iris.Context) {
 	return func(ctx *iris.Context) {
 		m := reflect.New(reflect.TypeOf((model.(*Container)).ArrayObj)).Interface()
-		DBCPsql.Find(m)
+		DBCPsql.Where("deletedAt IS NULL").Find(m)
 		ctx.JSON(iris.StatusOK, iris.Map{"data": m})
 	}
 }
@@ -41,7 +41,7 @@ func GetByQuery(model interface{}) func(ctx *iris.Context) {
 			con = con.Where(key+" LIKE ?", val)
 		}
 
-		con.Find(m)
+		con.Where("deletedAt IS NULL").Find(m)
 
 		ctx.JSON(iris.StatusOK, iris.Map{"data": m})
 	}
@@ -73,7 +73,7 @@ func Put(model interface{}) func(ctx *iris.Context) {
 			panic(err)
 		}
 
-		DBCPsql.Model(m).Where("id = ?", ctx.Param("id")).Update(m)
+		DBCPsql.Model(m).Where("deletedAt IS NULL AND id = ?", ctx.Param("id")).Update(m)
 		ctx.JSON(iris.StatusOK, iris.Map{"data": m})
 	}
 }
@@ -82,7 +82,7 @@ func Put(model interface{}) func(ctx *iris.Context) {
 func DeleteById(model interface{}) func(ctx *iris.Context) {
 	return func(ctx *iris.Context) {
 		m := reflect.New(reflect.TypeOf((model.(*Container)).SingleObj)).Interface()
-		DBCPsql.Model(m).Where("id = ?", ctx.Param("id")).UpdateColumn("deletedAt", time.Now())
+		DBCPsql.Model(m).Where("deletedAt IS NULL AND id = ?", ctx.Param("id")).UpdateColumn("deletedAt", time.Now())
 		ctx.JSON(iris.StatusOK, iris.Map{"data": m})
 	}
 }
