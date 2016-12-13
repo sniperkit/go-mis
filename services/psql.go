@@ -16,7 +16,7 @@ func init() {
 	con, err := gorm.Open("postgres", config.PsqlHostAddress)
 
 	if err != nil {
-		fmt.Println("Failed to connect to postgres. Config=" + config.PsqlHostAddress)
+		fmt.Println("[ERROR] Failed to connect to postgres. Config=" + config.PsqlHostAddress)
 		return
 	}
 
@@ -26,5 +26,5 @@ func init() {
 	con.Exec("CREATE EXTENSION postgis_topology")
 
 	DBCPsql = con
-	fmt.Println("Connected to PSQL. Config=" + config.PsqlHostAddress)
+	fmt.Println("[INFO] Connected to PSQL. Config=" + config.PsqlHostAddress)
 }

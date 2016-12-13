@@ -3,6 +3,7 @@ package config
 import (
 	"encoding/json"
 	"flag"
+	"fmt"
 	"io/ioutil"
 )
 
@@ -48,6 +49,12 @@ func init() {
 	Domain = *domain
 	Port = *port
 	LogMode = *logMode
+
+	fmt.Println("------------------")
+	fmt.Println("Default API Path -", DefaultApiPath)
+	fmt.Println("Application Port -", Port)
+	fmt.Println("Enable log mode -", LogMode)
+	fmt.Println("------------------")
 
 	// Setup config
 	configFile, e := ioutil.ReadFile(*configPath)
