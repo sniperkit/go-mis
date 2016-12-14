@@ -12,7 +12,7 @@ type Agent struct {
 	Password    string           `gorm:"column:password" json:"password"`
 	Fullname    string           `gorm:"column:fullname" json:"fullname"`
 	PicUrl      string           `gorm:"column:picUrl" json:"picUrl"`
-	PhoneNo     uint             `gorm:"column:phoneNo" json:"phoneNo"`
+	PhoneNo     string           `gorm:"column:phoneNo" json:"phoneNo"`
 	Address     string           `gorm:"column:address" json:"address"`
 	Kelurahan   string           `gorm:"column:kelurahan" json:"kelurahan"`
 	Kecamatan   string           `gorm:"column:kecamatan" json:"kecamatan"`
