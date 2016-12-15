@@ -38,7 +38,9 @@ func GetByQuery(model interface{}) func(ctx *iris.Context) {
 
 		con := DBCPsql
 		for key, val := range ctx.URLParams() {
-			con = con.Where(key+" LIKE ?", val)
+			if key != "apiKey" {
+				con = con.Where("\""+key+"\" LIKE ?", val)
+			}
 		}
 
 		con.Where("\"deletedAt\" IS NULL").Find(m)

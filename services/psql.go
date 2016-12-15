@@ -26,5 +26,5 @@ func init() {
 	con.Exec("CREATE EXTENSION postgis_topology")
 
 	DBCPsql = con
-	fmt.Println("[INFO] Connected to PSQL. Config=" + config.PsqlHostAddress)
+	fmt.Println("[INFO] Connected to PSQL. Config => " + config.PsqlHostAddress)
 }
