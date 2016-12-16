@@ -38,8 +38,10 @@ func GetByQuery(model interface{}) func(ctx *iris.Context) {
 
 		con := DBCPsql
 		for key, val := range ctx.URLParams() {
-			if key != "apiKey" {
+			if key != "apiKey" && key != "q" && ctx.URLParam("q") == "like" {
 				con = con.Where("\""+key+"\" LIKE ?", val)
+			} else if key != "apiKey" && key != "q" && ctx.URLParam("q") == "equal" {
+				con = con.Where("\""+key+"\" = ?", val)
 			}
 		}
 
