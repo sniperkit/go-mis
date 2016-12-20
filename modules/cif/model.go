@@ -1,6 +1,10 @@
 package cif
 
-import "time"
+import (
+	"crypto/md5"
+	"encoding/hex"
+	"time"
+)
 
 type Cif struct {
 	ID                  uint       `gorm:"primary_key" gorm:"column:_id" json:"_id"`
@@ -35,4 +39,24 @@ type Cif struct {
 	CreatedAt           time.Time  `gorm:"column:createdAt" json:"createdAt"`
 	UpdatedAt           time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
 	DeletedAt           *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
+}
+
+func (c *Cif) BeforeCreate() (err error) {
+	if c.Password != "" {
+		bytePassword := []byte(c.Password)
+		md5Bytes := md5.Sum(bytePassword)
+		c.Password = hex.EncodeToString(md5Bytes[:])
+	}
+
+	return
+}
+
+func (c *Cif) BeforeUpdate() (err error) {
+	if c.Password != "" {
+		bytePassword := []byte(c.Password)
+		md5Bytes := md5.Sum(bytePassword)
+		c.Password = hex.EncodeToString(md5Bytes[:])
+	}
+
+	return
 }

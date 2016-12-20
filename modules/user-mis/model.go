@@ -1,6 +1,10 @@
 package userMis
 
-import "time"
+import (
+	"crypto/sha256"
+	"encoding/hex"
+	"time"
+)
 
 type UserMis struct {
 	ID        uint       `gorm:"primary_key" gorm:"column:_id" json:"_id"`
@@ -11,4 +15,24 @@ type UserMis struct {
 	CreatedAt time.Time  `gorm:"column:createdAt" json:"createdAt"`
 	UpdatedAt time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
 	DeletedAt *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
+}
+
+func (u *UserMis) BeforeCreate() (err error) {
+	if u.Password != "" {
+		bytePassword := []byte(u.Password)
+		sha256Bytes := sha256.Sum256(bytePassword)
+		u.Password = hex.EncodeToString(sha256Bytes[:])
+	}
+
+	return
+}
+
+func (u *UserMis) BeforeUpdate() (err error) {
+	if u.Password != "" {
+		bytePassword := []byte(u.Password)
+		sha256Bytes := sha256.Sum256(bytePassword)
+		u.Password = hex.EncodeToString(sha256Bytes[:])
+	}
+
+	return
 }
