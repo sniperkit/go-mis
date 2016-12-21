@@ -3,7 +3,7 @@ package loan
 import "time"
 
 type Loan struct {
-	ID               uint       `gorm:"primary_key" gorm:"column:_id" json:"_id"`
+	ID               uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
 	SubmittedPlafond float64    `gorm:"column:submittedPlafond" json:"submittedPlafond"`
 	CreditScoreText  string     `gorm:"column:creditScoreText" json:"creditScoreText"`
 	CreditScoreValue float64    `gorm:"column:creditScoreValue" json:"creditScoreValue"`

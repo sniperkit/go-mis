@@ -7,7 +7,7 @@ import (
 )
 
 type UserMis struct {
-	ID        uint       `gorm:"primary_key" gorm:"column:_id" json:"_id"`
+	ID        uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
 	Fullname  string     `gorm:"column:fullname" json:"fullname"`
 	Username  string     `gorm:"column:_username" json:"username"`
 	Password  string     `gorm:"column:_password" json:"password"`

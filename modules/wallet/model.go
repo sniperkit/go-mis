@@ -3,7 +3,7 @@ package wallet
 import "time"
 
 type Wallet struct {
-	ID           uint       `gorm:"primary_key" gorm:"column:_id" json:"_id"`
+	ID           uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
 	TotalDebit   float64    `gorm:"column:totalDebit" json:"totalDebit"`
 	TotalCredit  float64    `gorm:"column:totalCredit" json:"totalCredit"`
 	TotalBalance float64    `gorm:"column:totalBalance" json:"totalBalance"`

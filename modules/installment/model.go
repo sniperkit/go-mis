@@ -3,7 +3,7 @@ package installment
 import "time"
 
 type Installment struct {
-	ID             uint       `gorm:"primary_key" gorm:"column:_id" json:"_id"`
+	ID             uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
 	Type           string     `gorm:"column:type" json:"type"`
 	Principal      float64    `gorm:"column:principal" json:"principal"`
 	ProfitAmf      float64    `gorm:"column:profitAmf" json:"profitAmf"`

@@ -3,7 +3,7 @@ package borrower
 import "time"
 
 type Borrower struct {
-	ID               uint       `gorm:"primary_key" gorm:"column:_id" json:"_id"`
+	ID               uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
 	IsCheckedTerm    bool       `gorm:"column:isCheckedTerm" json:"isCheckedTerm"`
 	IsCheckedPrivacy bool       `gorm:"column:isCheckedPrivacy" json:"isCheckedPrivacy"`
 	Village          string     `gorm:"column:village" json:"village"`

@@ -7,17 +7,17 @@ import (
 )
 
 type Cif struct {
-	ID                  uint       `gorm:"primary_key" gorm:"column:_id" json:"_id"`
-	CifNumber           uint       `gorm:"column:cifNumber" json:"cifNumber"`
+	ID                  uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
+	CifNumber           uint64     `gorm:"column:cifNumber" json:"cifNumber"`
 	Username            string     `gorm:"column:username" json:"username"`
 	Password            string     `gorm:"column:password" json:"password"`
 	Name                string     `gorm:"column:name" json:"name"`
 	Gender              string     `gorm:"column:gender" json:"gender"`
 	PlaceOfBirth        string     `gorm:"column:placeOfBirth" json:"placeOfBirth"`
 	DateOfBirth         time.Time  `gorm:"column:dateOfBirth" json:"dateOfBirth"`
-	IdCardNo            uint       `gorm:"column:idCardNo" json:"idCardNo"`
+	IdCardNo            uint64     `gorm:"column:idCardNo" json:"idCardNo"`
 	IdCardValidDate     time.Time  `gorm:"column:idCardValidDate" json:"idCardValidDate"`
-	TaxCardNo           uint       `gorm:"column:taxCardNo" json:"taxCardNo"`
+	TaxCardNo           uint64     `gorm:"column:taxCardNo" json:"taxCardNo"`
 	MaritalStatus       string     `gorm:"column:maritalStatus" json:"maritalStatus"`
 	MothersName         string     `gorm:"column:mothersName" json:"mothersName"`
 	Religion            string     `gorm:"column:religion" json:"religion"`
@@ -28,7 +28,7 @@ type Cif struct {
 	Province            string     `gorm:"column:province" json:"province"`
 	Nationality         string     `gorm:"column:nationality" json:"nationality"`
 	Zipcode             string     `gorm:"column:zipcode" json:"zipcode"`
-	PhoneNo             uint       `gorm:"column:phoneNo" json:"phoneNo"`
+	PhoneNo             uint64     `gorm:"column:phoneNo" json:"phoneNo"`
 	CompanyName         string     `gorm:"column:companyName" json:"companyName"`
 	CompanyAddress      string     `gorm:"column:companyAddress" json:"companyAddress"`
 	Occupation          string     `gorm:"column:occupation" json:"occupation"`

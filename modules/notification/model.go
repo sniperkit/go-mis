@@ -3,7 +3,7 @@ package notification
 import "time"
 
 type Notification struct {
-	ID          uint       `gorm:"primary_key" gorm:"column:_id" json:"_id"`
+	ID          uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
 	Type        string     `gorm:"column:type" json:"type"`
 	Message     string     `gorm:"column:message" json:"message"`
 	IsRead      bool       `gorm:"column:isRead" json:"isRead"`

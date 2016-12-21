@@ -7,7 +7,7 @@ import (
 )
 
 type Agent struct {
-	ID          uint             `gorm:"primary_key" gorm:"column:_id" json:"_id"`
+	ID          uint64           `gorm:"primary_key" gorm:"column:_id" json:"_id"`
 	Username    string           `gorm:"column:username" json:"username"`
 	Password    string           `gorm:"column:password" json:"password"`
 	Fullname    string           `gorm:"column:fullname" json:"fullname"`
