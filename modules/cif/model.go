@@ -17,7 +17,9 @@ type Cif struct {
 	DateOfBirth         time.Time  `gorm:"column:dateOfBirth" json:"dateOfBirth"`
 	IdCardNo            uint64     `gorm:"column:idCardNo" json:"idCardNo"`
 	IdCardValidDate     time.Time  `gorm:"column:idCardValidDate" json:"idCardValidDate"`
+	IdCardFilename      string     `gorm:"column:idCardFilename" json:"idCardFilename"`
 	TaxCardNo           uint64     `gorm:"column:taxCardNo" json:"taxCardNo"`
+	TaxCardFilename     string     `gorm:"column:taxCardFilename" json:"taxCardFilename"`
 	MaritalStatus       string     `gorm:"column:maritalStatus" json:"maritalStatus"`
 	MothersName         string     `gorm:"column:mothersName" json:"mothersName"`
 	Religion            string     `gorm:"column:religion" json:"religion"`
