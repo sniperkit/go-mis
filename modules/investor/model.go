@@ -7,7 +7,7 @@ type Investor struct {
 	IsInstitutional  bool       `gorm:"column:isInstitutional" json:"isInstitutional"`
 	IsCheckedTerm    bool       `gorm:"column:isCheckedTerm" json:"isCheckedTerm"`
 	IsCheckedPrivacy bool       `gorm:"column:isCheckedPrivacy" json:"isCheckedPrivacy"`
-	PhoneNo          uint64     `gorm:"column:phoneNo" json:"phoneNo"`
+	PhoneNo          string     `gorm:"column:phoneNo" json:"phoneNo"`
 	Email            string     `gorm:"column:email" json:"email"`
 	BankName         string     `gorm:"column:bankName" json:"bankName"`
 	BankBranch       string     `gorm:"column:bankbranch" json:"bankbranch"`
