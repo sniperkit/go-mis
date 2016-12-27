@@ -205,3 +205,12 @@ type R_OrderLoan struct {
 	UpdatedAt time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
 	DeletedAt *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
 }
+
+type R_LoanAccount struct {
+	ID        uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
+	LoanId    uint64     `gorm:"column:loanId" json:"loanId"`
+	AccountId uint64     `gorm:"column:accountId" json:"accountId"`
+	CreatedAt time.Time  `gorm:"column:createdAt" json:"createdAt"`
+	UpdatedAt time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
+	DeletedAt *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
+}

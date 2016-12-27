@@ -31,6 +31,7 @@ func Init() {
 	services.BaseCrudInitWithDomain("loan-sector", R_LoanSector{}, []R_LoanSector{})
 	services.BaseCrudInitWithDomain("loan-installment", R_LoanInstallment{}, []R_LoanInstallment{})
 	services.BaseCrudInitWithDomain("loan-group", R_LoanGroup{}, []R_LoanGroup{})
+	services.BaseCrudInitWithDomain("loan-account", R_LoanAccount{}, []R_LoanAccount{})
 	services.BaseCrudInitWithDomain("loan-campaign", R_LoanCampaign{}, []R_LoanCampaign{})
 	services.BaseCrudInitWithDomain("loan-branch", R_LoanBranch{}, []R_LoanBranch{})
 	services.BaseCrudInitWithDomain("loan-monitoring", R_LoanMonitoring{}, []R_LoanMonitoring{})
