@@ -1,7 +1,5 @@
 MIS 2.0 - Micro-Services using Go
 
-Now integrated with jenkisn
-
 # HOW TO RUN
 
 ```
