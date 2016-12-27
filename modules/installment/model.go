@@ -9,6 +9,7 @@ type Installment struct {
 	ProfitAmf      float64    `gorm:"column:profitAmf" json:"profitAmf"`
 	ProfitInvestor float64    `gorm:"column:profitInvestor" json:"profitInvestor"`
 	Reserve        float64    `gorm:"column:reserve" json:"reserve"`
+	Stage          string     `gorm:"column:stage" json:"stage"`
 	CreatedAt      time.Time  `gorm:"column:createdAt" json:"createdAt"`
 	UpdatedAt      time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
 	DeletedAt      *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
