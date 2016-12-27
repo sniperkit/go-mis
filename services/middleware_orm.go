@@ -34,7 +34,7 @@ func GetById(model interface{}) func(ctx *iris.Context) {
 // GET /:domain/q
 func GetByQuery(model interface{}) func(ctx *iris.Context) {
 	return func(ctx *iris.Context) {
-		m := reflect.New(reflect.TypeOf((model.(*Container)).SingleObj)).Interface()
+		m := reflect.New(reflect.TypeOf((model.(*Container)).ArrayObj)).Interface()
 
 		con := DBCPsql
 		for key, val := range ctx.URLParams() {
