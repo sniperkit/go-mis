@@ -13,6 +13,7 @@ func Init() {
 	services.DBCPsql.AutoMigrate(&R_LoanSector{})
 	services.DBCPsql.AutoMigrate(&R_LoanInstallment{})
 	services.DBCPsql.AutoMigrate(&R_LoanGroup{})
+	services.DBCPsql.AutoMigrate(&R_LoanAccount{})
 	services.DBCPsql.AutoMigrate(&R_LoanCampaign{})
 	services.DBCPsql.AutoMigrate(&R_LoanBranch{})
 	services.DBCPsql.AutoMigrate(&R_LoanMonitoring{})
