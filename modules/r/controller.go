@@ -21,6 +21,8 @@ func Init() {
 	services.DBCPsql.AutoMigrate(&R_AgentBranch{})
 	services.DBCPsql.AutoMigrate(&R_AgentIncentive{})
 	services.DBCPsql.AutoMigrate(&R_UserMisRole{})
+	services.DBCPsql.AutoMigrate(&R_AreaUserMis{})
+	services.DBCPsql.AutoMigrate(&R_BranchUserMis{})
 
 	services.BaseCrudInitWithDomain("cif-investor-borrower", R_CifInvestorBorrower{}, []R_CifInvestorBorrower{})
 	services.BaseCrudInitWithDomain("borrower-account", R_BorrowerAccount{}, []R_BorrowerAccount{})
@@ -41,4 +43,6 @@ func Init() {
 	services.BaseCrudInitWithDomain("agent-incentive", R_AgentIncentive{}, []R_AgentIncentive{})
 	services.BaseCrudInitWithDomain("agent-borrower-propspective", R_AgentBorrowerProspective{}, []R_AgentBorrowerProspective{})
 	services.BaseCrudInitWithDomain("user-mis-role", R_UserMisRole{}, []R_UserMisRole{})
+	services.BaseCrudInitWithDomain("area-user-mis", R_AreaUserMis{}, []R_AreaUserMis{})
+	services.BaseCrudInitWithDomain("branch-user-mis", R_BrachUserMis{}, []R_BranchUserMis{})
 }

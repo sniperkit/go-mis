@@ -1,4 +1,4 @@
-package branch
+package area
 
 import (
 	"time"
@@ -6,10 +6,8 @@ import (
 	"github.com/nferruzzi/gormGIS"
 )
 
-type Branch struct {
+type Area struct {
 	ID        uint64           `gorm:"primary_key" gorm:"column:_id" json:"_id"`
-	Code      int64            `gorm:"column:code" json:"code"`
-	Area      int64            `gorm:"column:area" json:"area"`
 	Name      string           `gorm:"column:name" json:"name"`
 	City      string           `gorm:"column:city" json:"city"`
 	Province  string           `gorm:"column:province" json:"province"`
