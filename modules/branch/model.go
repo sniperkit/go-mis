@@ -11,6 +11,8 @@ type Branch struct {
 	Code      int64            `gorm:"column:code" json:"code"`
 	Area      int64            `gorm:"column:area" json:"area"`
 	Name      string           `gorm:"column:name" json:"name"`
+	City      string           `gorm:"column:city" json:"city"`
+	Province  string           `gorm:"column:province" json:"province"`
 	Lat       float64          `gorm:"column:lat" json:"lat"`
 	Lng       float64          `gorm:"column:lng" json:"lng"`
 	Geopoint  gormGIS.GeoPoint `gorm:"column:geopoint" sql:"type:geometry(Geometry,4326)"`
