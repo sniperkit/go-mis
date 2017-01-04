@@ -44,5 +44,5 @@ func Init() {
 	services.BaseCrudInitWithDomain("agent-borrower-propspective", R_AgentBorrowerProspective{}, []R_AgentBorrowerProspective{})
 	services.BaseCrudInitWithDomain("user-mis-role", R_UserMisRole{}, []R_UserMisRole{})
 	services.BaseCrudInitWithDomain("area-user-mis", R_AreaUserMis{}, []R_AreaUserMis{})
-	services.BaseCrudInitWithDomain("branch-user-mis", R_BrachUserMis{}, []R_BranchUserMis{})
+	services.BaseCrudInitWithDomain("branch-user-mis", R_BranchUserMis{}, []R_BranchUserMis{})
 }

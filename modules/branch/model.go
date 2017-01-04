@@ -20,3 +20,10 @@ type Branch struct {
 	UpdatedAt time.Time        `gorm:"column:updatedAt" json:"updatedAt"`
 	DeletedAt *time.Time       `gorm:"column:deletedAt" json:"deletedAt"`
 }
+
+func (b *Branch) SetGeopoint() {
+	b.Geopoint = gormGIS.GeoPoint{
+		Lat: b.Lat,
+		Lng: b.Lng,
+	}
+}
