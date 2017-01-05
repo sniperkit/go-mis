@@ -30,7 +30,7 @@ type Cif struct {
 	Province            string     `gorm:"column:province" json:"province"`
 	Nationality         string     `gorm:"column:nationality" json:"nationality"`
 	Zipcode             string     `gorm:"column:zipcode" json:"zipcode"`
-	PhoneNo             uint64     `gorm:"column:phoneNo" json:"phoneNo"`
+	PhoneNo             string     `gorm:"column:phoneNo" json:"phoneNo"`
 	CompanyName         string     `gorm:"column:companyName" json:"companyName"`
 	CompanyAddress      string     `gorm:"column:companyAddress" json:"companyAddress"`
 	Occupation          string     `gorm:"column:occupation" json:"occupation"`
