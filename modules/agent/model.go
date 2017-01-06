@@ -11,6 +11,7 @@ type Agent struct {
 	Username    string           `gorm:"column:username" json:"username"`
 	Password    string           `gorm:"column:password" json:"password"`
 	Fullname    string           `gorm:"column:fullname" json:"fullname"`
+	Account     string           `gorm:"column:account" json:"account"`
 	PicUrl      string           `gorm:"column:picUrl" json:"picUrl"`
 	PhoneNo     string           `gorm:"column:phoneNo" json:"phoneNo"`
 	Address     string           `gorm:"column:address" json:"address"`
