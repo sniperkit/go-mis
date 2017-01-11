@@ -44,17 +44,6 @@ type R_WalletTransaction struct {
 	DeletedAt           *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
 }
 
-// Relation `notification` to `investor` and `borrower`
-type R_NotificationInvestorBorrower struct {
-	ID             uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
-	NotificationId uint64     `gorm:"column:notificationId" json:"notificationId"`
-	DataId         uint64     `gorm:"column:dataId" json:"dataId"` // dataId: [ 'investorId', 'borrowerId' ]
-	Type           string     `gorm:"column:type" json:"type"`     // type: [ 'investor', 'borrower' ]
-	CreatedAt      time.Time  `gorm:"column:createdAt" json:"createdAt"`
-	UpdatedAt      time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
-	DeletedAt      *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
-}
-
 // Relation `investor` to `product-pricing` to `loan`
 type R_InvestorProductPricingLoan struct {
 	ID               uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
@@ -231,4 +220,24 @@ type R_BranchUserMis struct {
 	CreatedAt time.Time  `gorm:"column:createdAt" json:"createdAt"`
 	UpdatedAt time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
 	DeletedAt *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
+}
+
+// Relation `notification` to `borrower`
+type R_NotificationBorrower struct {
+	ID             uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
+	NotificationId uint64     `gorm:"column:notificationId" json:"notificationId"`
+	BorrowerId     uint64     `gorm:"column:borrowerId" json:"borrowerId"`
+	CreatedAt      time.Time  `gorm:"column:createdAt" json:"createdAt"`
+	UpdatedAt      time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
+	DeletedAt      *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
+}
+
+// Relation `notification` to `investor`
+type R_NotificationInvestor struct {
+	ID             uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
+	NotificationId uint64     `gorm:"column:notificationId" json:"notificationId"`
+	InvestorId     uint64     `gorm:"column:investorId" json:"investorId"`
+	CreatedAt      time.Time  `gorm:"column:createdAt" json:"createdAt"`
+	UpdatedAt      time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
+	DeletedAt      *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
 }

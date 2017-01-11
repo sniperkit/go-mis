@@ -7,9 +7,9 @@ type Loan struct {
 	SubmittedPlafond     float64    `gorm:"column:submittedPlafond" json:"submittedPlafond"`
 	SubmittedTenor       int64      `gorm:"column:submittedTenor" json:"submittedTenor"`
 	SubmittedInstallment float64    `gorm:"column:submittedInstallment" json:"submittedInstallment"`
-	CreditScoreText      string     `gorm:"column:creditScoreText" json:"creditScoreText"`
+	CreditScoreGrade     string     `gorm:"column:creditScoreGrade" json:"creditScoreGrade"`
 	CreditScoreValue     float64    `gorm:"column:creditScoreValue" json:"creditScoreValue"`
-	Tenor                float64    `gorm:"column:tenor" json:"tenor"`
+	Tenor                uint64     `gorm:"column:tenor" json:"tenor"`
 	Rate                 float64    `gorm:"column:rate" json:"rate"`
 	Installment          float64    `gorm:"column:installment" json:"installment"`
 	Plafond              float64    `gorm:"column:plafond" json:"plafond"`
