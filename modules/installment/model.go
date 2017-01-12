@@ -4,7 +4,8 @@ import "time"
 
 type Installment struct {
 	ID             uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
-	Type           string     `gorm:"column:type" json:"type"`
+	Type           string     `gorm:"column:type" json:"type"`         // NORMAL, DOUBLE, PELUNASAN DINI
+	Presence       string     `gorm:"column:presence" json:"presence"` // ABSENT, TR1, TR2, TR3
 	Principal      float64    `gorm:"column:principal" json:"principal"`
 	ProfitAmf      float64    `gorm:"column:profitAmf" json:"profitAmf"`
 	ProfitInvestor float64    `gorm:"column:profitInvestor" json:"profitInvestor"`

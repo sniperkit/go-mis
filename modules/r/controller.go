@@ -3,48 +3,99 @@ package r
 import "bitbucket.org/go-mis/services"
 
 func Init() {
-	services.DBCPsql.AutoMigrate(&R_CifInvestorBorrower{})
-	services.DBCPsql.AutoMigrate(&R_BorrowerAccount{})
-	services.DBCPsql.AutoMigrate(&R_InvestorBorrowerWallet{})
-	services.DBCPsql.AutoMigrate(&R_WalletTransaction{})
-	services.DBCPsql.AutoMigrate(&R_InvestorProductPricingLoan{})
-	services.DBCPsql.AutoMigrate(&R_LoanDisbursement{})
-	services.DBCPsql.AutoMigrate(&R_LoanSector{})
-	services.DBCPsql.AutoMigrate(&R_LoanInstallment{})
-	services.DBCPsql.AutoMigrate(&R_LoanGroup{})
-	services.DBCPsql.AutoMigrate(&R_LoanAccount{})
-	services.DBCPsql.AutoMigrate(&R_LoanCampaign{})
-	services.DBCPsql.AutoMigrate(&R_LoanBranch{})
-	services.DBCPsql.AutoMigrate(&R_LoanMonitoring{})
-	services.DBCPsql.AutoMigrate(&R_GroupAgent{})
-	services.DBCPsql.AutoMigrate(&R_AgentBranch{})
-	services.DBCPsql.AutoMigrate(&R_AgentIncentive{})
-	services.DBCPsql.AutoMigrate(&R_UserMisRole{})
-	services.DBCPsql.AutoMigrate(&R_AreaUserMis{})
-	services.DBCPsql.AutoMigrate(&R_BranchUserMis{})
-	services.DBCPsql.AutoMigrate(&R_NotificationBorrower{})
-	services.DBCPsql.AutoMigrate(&R_NotificationInvestor{})
+	services.DBCPsql.AutoMigrate(&RCifAccessToken{})
+	services.BaseCrudInitWithDomain("r-cif-access-token", RCifAccessToken{}, []RCifAccessToken{})
 
-	services.BaseCrudInitWithDomain("cif-investor-borrower", R_CifInvestorBorrower{}, []R_CifInvestorBorrower{})
-	services.BaseCrudInitWithDomain("borrower-account", R_BorrowerAccount{}, []R_BorrowerAccount{})
-	services.BaseCrudInitWithDomain("investor-borrower-wallet", R_InvestorBorrowerWallet{}, []R_InvestorBorrowerWallet{})
-	services.BaseCrudInitWithDomain("wallet-transaction", R_WalletTransaction{}, []R_WalletTransaction{})
-	services.BaseCrudInitWithDomain("investor-product-pricing-loan", R_InvestorProductPricingLoan{}, []R_InvestorProductPricingLoan{})
-	services.BaseCrudInitWithDomain("loan-disbursement", R_LoanDisbursement{}, []R_LoanDisbursement{})
-	services.BaseCrudInitWithDomain("loan-sector", R_LoanSector{}, []R_LoanSector{})
-	services.BaseCrudInitWithDomain("loan-installment", R_LoanInstallment{}, []R_LoanInstallment{})
-	services.BaseCrudInitWithDomain("loan-group", R_LoanGroup{}, []R_LoanGroup{})
-	services.BaseCrudInitWithDomain("loan-account", R_LoanAccount{}, []R_LoanAccount{})
-	services.BaseCrudInitWithDomain("loan-campaign", R_LoanCampaign{}, []R_LoanCampaign{})
-	services.BaseCrudInitWithDomain("loan-branch", R_LoanBranch{}, []R_LoanBranch{})
-	services.BaseCrudInitWithDomain("loan-monitoring", R_LoanMonitoring{}, []R_LoanMonitoring{})
-	services.BaseCrudInitWithDomain("group-agent", R_GroupAgent{}, []R_GroupAgent{})
-	services.BaseCrudInitWithDomain("agent-branch", R_AgentBranch{}, []R_AgentBranch{})
-	services.BaseCrudInitWithDomain("agent-incentive", R_AgentIncentive{}, []R_AgentIncentive{})
-	services.BaseCrudInitWithDomain("agent-borrower-propspective", R_AgentBorrowerProspective{}, []R_AgentBorrowerProspective{})
-	services.BaseCrudInitWithDomain("user-mis-role", R_UserMisRole{}, []R_UserMisRole{})
-	services.BaseCrudInitWithDomain("area-user-mis", R_AreaUserMis{}, []R_AreaUserMis{})
-	services.BaseCrudInitWithDomain("branch-user-mis", R_BranchUserMis{}, []R_BranchUserMis{})
-	services.BaseCrudInitWithDomain("notification-borrower", R_NotificationBorrower{}, []R_NotificationBorrower{})
-	services.BaseCrudInitWithDomain("notification-investor", R_NotificationInvestor{}, []R_NotificationInvestor{})
+	services.DBCPsql.AutoMigrate(&RCifBorrower{})
+	services.BaseCrudInitWithDomain("r-cif-borrower", RCifBorrower{}, []RCifBorrower{})
+
+	services.DBCPsql.AutoMigrate(&RCifInvestor{})
+	services.BaseCrudInitWithDomain("r-cif-investor", RCifInvestor{}, []RCifInvestor{})
+
+	services.DBCPsql.AutoMigrate(&RAccountTransactionCredit{})
+	services.BaseCrudInitWithDomain("r-account-transaction-credit", RAccountTransactionCredit{}, []RAccountTransactionCredit{})
+
+	services.DBCPsql.AutoMigrate(&RAccountTransactionDebit{})
+	services.BaseCrudInitWithDomain("r-account-transaction-debit", RAccountTransactionDebit{}, []RAccountTransactionDebit{})
+
+	services.DBCPsql.AutoMigrate(&RNotificationBorrower{})
+	services.BaseCrudInitWithDomain("r-notification-borrower", RNotificationBorrower{}, []RNotificationBorrower{})
+
+	services.DBCPsql.AutoMigrate(&RNotificationInvestor{})
+	services.BaseCrudInitWithDomain("r-notification-investor", RNotificationInvestor{}, []RNotificationInvestor{})
+
+	services.DBCPsql.AutoMigrate(&RAccountBorrower{})
+	services.BaseCrudInitWithDomain("r-account-borrower", RAccountBorrower{}, []RAccountBorrower{})
+
+	services.DBCPsql.AutoMigrate(&RAccountInvestor{})
+	services.BaseCrudInitWithDomain("r-account-investor", RAccountInvestor{}, []RAccountInvestor{})
+
+	services.DBCPsql.AutoMigrate(&RInvestorVirtualAccount{})
+	services.BaseCrudInitWithDomain("r-investor-virtual-account", RInvestorVirtualAccount{}, []RInvestorVirtualAccount{})
+
+	services.DBCPsql.AutoMigrate(&RVirtualAccountStatement{})
+	services.BaseCrudInitWithDomain("r-virtual-account-statement", RVirtualAccountStatement{}, []RVirtualAccountStatement{})
+
+	services.DBCPsql.AutoMigrate(&RLoanBorrower{})
+	services.BaseCrudInitWithDomain("r-loan-borrower", RLoanBorrower{}, []RLoanBorrower{})
+
+	services.DBCPsql.AutoMigrate(&RLoanAccountTransactionCredit{})
+	services.BaseCrudInitWithDomain("r-loan-transaction-credit", RLoanAccountTransactionCredit{}, []RLoanAccountTransactionCredit{})
+
+	services.DBCPsql.AutoMigrate(&RLoanHistory{})
+	services.BaseCrudInitWithDomain("r-loan-history", RLoanHistory{}, []RLoanHistory{})
+
+	services.DBCPsql.AutoMigrate(&RLoanInvestorProductPricing{})
+	services.BaseCrudInitWithDomain("r-loan-investor-product-pricing", RLoanInvestorProductPricing{}, []RLoanInvestorProductPricing{})
+
+	services.DBCPsql.AutoMigrate(&RLoanArea{})
+	services.BaseCrudInitWithDomain("r-loan-area", RLoanArea{}, []RLoanArea{})
+
+	services.DBCPsql.AutoMigrate(&RLoanBranch{})
+	services.BaseCrudInitWithDomain("r-loan-branch", RLoanBranch{}, []RLoanBranch{})
+
+	services.DBCPsql.AutoMigrate(&RLoanMonitoring{})
+	services.BaseCrudInitWithDomain("r-loan-monitoring", RLoanMonitoring{}, []RLoanMonitoring{})
+
+	services.DBCPsql.AutoMigrate(&RLoanGroup{})
+	services.BaseCrudInitWithDomain("r-loan-group", RLoanGroup{}, []RLoanGroup{})
+
+	services.DBCPsql.AutoMigrate(&RLoanInstallment{})
+	services.BaseCrudInitWithDomain("r-loan-installment", RLoanInstallment{}, []RLoanInstallment{})
+
+	services.DBCPsql.AutoMigrate(&RLoanSector{})
+	services.BaseCrudInitWithDomain("r-loan-sector", RLoanSector{}, []RLoanSector{})
+
+	services.DBCPsql.AutoMigrate(&RLoanDisbursement{})
+	services.BaseCrudInitWithDomain("r-loan-disbursement", RLoanDisbursement{}, []RLoanDisbursement{})
+
+	services.DBCPsql.AutoMigrate(&RDisbursementHistory{})
+	services.BaseCrudInitWithDomain("r-disbursement-history", RDisbursementHistory{}, []RDisbursementHistory{})
+
+	services.DBCPsql.AutoMigrate(&RInstallmentHistory{})
+	services.BaseCrudInitWithDomain("r-installment-history", RInstallmentHistory{}, []RInstallmentHistory{})
+
+	services.DBCPsql.AutoMigrate(&RInstallmentAccountTransactionCredit{})
+	services.BaseCrudInitWithDomain("r-installment-transaction-debit", RInstallmentAccountTransactionCredit{}, []RInstallmentAccountTransactionCredit{})
+
+	services.DBCPsql.AutoMigrate(&RAreaBranch{})
+	services.BaseCrudInitWithDomain("r-area-branch", RAreaBranch{}, []RAreaBranch{})
+
+	services.DBCPsql.AutoMigrate(&RBranchAgent{})
+	services.BaseCrudInitWithDomain("r-branch-agent", RBranchAgent{}, []RBranchAgent{})
+
+	services.DBCPsql.AutoMigrate(&RBranchUserMis{})
+	services.BaseCrudInitWithDomain("r-branch-user-mis", RBranchUserMis{}, []RBranchUserMis{})
+
+	services.DBCPsql.AutoMigrate(&RGroupAgent{})
+	services.BaseCrudInitWithDomain("r-group-agent", RGroupAgent{}, []RGroupAgent{})
+
+	services.DBCPsql.AutoMigrate(&RUserMisRole{})
+	services.BaseCrudInitWithDomain("r-user-mis-role", RUserMisRole{}, []RUserMisRole{})
+
+	services.DBCPsql.AutoMigrate(&RAdjustmentSubmittedBy{})
+	services.BaseCrudInitWithDomain("r-adjustment-submitted-by", RAdjustmentSubmittedBy{}, []RAdjustmentSubmittedBy{})
+
+	services.DBCPsql.AutoMigrate(&RAdjustmentApprovedBy{})
+	services.BaseCrudInitWithDomain("r-adjustment-approved-by", RAdjustmentApprovedBy{}, []RAdjustmentApprovedBy{})
 }

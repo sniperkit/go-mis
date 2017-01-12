@@ -2,81 +2,139 @@ package r
 
 import "time"
 
-// Relation `cif` to `investor` and `borrower`
-type R_CifInvestorBorrower struct {
-	ID        uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
-	CifId     uint64     `gorm:"column:cifId" json:"cifId"`
-	DataId    uint64     `gorm:"column:dataId" json:"dataId"` // dataId: [ 'investorId', 'borrowerId' ]
-	Type      string     `gorm:"column:type" json:"type"`     // type: [ 'investor', 'borrower' ]
-	CreatedAt time.Time  `gorm:"column:createdAt" json:"createdAt"`
-	UpdatedAt time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
-	DeletedAt *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
+// Relation 'cif' to `access-token`
+type RCifAccessToken struct {
+	ID            uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
+	CifId         uint64     `gorm:"column:cifId" json:"cifId"`
+	AccessTokenId uint64     `gorm:"column:accessTokenId" json:"accessTokenId"`
+	CreatedAt     time.Time  `gorm:"column:createdAt" json:"createdAt"`
+	UpdatedAt     time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
+	DeletedAt     *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
 }
 
-// Relation `borrower` to `account`
-type R_BorrowerAccount struct {
+// Relation 'cif' to `borrower`
+type RCifBorrower struct {
 	ID         uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
+	CifId      uint64     `gorm:"column:cifId" json:"cifId"`
 	BorrowerId uint64     `gorm:"column:borrowerId" json:"borrowerId"`
-	AccountId  uint64     `gorm:"column:accountId" json:"accountId"`
 	CreatedAt  time.Time  `gorm:"column:createdAt" json:"createdAt"`
 	UpdatedAt  time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
 	DeletedAt  *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
 }
 
-// Relation `investor` and `borrower` to `wallet`
-type R_InvestorBorrowerWallet struct {
-	ID        uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
-	DataId    uint64     `gorm:"column:dataId" json:"dataId"` // dataId: [ 'investorId', 'borrowerId' ]
-	WalletId  uint64     `gorm:"column:walletId" json:"walletId"`
-	Type      string     `gorm:"column:type" json:"type"` // type: [ 'investor', 'borrower' ]
-	CreatedAt time.Time  `gorm:"column:createdAt" json:"createdAt"`
-	UpdatedAt time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
-	DeletedAt *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
+// Relation 'cif' to `investor`
+type RCifInvestor struct {
+	ID         uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
+	CifId      uint64     `gorm:"column:cifId" json:"cifId"`
+	InvestorId uint64     `gorm:"column:investorId" json:"investorId"`
+	CreatedAt  time.Time  `gorm:"column:createdAt" json:"createdAt"`
+	UpdatedAt  time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
+	DeletedAt  *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
 }
 
-// Relation `wallet` to `wallet-transaction`
-type R_WalletTransaction struct {
-	ID                  uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
-	WalletId            uint64     `gorm:"column:walletId" json:"walletId"`
-	WalletTransactionId uint64     `gorm:"column:walletTransactionId" json:"walletTransactionId"`
-	CreatedAt           time.Time  `gorm:"column:createdAt" json:"createdAt"`
-	UpdatedAt           time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
-	DeletedAt           *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
+// Relation 'account' to `account-transaction-credit`
+type RAccountTransactionCredit struct {
+	ID                         uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
+	AccountId                  uint64     `gorm:"column:accountId" json:"accountId"`
+	AccountTransactionCreditId uint64     `gorm:"column:accountTransactionCreditId" json:"accountTransactionCreditId"`
+	CreatedAt                  time.Time  `gorm:"column:createdAt" json:"createdAt"`
+	UpdatedAt                  time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
+	DeletedAt                  *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
 }
 
-// Relation `investor` to `product-pricing` to `loan`
-type R_InvestorProductPricingLoan struct {
+// Relation 'account' to `account-transaction-debit`
+type RAccountTransactionDebit struct {
+	ID                        uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
+	AccountId                 uint64     `gorm:"column:accountId" json:"accountId"`
+	AccountTransactionDebitId uint64     `gorm:"column:accountTransactionDebitId" json:"accountTransactionDebitId"`
+	CreatedAt                 time.Time  `gorm:"column:createdAt" json:"createdAt"`
+	UpdatedAt                 time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
+	DeletedAt                 *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
+}
+
+// Relation 'loan' to `borrower`
+type RLoanBorrower struct {
+	ID         uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
+	LoanId     uint64     `gorm:"column:loanId" json:"loanId"`
+	BorrowerId uint64     `gorm:"column:borrowerId" json:"borrowerId"`
+	CreatedAt  time.Time  `gorm:"column:createdAt" json:"createdAt"`
+	UpdatedAt  time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
+	DeletedAt  *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
+}
+
+// Relation 'loan' to `account-transaction-credit`
+type RLoanAccountTransactionCredit struct {
+	ID                         uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
+	LoanId                     uint64     `gorm:"column:loanId" json:"loanId"`
+	AccountTransactionCreditId uint64     `gorm:"column:accountTransactionCreditId" json:"accountTransactionCreditId"`
+	CreatedAt                  time.Time  `gorm:"column:createdAt" json:"createdAt"`
+	UpdatedAt                  time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
+	DeletedAt                  *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
+}
+
+// Relation 'loan' to `history`
+type RLoanHistory struct {
+	ID            uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
+	LoanId        uint64     `gorm:"column:loanId" json:"loanId"`
+	LoanHistoryId uint64     `gorm:"column:loanHistoryId" json:"loanHistoryId"`
+	CreatedAt     time.Time  `gorm:"column:createdAt" json:"createdAt"`
+	UpdatedAt     time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
+	DeletedAt     *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
+}
+
+// Relation 'loan' to `investor` and `product-pricing`
+type RLoanInvestorProductPricing struct {
 	ID               uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
+	LoanId           uint64     `gorm:"column:loanId" json:"loanId"`
 	InvestorId       uint64     `gorm:"column:investorId" json:"investorId"`
 	ProductPricingId uint64     `gorm:"column:productPricingId" json:"productPricingId"`
-	LoanId           uint64     `gorm:"column:loanId" json:"loanId"`
 	CreatedAt        time.Time  `gorm:"column:createdAt" json:"createdAt"`
 	UpdatedAt        time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
 	DeletedAt        *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
 }
 
-// Relation `loan` to `disbursement`
-type R_LoanDisbursement struct {
-	ID             uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
-	LoanId         uint64     `gorm:"column:loanId" json:"loanId"`
-	DisbursementId uint64     `gorm:"column:disbursementId" json:"disbursementId"`
-	CreatedAt      time.Time  `gorm:"column:createdAt" json:"createdAt"`
-	UpdatedAt      time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
-	DeletedAt      *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
-}
-
-// Relation `loan` to `sector`
-type R_LoanSector struct {
+// Relation 'loan' to `area`
+type RLoanArea struct {
 	ID        uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
 	LoanId    uint64     `gorm:"column:loanId" json:"loanId"`
-	SectorId  uint64     `gorm:"column:sectorId" json:"sectorId"`
+	AreaId    uint64     `gorm:"column:areaId" json:"areaId"`
 	CreatedAt time.Time  `gorm:"column:createdAt" json:"createdAt"`
 	UpdatedAt time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
 	DeletedAt *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
 }
 
-// Relation `loan` to `installment`
-type R_LoanInstallment struct {
+// Relation 'loan' to `branch`
+type RLoanBranch struct {
+	ID        uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
+	LoanId    uint64     `gorm:"column:loanId" json:"loanId"`
+	BranchId  uint64     `gorm:"column:branchId" json:"branchId"`
+	CreatedAt time.Time  `gorm:"column:createdAt" json:"createdAt"`
+	UpdatedAt time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
+	DeletedAt *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
+}
+
+// Relation 'loan' to `loan-monitoring`
+type RLoanMonitoring struct {
+	ID               uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
+	LoanId           uint64     `gorm:"column:loanId" json:"loanId"`
+	LoanMonitoringId uint64     `gorm:"column:loanMonitoringId" json:"loanMonitoringId"`
+	CreatedAt        time.Time  `gorm:"column:createdAt" json:"createdAt"`
+	UpdatedAt        time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
+	DeletedAt        *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
+}
+
+// Relation 'loan' to `group`
+type RLoanGroup struct {
+	ID        uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
+	LoanId    uint64     `gorm:"column:loanId" json:"loanId"`
+	GroupId   uint64     `gorm:"column:groupId" json:"groupId"`
+	CreatedAt time.Time  `gorm:"column:createdAt" json:"createdAt"`
+	UpdatedAt time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
+	DeletedAt *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
+}
+
+// Relation 'loan' to `installment`
+type RLoanInstallment struct {
 	ID            uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
 	LoanId        uint64     `gorm:"column:loanId" json:"loanId"`
 	InstallmentId uint64     `gorm:"column:installmentId" json:"installmentId"`
@@ -85,145 +143,58 @@ type R_LoanInstallment struct {
 	DeletedAt     *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
 }
 
-// Relation `loan` to `group`
-type R_LoanGroup struct {
+// Relation 'loan' to `sector`
+type RLoanSector struct {
 	ID        uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
 	LoanId    uint64     `gorm:"column:loanId" json:"loanId"`
-	GroupId   uint64     `gorm:"column:groupId" json:"groupId"`
+	SectorId  uint64     `gorm:"column:sectorId" json:"sectorId"`
 	CreatedAt time.Time  `gorm:"column:createdAt" json:"createdAt"`
 	UpdatedAt time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
 	DeletedAt *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
 }
 
-// Relation `loan` to `campaign`
-type R_LoanCampaign struct {
-	ID         uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
-	LoanId     uint64     `gorm:"column:loanId" json:"loanId"`
-	CampaignId uint64     `gorm:"column:investorId" json:"investorId"`
-	CreatedAt  time.Time  `gorm:"column:createdAt" json:"createdAt"`
-	UpdatedAt  time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
-	DeletedAt  *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
+// Relation 'loan' to `disbursement`
+type RLoanDisbursement struct {
+	ID             uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
+	LoanId         uint64     `gorm:"column:loanId" json:"loanId"`
+	DisbursementId uint64     `gorm:"column:disbursementId" json:"disbursementId"`
+	CreatedAt      time.Time  `gorm:"column:createdAt" json:"createdAt"`
+	UpdatedAt      time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
+	DeletedAt      *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
 }
 
-// Relation `loan` to `branch`
-type R_LoanBranch struct {
-	ID        uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
-	LoanId    uint64     `gorm:"column:loanId" json:"loanId"`
-	BranchId  uint64     `gorm:"column:branchId" json:"branchId"`
-	CreatedAt time.Time  `gorm:"column:createdAt" json:"createdAt"`
-	UpdatedAt time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
-	DeletedAt *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
-}
-
-// Relation `loan` to `monitoring`
-type R_LoanMonitoring struct {
-	ID           uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
-	LoanId       uint64     `gorm:"column:loanId" json:"loanId"`
-	MonitoringId uint64     `gorm:"column:monitoringId" json:"monitoringId"`
-	CreatedAt    time.Time  `gorm:"column:createdAt" json:"createdAt"`
-	UpdatedAt    time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
-	DeletedAt    *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
-}
-
-// Relation `installment` to `installment-presence`
-type R_InstallmentPresence struct {
+// Relation `disbursement` to `disbursement-history`
+type RDisbursementHistory struct {
 	ID                    uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
-	InstallmentId         uint64     `gorm:"column:installmentId" json:"installmentId"`
-	InstallmentPresenceId uint64     `gorm:"column:installmentPresenceId" json:"installmentPresenceId"`
+	DisbursementId        uint64     `gorm:"column:disbursementId" json:"disbursementId"`
+	DisbursementHistoryId uint64     `gorm:"column:disbursementHistoryId" json:"disbursementHistoryId"`
 	CreatedAt             time.Time  `gorm:"column:createdAt" json:"createdAt"`
 	UpdatedAt             time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
 	DeletedAt             *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
 }
 
-// Relation `group` to `agent`
-type R_GroupAgent struct {
-	ID        uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
-	GroupId   uint64     `gorm:"column:groupId" json:"groupId"`
-	AgentId   uint64     `gorm:"column:agentId" json:"agentId"`
-	CreatedAt time.Time  `gorm:"column:createdAt" json:"createdAt"`
-	UpdatedAt time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
-	DeletedAt *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
+// Relation 'installment' to `installment-history`
+type RInstallmentHistory struct {
+	ID                   uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
+	InstallmentId        uint64     `gorm:"column:installmentId" json:"installmentId"`
+	InstallmentHistoryId uint64     `gorm:"column:installmentHistoryId" json:"installmentHistoryId"`
+	CreatedAt            time.Time  `gorm:"column:createdAt" json:"createdAt"`
+	UpdatedAt            time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
+	DeletedAt            *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
 }
 
-// Relation `agent` to `branch`
-type R_AgentBranch struct {
-	ID        uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
-	AgentId   uint64     `gorm:"column:agentId" json:"agentId"`
-	BranchId  uint64     `gorm:"column:branchId" json:"branchId"`
-	CreatedAt time.Time  `gorm:"column:createdAt" json:"createdAt"`
-	UpdatedAt time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
-	DeletedAt *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
+// Relation 'installment' to `account-transaction-credit`
+type RInstallmentAccountTransactionCredit struct {
+	ID                        uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
+	InstallmentId             uint64     `gorm:"column:installmentId" json:"installmentId"`
+	AccountTransactionDebitId uint64     `gorm:"column:accountTransactionDebitId" json:"accountTransactionDebitId"`
+	CreatedAt                 time.Time  `gorm:"column:createdAt" json:"createdAt"`
+	UpdatedAt                 time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
+	DeletedAt                 *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
 }
 
-// Relation `agent` to `incentive`
-type R_AgentIncentive struct {
-	ID          uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
-	AgentId     uint64     `gorm:"column:agentId" json:"agentId"`
-	IncentiveId uint64     `gorm:"column:incentiveId" json:"incentiveId"`
-	CreatedAt   time.Time  `gorm:"column:createdAt" json:"createdAt"`
-	UpdatedAt   time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
-	DeletedAt   *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
-}
-
-// Relation `agent` to borrower-prospective
-type R_AgentBorrowerProspective struct {
-	ID                    uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
-	AgentId               uint64     `gorm:"column:agentInd" json:"agentId"`
-	BorrowerProspectiveId uint64     `gorm:"column:borrowerProspectiveId" json:"borrowerProspectiveId"`
-	CreatedAt             time.Time  `gorm:"column:createdAt" json:"createdAt"`
-	UpdatedAt             time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
-	DeletedAt             *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
-}
-
-// Relation `user-mis` to `role`
-type R_UserMisRole struct {
-	ID        uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
-	UserMisId uint64     `gorm:"column:userMisId" json:"userMisId"`
-	RoleId    uint64     `gorm:"column:roleId" json:"roleId"`
-	CreatedAt time.Time  `gorm:"column:createdAt" json:"createdAt"`
-	UpdatedAt time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
-	DeletedAt *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
-}
-
-// Relation `order` to `loan`
-type R_OrderLoan struct {
-	ID        uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
-	OrderId   uint64     `gorm:"column:orderId" json:"orderId"`
-	LoanId    uint64     `gorm:"column:loanId" json:"loanId"`
-	CreatedAt time.Time  `gorm:"column:createdAt" json:"createdAt"`
-	UpdatedAt time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
-	DeletedAt *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
-}
-
-type R_LoanAccount struct {
-	ID        uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
-	LoanId    uint64     `gorm:"column:loanId" json:"loanId"`
-	AccountId uint64     `gorm:"column:accountId" json:"accountId"`
-	CreatedAt time.Time  `gorm:"column:createdAt" json:"createdAt"`
-	UpdatedAt time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
-	DeletedAt *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
-}
-
-type R_AreaUserMis struct {
-	ID        uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
-	AreaId    uint64     `gorm:"column:areaId" json:"areaId"`
-	UserMisID uint64     `gorm:"column:userMisId" json:"userMisId"`
-	CreatedAt time.Time  `gorm:"column:createdAt" json:"createdAt"`
-	UpdatedAt time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
-	DeletedAt *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
-}
-
-type R_BranchUserMis struct {
-	ID        uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
-	BranchId  uint64     `gorm:"column:branchId"  json:"branchId"`
-	UserMisID uint64     `gorm:"column:userMisId" json:"userMisId"`
-	CreatedAt time.Time  `gorm:"column:createdAt" json:"createdAt"`
-	UpdatedAt time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
-	DeletedAt *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
-}
-
-// Relation `notification` to `borrower`
-type R_NotificationBorrower struct {
+// Relation 'notification' to `borrower`
+type RNotificationBorrower struct {
 	ID             uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
 	NotificationId uint64     `gorm:"column:notificationId" json:"notificationId"`
 	BorrowerId     uint64     `gorm:"column:borrowerId" json:"borrowerId"`
@@ -232,12 +203,122 @@ type R_NotificationBorrower struct {
 	DeletedAt      *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
 }
 
-// Relation `notification` to `investor`
-type R_NotificationInvestor struct {
+// Relation 'notification' to `investor`
+type RNotificationInvestor struct {
 	ID             uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
 	NotificationId uint64     `gorm:"column:notificationId" json:"notificationId"`
 	InvestorId     uint64     `gorm:"column:investorId" json:"investorId"`
 	CreatedAt      time.Time  `gorm:"column:createdAt" json:"createdAt"`
 	UpdatedAt      time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
 	DeletedAt      *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
+}
+
+// Relation 'account' to `borrower`
+type RAccountBorrower struct {
+	ID         uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
+	AccountId  uint64     `gorm:"column:accountId" json:"accountId"`
+	BorrowerId uint64     `gorm:"column:borrowerId" json:"borrowerId"`
+	CreatedAt  time.Time  `gorm:"column:createdAt" json:"createdAt"`
+	UpdatedAt  time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
+	DeletedAt  *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
+}
+
+// Relation 'account' to `investor`
+type RAccountInvestor struct {
+	ID         uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
+	AccountId  uint64     `gorm:"column:accountId" json:"accountId"`
+	InvestorId uint64     `gorm:"column:investorId" json:"investorId"`
+	CreatedAt  time.Time  `gorm:"column:createdAt" json:"createdAt"`
+	UpdatedAt  time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
+	DeletedAt  *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
+}
+
+// Relation 'investor' to `virtual-account`
+type RInvestorVirtualAccount struct {
+	ID               uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
+	InvestorId       uint64     `gorm:"column:investorId" json:"investorId"`
+	VirtualAccountId uint64     `gorm:"column:virtualAccountId" json:"virtualAccountId"`
+	CreatedAt        time.Time  `gorm:"column:createdAt" json:"createdAt"`
+	UpdatedAt        time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
+	DeletedAt        *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
+}
+
+// Relation 'virtual-account' to `virtual-account-statement`
+type RVirtualAccountStatement struct {
+	ID                        uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
+	VirtualAccountId          uint64     `gorm:"column:virtualAccountId" json:"virtualAccountId"`
+	VirtualAccountStatementId uint64     `gorm:"column:virtualAccountStatementId" json:"virtualAccountStatementId"`
+	CreatedAt                 time.Time  `gorm:"column:createdAt" json:"createdAt"`
+	UpdatedAt                 time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
+	DeletedAt                 *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
+}
+
+// Relation 'area' to `branch`
+type RAreaBranch struct {
+	ID        uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
+	AreaId    uint64     `gorm:"column:areaId" json:"areaId"`
+	BranchId  uint64     `gorm:"column:branchId" json:"branchId"`
+	CreatedAt time.Time  `gorm:"column:createdAt" json:"createdAt"`
+	UpdatedAt time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
+	DeletedAt *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
+}
+
+// Relation 'branch' to `agent`
+type RBranchAgent struct {
+	ID        uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
+	BranchId  uint64     `gorm:"column:branchId" json:"branchId"`
+	AgentId   uint64     `gorm:"column:agentId" json:"agentId"`
+	CreatedAt time.Time  `gorm:"column:createdAt" json:"createdAt"`
+	UpdatedAt time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
+	DeletedAt *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
+}
+
+// Relation 'group' to `agent`
+type RGroupAgent struct {
+	ID        uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
+	GroupId   uint64     `gorm:"column:groupId" json:"groupId"`
+	AgentId   uint64     `gorm:"column:agentId" json:"agentId"`
+	CreatedAt time.Time  `gorm:"column:createdAt" json:"createdAt"`
+	UpdatedAt time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
+	DeletedAt *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
+}
+
+// Relation 'branch' to `user-mis`
+type RBranchUserMis struct {
+	ID        uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
+	BranchId  uint64     `gorm:"column:branchId" json:"branchId"`
+	UserMisId uint64     `gorm:"column:userMisId" json:"userMisId"`
+	CreatedAt time.Time  `gorm:"column:createdAt" json:"createdAt"`
+	UpdatedAt time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
+	DeletedAt *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
+}
+
+// Relation `user-mis` to 'role'
+type RUserMisRole struct {
+	ID        uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
+	UserMisId uint64     `gorm:"column:userMisId" json:"userMisId"`
+	RoleId    uint64     `gorm:"column:roleId" json:"roleId"`
+	CreatedAt time.Time  `gorm:"column:createdAt" json:"createdAt"`
+	UpdatedAt time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
+	DeletedAt *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
+}
+
+// Relation `adjustment` to 'user-mis' -> adjustment-submitted-by
+type RAdjustmentSubmittedBy struct {
+	ID           uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
+	AdjustmentId uint64     `gorm:"column:adjustmentId" json:"adjustmentId"`
+	UserMisId    uint64     `gorm:"column:userMisId" json:"userMisId"`
+	CreatedAt    time.Time  `gorm:"column:createdAt" json:"createdAt"`
+	UpdatedAt    time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
+	DeletedAt    *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
+}
+
+// Relation `adjustment` to 'user-mis' -> adjustment-approved-by
+type RAdjustmentApprovedBy struct {
+	ID           uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
+	AdjustmentId uint64     `gorm:"column:adjustmentId" json:"adjustmentId"`
+	UserMisId    uint64     `gorm:"column:userMisId" json:"userMisId"`
+	CreatedAt    time.Time  `gorm:"column:createdAt" json:"createdAt"`
+	UpdatedAt    time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
+	DeletedAt    *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
 }

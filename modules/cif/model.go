@@ -21,7 +21,7 @@ type Cif struct {
 	TaxCardNo           uint64     `gorm:"column:taxCardNo" json:"taxCardNo"`
 	TaxCardFilename     string     `gorm:"column:taxCardFilename" json:"taxCardFilename"`
 	MaritalStatus       string     `gorm:"column:maritalStatus" json:"maritalStatus"`
-	MothersName         string     `gorm:"column:mothersName" json:"mothersName"`
+	MotherName          string     `gorm:"column:mothersName" json:"mothersName"`
 	Religion            string     `gorm:"column:religion" json:"religion"`
 	Address             string     `gorm:"column:address" json:"address"`
 	Kelurahan           string     `gorm:"column:kelurahan" json:"kelurahan"`
@@ -37,7 +37,8 @@ type Cif struct {
 	Income              float64    `gorm:"column:income" json:"income"`
 	IncomeSourceFund    string     `gorm:"column:incomeSourceFund" json:"incomeSourceFund"`
 	IncomeSourceCountry string     `gorm:"column:incomeSourceCountry" json:"incomeSourceCountry"`
-	Status              bool       `gorm:"column:status" json:"status"`
+	IsActivated         bool       `gorm:"column:isActivated" json:"isActivated"`
+	IsVAlidated         bool       `gorm:"column:isValidated" json:"isValidated"`
 	CreatedAt           time.Time  `gorm:"column:createdAt" json:"createdAt"`
 	UpdatedAt           time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
 	DeletedAt           *time.Time `gorm:"column:deletedAt" json:"deletedAt"`

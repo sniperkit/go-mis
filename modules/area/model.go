@@ -18,3 +18,10 @@ type Area struct {
 	UpdatedAt time.Time        `gorm:"column:updatedAt" json:"updatedAt"`
 	DeletedAt *time.Time       `gorm:"column:deletedAt" json:"deletedAt"`
 }
+
+func (a *Area) SetGeopoint() {
+	a.Geopoint = gormGIS.GeoPoint{
+		Lat: a.Lat,
+		Lng: a.Lng,
+	}
+}
