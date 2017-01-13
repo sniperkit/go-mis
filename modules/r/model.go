@@ -263,6 +263,16 @@ type RAreaBranch struct {
 	DeletedAt *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
 }
 
+// Relation 'area' to `user-mis`
+type RAreaUserMis struct {
+	ID        uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
+	AreaId    uint64     `gorm:"column:areaId" json:"areaId"`
+	UserMisId uint64     `gorm:"column:userMisId" json:"userMisId"`
+	CreatedAt time.Time  `gorm:"column:createdAt" json:"createdAt"`
+	UpdatedAt time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
+	DeletedAt *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
+}
+
 // Relation 'branch' to `agent`
 type RBranchAgent struct {
 	ID        uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`

@@ -81,6 +81,9 @@ func Init() {
 	services.DBCPsql.AutoMigrate(&RAreaBranch{})
 	services.BaseCrudInitWithDomain("r-area-branch", RAreaBranch{}, []RAreaBranch{})
 
+	services.DBCPsql.AutoMigrate(&RAreaUserMis{})
+	services.BaseCrudInitWithDomain("r-area-user-mis", RAreaUserMis{}, []RAreaUserMis{})
+
 	services.DBCPsql.AutoMigrate(&RBranchAgent{})
 	services.BaseCrudInitWithDomain("r-branch-agent", RBranchAgent{}, []RBranchAgent{})
 
