@@ -4,6 +4,7 @@ import "time"
 
 type Loan struct {
 	ID                   uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
+	Purpose              string     `gorm:"column:purpose" json:"purpose"`
 	URLPic1              string     `gorm:"column:urlPic1" json:"urlPic1"`
 	URLPic2              string     `gorm:"column:urlPic2" json:"urlPic2"`
 	SubmittedPlafond     float64    `gorm:"column:submittedPlafond" json:"submittedPlafond"`
