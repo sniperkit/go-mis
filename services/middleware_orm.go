@@ -78,7 +78,7 @@ func Put(model interface{}) func(ctx *iris.Context) {
 		}
 
 		DBCPsql.Model(m).Where("\"deletedAt\" IS NULL AND id = ?", ctx.Param("id")).Update(m)
-		ctx.JSON(iris.StatusOK, iris.Map{"data": m})
+		GetById(model)(ctx)
 	}
 }
 
