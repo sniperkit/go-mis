@@ -7,6 +7,7 @@ type Loan struct {
 	Purpose              string     `gorm:"column:purpose" json:"purpose"`
 	URLPic1              string     `gorm:"column:urlPic1" json:"urlPic1"`
 	URLPic2              string     `gorm:"column:urlPic2" json:"urlPic2"`
+	SubmittedLoanDate    *time.Time `gorm:"column:submittedLoanDate" json:"submittedLoanDate"`
 	SubmittedPlafond     float64    `gorm:"column:submittedPlafond" json:"submittedPlafond"`
 	SubmittedTenor       int64      `gorm:"column:submittedTenor" json:"submittedTenor"`
 	SubmittedInstallment float64    `gorm:"column:submittedInstallment" json:"submittedInstallment"`
