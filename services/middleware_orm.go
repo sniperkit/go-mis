@@ -17,7 +17,7 @@ type Container struct {
 func Get(model interface{}) func(ctx *iris.Context) {
 	return func(ctx *iris.Context) {
 		m := reflect.New(reflect.TypeOf((model.(*Container)).ArrayObj)).Interface()
-		DBCPsql.Where("\"deletedAt\" IS NULL").Find(m)
+		DBCPsql.Where("\"deletedAt\" IS NULL").Order("id asc").Find(m)
 		ctx.JSON(iris.StatusOK, iris.Map{"data": m})
 	}
 }
@@ -45,7 +45,7 @@ func GetByQuery(model interface{}) func(ctx *iris.Context) {
 			}
 		}
 
-		con.Where("\"deletedAt\" IS NULL").Find(m)
+		con.Where("\"deletedAt\" IS NULL").Order("id asc").Find(m)
 
 		ctx.JSON(iris.StatusOK, iris.Map{"data": m})
 	}
