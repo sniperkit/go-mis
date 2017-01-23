@@ -332,3 +332,23 @@ type RAdjustmentApprovedBy struct {
 	UpdatedAt    time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
 	DeletedAt    *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
 }
+
+// Relation `investor` to 'cashout'
+type RInvestorCashout struct {
+	ID         uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
+	InvestorId uint64     `gorm:"column:investorId" json:"investorId"`
+	CashoutId  uint64     `gorm:"column:cashoutId" json:"cashoutId"`
+	CreatedAt  time.Time  `gorm:"column:createdAt" json:"createdAt"`
+	UpdatedAt  time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
+	DeletedAt  *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
+}
+
+// Relation `cashout` to 'cashout-history'
+type RCashoutHistory struct {
+	ID               uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
+	CashoutId        uint64     `gorm:"column:cashoutId" json:"cashoutId"`
+	CashoutHistoryId uint64     `gorm:"column:cashoutHistoryId" json:"cashoutHistoryId"`
+	CreatedAt        time.Time  `gorm:"column:createdAt" json:"createdAt"`
+	UpdatedAt        time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
+	DeletedAt        *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
+}

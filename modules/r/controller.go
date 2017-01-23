@@ -101,4 +101,10 @@ func Init() {
 
 	services.DBCPsql.AutoMigrate(&RAdjustmentApprovedBy{})
 	services.BaseCrudInitWithDomain("r-adjustment-approved-by", RAdjustmentApprovedBy{}, []RAdjustmentApprovedBy{})
+
+	services.DBCPsql.AutoMigrate(&RInvestorCashout{})
+	services.BaseCrudInitWithDomain("r-investor-cashout", RInvestorCashout{}, []RInvestorCashout{})
+
+	services.DBCPsql.AutoMigrate(&RCashoutHistory{})
+	services.BaseCrudInitWithDomain("r-cashout-history", RCashoutHistory{}, []RCashoutHistory{})
 }

@@ -14,6 +14,8 @@ import (
 	"bitbucket.org/go-mis/modules/area"
 	"bitbucket.org/go-mis/modules/borrower"
 	"bitbucket.org/go-mis/modules/branch"
+	"bitbucket.org/go-mis/modules/cashout"
+	"bitbucket.org/go-mis/modules/cashout-history"
 	"bitbucket.org/go-mis/modules/cif"
 	"bitbucket.org/go-mis/modules/disbursement"
 	"bitbucket.org/go-mis/modules/disbursement-history"
@@ -64,6 +66,12 @@ func initializeAll() {
 
 	config.Domain = "branch"
 	branch.Init()
+
+	config.Domain = "cashout"
+	cashout.Init()
+
+	config.Domain = "cashout-history"
+	cashoutHistory.Init()
 
 	config.Domain = "cif"
 	cif.Init()
@@ -118,7 +126,7 @@ func initializeAll() {
 	fmt.Println("[INFO] All domain have been initialized")
 }
 
-// Initialize routes
+// Init - Initialize routes
 func Init() {
 	switch config.Domain {
 	case "access-token":
@@ -139,6 +147,10 @@ func Init() {
 		borrower.Init()
 	case "branch":
 		branch.Init()
+	case "cashout":
+		cashout.Init()
+	case "cashout-history":
+		cashoutHistory.Init()
 	case "cif":
 		cif.Init()
 	case "disbursement":
