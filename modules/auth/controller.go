@@ -68,12 +68,14 @@ func UserMisLogin(ctx *iris.Context) {
 	services.DBCPsql.Raw(queryRole, userMisObj.ID).First(&roleObj)
 
 	ctx.JSON(iris.StatusOK, iris.Map{
-		"status":      "success",
-		"name":        userMisObj.Fullname,
-		"accessToken": accessTokenHash,
-		"role": iris.Map{
-			"assignedRole": roleObj.Name,
-			"config":       roleObj.Config,
+		"status": "success",
+		"data": iris.Map{
+			"name":        userMisObj.Fullname,
+			"accessToken": accessTokenHash,
+			"role": iris.Map{
+				"assignedRole": roleObj.Name,
+				"config":       roleObj.Config,
+			},
 		},
 	})
 }
