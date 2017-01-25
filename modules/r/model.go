@@ -352,3 +352,23 @@ type RCashoutHistory struct {
 	UpdatedAt        time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
 	DeletedAt        *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
 }
+
+// Relation `user-mis` to `access-token`
+type RUserMisAccessToken struct {
+	ID            uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
+	UserMisId     uint64     `gorm:"column:userMisId" json:"userMisId"`
+	AccessTokenId uint64     `gorm:"column:accessTokenId" json:"accessTokenId"`
+	CreatedAt     time.Time  `gorm:"column:createdAt" json:"createdAt"`
+	UpdatedAt     time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
+	DeletedAt     *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
+}
+
+// Relation `agent` to `access-token`
+type RAgentAccessToken struct {
+	ID            uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
+	AgentId       uint64     `gorm:"column:agentId" json:"agentId"`
+	AccessTokenId uint64     `gorm:"column:accessTokenId" json:"accessTokenId"`
+	CreatedAt     time.Time  `gorm:"column:createdAt" json:"createdAt"`
+	UpdatedAt     time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
+	DeletedAt     *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
+}
