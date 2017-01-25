@@ -12,6 +12,7 @@ var (
 	DefaultApiPath   string
 	Domain           string
 	Port             string
+	Env              string
 	LogMode          bool
 	PsqlHostAddress  string
 	MysqlHostAddress string
@@ -40,6 +41,7 @@ func init() {
 	port := flag.String("port", ":8080", "Port number")
 	configPath := flag.String("config", "./config.json", "Config file path")
 	logMode := flag.Bool("log-mode", false, "Log mode")
+	env := flag.String("env", "production", "Default environment")
 
 	// Parse all command flags
 	flag.Parse()
@@ -49,6 +51,7 @@ func init() {
 	Domain = *domain
 	Port = *port
 	LogMode = *logMode
+	Env = *env
 
 	fmt.Println("------------------")
 	fmt.Println("Default API Path -", DefaultApiPath)
