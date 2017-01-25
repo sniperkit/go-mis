@@ -107,4 +107,10 @@ func Init() {
 
 	services.DBCPsql.AutoMigrate(&RCashoutHistory{})
 	services.BaseCrudInitWithDomain("r-cashout-history", RCashoutHistory{}, []RCashoutHistory{})
+
+	services.DBCPsql.AutoMigrate(&RUserMisAccessToken{})
+	services.BaseCrudInitWithDomain("r-user-mis-access-token", RUserMisAccessToken{}, []RUserMisAccessToken{})
+
+	services.DBCPsql.AutoMigrate(&RAgentAccessToken{})
+	services.BaseCrudInitWithDomain("r-agent-access-token", RAgentAccessToken{}, []RAgentAccessToken{})
 }

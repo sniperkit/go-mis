@@ -6,8 +6,10 @@ import (
 )
 
 type LoginForm struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
+	Type     string `json:"type" form:"type"`
+	Username string `json:"username" form:"username"`
+	Password string `json:"password" form:"password"`
+	ApiKey   string `json:"apiKey" form:"apiKey"`
 }
 
 func (l *LoginForm) HashPassword() {
