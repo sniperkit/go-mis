@@ -18,5 +18,6 @@ func InitCustomApi() {
 		v2.Get("/me-user-mis", auth.CurrentUserMis)
 		v2.Get("/me-agent", auth.CurrentAgent)
 		v2.Get("/branchs", branch.FetchAll)
+		v2.Get("/branchs/:id", branch.GetByID)
 	}
 }
