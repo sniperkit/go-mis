@@ -21,5 +21,9 @@ func FetchAll(ctx *iris.Context) {
 func GetByID(ctx *iris.Context) {
 	bracnh := Branch{}
 	services.DBCPsql.Where("\"deletedAt\" IS NULL AND id = ?", ctx.Param("id")).First(&bracnh)
-	ctx.JSON(iris.StatusOK, iris.Map{"data": bracnh})
+	if bracnh == (Branch{}) {
+		ctx.JSON(iris.StatusOK, iris.Map{"data": iris.Map{}})
+	} else {
+		ctx.JSON(iris.StatusOK, iris.Map{"data": bracnh})
+	}
 }

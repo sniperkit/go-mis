@@ -21,5 +21,9 @@ func FetchAll(ctx *iris.Context) {
 func GetByID(ctx *iris.Context) {
 	cif := Cif{}
 	services.DBCPsql.Where("\"deletedAt\" IS NULL AND id = ?", ctx.Param("id")).First(&cif)
-	ctx.JSON(iris.StatusOK, iris.Map{"data": cif})
+	if cif == (Cif{}) {
+		ctx.JSON(iris.StatusOK, iris.Map{"data": iris.Map{}})
+	} else {
+		ctx.JSON(iris.StatusOK, iris.Map{"data": cif})
+	}
 }

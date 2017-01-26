@@ -21,5 +21,9 @@ func FetchAll(ctx *iris.Context) {
 func GetByID(ctx *iris.Context) {
 	area := Area{}
 	services.DBCPsql.Where("\"deletedAt\" IS NULL AND id = ?", ctx.Param("id")).First(&area)
-	ctx.JSON(iris.StatusOK, iris.Map{"data": area})
+	if area == (Area{}) {
+		ctx.JSON(iris.StatusOK, iris.Map{"data": iris.Map{}})
+	} else {
+		ctx.JSON(iris.StatusOK, iris.Map{"data": area})
+	}
 }
