@@ -82,15 +82,34 @@ func UserMisLogin(ctx *iris.Context) {
 
 // EnsureAuth - validate access token
 func EnsureAuth(ctx *iris.Context) {
-	ctx.JSON(iris.StatusForbidden, iris.Map{
-		"status":  "error",
-		"message": "Unauthorized access.",
-	})
+
+	accessToken := ctx.URLParam("accessToken")
+
+	userObj := userMis.UserMis{}
+	queryAccessToken := "SELECT user_mis.* FROM access_token JOIN r_user_mis_access_token ON r_user_mis_access_token.\"accessTokenId\" = access_token.\"id\" JOIN user_mis ON user_mis.\"id\" = r_user_mis_access_token.\"userMisId\" WHERE access_token.\"accessToken\" = ?"
+	services.DBCPsql.Raw(queryAccessToken, accessToken).First(&userObj)
+
+	if userObj == (userMis.UserMis{}) {
+		ctx.JSON(iris.StatusForbidden, iris.Map{
+			"status":  "error",
+			"message": "Unauthorized access.",
+		})
+	} else {
+		ctx.Set("user_mis", userObj)
+		ctx.Next()
+	}
 }
 
 // CurrentUserMis - get current user mis data
 func CurrentUserMis(ctx *iris.Context) {
-
+	userMisObj := ctx.Get("user_mis").(userMis.UserMis)
+	ctx.JSON(iris.StatusOK, iris.Map{
+		"status": "success",
+		"data": iris.Map{
+			"id":   userMisObj.ID,
+			"name": userMisObj.Fullname,
+		},
+	})
 }
 
 // CurrentAgent - get current agent data
