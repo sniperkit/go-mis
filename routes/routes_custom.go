@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"bitbucket.org/go-mis/modules/agent"
 	"bitbucket.org/go-mis/modules/auth"
 	"bitbucket.org/go-mis/modules/branch"
 	"gopkg.in/kataras/iris.v4"
@@ -19,5 +20,7 @@ func InitCustomApi() {
 		v2.Get("/me-agent", auth.CurrentAgent)
 		v2.Get("/branchs", branch.FetchAll)
 		v2.Get("/branchs/:id", branch.GetByID)
+		v2.Get("/agents", agent.FetchAll)
+		v2.Get("/agents/:id", agent.GetByID)
 	}
 }
