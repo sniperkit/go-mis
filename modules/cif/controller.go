@@ -14,7 +14,9 @@ func Init() {
 func FetchAll(ctx *iris.Context) {
 	cifs := []CifFragment{}
 
-	query := "SELECT cif.\"id\", cif.\"name\", cif.\"isActivated\", cif.\"isValidated\", r_cif_borrower.\"borrowerId\" as \"borrowerId\", r_cif_investor.\"investorId\" as \"investorId\" "
+	query := "SELECT cif.\"id\", cif.\"name\", cif.\"isActivated\", cif.\"isValidated\", "
+	query += "r_cif_borrower.\"borrowerId\" as \"borrowerId\", r_cif_investor.\"investorId\" as \"investorId\", "
+	query += "r_cif_borrower.\"borrowerId\" IS NOT NULL as \"isBorrower\", r_cif_investor.\"investorId\" IS NOT NULL as \"isInvestor\" "
 	query += "FROM cif "
 	query += "LEFT JOIN r_cif_borrower ON r_cif_borrower.\"cifId\" = cif.\"id\" "
 	query += "LEFT JOIN r_cif_investor ON r_cif_investor.\"cifId\" = cif.\"id\" "

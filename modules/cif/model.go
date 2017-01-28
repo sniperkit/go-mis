@@ -52,6 +52,8 @@ type CifFragment struct {
 	IsValidated bool   `gorm:"column:isValidated" json:"isValidated"`
 	InvestorID  uint64 `gorm:"column:investorId" json:"investorId"`
 	BorrowerID  uint64 `gorm:"column:borrowerId" json:"borrowerId"`
+	IsBorrower  bool   `gorm:"column:isBorrower" json:"isBorrower"`
+	IsInvestor  bool   `gorm:"column:isInvestor" json:"isInvestor"`
 }
 
 func (c *Cif) BeforeCreate() (err error) {
