@@ -16,11 +16,11 @@ func FetchAll(ctx *iris.Context) {
 
 	query := "SELECT area.\"id\", area.\"name\", area.\"city\", area.\"province\", user_mis.\"fullname\" as \"managerName\" "
 	query += "FROM area "
-	query += "JOIN r_area_user_mis ON r_area_user_mis.\"areaId\" = area.\"id\" "
-	query += "JOIN user_mis ON user_mis.\"id\" = r_area_user_mis.\"userMisId\" "
-	query += "JOIN r_user_mis_role ON r_user_mis_role.\"userMisId\" = user_mis.\"id\" "
-	query += "JOIN role ON role.\"id\" = r_user_mis_role.\"roleId\" "
-	query += "WHERE role.\"name\" = ?"
+	query += "LEFT JOIN r_area_user_mis ON r_area_user_mis.\"areaId\" = area.\"id\" "
+	query += "LEFT JOIN user_mis ON user_mis.\"id\" = r_area_user_mis.\"userMisId\" "
+	query += "LEFT JOIN r_user_mis_role ON r_user_mis_role.\"userMisId\" = user_mis.\"id\" "
+	query += "LEFt JOIN role ON role.\"id\" = r_user_mis_role.\"roleId\" "
+	query += "WHERE role.\"name\" = ? or role.\"id\" IS NULL"
 
 	services.DBCPsql.Raw(query, "areamanager").Find(&areas)
 	ctx.JSON(iris.StatusOK, iris.Map{"data": areas})
