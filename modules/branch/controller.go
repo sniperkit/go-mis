@@ -12,8 +12,17 @@ func Init() {
 
 // FetchAll - fetchAll branchs data
 func FetchAll(ctx *iris.Context) {
-	bracnhs := []Branch{}
-	services.DBCPsql.Where("\"deletedAt\" IS NULL").Order("id asc").Find(&bracnhs)
+	bracnhs := []BranchManager{}
+
+	query := "SELECT branch.\"id\", branch.\"name\", branch.\"city\", branch.\"province\", user_mis.\"fullname\" as \"managerName\" "
+	query += "FROM branch "
+	query += "JOIN r_branch_user_mis ON r_branch_user_mis.\"branchId\" = branch.\"id\" "
+	query += "JOIN user_mis ON user_mis.\"id\" = r_branch_user_mis.\"userMisId\" "
+	query += "JOIN r_user_mis_role ON r_user_mis_role.\"userMisId\" = user_mis.\"id\" "
+	query += "JOIN role ON role.\"id\" = r_user_mis_role.\"roleId\" "
+	query += "WHERE role.\"name\" = ?"
+
+	services.DBCPsql.Raw(query, "branchmanager").Find(&bracnhs)
 	ctx.JSON(iris.StatusOK, iris.Map{"data": bracnhs})
 }
 
