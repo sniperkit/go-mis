@@ -44,6 +44,16 @@ type Cif struct {
 	DeletedAt           *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
 }
 
+type CifFragment struct {
+	ID          uint64 `gorm:"primary_key" gorm:"column:_id" json:"_id"`
+	CifNumber   uint64 `gorm:"column:cifNumber" json:"cifNumber"`
+	Name        string `gorm:"column:name" json:"name"`
+	IsActivated bool   `gorm:"column:isActivated" json:"isActivated"`
+	IsValidated bool   `gorm:"column:isValidated" json:"isValidated"`
+	InvestorID  uint64 `gorm:"column:investorId" json:"investorId"`
+	BorrowerID  uint64 `gorm:"column:borrowerId" json:"borrowerId"`
+}
+
 func (c *Cif) BeforeCreate() (err error) {
 	if c.Password != "" {
 		bytePassword := []byte(c.Password)

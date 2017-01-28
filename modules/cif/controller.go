@@ -12,8 +12,14 @@ func Init() {
 
 // FetchAll - fetchAll agent data
 func FetchAll(ctx *iris.Context) {
-	cifs := []Cif{}
-	services.DBCPsql.Where("\"deletedAt\" IS NULL").Order("id asc").Find(&cifs)
+	cifs := []CifFragment{}
+
+	query := "SELECT cif.\"id\", cif.\"name\", cif.\"isActivated\", cif.\"isValidated\", r_cif_borrower.\"borrowerId\" as \"borrowerId\", r_cif_investor.\"investorId\" as \"investorId\" "
+	query += "FROM cif "
+	query += "LEFT JOIN r_cif_borrower ON r_cif_borrower.\"cifId\" = cif.\"id\" "
+	query += "LEFT JOIN r_cif_investor ON r_cif_investor.\"cifId\" = cif.\"id\" "
+
+	services.DBCPsql.Raw(query).Find(&cifs)
 	ctx.JSON(iris.StatusOK, iris.Map{"data": cifs})
 }
 
