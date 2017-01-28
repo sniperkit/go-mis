@@ -12,8 +12,8 @@ func Init() {
 
 // FetchAll - fetchAll agent data
 func FetchAll(ctx *iris.Context) {
-	agents := []Agent{}
-	services.DBCPsql.Where("\"deletedAt\" IS NULL").Order("id asc").Find(&agents)
+	agents := []FragmentAgent{}
+	services.DBCPsql.Table("agent").Select("\"id\", \"picUrl\", \"username\", \"fullname\", \"address\", \"kelurahan\", \"kecamatan\", \"city\", \"province\"").Where("\"deletedAt\" IS NULL").Order("id asc").Find(&agents)
 	ctx.JSON(iris.StatusOK, iris.Map{"data": agents})
 }
 
