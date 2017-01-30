@@ -7,6 +7,7 @@ import (
 	"bitbucket.org/go-mis/modules/branch"
 	"bitbucket.org/go-mis/modules/cif"
 	"bitbucket.org/go-mis/modules/group"
+	"bitbucket.org/go-mis/modules/installment"
 	"bitbucket.org/go-mis/modules/loan"
 	"gopkg.in/kataras/iris.v4"
 )
@@ -32,5 +33,6 @@ func InitCustomApi() {
 		v2.Get("/cifs/:id", cif.GetByID)
 		v2.Get("/groups", group.FetchAll)
 		v2.Get("/loans", loan.FetchAll)
+		v2.Get("/installments", installment.FetchAll)
 	}
 }
