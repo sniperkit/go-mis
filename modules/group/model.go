@@ -20,8 +20,8 @@ type Group struct {
 type GroupAreaAgent struct {
 	ID        uint64    `gorm:"primary_key" gorm:"column:_id" json:"_id"`
 	Name      string    `gorm:"column:name" json:"name"`
-	AreaName  string    `gorm:"column:areaName" json:"area_name"`
-	AgentName string    `gorm:"column:agentName" json:"agent_name"`
+	AreaName  string    `gorm:"column:areaName" json:"areaName"`
+	AgentName string    `gorm:"column:agentName" json:"agentName"`
 	CreatedAt time.Time `gorm:"column:createdAt" json:"createdAt"`
 }
 
