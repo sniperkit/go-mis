@@ -372,3 +372,13 @@ type RAgentAccessToken struct {
 	UpdatedAt     time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
 	DeletedAt     *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
 }
+
+// Relation `group` to `branch`
+type RGroupBranch struct {
+	ID        uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
+	GroupId   uint64     `gorm:"column:groupId" json:"groupId"`
+	BranchId  uint64     `gorm:"column:branchId" json:"branchId"`
+	CreatedAt time.Time  `gorm:"column:createdAt" json:"createdAt"`
+	UpdatedAt time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
+	DeletedAt *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
+}
