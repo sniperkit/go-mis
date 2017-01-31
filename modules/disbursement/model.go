@@ -10,3 +10,12 @@ type Disbursement struct {
 	UpdatedAt        time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
 	DeletedAt        *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
 }
+
+type DisbursementFetch struct {
+	ID               uint64    `gorm:"primary_key" gorm:"column:_id" json:"_id"`
+	DisbursementDate time.Time `gorm:"column:disbursementDate" json:"disbursementDate"`
+	Stage            string    `gorm:"column:stage" json:"stage"`
+	CreatedAt        time.Time `gorm:"column:createdAt" json:"createdAt"`
+	GroupName        string    `gorm:"column:groupName" json:"groupName"`
+	BranchName       string    `gorm:"column:branchName" json:"branchName"`
+}

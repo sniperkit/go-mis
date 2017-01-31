@@ -19,6 +19,14 @@ type Area struct {
 	DeletedAt *time.Time       `gorm:"column:deletedAt" json:"deletedAt"`
 }
 
+type AreaManager struct {
+	ID           uint64 `gorm:"primary_key" gorm:"column:_id" json:"_id"`
+	Name         string `gorm:"column:name" json:"name"`
+	City         string `gorm:"column:city" json:"city"`
+	Province     string `gorm:"column:province" json:"province"`
+	ManagaerName string `gorm:"column:managerName" gorm:"managerName"`
+}
+
 func (a *Area) SetGeopoint() {
 	a.Geopoint = gormGIS.GeoPoint{
 		Lat: a.Lat,

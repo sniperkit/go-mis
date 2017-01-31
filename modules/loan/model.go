@@ -22,3 +22,20 @@ type Loan struct {
 	UpdatedAt            time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
 	DeletedAt            *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
 }
+
+type LoanFetch struct {
+	ID                uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
+	SubmittedLoanDate *time.Time `gorm:"column:submittedLoanDate" json:"submittedLoanDate"`
+	CreditScoreGrade  string     `gorm:"column:creditScoreGrade" json:"creditScoreGrade"`
+	CreditScoreValue  float64    `gorm:"column:creditScoreValue" json:"creditScoreValue"`
+	Tenor             uint64     `gorm:"column:tenor" json:"tenor"`
+	Rate              float64    `gorm:"column:rate" json:"rate"`
+	Installment       float64    `gorm:"column:installment" json:"installment"`
+	Plafond           float64    `gorm:"column:plafond" json:"plafond"`
+	Stage             string     `gorm:"column:stage" json:"stage"`
+	CreatedAt         time.Time  `gorm:"column:createdAt" json:"createdAt"`
+	Sector            string     `gorm:"column:sectorName" json:"sectorName"`
+	CifName           string     `gorm:"column:cifName" json:"cifName"`
+	GroupName         string     `gorm:"column:groupName" json:"groupName"`
+	BranchName        string     `gorm:"column:branchName" json:"branchName"`
+}

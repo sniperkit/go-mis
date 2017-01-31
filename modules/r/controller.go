@@ -113,4 +113,7 @@ func Init() {
 
 	services.DBCPsql.AutoMigrate(&RAgentAccessToken{})
 	services.BaseCrudInitWithDomain("r-agent-access-token", RAgentAccessToken{}, []RAgentAccessToken{})
+
+	services.DBCPsql.AutoMigrate(&RGroupBranch{})
+	services.BaseCrudInitWithDomain("r-group-branch", RGroupBranch{}, []RGroupBranch{})
 }

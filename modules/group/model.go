@@ -17,6 +17,14 @@ type Group struct {
 	DeletedAt *time.Time       `gorm:"column:deletedAt" json:"deletedAt"`
 }
 
+type GroupAreaAgent struct {
+	ID        uint64    `gorm:"primary_key" gorm:"column:_id" json:"_id"`
+	Name      string    `gorm:"column:name" json:"name"`
+	AreaName  string    `gorm:"column:areaName" json:"areaName"`
+	AgentName string    `gorm:"column:agentName" json:"agentName"`
+	CreatedAt time.Time `gorm:"column:createdAt" json:"createdAt"`
+}
+
 func (g *Group) SetGeopoint() {
 	g.Geopoint = gormGIS.GeoPoint{
 		Lat: g.Lat,

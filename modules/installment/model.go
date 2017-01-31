@@ -15,3 +15,11 @@ type Installment struct {
 	UpdatedAt       time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
 	DeletedAt       *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
 }
+
+type InstallmentFetch struct {
+	ID              uint64    `gorm:"primary_key" gorm:"column:_id" json:"_id"`
+	PaidInstallment float64   `gorm:"column:paidInstallment" json:"paidInstallment"`
+	CreatedAt       time.Time `gorm:"column:createdAt" json:"createdAt"`
+	GroupName       string    `gorm:"column:groupName" json:"groupName"`
+	BranchName      string    `gorm:"column:branchName" json:"branchName"`
+}
