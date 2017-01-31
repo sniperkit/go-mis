@@ -14,11 +14,11 @@ type Cif struct {
 	Name                string     `gorm:"column:name" json:"name"`
 	Gender              string     `gorm:"column:gender" json:"gender"`
 	PlaceOfBirth        string     `gorm:"column:placeOfBirth" json:"placeOfBirth"`
-	DateOfBirth         time.Time  `gorm:"column:dateOfBirth" json:"dateOfBirth"`
-	IdCardNo            uint64     `gorm:"column:idCardNo" json:"idCardNo"`
+	DateOfBirth         string     `gorm:"column:dateOfBirth" json:"dateOfBirth"`
+	IdCardNo            string     `gorm:"column:idCardNo" json:"idCardNo"`
 	IdCardValidDate     time.Time  `gorm:"column:idCardValidDate" json:"idCardValidDate"`
 	IdCardFilename      string     `gorm:"column:idCardFilename" json:"idCardFilename"`
-	TaxCardNo           uint64     `gorm:"column:taxCardNo" json:"taxCardNo"`
+	TaxCardNo           string     `gorm:"column:taxCardNo" json:"taxCardNo"`
 	TaxCardFilename     string     `gorm:"column:taxCardFilename" json:"taxCardFilename"`
 	MaritalStatus       string     `gorm:"column:maritalStatus" json:"maritalStatus"`
 	MotherName          string     `gorm:"column:mothersName" json:"mothersName"`
