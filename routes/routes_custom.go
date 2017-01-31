@@ -10,6 +10,7 @@ import (
 	"bitbucket.org/go-mis/modules/group"
 	"bitbucket.org/go-mis/modules/installment"
 	"bitbucket.org/go-mis/modules/loan"
+	"bitbucket.org/go-mis/modules/user-mis"
 	"gopkg.in/kataras/iris.v4"
 )
 
@@ -18,7 +19,7 @@ var baseURL = "/api/v2"
 // InitCustomApi - initialize custom api
 func InitCustomApi() {
 
-	iris.Post(baseURL+"/user-mis-login", auth.UserMisLogin)
+	iris.Any(baseURL+"/user-mis-login", auth.UserMisLogin)
 
 	v2 := iris.Party(baseURL, auth.EnsureAuth)
 	{
@@ -36,5 +37,6 @@ func InitCustomApi() {
 		v2.Get("/loan", loan.FetchAll)
 		v2.Get("/installment", installment.FetchAll)
 		v2.Get("/disbursement", disbursement.FetchAll)
+		v2.Get("/user-mis", userMis.FetchUserMisAreaBranchRole)
 	}
 }

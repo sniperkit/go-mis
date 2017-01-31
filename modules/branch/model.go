@@ -20,14 +20,15 @@ type Branch struct {
 	DeletedAt *time.Time       `gorm:"column:deletedAt" json:"deletedAt"`
 }
 
-type BranchManager struct {
-	ID           uint64 `gorm:"primary_key" gorm:"column:_id" json:"_id"`
-	Name         string `gorm:"column:name" json:"name"`
-	City         string `gorm:"column:city" json:"city"`
-	Province     string `gorm:"column:province" json:"province"`
-	Address      string `gorm:"column:address" json:"address"`
-	ManagaerName string `gorm:"column:managerName" gorm:"managerName"`
-	AreaName     string `gorm:"column:areaName" gorm:"areaName"`
+type BranchManagerArea struct {
+	ID       uint64 `gorm:"primary_key" gorm:"column:_id" json:"_id"`
+	Name     string `gorm:"column:name" json:"name"`
+	City     string `gorm:"column:city" json:"city"`
+	Province string `gorm:"column:province" json:"province"`
+	Address  string `gorm:"column:address" json:"address"`
+	Managaer string `gorm:"column:manager" json:"manager"`
+	Area     string `gorm:"column:area" json:"area"`
+	Role     string `gorm:"column:role" json:"role"`
 }
 
 func (b *Branch) SetGeopoint() {
