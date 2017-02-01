@@ -34,6 +34,7 @@ func InitCustomApi() {
 		v2.Get("/loan", loan.FetchAll)
 		v2.Get("/loan/set/:id/stage/:stage", loan.UpdateStage)
 		v2.Get("/installment", installment.FetchAll)
+		v2.Post("/installment/submit/:loan_id", installment.SubmitInstallment)
 		v2.Get("/disbursement", disbursement.FetchAll)
 		v2.Get("/user-mis", userMis.FetchUserMisAreaBranchRole)
 	}

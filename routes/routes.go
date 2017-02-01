@@ -21,6 +21,7 @@ import (
 	"bitbucket.org/go-mis/modules/disbursement-history"
 	"bitbucket.org/go-mis/modules/group"
 	"bitbucket.org/go-mis/modules/installment"
+	"bitbucket.org/go-mis/modules/installment-history"
 	"bitbucket.org/go-mis/modules/investor"
 	"bitbucket.org/go-mis/modules/loan"
 	"bitbucket.org/go-mis/modules/loan-history"
@@ -87,6 +88,9 @@ func initializeAll() {
 
 	config.Domain = "installment"
 	installment.Init()
+
+	config.Domain = "installment-history"
+	installmentHistory.Init()
 
 	config.Domain = "investor"
 	investor.Init()
