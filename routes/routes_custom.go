@@ -1,7 +1,6 @@
 package routes
 
 import (
-	"bitbucket.org/go-mis/modules/agent"
 	"bitbucket.org/go-mis/modules/area"
 	"bitbucket.org/go-mis/modules/auth"
 	"bitbucket.org/go-mis/modules/branch"
@@ -27,8 +26,6 @@ func InitCustomApi() {
 		v2.Get("/me-agent", auth.CurrentAgent)
 		v2.Get("/branch", branch.FetchAll)
 		v2.Get("/branch/:id", branch.GetByID)
-		v2.Get("/agent", agent.FetchAll)
-		v2.Get("/agent/:id", agent.GetByID)
 		v2.Get("/area", area.FetchAll)
 		v2.Get("/area/:id", area.GetByID)
 		v2.Get("/cif", cif.FetchAll)
