@@ -2,11 +2,13 @@ package loan
 
 import (
 	"fmt"
+	"strconv"
 
+	"bitbucket.org/go-mis/modules/installment"
 	loanHistory "bitbucket.org/go-mis/modules/loan-history"
 	"bitbucket.org/go-mis/modules/r"
 	"bitbucket.org/go-mis/services"
-	iris "gopkg.in/kataras/iris.v4"
+	"gopkg.in/kataras/iris.v4"
 )
 
 func Init() {
@@ -71,5 +73,57 @@ func UpdateStage(ctx *iris.Context) {
 		"status":    "success",
 		"stageFrom": loanData.Stage,
 		"stageTo":   stage,
+	})
+}
+
+func GetLoanDetail(ctx *iris.Context) {
+	loanObj := Loan{}
+	borrowerObj := LoanBorrowerProfile{}
+	installmentObj := []installment.Installment{}
+
+	loanId, err := strconv.Atoi(ctx.Param("id"))
+
+	if err != nil {
+		fmt.Println(err)
+		ctx.JSON(iris.StatusInternalServerError, iris.Map{
+			"status":  "error",
+			"message": "Something went wrong. Please try again later.",
+		})
+		return
+	}
+
+	services.DBCPsql.Table("loan").Where("\"id\" = ?", loanId).First(&loanObj)
+
+	queryBorrowerObj := "SELECT cif.\"cifNumber\", cif.\"name\", \"group\".\"name\" AS \"group\", area.\"name\" AS \"area\", branch.\"name\" AS \"branch\" "
+	queryBorrowerObj += "FROM loan "
+	queryBorrowerObj += "JOIN r_borrower_loan ON r_borrower_loan.\"loanId\" = loan.\"id\" "
+	queryBorrowerObj += "JOIN borrower ON borrower.\"id\" = r_borrower_loan.\"borrowerId\" "
+	queryBorrowerObj += "JOIN r_cif_borrower ON r_cif_borrower.\"borrowerId\" = borrower.\"id\" "
+	queryBorrowerObj += "JOIN cif ON cif.\"id\" = r_cif_borrower.\"cifId\" "
+	queryBorrowerObj += "JOIN r_loan_group ON r_loan_group.\"loanId\" = loan.\"id\" "
+	queryBorrowerObj += "JOIN \"group\" ON \"group\".\"id\" = r_loan_group.\"groupId\" "
+	queryBorrowerObj += "JOIN r_loan_area ON r_loan_area.\"loanId\" = loan.\"id\" "
+	queryBorrowerObj += "JOIN area ON area.\"id\" = r_loan_area.\"areaId\" "
+	queryBorrowerObj += "JOIN r_loan_branch ON r_loan_branch.\"loanId\" = loan.\"id\" "
+	queryBorrowerObj += "JOIN branch ON branch.\"id\" = r_loan_branch.\"branchId\" "
+	queryBorrowerObj += "WHERE loan.\"id\" = ?"
+
+	services.DBCPsql.Raw(queryBorrowerObj, loanId).Find(&borrowerObj)
+
+	queryInstallmentObj := "SELECT * "
+	queryInstallmentObj += "FROM installment "
+	queryInstallmentObj += "JOIN r_loan_installment ON r_loan_installment.\"installmentId\" = installment.\"id\" "
+	queryInstallmentObj += "JOIN loan ON loan.\"id\" = r_loan_installment.\"loanId\" "
+	queryInstallmentObj += "WHERE loan.\"id\" = ?"
+
+	services.DBCPsql.Raw(queryInstallmentObj, loanId).Find(&installmentObj)
+
+	ctx.JSON(iris.StatusOK, iris.Map{
+		"status": "success",
+		"data": iris.Map{
+			"loan":        loanObj,
+			"borrower":    borrowerObj,
+			"installment": installmentObj,
+		},
 	})
 }

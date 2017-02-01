@@ -40,3 +40,11 @@ type LoanFetch struct {
 	Branch            string     `gorm:"column:branch" json:"branch"`
 	DisbursementDate  time.Time  `gorm:"column:disbursementDate" json:"disbursementDate"`
 }
+
+type LoanBorrowerProfile struct {
+	CifNumber uint64 `gorm:"column:cifNumber" json:"cifNumber"`
+	Name      string `gorm:"name" json:"borrower"`
+	Area      string `gorm:"area" json:"area"`
+	Branch    string `gorm:"branch" json:"branch"`
+	Group     string `gorm:"group" json:"group"`
+}
