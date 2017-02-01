@@ -12,3 +12,9 @@ type Notification struct {
 	UpdatedAt   time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
 	DeletedAt   *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
 }
+
+type NotificationInput struct {
+	SentTo      string `json:"sentTo"`
+	Message     string `gorm:"column:message" json:"message"`
+	RedirectUrl string `gorm:"column:redirectUrl" json:"redirectUrl"`
+}
