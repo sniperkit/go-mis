@@ -20,11 +20,12 @@ type Area struct {
 }
 
 type AreaManager struct {
-	ID           uint64 `gorm:"primary_key" gorm:"column:_id" json:"_id"`
-	Name         string `gorm:"column:name" json:"name"`
-	City         string `gorm:"column:city" json:"city"`
-	Province     string `gorm:"column:province" json:"province"`
-	ManagaerName string `gorm:"column:managerName" gorm:"managerName"`
+	ID       uint64 `gorm:"primary_key" gorm:"column:_id" json:"_id"`
+	Name     string `gorm:"column:name" json:"name"`
+	City     string `gorm:"column:city" json:"city"`
+	Province string `gorm:"column:province" json:"province"`
+	Manager  string `gorm:"column:manager" json:"manager"`
+	Role     string `gorm:"column:role" json:"role"`
 }
 
 func (a *Area) SetGeopoint() {

@@ -36,3 +36,12 @@ func (u *UserMis) BeforeUpdate() (err error) {
 
 	return
 }
+
+type UserMisAreaBranchRole struct {
+	UserMisId uint64 `gorm:"column:userMisId" json:"userMisId"`
+	PicUrl    string `gorm:"column:picUrl" json:"picUrl"`
+	Fullname  string `gorm:"column:fullname" json:"fullname"`
+	Area      string `gorm:"column:area" json:"area"`
+	Branch    string `gorm:"column:branch" json:"branch"`
+	Role      string `gorm:"column:role" json:"role"`
+}

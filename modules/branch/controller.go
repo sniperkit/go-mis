@@ -12,9 +12,9 @@ func Init() {
 
 // FetchAll - fetchAll branchs data
 func FetchAll(ctx *iris.Context) {
-	bracnhs := []BranchManager{}
+	branchManagerArea := []BranchManagerArea{}
 
-	query := "SELECT branch.\"id\", branch.\"name\", branch.\"city\", branch.\"province\", user_mis.\"fullname\" as \"managerName\", area.\"name\" as \"areaName\" "
+	query := "SELECT branch.\"id\", branch.\"name\", branch.\"city\", branch.\"province\", user_mis.\"fullname\" as \"manager\", area.\"name\" as \"area\", role.\"name\" as \"role\" "
 	query += "FROM branch "
 	query += "LEFT JOIN r_branch_user_mis ON r_branch_user_mis.\"branchId\" = branch.\"id\" "
 	query += "LEFT JOIN user_mis ON user_mis.\"id\" = r_branch_user_mis.\"userMisId\" "
@@ -22,10 +22,13 @@ func FetchAll(ctx *iris.Context) {
 	query += "LEFT JOIN role ON role.\"id\" = r_user_mis_role.\"roleId\" "
 	query += "LEFT JOIN r_area_branch ON r_area_branch.\"branchId\" = branch.\"id\" "
 	query += "LEFT JOIN area ON r_area_branch.\"areaId\" = area.\"id\" "
-	query += "WHERE role.\"name\" = ? or role.\"id\" IS NULL"
+	// query += "WHERE role.\"name\" = ? or role.\"id\" IS NULL"
 
-	services.DBCPsql.Raw(query, "branchmanager").Find(&bracnhs)
-	ctx.JSON(iris.StatusOK, iris.Map{"data": bracnhs})
+	services.DBCPsql.Raw(query).Find(&branchManagerArea)
+	ctx.JSON(iris.StatusOK, iris.Map{
+		"status": "success",
+		"data":   branchManagerArea,
+	})
 }
 
 // GetByID branch by id
