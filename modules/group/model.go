@@ -17,11 +17,12 @@ type Group struct {
 	DeletedAt *time.Time       `gorm:"column:deletedAt" json:"deletedAt"`
 }
 
-type GroupAreaAgent struct {
+type GroupBranchAreaAgent struct {
 	ID        uint64    `gorm:"primary_key" gorm:"column:_id" json:"_id"`
 	Name      string    `gorm:"column:name" json:"name"`
-	AreaName  string    `gorm:"column:areaName" json:"areaName"`
-	AgentName string    `gorm:"column:agentName" json:"agentName"`
+	Branch    string    `gorm:"column:branch" json:"branch"`
+	Area      string    `gorm:"column:area" json:"area"`
+	Agent     string    `gorm:"column:agent" json:"agent"`
 	CreatedAt time.Time `gorm:"column:createdAt" json:"createdAt"`
 }
 

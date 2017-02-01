@@ -44,7 +44,7 @@ type Cif struct {
 	DeletedAt           *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
 }
 
-type CifFragment struct {
+type CifInvestorBorrower struct {
 	ID          uint64 `gorm:"primary_key" gorm:"column:_id" json:"_id"`
 	CifNumber   uint64 `gorm:"column:cifNumber" json:"cifNumber"`
 	Name        string `gorm:"column:name" json:"name"`
@@ -54,6 +54,12 @@ type CifFragment struct {
 	BorrowerID  uint64 `gorm:"column:borrowerId" json:"borrowerId"`
 	IsBorrower  bool   `gorm:"column:isBorrower" json:"isBorrower"`
 	IsInvestor  bool   `gorm:"column:isInvestor" json:"isInvestor"`
+}
+
+type CifSummary struct {
+	TotalRegisteredCif uint64 `gorm:"column:totalRegisteredCif" json:"totalRegisteredCif"`
+	TotalInvestor      uint64 `gorm:"column:totalInvestor" json:"totalInvestor"`
+	TotalBorrower      uint64 `gorm:"column:totalBorrower" json:"totalBorrower"`
 }
 
 func (c *Cif) BeforeCreate() (err error) {

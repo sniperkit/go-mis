@@ -12,16 +12,20 @@ func Init() {
 
 // FetchAll - fetchAll group data
 func FetchAll(ctx *iris.Context) {
-	groups := []GroupAreaAgent{}
+	groupBranchAreaAgent := []GroupBranchAreaAgent{}
 
-	query := "SELECT \"group\".\"id\", \"group\".\"name\", \"group\".\"createdAt\", area.\"name\" as \"areaName\", agent.\"fullname\" as \"agentName\" "
+	query := "SELECT \"group\".\"id\", \"group\".\"name\", \"group\".\"createdAt\", branch.\"name\" as \"branch\", area.\"name\" as \"area\", agent.\"fullname\" as \"agent\" "
 	query += "FROM \"group\" "
-	query += "JOIN r_group_agent ON r_group_agent.\"groupId\" = \"group\".\"id\" "
-	query += "JOIN agent ON agent.\"id\" = r_group_agent.\"agentId\" "
-	query += "JOIN r_group_branch ON r_group_branch.\"groupId\" = \"group\".\"id\" "
-	query += "JOIN r_area_branch ON r_group_branch.\"branchId\" = r_area_branch.\"branchId\" "
-	query += "JOIN area ON r_area_branch.\"areaId\" = area.\"id\" "
+	query += "LEFT JOIN r_group_agent ON r_group_agent.\"groupId\" = \"group\".\"id\" "
+	query += "LEFT JOIN agent ON agent.\"id\" = r_group_agent.\"agentId\" "
+	query += "LEFT JOIN r_group_branch ON r_group_branch.\"groupId\" = \"group\".\"id\" "
+	query += "LEFT JOIN branch ON branch.\"id\" = \"r_group_branch\".\"branchId\" "
+	query += "LEFT JOIN r_area_branch ON r_group_branch.\"branchId\" = r_area_branch.\"branchId\" "
+	query += "LEFT JOIN area ON r_area_branch.\"areaId\" = area.\"id\" "
 
-	services.DBCPsql.Raw(query).Find(&groups)
-	ctx.JSON(iris.StatusOK, iris.Map{"data": groups})
+	services.DBCPsql.Raw(query).Find(&groupBranchAreaAgent)
+	ctx.JSON(iris.StatusOK, iris.Map{
+		"status": "success",
+		"data":   groupBranchAreaAgent,
+	})
 }

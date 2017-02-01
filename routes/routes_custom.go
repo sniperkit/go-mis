@@ -29,7 +29,7 @@ func InitCustomApi() {
 		v2.Get("/area", area.FetchAll)
 		v2.Get("/area/:id", area.GetByID)
 		v2.Get("/cif", cif.FetchAll)
-		v2.Get("/cif/:id", cif.GetByID)
+		v2.Get("/cif/get/summary", cif.GetCifSummary)
 		v2.Get("/group", group.FetchAll)
 		v2.Get("/loan", loan.FetchAll)
 		v2.Get("/installment", installment.FetchAll)
