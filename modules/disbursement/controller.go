@@ -19,7 +19,7 @@ func Init() {
 func FetchAll(ctx *iris.Context) {
 	disbursements := []DisbursementFetch{}
 
-	query := "SELECT disbursement.\"id\", disbursement.\"disbursementDate\", disbursement.\"stage\", "
+	query := "SELECT loan.\"id\" as \"loanId\", disbursement.\"id\", disbursement.\"disbursementDate\", disbursement.\"stage\", "
 	query += "loan.\"submittedLoanDate\", loan.\"plafond\", \"group\".\"name\" as \"group\", branch.\"name\" as \"branch\", "
 	query += "cif.\"name\" as \"borrower\" "
 	query += "FROM disbursement "

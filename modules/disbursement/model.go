@@ -13,6 +13,7 @@ type Disbursement struct {
 
 type DisbursementFetch struct {
 	ID                uint64    `gorm:"primary_key" gorm:"column:_id" json:"_id"`
+	LoanID            uint64    `gorm:"column:loanId" json:"loanId"`
 	Borrower          string    `gorm:"column:borrower" json:"borrower"`
 	Group             string    `gorm:"column:group" json:"group"`
 	Branch            string    `gorm:"column:branch" json:"branch"`

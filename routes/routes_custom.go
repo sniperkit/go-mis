@@ -11,6 +11,7 @@ import (
 	"bitbucket.org/go-mis/modules/loan"
 	"bitbucket.org/go-mis/modules/notification"
 	"bitbucket.org/go-mis/modules/user-mis"
+	"gopkg.in/iris-contrib/middleware.v4/cors"
 	"gopkg.in/kataras/iris.v4"
 )
 
@@ -18,7 +19,9 @@ var baseURL = "/api/v2"
 
 // InitCustomApi - initialize custom api
 func InitCustomApi() {
+	crs := cors.New(cors.Options{})
 
+	iris.Use(crs)
 	iris.Any(baseURL+"/user-mis-login", auth.UserMisLogin)
 
 	v2 := iris.Party(baseURL, auth.EnsureAuth)
@@ -38,7 +41,7 @@ func InitCustomApi() {
 		v2.Get("/installment", installment.FetchAll)
 		v2.Post("/installment/submit/:loan_id", installment.SubmitInstallment)
 		v2.Get("/disbursement", disbursement.FetchAll)
-		v2.Post("/disbursement/set/:loan_id/stage/:stage", disbursement.UpdateStage)
+		v2.Any("/disbursement/set/:loan_id/stage/:stage", disbursement.UpdateStage)
 		v2.Get("/user-mis", userMis.FetchUserMisAreaBranchRole)
 		v2.Post("/notification", notification.SendPush)
 	}
