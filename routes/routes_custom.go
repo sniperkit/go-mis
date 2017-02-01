@@ -34,6 +34,7 @@ func InitCustomApi() {
 		v2.Get("/cifs/:id", cif.GetByID)
 		v2.Get("/groups", group.FetchAll)
 		v2.Get("/loans", loan.FetchAll)
+		v2.Get("/loan/set/:id/stage/:stage", loan.UpdateStage)
 		v2.Get("/installments", installment.FetchAll)
 		v2.Get("/disbursements", disbursement.FetchAll)
 	}
