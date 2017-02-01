@@ -67,6 +67,14 @@ func UserMisLogin(ctx *iris.Context) {
 	queryRole := "SELECT role.* FROM role JOIN r_user_mis_role ON r_user_mis_role.\"roleId\" = role.\"id\" JOIN user_mis ON user_mis.\"id\" = r_user_mis_role.\"userMisId\" WHERE user_mis.\"id\" = ?"
 	services.DBCPsql.Raw(queryRole, userMisObj.ID).First(&roleObj)
 
+	if roleObj.ID == 0 {
+		ctx.JSON(iris.StatusUnauthorized, iris.Map{
+			"status":  "error",
+			"message": "Your account doesn't have any role. Please ask your superadmin to assign a role.",
+		})
+		return
+	}
+
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"status": "success",
 		"data": iris.Map{
