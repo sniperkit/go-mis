@@ -22,3 +22,18 @@ type DisbursementFetch struct {
 	Stage             string    `gorm:"column:stage" json:"stage"`
 	CreatedAt         time.Time `gorm:"column:createdAt" json:"createdAt"`
 }
+
+type DisbursementStageInput struct {
+	LastDisbursement     string    `gorm:"column:lastDisbursement" json:"lastDisbursement"`
+	NextDisbursement     string    `gorm:"column:nextDisbursement" json:"nextDisbursement"`
+	LastDisbursementDate time.Time `gorm:"column:lastDisbursementDate" json:"lastDisbursementDate"`
+	NextDisbursementDate time.Time `gorm:"column:nextDisbursementDate" json:"nextDisbursementDate"`
+	Remark               string    `gorm:"column:remark" json:"remark"`
+}
+
+func (disbursementStageInput *DisbursementStageInput) UpdateDateValue() {
+	layout := "2006-01-02 15:04:05"
+	disbursementStageInput.LastDisbursementDate, _ = time.Parse(layout, disbursementStageInput.LastDisbursement)
+	disbursementStageInput.NextDisbursementDate, _ = time.Parse(layout, disbursementStageInput.NextDisbursement)
+
+}

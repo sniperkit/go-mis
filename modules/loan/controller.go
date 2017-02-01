@@ -62,7 +62,7 @@ func UpdateStage(ctx *iris.Context) {
 	loanHistoryData := loanHistory.LoanHistory{StageFrom: loanData.Stage, StageTo: "CART", Remark: "loanId=" + fmt.Sprintf("%v", loanData.ID) + "Booked change stage"}
 	services.DBCPsql.Table("loan_history").Create(&loanHistoryData)
 
-	services.DBCPsql.Table("loan").Where("\"id\" = ?", loanData.ID).UpdateColumn("stage", stage)
+	go services.DBCPsql.Table("loan").Where("\"id\" = ?", loanData.ID).UpdateColumn("stage", stage)
 
 	rLoanHistory := r.RLoanHistory{LoanId: loanData.ID, LoanHistoryId: loanHistoryData.ID}
 	go services.DBCPsql.Table("r_loan_history").Create(&rLoanHistory)
