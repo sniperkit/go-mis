@@ -9,6 +9,7 @@ import (
 	"bitbucket.org/go-mis/modules/group"
 	"bitbucket.org/go-mis/modules/installment"
 	"bitbucket.org/go-mis/modules/loan"
+	"bitbucket.org/go-mis/modules/notification"
 	"bitbucket.org/go-mis/modules/user-mis"
 	"gopkg.in/kataras/iris.v4"
 )
@@ -37,6 +38,8 @@ func InitCustomApi() {
 		v2.Get("/installment", installment.FetchAll)
 		v2.Post("/installment/submit/:loan_id", installment.SubmitInstallment)
 		v2.Get("/disbursement", disbursement.FetchAll)
+		v2.Post("/disbursement/set/:loan_id/stage/:stage", disbursement.UpdateStage)
 		v2.Get("/user-mis", userMis.FetchUserMisAreaBranchRole)
+		v2.Post("/notification", notification.SendPush)
 	}
 }
