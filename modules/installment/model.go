@@ -17,9 +17,9 @@ type Installment struct {
 }
 
 type InstallmentFetch struct {
-	ID              uint64    `gorm:"primary_key" gorm:"column:_id" json:"_id"`
-	PaidInstallment float64   `gorm:"column:paidInstallment" json:"paidInstallment"`
-	CreatedAt       time.Time `gorm:"column:createdAt" json:"createdAt"`
-	GroupName       string    `gorm:"column:groupName" json:"groupName"`
-	BranchName      string    `gorm:"column:branchName" json:"branchName"`
+	ID                   uint64    `gorm:"primary_key" gorm:"column:_id" json:"_id"`
+	Branch               string    `gorm:"column:branch" json:"branch"`
+	Group                string    `gorm:"column:group" json:"group"`
+	TotalPaidInstallment float64   `gorm:"column:totalPaidInstallment" json:"totalPaidInstallment"`
+	CreatedAt            time.Time `gorm:"column:createdAt" json:"createdAt"`
 }
