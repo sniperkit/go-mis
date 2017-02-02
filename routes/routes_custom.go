@@ -11,7 +11,6 @@ import (
 	"bitbucket.org/go-mis/modules/loan"
 	"bitbucket.org/go-mis/modules/notification"
 	"bitbucket.org/go-mis/modules/user-mis"
-	"gopkg.in/iris-contrib/middleware.v4/cors"
 	"gopkg.in/kataras/iris.v4"
 )
 
@@ -19,30 +18,36 @@ var baseURL = "/api/v2"
 
 // InitCustomApi - initialize custom api
 func InitCustomApi() {
-	crs := cors.New(cors.Options{})
-
-	iris.Use(crs)
+	// crs := cors.New(cors.Options{
+	// 	AllowedOrigins: []string{"*"},
+	// 	AllowedMethods: []string{
+	// 		"GET", "OPTIONS", "POST",
+	// 		"PATCH", "PUT", "DELETE",
+	// 	},
+	// })
+	// app := iris.New()
+	// app.Use(crs)
 	iris.Any(baseURL+"/user-mis-login", auth.UserMisLogin)
 
 	v2 := iris.Party(baseURL, auth.EnsureAuth)
 	{
-		v2.Get("/me-user-mis", auth.CurrentUserMis)
-		v2.Get("/me-agent", auth.CurrentAgent)
-		v2.Get("/branch", branch.FetchAll)
-		v2.Get("/branch/:id", branch.GetByID)
-		v2.Get("/area", area.FetchAll)
-		v2.Get("/area/:id", area.GetByID)
-		v2.Get("/cif", cif.FetchAll)
-		v2.Get("/cif/get/summary", cif.GetCifSummary)
-		v2.Get("/group", group.FetchAll)
-		v2.Get("/loan", loan.FetchAll)
-		v2.Get("/loan/get/:id", loan.GetLoanDetail)
-		v2.Get("/loan/set/:id/stage/:stage", loan.UpdateStage)
-		v2.Get("/installment", installment.FetchAll)
-		v2.Post("/installment/submit/:loan_id", installment.SubmitInstallment)
-		v2.Get("/disbursement", disbursement.FetchAll)
+		v2.Any("/me-user-mis", auth.CurrentUserMis)
+		v2.Any("/me-agent", auth.CurrentAgent)
+		v2.Any("/branch", branch.FetchAll)
+		v2.Any("/branch/:id", branch.GetByID)
+		v2.Any("/area", area.FetchAll)
+		v2.Any("/area/:id", area.GetByID)
+		v2.Any("/cif", cif.FetchAll)
+		v2.Any("/cif/get/summary", cif.GetCifSummary)
+		v2.Any("/group", group.FetchAll)
+		v2.Any("/loan", loan.FetchAll)
+		v2.Any("/loan/get/:id", loan.GetLoanDetail)
+		v2.Any("/loan/set/:id/stage/:stage", loan.UpdateStage)
+		v2.Any("/installment", installment.FetchAll)
+		v2.Any("/installment/submit/:loan_id", installment.SubmitInstallment)
+		v2.Any("/disbursement", disbursement.FetchAll)
 		v2.Any("/disbursement/set/:loan_id/stage/:stage", disbursement.UpdateStage)
-		v2.Get("/user-mis", userMis.FetchUserMisAreaBranchRole)
-		v2.Post("/notification", notification.SendPush)
+		v2.Any("/user-mis", userMis.FetchUserMisAreaBranchRole)
+		v2.Any("/notification", notification.SendPush)
 	}
 }
