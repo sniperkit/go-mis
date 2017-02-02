@@ -51,5 +51,6 @@ func InitCustomApi() {
 		v2.Any("/user-mis", userMis.FetchUserMisAreaBranchRole)
 		v2.Any("/notification", notification.SendPush)
 		v2.Any("/cashout", cashout.FetchAll)
+		v2.Any("/cashout/set/:cashout_id/stage/:stage", cashout.UpdateStage)
 	}
 }

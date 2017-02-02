@@ -90,6 +90,10 @@ func UserMisLogin(ctx *iris.Context) {
 
 // EnsureAuth - validate access token
 func EnsureAuth(ctx *iris.Context) {
+	if config.Env == "dev" {
+		ctx.Next()
+		return
+	}
 
 	accessToken := ctx.URLParam("accessToken")
 
