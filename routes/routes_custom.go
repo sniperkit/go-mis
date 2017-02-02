@@ -4,6 +4,7 @@ import (
 	"bitbucket.org/go-mis/modules/area"
 	"bitbucket.org/go-mis/modules/auth"
 	"bitbucket.org/go-mis/modules/branch"
+	"bitbucket.org/go-mis/modules/cashout"
 	"bitbucket.org/go-mis/modules/cif"
 	"bitbucket.org/go-mis/modules/disbursement"
 	"bitbucket.org/go-mis/modules/group"
@@ -49,5 +50,6 @@ func InitCustomApi() {
 		v2.Any("/disbursement/set/:loan_id/stage/:stage", disbursement.UpdateStage)
 		v2.Any("/user-mis", userMis.FetchUserMisAreaBranchRole)
 		v2.Any("/notification", notification.SendPush)
+		v2.Any("/cashout", cashout.FetchAll)
 	}
 }
