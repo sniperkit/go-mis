@@ -127,7 +127,7 @@ func BaseCrudInit(singleObj interface{}, arrayObj interface{}) {
 		crudParty.Get("/q", CheckAuth, GetByQuery(model))
 		crudParty.Post("", CheckAuthForm, Post(model))
 		crudParty.Any("/set/:id", CheckAuth, Put(model))
-		crudParty.Delete("/delete/:id", CheckAuth, DeleteById(model))
+		crudParty.Any("/delete/:id", CheckAuth, DeleteById(model))
 	}
 }
 
@@ -146,6 +146,6 @@ func BaseCrudInitWithDomain(domain string, singleObj interface{}, arrayObj inter
 		crudParty.Get("/q", CheckAuth, GetByQuery(model))
 		crudParty.Post("", CheckAuthForm, Post(model))
 		crudParty.Any("/set/:id", CheckAuth, Put(model))
-		crudParty.Delete("/delete/:id", CheckAuth, DeleteById(model))
+		crudParty.Any("/delete/:id", CheckAuth, DeleteById(model))
 	}
 }

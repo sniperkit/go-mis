@@ -19,7 +19,8 @@ func FetchAll(ctx *iris.Context) {
 	query += "LEFT JOIN r_area_user_mis ON r_area_user_mis.\"areaId\" = area.\"id\" "
 	query += "LEFT JOIN user_mis ON user_mis.\"id\" = r_area_user_mis.\"userMisId\" "
 	query += "LEFT JOIN r_user_mis_role ON r_user_mis_role.\"userMisId\" = user_mis.\"id\" "
-	query += "LEFt JOIN role ON role.\"id\" = r_user_mis_role.\"roleId\" "
+	query += "LEFT JOIN role ON role.\"id\" = r_user_mis_role.\"roleId\" "
+	query += "WHERE area.\"deletedAt\" IS NULL"
 	// query += "WHERE role.\"name\" = ? or role.\"id\" IS NULL"
 
 	services.DBCPsql.Raw(query).Find(&areaManager)
