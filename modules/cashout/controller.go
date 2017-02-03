@@ -1,7 +1,6 @@
 package cashout
 
 import (
-	"fmt"
 	"strings"
 
 	"bitbucket.org/go-mis/modules/cashout-history"
@@ -56,12 +55,8 @@ func UpdateStage(ctx *iris.Context) {
 	cashoutHistoryObj := &cashoutHistory.CashoutHistory{StageFrom: cashoutObj.Stage, StageTo: stage}
 	services.DBCPsql.Create(cashoutHistoryObj)
 
-	fmt.Println(cashoutHistoryObj)
-
 	rCashoutHistoryObj := &r.RCashoutHistory{CashoutId: cashoutObj.ID, CashoutHistoryId: cashoutHistoryObj.ID}
 	services.DBCPsql.Create(rCashoutHistoryObj)
-
-	fmt.Println(rCashoutHistoryObj)
 
 	services.DBCPsql.Table("cashout").Where("cashout.\"cashoutId\" = ?", cashoutObj.CashoutID).UpdateColumn("stage", stage)
 
