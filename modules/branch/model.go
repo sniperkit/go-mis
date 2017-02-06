@@ -26,9 +26,14 @@ type BranchManagerArea struct {
 	City     string `gorm:"column:city" json:"city"`
 	Province string `gorm:"column:province" json:"province"`
 	Address  string `gorm:"column:address" json:"address"`
-	Managaer string `gorm:"column:manager" json:"manager"`
+	Manager  string `gorm:"column:manager" json:"manager"`
 	Area     string `gorm:"column:area" json:"area"`
 	Role     string `gorm:"column:role" json:"role"`
+}
+
+type BranchManager struct {
+	BranchId uint64 `gorm:"column:branchId"`
+	Fullname string `gorm:"column:fullname"`
 }
 
 func (b *Branch) SetGeopoint() {
