@@ -45,7 +45,7 @@ func UserMisLogin(ctx *iris.Context) {
 
 	loginForm.HashPassword()
 	arrUserMisObj := []userMis.UserMis{}
-	services.DBCPsql.Table("user_mis").Where("\"_username\" = ? AND \"_password\" = ?", loginForm.Username, loginForm.Password).Find(&arrUserMisObj)
+	services.DBCPsql.Table("user_mis").Where("\"_username\" = ? AND \"_password\" = ? AND \"deletedAt\" IS NULL", loginForm.Username, loginForm.Password).Find(&arrUserMisObj)
 
 	if len(arrUserMisObj) == 0 {
 		ctx.JSON(iris.StatusUnauthorized, iris.Map{
@@ -93,7 +93,8 @@ func EnsureAuth(ctx *iris.Context) {
 	accessToken := ctx.URLParam("accessToken")
 
 	userObj := userMis.UserMis{}
-	queryAccessToken := "SELECT user_mis.* FROM access_token JOIN r_user_mis_access_token ON r_user_mis_access_token.\"accessTokenId\" = access_token.\"id\" JOIN user_mis ON user_mis.\"id\" = r_user_mis_access_token.\"userMisId\" WHERE access_token.\"accessToken\" = ?"
+	queryAccessToken := "SELECT user_mis.* FROM access_token JOIN r_user_mis_access_token ON r_user_mis_access_token.\"accessTokenId\" = access_token.\"id\" JOIN user_mis ON user_mis.\"id\" = r_user_mis_access_token.\"userMisId\" WHERE access_token.\"accessToken\" = ? "
+	queryAccessToken += "AND access_token.\"deletedAt\" IS NULL"
 	services.DBCPsql.Raw(queryAccessToken, accessToken).First(&userObj)
 
 	if userObj == (userMis.UserMis{}) {
