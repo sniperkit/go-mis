@@ -13,7 +13,7 @@ func Init() {
 func FetchUserMisAreaBranchRole(ctx *iris.Context) {
 	arrUserMisAreaBranchRole := []UserMisAreaBranchRole{}
 
-	query := "SELECT user_mis.\"id\" AS \"userMisId\", user_mis.\"picUrl\", user_mis.\"fullname\", role.\"name\" AS \"role\", branch.\"name\" AS \"branch\", area.\"name\" AS \"area\" "
+	query := "SELECT user_mis.\"id\" AS \"userMisId\", user_mis.\"picUrl\", user_mis.\"fullname\", user_mis.\"isSuspended\", role.\"name\" AS \"role\", branch.\"name\" AS \"branch\", area.\"name\" AS \"area\" "
 	query += "FROM user_mis "
 	query += "LEFT JOIN r_branch_user_mis ON r_branch_user_mis.\"userMisId\" = user_mis.\"id\" "
 	query += "LEFT JOIN branch ON branch.\"id\" = r_branch_user_mis.\"branchId\" "
