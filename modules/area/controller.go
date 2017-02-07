@@ -23,7 +23,13 @@ func FetchAll(ctx *iris.Context) {
 	query += "WHERE area.\"deletedAt\" IS NULL"
 	query += "WHERE role.\"name\" LIKE '%area manager%' or role.\"id\" IS NULL"
 
-	services.DBCPsql.Raw(query).Find(&areaManager)
+	if e := services.DBCPsql.Raw(query).Find(&areaManager).Error; e != nil {
+		ctx.JSON(iris.StatusOK, iris.Map{
+			"status": "failed",
+			"data":   e,
+		})
+		return
+	}
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"status": "success",
 		"data":   areaManager,
