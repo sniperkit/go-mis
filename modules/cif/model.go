@@ -37,8 +37,8 @@ type Cif struct {
 	Income              float64    `gorm:"column:income" json:"income"`
 	IncomeSourceFund    string     `gorm:"column:incomeSourceFund" json:"incomeSourceFund"`
 	IncomeSourceCountry string     `gorm:"column:incomeSourceCountry" json:"incomeSourceCountry"`
-	IsActivated         bool       `gorm:"column:isActivated" json:"isActivated"`
-	IsVAlidated         bool       `gorm:"column:isValidated" json:"isValidated"`
+	IsActivated         *bool      `gorm:"column:isActivated" json:"isActivated"`
+	IsVAlidated         *bool      `gorm:"column:isValidated" json:"isValidated"`
 	CreatedAt           time.Time  `gorm:"column:createdAt" json:"createdAt"`
 	UpdatedAt           time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
 	DeletedAt           *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
@@ -48,12 +48,12 @@ type CifInvestorBorrower struct {
 	ID          uint64 `gorm:"primary_key" gorm:"column:_id" json:"_id"`
 	CifNumber   uint64 `gorm:"column:cifNumber" json:"cifNumber"`
 	Name        string `gorm:"column:name" json:"name"`
-	IsActivated bool   `gorm:"column:isActivated" json:"isActivated"`
-	IsValidated bool   `gorm:"column:isValidated" json:"isValidated"`
+	IsActivated *bool  `gorm:"column:isActivated" json:"isActivated"`
+	IsValidated *bool  `gorm:"column:isValidated" json:"isValidated"`
 	InvestorID  uint64 `gorm:"column:investorId" json:"investorId"`
 	BorrowerID  uint64 `gorm:"column:borrowerId" json:"borrowerId"`
-	IsBorrower  bool   `gorm:"column:isBorrower" json:"isBorrower"`
-	IsInvestor  bool   `gorm:"column:isInvestor" json:"isInvestor"`
+	IsBorrower  *bool  `gorm:"column:isBorrower" json:"isBorrower"`
+	IsInvestor  *bool  `gorm:"column:isInvestor" json:"isInvestor"`
 }
 
 type CifSummary struct {
