@@ -65,7 +65,6 @@ func UserMisLogin(ctx *iris.Context) {
 
 	roleObj := role.Role{}
 	queryRole := "SELECT role.* FROM role JOIN r_user_mis_role ON r_user_mis_role.\"roleId\" = role.\"id\" JOIN user_mis ON user_mis.\"id\" = r_user_mis_role.\"userMisId\" WHERE user_mis.\"id\" = ?"
-	fmt.Println(queryRole)
 	services.DBCPsql.Raw(queryRole, userMisObj.ID).First(&roleObj)
 
 	if roleObj.ID == 0 {
