@@ -14,14 +14,13 @@ func Init() {
 func FetchAll(ctx *iris.Context) {
 	areaManager := []AreaManager{}
 
-	query := "SELECT area.\"id\", area.\"name\", area.\"city\", area.\"province\", user_mis.\"fullname\" as \"manager\", role.\"name\" as \"role\" "
+	query := "SELECT area.\"id\", area.\"name\", area.\"city\", area.\"province\", user_mis.\"fullname\" as \"manager\", \"role\".\"name\" as \"role\" "
 	query += "FROM area "
 	query += "LEFT JOIN r_area_user_mis ON r_area_user_mis.\"areaId\" = area.\"id\" "
 	query += "LEFT JOIN user_mis ON user_mis.\"id\" = r_area_user_mis.\"userMisId\" "
 	query += "LEFT JOIN r_user_mis_role ON r_user_mis_role.\"userMisId\" = user_mis.\"id\" "
-	query += "LEFT JOIN role ON role.\"id\" = r_user_mis_role.\"roleId\" "
-	query += "WHERE area.\"deletedAt\" IS NULL "
-	query += "AND role.\"name\" LIKE '%area manager%' or role.\"id\" IS NULL"
+	query += "LEFT JOIN \"role\" ON \"role\".\"id\" = r_user_mis_role.\"roleId\" "
+	query += "WHERE area.\"deletedAt\" IS NULL AND (\"role\".\"name\" LIKE '%Area Manager%' or \"role\".\"name\" is NULL)"
 
 	if e := services.DBCPsql.Raw(query).Find(&areaManager).Error; e != nil {
 		ctx.JSON(iris.StatusOK, iris.Map{
