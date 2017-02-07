@@ -22,8 +22,15 @@ func FetchAll(ctx *iris.Context) {
 	query += "LEFT JOIN branch ON branch.\"id\" = \"r_group_branch\".\"branchId\" "
 	query += "LEFT JOIN r_area_branch ON r_group_branch.\"branchId\" = r_area_branch.\"branchId\" "
 	query += "LEFT JOIN area ON r_area_branch.\"areaId\" = area.\"id\" "
+	query += "WHERE \"deletedAt\" is NULL"
 
-	services.DBCPsql.Raw(query).Find(&groupBranchAreaAgent)
+	if e := services.DBCPsql.Raw(query).Find(&groupBranchAreaAgent).Error; e != nil {
+		ctx.JSON(iris.StatusOK, iris.Map{
+			"status": "failed",
+			"data":   e,
+		})
+		return
+	}
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"status": "success",
 		"data":   groupBranchAreaAgent,
