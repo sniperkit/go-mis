@@ -45,7 +45,7 @@ func UserMisLogin(ctx *iris.Context) {
 
 	loginForm.HashPassword()
 	arrUserMisObj := []userMis.UserMis{}
-	services.DBCPsql.Table("user_mis").Where("\"_username\" = ? AND \"_password\" = ? AND \"deletedAt\" IS NULL AND \"isSuspended\" = FALSE ", loginForm.Username, loginForm.Password).Find(&arrUserMisObj)
+	services.DBCPsql.Table("user_mis").Where("\"_username\" = ? AND \"_password\" = ? AND \"deletedAt\" IS NULL AND (\"isSuspended\" = FALSE OR \"isSuspended\" IS NULL)", loginForm.Username, loginForm.Password).Find(&arrUserMisObj)
 
 	if len(arrUserMisObj) == 0 {
 		ctx.JSON(iris.StatusUnauthorized, iris.Map{
