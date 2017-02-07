@@ -382,3 +382,13 @@ type RGroupBranch struct {
 	UpdatedAt time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
 	DeletedAt *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
 }
+
+// Relation `group` to `borrower`
+type RGroupBorrower struct {
+	ID         uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
+	GroupId    uint64     `gorm:"column:groupId" json:"groupId"`
+	BorrowerId uint64     `gorm:"column:borrowerId" json:"borrowerId"`
+	CreatedAt  time.Time  `gorm:"column:createdAt" json:"createdAt"`
+	UpdatedAt  time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
+	DeletedAt  *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
+}

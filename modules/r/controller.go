@@ -116,4 +116,7 @@ func Init() {
 
 	services.DBCPsql.AutoMigrate(&RGroupBranch{})
 	services.BaseCrudInitWithDomain("r-group-branch", RGroupBranch{}, []RGroupBranch{})
+
+	services.DBCPsql.AutoMigrate(&RGroupBorrower{})
+	services.BaseCrudInitWithDomain("r-group-borrower", RGroupBorrower{}, []RGroupBorrower{})
 }
