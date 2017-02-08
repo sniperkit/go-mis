@@ -95,7 +95,7 @@ func UpdateStage(ctx *iris.Context) {
 	go services.DBCPsql.Table("r_disbursement_history").Create(&rDisbursementHistoryData)
 	//r_loan_disbursement
 
-	ctx.JSON(iris.StatusInternalServerError, iris.Map{
+	ctx.JSON(iris.StatusOK, iris.Map{
 		"status":    "success",
 		"stageFrom": disbursementData.Stage,
 		"stageTo":   stage,
