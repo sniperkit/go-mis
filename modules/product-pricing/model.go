@@ -9,7 +9,7 @@ type ProductPricing struct {
 	ServiceFee         float64    `gorm:"column:serviceFee" json:"serviceFee"`
 	StartDate          *time.Time `gorm:"column:startDate" json:"startDate"`
 	EndDate            *time.Time `gorm:"column:endDate" json:"endDate"`
-	IsInstutitional    bool       `gorm:"column:isInstitutional" json:"isInstitutional"`
+	IsInstutitional    *bool      `gorm:"column:isInstitutional" json:"isInstitutional"`
 	CreatedAt          time.Time  `gorm:"column:createdAt" json:"createdAt"`
 	UpdatedAt          time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
 	DeletedAt          *time.Time `gorm:"column:deletedAt" json:"deletedAt"`

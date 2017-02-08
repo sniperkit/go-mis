@@ -28,6 +28,7 @@ func getBranchWithoutManager() []BranchManagerArea {
 	query += "FROM branch "
 	query += "LEFT JOIN r_area_branch ON r_area_branch.\"branchId\" = branch.\"id\" "
 	query += "LEFT JOIN area ON r_area_branch.\"areaId\" = area.\"id\" "
+	query += "WHERE branch.\"deletedAt\" IS NULL"
 
 	result := []BranchManagerArea{}
 	services.DBCPsql.Raw(query).Find(&result)

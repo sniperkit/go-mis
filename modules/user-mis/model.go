@@ -7,14 +7,15 @@ import (
 )
 
 type UserMis struct {
-	ID        uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
-	Fullname  string     `gorm:"column:fullname" json:"fullname"`
-	Username  string     `gorm:"column:_username" json:"username"`
-	Password  string     `gorm:"column:_password" json:"password"`
-	PicUrl    string     `gorm:"column:picUrl" json:"picUrl"`
-	CreatedAt time.Time  `gorm:"column:createdAt" json:"createdAt"`
-	UpdatedAt time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
-	DeletedAt *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
+	ID          uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
+	Fullname    string     `gorm:"column:fullname" json:"fullname"`
+	Username    string     `gorm:"column:_username" json:"username"`
+	Password    string     `gorm:"column:_password" json:"password"`
+	PicUrl      string     `gorm:"column:picUrl" json:"picUrl"`
+	IsSuspended *bool      `gorm:"column:isSuspended" json:"isSuspended"`
+	CreatedAt   time.Time  `gorm:"column:createdAt" json:"createdAt"`
+	UpdatedAt   time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
+	DeletedAt   *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
 }
 
 func (u *UserMis) BeforeCreate() (err error) {
@@ -38,10 +39,11 @@ func (u *UserMis) BeforeUpdate() (err error) {
 }
 
 type UserMisAreaBranchRole struct {
-	UserMisId uint64 `gorm:"column:userMisId" json:"userMisId"`
-	PicUrl    string `gorm:"column:picUrl" json:"picUrl"`
-	Fullname  string `gorm:"column:fullname" json:"fullname"`
-	Area      string `gorm:"column:area" json:"area"`
-	Branch    string `gorm:"column:branch" json:"branch"`
-	Role      string `gorm:"column:role" json:"role"`
+	UserMisId   uint64 `gorm:"column:userMisId" json:"userMisId"`
+	PicUrl      string `gorm:"column:picUrl" json:"picUrl"`
+	Fullname    string `gorm:"column:fullname" json:"fullname"`
+	IsSuspended *bool  `gorm:"column:isSuspended" json:"isSuspended"`
+	Area        string `gorm:"column:area" json:"area"`
+	Branch      string `gorm:"column:branch" json:"branch"`
+	Role        string `gorm:"column:role" json:"role"`
 }

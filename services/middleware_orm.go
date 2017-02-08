@@ -78,6 +78,11 @@ func Put(model interface{}) func(ctx *iris.Context) {
 		}
 
 		DBCPsql.Model(m).Where("\"deletedAt\" IS NULL AND id = ?", ctx.Param("id")).Update(m)
+		_, isFieldExist := reflect.TypeOf((model.(*Container)).SingleObj).FieldByName("Password")
+		if isFieldExist {
+			DBCPsql.Model(m).Where("\"deletedAt\" IS NULL AND id = ?", ctx.Param("id")).Update(m)
+		}
+
 		GetById(model)(ctx)
 	}
 }

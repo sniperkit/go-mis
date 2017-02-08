@@ -4,9 +4,9 @@ import "time"
 
 type Investor struct {
 	ID               uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
-	IsInstitutional  bool       `gorm:"column:isInstitutional" json:"isInstitutional"`
-	IsCheckedTerm    bool       `gorm:"column:isCheckedTerm" json:"isCheckedTerm"`
-	IsCheckedPrivacy bool       `gorm:"column:isCheckedPrivacy" json:"isCheckedPrivacy"`
+	IsInstitutional  *bool      `gorm:"column:isInstitutional" json:"isInstitutional"`
+	IsCheckedTerm    *bool      `gorm:"column:isCheckedTerm" json:"isCheckedTerm"`
+	IsCheckedPrivacy *bool      `gorm:"column:isCheckedPrivacy" json:"isCheckedPrivacy"`
 	InvestorNo       uint64     `gorm:"column:investorNo" json:"investorNo"`
 	BankName         string     `gorm:"column:bankName" json:"bankName"`
 	BankBranch       string     `gorm:"column:bankBranch" json:"bankBranch"`

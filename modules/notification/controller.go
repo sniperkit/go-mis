@@ -33,7 +33,7 @@ func SendPush(ctx *iris.Context) {
 		go sendPushBorrower(notificationInput)
 	}
 
-	ctx.JSON(iris.StatusInternalServerError, iris.Map{
+	ctx.JSON(iris.StatusOK, iris.Map{
 		"status": "success",
 		"data":   notificationInput,
 	})
