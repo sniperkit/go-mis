@@ -28,27 +28,33 @@ func SendPush(ctx *iris.Context) {
 	}
 
 	if strings.EqualFold(notificationInput.SentTo, "investor") {
-		investors := []investor.Investor{}
-		services.DBCPsql.Find(&investors)
-
-		for _, investor := range investors {
-			go insertPushInvestor(investor.ID, notificationInput)
-		}
-
+		go sendPushInvestor(notificationInput)
 	} else {
-		borrowers := []borrower.Borrower{}
-		services.DBCPsql.Find(&borrowers)
-
-		for _, borrower := range borrowers {
-			go insertPushBorrower(borrower.ID, notificationInput)
-		}
-
+		go sendPushBorrower(notificationInput)
 	}
 
 	ctx.JSON(iris.StatusInternalServerError, iris.Map{
 		"status": "success",
 		"data":   notificationInput,
 	})
+}
+
+func sendPushInvestor(notificationInput NotificationInput) {
+	investors := []investor.Investor{}
+	services.DBCPsql.Find(&investors)
+
+	for _, investor := range investors {
+		insertPushInvestor(investor.ID, notificationInput)
+	}
+}
+
+func sendPushBorrower(notificationInput NotificationInput) {
+	borrowers := []borrower.Borrower{}
+	services.DBCPsql.Find(&borrowers)
+
+	for _, borrower := range borrowers {
+		insertPushBorrower(borrower.ID, notificationInput)
+	}
 }
 
 func insertPushInvestor(investorID uint64, notificationInput NotificationInput) {
