@@ -45,7 +45,7 @@ func SendPush(ctx *iris.Context) {
 
 	}
 
-	ctx.JSON(iris.StatusInternalServerError, iris.Map{
+	ctx.JSON(iris.StatusOK, iris.Map{
 		"status": "success",
 		"data":   notificationInput,
 	})
