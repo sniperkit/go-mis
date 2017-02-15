@@ -8,19 +8,20 @@ import (
 )
 
 var (
-	ApiKey           string
-	DefaultApiPath   string
-	Domain           string
-	Port             string
-	Env              string
-	LogMode          bool
-	PsqlHostAddress  string
-	MysqlHostAddress string
+	ApiKey                    string
+	DefaultApiPath            string
+	Domain                    string
+	Port                      string
+	Env                       string
+	LogMode                   bool
+	PsqlHostAddressMisAmartha string
+	PsqlHostAddressSurvey     string
+	MysqlHostAddress          string
 )
 
 type Config struct {
-	Psql  DbConfig `json:"psql"`
-	Mysql DbConfig `json:"mysql"`
+	Psql  []DbConfig `json:"psql"`
+	Mysql DbConfig   `json:"mysql"`
 }
 
 type DbConfig struct {
@@ -69,9 +70,14 @@ func init() {
 	json.Unmarshal(configFile, &c)
 
 	// Postgresql Host Address
-	PsqlHostAddress = "host=" + c.Psql.Host + " port=" + c.Psql.Port + " user=" + c.Psql.Username + " dbname=" + c.Psql.Db + " sslmode=" + c.Psql.SslMode
-	if c.Psql.Password != "" {
-		PsqlHostAddress = PsqlHostAddress + " password=" + c.Psql.Password
+	PsqlHostAddressMisAmartha = "host=" + c.Psql[0].Host + " port=" + c.Psql[0].Port + " user=" + c.Psql[0].Username + " dbname=" + c.Psql[0].Db + " sslmode=" + c.Psql[0].SslMode
+	if c.Psql[0].Password != "" {
+		PsqlHostAddressMisAmartha += " password=" + c.Psql[0].Password
+	}
+
+	PsqlHostAddressSurvey = "host=" + c.Psql[1].Host + " port=" + c.Psql[1].Port + " user=" + c.Psql[1].Username + " dbname=" + c.Psql[1].Db + " sslmode=" + c.Psql[1].SslMode
+	if c.Psql[1].Password != "" {
+		PsqlHostAddressSurvey += " password=" + c.Psql[1].Password
 	}
 
 	// Mysql Host Address
