@@ -64,8 +64,9 @@ func UserMisLogin(ctx *iris.Context) {
 	services.DBCPsql.Table("r_user_mis_access_token").Create(&rUserMisAccessToken)
 
 	roleObj := role.Role{}
-	queryRole := "SELECT role.* FROM role JOIN r_user_mis_role ON r_user_mis_role.\"roleId\" = role.\"id\" JOIN user_mis ON user_mis.\"id\" = r_user_mis_role.\"userMisId\" WHERE user_mis.\"id\" = ?"
-	services.DBCPsql.Raw(queryRole, userMisObj.ID).First(&roleObj)
+	queryRole := "SELECT role.* FROM \"role\" JOIN r_user_mis_role ON r_user_mis_role.\"roleId\" = \"role\".\"id\" JOIN user_mis ON user_mis.\"id\" = r_user_mis_role.\"userMisId\" WHERE user_mis.\"id\" = ?"
+
+	services.DBCPsql.Raw(queryRole, userMisObj.ID).Scan(&roleObj)
 
 	if roleObj.ID == 0 {
 		ctx.JSON(iris.StatusUnauthorized, iris.Map{
@@ -95,7 +96,7 @@ func EnsureAuth(ctx *iris.Context) {
 	userObj := userMis.UserMis{}
 	queryAccessToken := "SELECT user_mis.* FROM access_token JOIN r_user_mis_access_token ON r_user_mis_access_token.\"accessTokenId\" = access_token.\"id\" JOIN user_mis ON user_mis.\"id\" = r_user_mis_access_token.\"userMisId\" WHERE access_token.\"accessToken\" = ? "
 	queryAccessToken += "AND access_token.\"deletedAt\" IS NULL"
-	services.DBCPsql.Raw(queryAccessToken, accessToken).First(&userObj)
+	services.DBCPsql.Raw(queryAccessToken, accessToken).Scan(&userObj)
 
 	if userObj == (userMis.UserMis{}) {
 		ctx.JSON(iris.StatusForbidden, iris.Map{

@@ -13,6 +13,7 @@ import (
 	"bitbucket.org/go-mis/modules/notification"
 	"bitbucket.org/go-mis/modules/survey"
 	"bitbucket.org/go-mis/modules/user-mis"
+	"bitbucket.org/go-mis/modules/borrower"
 	"gopkg.in/kataras/iris.v4"
 )
 
@@ -55,5 +56,6 @@ func InitCustomApi() {
 		v2.Any("/cashout/set/:cashout_id/stage/:stage", cashout.UpdateStage)
 		v2.Any("/survey", survey.GetProspectiveBorrower)
 		v2.Any("/survey/get/:id", survey.GetProspectiveBorrowerDetail)
+		v2.Any("/borrower/approve/:id", borrower.Approve)
 	}
 }
