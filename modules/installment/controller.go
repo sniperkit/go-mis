@@ -71,8 +71,8 @@ func SubmitInstallment(ctx *iris.Context) {
 	accountTransactionDebitData := accountTransactionDebit.AccountTransactionDebit{Type: "INSTALLMENT", Amount: installment.PaidInstallment}
 	services.DBCPsql.Table("account_transaction_debit").Create(&accountTransactionDebitData)
 
-	rLoanInvestorProductPricing := r.RLoanInvestorProductPricing{}
-	services.DBCPsql.Table("r_loan_investor_product_pricing").Where("\"loanId\" = ?", loanID).First(&rLoanInvestorProductPricing)
+	rLoanInvestorProductPricing := r.RInvestorProductPricingLoan{}
+	services.DBCPsql.Table("r_investor_product_pricing_loan").Where("\"loanId\" = ?", loanID).First(&rLoanInvestorProductPricing)
 
 	rAccountInvestor := r.RAccountInvestor{}
 	services.DBCPsql.Table("r_account_investor").Where("\"investorId\" = ?", rLoanInvestorProductPricing.InvestorId).First(&rAccountInvestor)

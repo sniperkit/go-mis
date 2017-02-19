@@ -82,17 +82,6 @@ type RLoanHistory struct {
 	DeletedAt     *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
 }
 
-// Relation 'loan' to `investor` and `product-pricing`
-type RLoanInvestorProductPricing struct {
-	ID               uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
-	LoanId           uint64     `gorm:"column:loanId" json:"loanId"`
-	InvestorId       uint64     `gorm:"column:investorId" json:"investorId"`
-	ProductPricingId uint64     `gorm:"column:productPricingId" json:"productPricingId"`
-	CreatedAt        time.Time  `gorm:"column:createdAt" json:"createdAt"`
-	UpdatedAt        time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
-	DeletedAt        *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
-}
-
 // Relation 'loan' to `area`
 type RLoanArea struct {
 	ID        uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
@@ -391,4 +380,15 @@ type RGroupBorrower struct {
 	CreatedAt  time.Time  `gorm:"column:createdAt" json:"createdAt"`
 	UpdatedAt  time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
 	DeletedAt  *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
+}
+
+// Relation `investor` to `product-pricing` to `loan`
+type RInvestorProductPricingLoan struct {
+	ID               uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
+	InvestorId       uint64     `gorm:"column:investorId" json:"investorId"`
+	ProductPricingId uint64     `gorm:"column:productPricingId" json:"productPricingId"`
+	loanId           uint64     `gorm:"column:loanId" json:"loanId"`
+	CreatedAt        time.Time  `gorm:"column:createdAt" json:"createdAt"`
+	UpdatedAt        time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
+	DeletedAt        *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
 }
