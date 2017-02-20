@@ -45,9 +45,6 @@ func Init() {
 	services.DBCPsql.AutoMigrate(&RLoanHistory{})
 	services.BaseCrudInitWithDomain("r-loan-history", RLoanHistory{}, []RLoanHistory{})
 
-	services.DBCPsql.AutoMigrate(&RLoanInvestorProductPricing{})
-	services.BaseCrudInitWithDomain("r-loan-investor-product-pricing", RLoanInvestorProductPricing{}, []RLoanInvestorProductPricing{})
-
 	services.DBCPsql.AutoMigrate(&RLoanArea{})
 	services.BaseCrudInitWithDomain("r-loan-area", RLoanArea{}, []RLoanArea{})
 
@@ -125,4 +122,7 @@ func Init() {
 
 	services.DBCPsql.AutoMigrate(&RAccountTransactionCreditLoan{})
 	services.BaseCrudInitWithDomain("r-account-transaction-credit-loan", RAccountTransactionCreditLoan{}, []RAccountTransactionCreditLoan{})
+
+	services.DBCPsql.AutoMigrate(&RInvestorProductPricingLoan{})
+	services.BaseCrudInitWithDomain("r-investor-product-pricing-loan", RInvestorProductPricingLoan{}, []RInvestorProductPricingLoan{})
 }

@@ -4,6 +4,8 @@ import "time"
 
 type Loan struct {
 	ID                   uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
+	LoanPeriod           int64      `gorm:"column:loanPeriod" json:"loanPeriod"`
+	Subgroup             string     `gorm:"column:subgroup" json:"subgrop"`
 	Purpose              string     `gorm:"column:purpose" json:"purpose"`
 	URLPic1              string     `gorm:"column:urlPic1" json:"urlPic1"`
 	URLPic2              string     `gorm:"column:urlPic2" json:"urlPic2"`
@@ -25,6 +27,8 @@ type Loan struct {
 
 type LoanFetch struct {
 	ID                uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
+	LoanPeriod        int64      `gorm:"column:loanPeriod" json:"loanPeriod"`
+	Subgroup          string     `gorm:"column:subgroup" json:"subgrop"`
 	SubmittedLoanDate *time.Time `gorm:"column:submittedLoanDate" json:"submittedLoanDate"`
 	CreditScoreGrade  string     `gorm:"column:creditScoreGrade" json:"creditScoreGrade"`
 	CreditScoreValue  float64    `gorm:"column:creditScoreValue" json:"creditScoreValue"`
