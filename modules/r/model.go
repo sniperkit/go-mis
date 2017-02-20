@@ -42,11 +42,32 @@ type RAccountTransactionCredit struct {
 	DeletedAt                  *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
 }
 
+// Relation 'account' to `account-transaction-credit`
+type RAccountTransactionCreditLoan struct {
+	ID                         uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
+	OrderId                    uint64     `gorm:"column:orderId" json:"orderId"`
+	LoanId                     uint64     `gorm:"column:loanId" json:"loanId"`
+	AccountTransactionCreditId uint64     `gorm:"column:accountTransactionCreditId" json:"accountTransactionCreditId"`
+	CreatedAt                  time.Time  `gorm:"column:createdAt" json:"createdAt"`
+	UpdatedAt                  time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
+	DeletedAt                  *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
+}
+
 // Relation 'account' to `account-transaction-debit`
 type RAccountTransactionDebit struct {
 	ID                        uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
 	AccountId                 uint64     `gorm:"column:accountId" json:"accountId"`
 	AccountTransactionDebitId uint64     `gorm:"column:accountTransactionDebitId" json:"accountTransactionDebitId"`
+	CreatedAt                 time.Time  `gorm:"column:createdAt" json:"createdAt"`
+	UpdatedAt                 time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
+	DeletedAt                 *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
+}
+
+// Relation `account-transaction-debit` to `installment`
+type RAccountTransactionDebitInstallment struct {
+	ID                        uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
+	AccountTransactionDebitId uint64     `gorm:"column:accountTransactionDebitId" json:"accountTransactionDebitId"`
+	InstallmentId             uint64     `gorm:"column:installmentId" json:"installmentId"`
 	CreatedAt                 time.Time  `gorm:"column:createdAt" json:"createdAt"`
 	UpdatedAt                 time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
 	DeletedAt                 *time.Time `gorm:"column:deletedAt" json:"deletedAt"`

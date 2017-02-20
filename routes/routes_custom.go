@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"bitbucket.org/go-mis/config"
 	"bitbucket.org/go-mis/modules/area"
 	"bitbucket.org/go-mis/modules/auth"
 	"bitbucket.org/go-mis/modules/branch"
@@ -13,6 +14,7 @@ import (
 	"bitbucket.org/go-mis/modules/notification"
 	"bitbucket.org/go-mis/modules/survey"
 	"bitbucket.org/go-mis/modules/user-mis"
+	"gopkg.in/iris-contrib/middleware.v4/cors"
 	"gopkg.in/kataras/iris.v4"
 )
 
@@ -29,6 +31,11 @@ func InitCustomApi() {
 	// })
 	// app := iris.New()
 	// app.Use(crs)
+	// Check environment, if `dev` then let the CORS to `*`
+	if config.Env == "dev" || config.Env == "development" {
+		crs := cors.New(cors.Options{})
+		iris.Use(crs)
+	}
 	iris.Any(baseURL+"/user-mis-login", auth.UserMisLogin)
 
 	v2 := iris.Party(baseURL, auth.EnsureAuth)

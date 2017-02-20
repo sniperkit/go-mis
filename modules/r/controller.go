@@ -119,4 +119,10 @@ func Init() {
 
 	services.DBCPsql.AutoMigrate(&RGroupBorrower{})
 	services.BaseCrudInitWithDomain("r-group-borrower", RGroupBorrower{}, []RGroupBorrower{})
+
+	services.DBCPsql.AutoMigrate(&RAccountTransactionDebitInstallment{})
+	services.BaseCrudInitWithDomain("r-account-transaction-debit-installment", RAccountTransactionDebitInstallment{}, []RAccountTransactionDebitInstallment{})
+
+	services.DBCPsql.AutoMigrate(&RAccountTransactionCreditLoan{})
+	services.BaseCrudInitWithDomain("r-account-transaction-credit-loan", RAccountTransactionCreditLoan{}, []RAccountTransactionCreditLoan{})
 }
