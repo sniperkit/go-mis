@@ -3,7 +3,7 @@ package borrower
 import (
 	"bitbucket.org/go-mis/services"
 	//"strconv"
-	"fmt"
+	//"fmt"
 	iris "gopkg.in/kataras/iris.v4"
 	//"encoding/json"
 	"bitbucket.org/go-mis/modules/cif"
@@ -39,7 +39,28 @@ func Approve(ctx *iris.Context) {
 		services.DBCPsql.Table("cif").Select("\"idCardNo\"").Where("\"idCardNo\" = ?", ktp).Scan(&cifData)
 		if cifData.IdCardNo != "" {
 			// found. use existing cif
-			fmt.Println("ADA")
+			// get borrower id
+			borrower := Borrower{}
+			services.DBCPsql.Table("r_cif_borrower").Where("\"cifId\" =?", cifData.ID).Scan(&borrower)
+
+			// get loan id
+			loan := loan.Loan{}
+			services.DBCPsql.Table("r_loan_borrower").Where("\"borrowerId\" =?", borrower.ID).Scan(&loan)
+
+			// which loan pricing would we like to use?
+			// get the newest one
+			pPricing := productPricing.ProductPricing{}
+			services.DBCPsql.Table("product_pricing").Last(&pPricing)
+
+			// use it in r_investor_product_pricing_loan
+			// zeroed investor id, don't know who's gonna be the investor yet
+			rInvProdPriceLoan := r.RInvestorProductPricingLoan{
+				InvestorId:0,
+				ProductPricingId:pPricing.ID,
+				LoanId:loan.ID,
+			}
+			services.DBCPsql.Table("r_investor_product_pricing_loan").Create(&rInvProdPriceLoan)
+
 		} else {
 			// not found. create new CIF
 			cifData = CreateCIF(payload)
