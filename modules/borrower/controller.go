@@ -7,6 +7,10 @@ import (
 	iris "gopkg.in/kataras/iris.v4"
 	//"encoding/json"
 	"bitbucket.org/go-mis/modules/cif"
+	"bitbucket.org/go-mis/modules/loan"
+	"bitbucket.org/go-mis/modules/r"
+	productPricing "bitbucket.org/go-mis/modules/product-pricing"
+
 )
 
 func Init() {
@@ -14,7 +18,7 @@ func Init() {
 	services.BaseCrudInit(Borrower{}, []Borrower{})
 }
 
-// GetByID agent by id
+// Approve prospective borrower 
 func Approve(ctx *iris.Context) {
 
 	// map the payload 
@@ -29,24 +33,54 @@ func Approve(ctx *iris.Context) {
 
 	ktp := payload["client_ktp"].(string)
 
-	// get CIF with with id = id
-	//id := ctx.Param("id")
+	// get CIF with with idCardNo = ktp
 	cifData := cif.Cif{}
 	if ktp != "" {
-		services.DBCPsql.Table("cif").Where("\"idCardNo\" = ?", ktp).Scan(&cifData)
-		fmt.Println("CIF data!")
-		fmt.Println(cifData)
+		services.DBCPsql.Table("cif").Select("\"idCardNo\"").Where("\"idCardNo\" = ?", ktp).Scan(&cifData)
 		if cifData.IdCardNo != "" {
+			// found. use existing cif
 			fmt.Println("ADA")
 		} else {
-			// create new CIF
+			// not found. create new CIF
 			cifData = CreateCIF(payload)
 			services.DBCPsql.Table("cif").Create(&cifData)
 
-			// create new borrower data based on the CIF
+			// reserve one row for this new borrower 
+			newBorrower := Borrower{}
+			services.DBCPsql.Table("borrower").Create(&newBorrower)
 
-			// insert new r_loan_borrower based on loan
+			rCifBorrower := r.RCifBorrower{
+				CifId:cifData.ID,
+				BorrowerId:newBorrower.ID,
+			}
+			services.DBCPsql.Table("r_cif_borrower").Create(&rCifBorrower)
+
+			// reserve one loan record for this new borrower
+			loan := loan.Loan{}
+			services.DBCPsql.Table("loan").Create(&loan)
+
+			rLoanBorrower := r.RLoanBorrower{
+				LoanId:loan.ID,
+				BorrowerId:newBorrower.ID,
+			}
+			services.DBCPsql.Table("r_loan_borrower").Create(&rLoanBorrower)
+
+			// which loan pricing would we like to use?
+			// get the newest one
+			pPricing := productPricing.ProductPricing{}
+			services.DBCPsql.Table("product_pricing").Last(&pPricing)
+
+			// use it in r_investor_product_pricing_loan
+			// zeroed investor id, don't know who's gonna be the investor yet
+			rInvProdPriceLoan := r.RInvestorProductPricingLoan{
+				InvestorId:0,
+				ProductPricingId:pPricing.ID,
+				LoanId:loan.ID,
+			}
+			services.DBCPsql.Table("r_investor_product_pricing_loan").Create(&rInvProdPriceLoan)
+
 		}
+
 	}
 	return
 }
