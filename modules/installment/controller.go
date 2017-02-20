@@ -33,7 +33,7 @@ func FetchAll(ctx *iris.Context) {
 	query += "JOIN \"group\" ON \"group\".\"id\" = r_loan_group.\"groupId\" "
 	query += "WHERE installment.stage = 'PENDING' AND branch.id = ?"
 	query += "GROUP BY installment.\"createdAt\"::date, branch.\"name\", \"group\".\"id\", \"group\".\"name\" "
-	query += "ORDER BY installment.\"createdAt\"::date DESC, branch.\"name\" ASC LIMIT 5"
+	query += "ORDER BY installment.\"createdAt\"::date DESC, branch.\"name\" ASC"
 
 	services.DBCPsql.Raw(query, branchID).Find(&installments)
 	ctx.JSON(iris.StatusOK, iris.Map{"data": installments})
