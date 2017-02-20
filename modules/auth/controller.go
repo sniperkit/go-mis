@@ -45,7 +45,7 @@ func UserMisLogin(ctx *iris.Context) {
 
 	loginForm.HashPassword()
 	arrUserMisObj := []userMis.UserMis{}
-	services.DBCPsql.Table("user_mis").Where("\"_username\" = ? AND \"_password\" = ? AND \"deletedAt\" IS NULL AND (\"isSuspended\" = FALSE OR \"isSuspended\" IS NULL)", loginForm.Username, loginForm.Password).Find(&arrUserMisObj)
+	services.DBCPsql.Table("USER_MIS").Where("\"_username\" = ? AND \"_password\" = ? AND \"deletedAt\" IS NULL AND (\"isSuspended\" = FALSE OR \"isSuspended\" IS NULL)", loginForm.Username, loginForm.Password).Find(&arrUserMisObj)
 
 	if len(arrUserMisObj) == 0 {
 		ctx.JSON(iris.StatusUnauthorized, iris.Map{
@@ -104,14 +104,26 @@ func EnsureAuth(ctx *iris.Context) {
 			"message": "Unauthorized access.",
 		})
 	} else {
-		ctx.Set("user_mis", userObj)
+		ctx.Set("USER_MIS", userObj)
+
+		rBranchUserMisSchema := r.RBranchUserMis{}
+
+		queryGetBranch := "SELECT r_branch_user_mis.\"branchId\" "
+		queryGetBranch += "FROM user_mis "
+		queryGetBranch += "JOIN r_branch_user_mis ON r_branch_user_mis.\"userMisId\" = user_mis.id WHERE user_mis.id = ?"
+
+		services.DBCPsql.Raw(queryGetBranch, userObj.ID).Scan(&rBranchUserMisSchema)
+
+		ctx.Set("BRANCH_ID", rBranchUserMisSchema.BranchId)
+
 		ctx.Next()
 	}
 }
 
 // CurrentUserMis - get current user mis data
 func CurrentUserMis(ctx *iris.Context) {
-	userMisObj := ctx.Get("user_mis").(userMis.UserMis)
+	userMisObj := ctx.Get("USER_MIS").(userMis.UserMis)
+
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"status": "success",
 		"data": iris.Map{

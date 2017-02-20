@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"bitbucket.org/go-mis/config"
 	"bitbucket.org/go-mis/modules/area"
 	"bitbucket.org/go-mis/modules/auth"
 	"bitbucket.org/go-mis/modules/branch"
@@ -14,6 +15,7 @@ import (
 	"bitbucket.org/go-mis/modules/survey"
 	"bitbucket.org/go-mis/modules/user-mis"
 	"bitbucket.org/go-mis/modules/borrower"
+	"gopkg.in/iris-contrib/middleware.v4/cors"
 	"gopkg.in/kataras/iris.v4"
 )
 
@@ -30,6 +32,11 @@ func InitCustomApi() {
 	// })
 	// app := iris.New()
 	// app.Use(crs)
+	// Check environment, if `dev` then let the CORS to `*`
+	if config.Env == "dev" || config.Env == "development" {
+		crs := cors.New(cors.Options{})
+		iris.Use(crs)
+	}
 	iris.Any(baseURL+"/user-mis-login", auth.UserMisLogin)
 
 	v2 := iris.Party(baseURL, auth.EnsureAuth)
@@ -47,7 +54,10 @@ func InitCustomApi() {
 		v2.Any("/loan/get/:id", loan.GetLoanDetail)
 		v2.Any("/loan/set/:id/stage/:stage", loan.UpdateStage)
 		v2.Any("/installment", installment.FetchAll)
-		v2.Any("/installment/submit/:loan_id", installment.SubmitInstallment)
+		v2.Any("/installment/group/:group_id/by-transaction-date/:transaction_date", installment.GetInstallmentByGroupIDAndTransactionDate)
+		v2.Any("/installment/group/:group_id/by-transaction-date/:transaction_date/submit/:status", installment.SubmitInstallmentByGroupIDAndTransactionDateWithStatus)
+		v2.Any("/installment/submit/:installment_id/status/:status", installment.SubmitInstallmentByInstallmentIDWithStatus)
+		// v2.Any("/installment/submit/:loan_id", installment.SubmitInstallment)
 		v2.Any("/disbursement", disbursement.FetchAll)
 		v2.Any("/disbursement/set/:loan_id/stage/:stage", disbursement.UpdateStage)
 		v2.Any("/user-mis", userMis.FetchUserMisAreaBranchRole)

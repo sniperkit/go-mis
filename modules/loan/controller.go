@@ -18,6 +18,7 @@ func Init() {
 
 // FetchAll - fetchAll Loan data
 func FetchAll(ctx *iris.Context) {
+	branchID := ctx.Get("BRANCH_ID")
 	loans := []LoanFetch{}
 
 	query := "SELECT DISTINCT loan.*, "
@@ -39,8 +40,9 @@ func FetchAll(ctx *iris.Context) {
 	query += "LEFT JOIN branch ON r_loan_branch.\"branchId\" = branch.\"id\" "
 	query += "LEFT JOIN r_loan_disbursement ON r_loan_disbursement.\"loanId\" = loan.\"id\" "
 	query += "LEFT JOIN disbursement ON disbursement.\"id\" = r_loan_disbursement.\"disbursementId\" "
+	query += "WHERE branch.id = ?"
 
-	services.DBCPsql.Raw(query).Find(&loans)
+	services.DBCPsql.Raw(query, branchID).Find(&loans)
 	ctx.JSON(iris.StatusOK, iris.Map{"data": loans})
 }
 
