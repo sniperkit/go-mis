@@ -31,6 +31,8 @@ type DbConfig struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
 	SslMode  string `json:"ssl_mode"`
+	ParseTime string `json:"parse_time"`
+	Charset string `json:"charset"`
 }
 
 func init() {
@@ -70,12 +72,12 @@ func init() {
 	json.Unmarshal(configFile, &c)
 
 	// Postgresql Host Address
-	PsqlHostAddressMisAmartha = "host=" + c.Psql[0].Host + " port=" + c.Psql[0].Port + " user=" + c.Psql[0].Username + " dbname=" + c.Psql[0].Db + " sslmode=" + c.Psql[0].SslMode
+	PsqlHostAddressMisAmartha = "host=" + c.Psql[0].Host + " port=" + c.Psql[0].Port + " user=" + c.Psql[0].Username + " dbname=" + c.Psql[0].Db + " sslmode=" + c.Psql[0].SslMode + " parseTime="+ c.Psql[0].ParseTime + " charset=" + c.Psql[0].Charset
 	if c.Psql[0].Password != "" {
 		PsqlHostAddressMisAmartha += " password=" + c.Psql[0].Password
 	}
 
-	PsqlHostAddressSurvey = "host=" + c.Psql[1].Host + " port=" + c.Psql[1].Port + " user=" + c.Psql[1].Username + " dbname=" + c.Psql[1].Db + " sslmode=" + c.Psql[1].SslMode
+	PsqlHostAddressSurvey = "host=" + c.Psql[1].Host + " port=" + c.Psql[1].Port + " user=" + c.Psql[1].Username + " dbname=" + c.Psql[1].Db + " sslmode=" + c.Psql[1].SslMode + " parseTime="+ c.Psql[1].ParseTime + " charset=" + c.Psql[1].Charset
 	if c.Psql[1].Password != "" {
 		PsqlHostAddressSurvey += " password=" + c.Psql[1].Password
 	}

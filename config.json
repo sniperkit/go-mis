@@ -6,7 +6,9 @@
 			"port": "5432",
 			"username": "fin",
 	    "password": "toor",
-			"ssl_mode": "disable"
+			"ssl_mode": "disable",
+			"parse_time": "True",
+			"charset":"utf8"
 		},
 		{
 			"db": "survey",
@@ -14,7 +16,9 @@
 			"port": "5432",
 			"username": "fin",
 	    "password": "toor",
-			"ssl_mode": "disable"
+			"ssl_mode": "disable",
+			"parse_time":"True",
+			"charset":"utf8"
 		}
 	],
 
@@ -24,6 +28,8 @@
 		"port": "32003",
 		"username": "root",
     "password": null,
-		"ssl_mode": "disable"
+		"ssl_mode": "disable",
+		"parse_time": "True",
+		"charset":"utf8"
 	}
 }

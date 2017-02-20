@@ -30,24 +30,28 @@ func Approve(ctx *iris.Context) {
 	ktp := payload["client_ktp"].(string)
 
 	// get CIF with with id = id
-	id := ctx.Param("id")
+	//id := ctx.Param("id")
 	cifData := cif.Cif{}
-	services.DBCPsql.Where("\"deletedAt\" IS NULL AND id = ?", id).Scan(&cifData)
-	if ktp != "" && (cifData.IdCardNo == ktp)  {
-		// use CIF data
-		fmt.Println("use CIF data")
-	} else {
-		// create new CIF
-		// populate new CIF data
-		CreateCIF(payload)
-		// save to db
-		services.DBCPsql.Table("cif").Create(&rUserMisAccessToken)
+	if ktp != "" {
+		services.DBCPsql.Table("cif").Where("\"idCardNo\" = ?", ktp).Scan(&cifData)
+		fmt.Println("CIF data!")
+		fmt.Println(cifData)
+		if cifData.IdCardNo != "" {
+			fmt.Println("ADA")
+		} else {
+			// create new CIF
+			cifData = CreateCIF(payload)
+			services.DBCPsql.Table("cif").Create(&cifData)
 
+			// create new borrower data based on the CIF
+
+			// insert new r_loan_borrower based on loan
+		}
 	}
 	return
 }
 
-func CreateCIF(payload map[string]interface{}) {
+func CreateCIF(payload map[string]interface{}) cif.Cif {
 	// check each payload value which is interface is not nil
 	// convert each value into string (we only deal with string this time) 
 	var cpl map[string]string
@@ -92,5 +96,5 @@ func CreateCIF(payload map[string]interface{}) {
 	//newCif.CreatedAt          = payload[""].(string)
 	//newCif.UpdatedAt          = payload[""].(string)
 	//newCif.DeletedAt          = payload[""].(string)
-	fmt.Println(newCif)
+	return newCif
 }
