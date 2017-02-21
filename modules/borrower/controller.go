@@ -49,18 +49,7 @@ func Approve(ctx *iris.Context) {
 
 			// which loan pricing would we like to use?
 			// get the newest one
-			pPricing := productPricing.ProductPricing{}
-			services.DBCPsql.Table("product_pricing").Last(&pPricing)
-
-			// use it in r_investor_product_pricing_loan
-			// zeroed investor id, don't know who's gonna be the investor yet
-			rInvProdPriceLoan := r.RInvestorProductPricingLoan{
-				InvestorId:0,
-				ProductPricingId:pPricing.ID,
-				LoanId:loan.ID,
-			}
-			services.DBCPsql.Table("r_investor_product_pricing_loan").Create(&rInvProdPriceLoan)
-
+			UseProductPricing(0, loan.ID)
 		} else {
 			// not found. create new CIF
 			cifData = CreateCIF(payload)
@@ -88,22 +77,24 @@ func Approve(ctx *iris.Context) {
 
 			// which loan pricing would we like to use?
 			// get the newest one
-			pPricing := productPricing.ProductPricing{}
-			services.DBCPsql.Table("product_pricing").Last(&pPricing)
-
-			// use it in r_investor_product_pricing_loan
-			// zeroed investor id, don't know who's gonna be the investor yet
-			rInvProdPriceLoan := r.RInvestorProductPricingLoan{
-				InvestorId:0,
-				ProductPricingId:pPricing.ID,
-				LoanId:loan.ID,
-			}
-			services.DBCPsql.Table("r_investor_product_pricing_loan").Create(&rInvProdPriceLoan)
-
+			UseProductPricing(0, loan.ID)
 		}
 
 	}
 	return
+}
+
+
+func UseProductPricing(investorId uint64, loanId uint64) {
+	pPricing := productPricing.ProductPricing{}
+	services.DBCPsql.Table("product_pricing").Last(&pPricing)
+
+	rInvProdPriceLoan := r.RInvestorProductPricingLoan{
+		InvestorId:investorId,
+		ProductPricingId:pPricing.ID,
+		LoanId:loanId,
+	}
+	services.DBCPsql.Table("r_investor_product_pricing_loan").Create(&rInvProdPriceLoan)
 }
 
 func CreateCIF(payload map[string]interface{}) cif.Cif {
