@@ -1,6 +1,8 @@
 package cif
 
 import (
+	"strconv"
+
 	"bitbucket.org/go-mis/services"
 	iris "gopkg.in/kataras/iris.v4"
 )
@@ -11,6 +13,8 @@ func Init() {
 }
 
 func FetchAll(ctx *iris.Context) {
+	var limitPagination uint64 = 10
+	var offset uint64 = 0
 	cifInvestorBorrower := []CifInvestorBorrower{}
 
 	query := "SELECT cif.\"id\", cif.\"cifNumber\", cif.\"name\", cif.\"isActivated\", cif.\"isValidated\", "
@@ -19,6 +23,20 @@ func FetchAll(ctx *iris.Context) {
 	query += "FROM cif "
 	query += "LEFT JOIN r_cif_borrower ON r_cif_borrower.\"cifId\" = cif.\"id\" "
 	query += "LEFT JOIN r_cif_investor ON r_cif_investor.\"cifId\" = cif.\"id\" "
+
+	if ctx.URLParam("limit") != "" {
+		query += "LIMIT " + ctx.URLParam("limit") + " "
+		limitPagination, _ = strconv.ParseUint(ctx.URLParam("limit"), 10, 64)
+	} else {
+		query += "LIMIT " + strconv.FormatUint(limitPagination, 10) + " "
+	}
+
+	if ctx.URLParam("page") != "" {
+		offset, _ = strconv.ParseUint(ctx.URLParam("page"), 10, 64)
+		query += "OFFSET " + strconv.FormatUint((limitPagination*offset), 10)
+	} else {
+		query += "OFFSET " + strconv.FormatUint(offset, 10)
+	}
 
 	services.DBCPsql.Raw(query).Find(&cifInvestorBorrower)
 	ctx.JSON(iris.StatusOK, iris.Map{
