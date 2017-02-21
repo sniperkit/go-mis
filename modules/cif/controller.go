@@ -12,7 +12,20 @@ func Init() {
 	services.BaseCrudInit(Cif{}, []Cif{})
 }
 
+type TotalData struct {
+	TotalRows int64 `gorm:"column:totalRows" json:"totalRows"`
+}
+
 func FetchAll(ctx *iris.Context) {
+	totalData := TotalData{}
+
+	queryTotalData := "SELECT count(cif.*) as \"totalRows\" "
+	queryTotalData += "FROM cif "
+	queryTotalData += "LEFT JOIN r_cif_borrower ON r_cif_borrower.\"cifId\" = cif.\"id\" "
+	queryTotalData += "LEFT JOIN r_cif_investor ON r_cif_investor.\"cifId\" = cif.\"id\" "
+
+	services.DBCPsql.Raw(queryTotalData).Find(&totalData)
+
 	var limitPagination uint64 = 10
 	var offset uint64 = 0
 	cifInvestorBorrower := []CifInvestorBorrower{}
@@ -40,8 +53,9 @@ func FetchAll(ctx *iris.Context) {
 
 	services.DBCPsql.Raw(query).Find(&cifInvestorBorrower)
 	ctx.JSON(iris.StatusOK, iris.Map{
-		"status": "success",
-		"data":   cifInvestorBorrower,
+		"status":    "success",
+		"totalRows": totalData.TotalRows,
+		"data":      cifInvestorBorrower,
 	})
 }
 
