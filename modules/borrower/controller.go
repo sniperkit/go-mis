@@ -43,9 +43,16 @@ func Approve(ctx *iris.Context) {
 			borrower := Borrower{}
 			services.DBCPsql.Table("r_cif_borrower").Where("\"cifId\" =?", cifData.ID).Scan(&borrower)
 
-			// get loan id
+			// reserve one loan record for this new borrower
 			loan := loan.Loan{}
-			services.DBCPsql.Table("r_loan_borrower").Where("\"borrowerId\" =?", borrower.ID).Scan(&loan)
+			services.DBCPsql.Table("loan").Create(&loan)
+
+			rLoanBorrower := r.RLoanBorrower{
+				LoanId:loan.ID,
+				BorrowerId:borrower.ID,
+			}
+			services.DBCPsql.Table("r_loan_borrower").Create(&rLoanBorrower)
+
 
 			// which loan pricing would we like to use?
 			// get the newest one
