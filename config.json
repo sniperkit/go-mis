@@ -1,19 +1,19 @@
 {
 	"psql": [
 		{
-			"db": "mis_amartha",
-			"host": "localhost",
+			"db": "mis_amartha_dev",
+			"host": "192.168.3.106",
 			"port": "5432",
-			"username": "fin",
-	    "password": "toor",
+			"username": "mis_amartha",
+	    "password": "KemangAmartha2016$!*",
 			"ssl_mode": "disable"
 		},
 		{
 			"db": "survey",
-			"host": "localhost",
+			"host": "192.168.3.106",
 			"port": "5432",
-			"username": "fin",
-	    "password": "toor",
+			"username": "mis_amartha",
+	    "password": "KemangAmartha2016$!*",
 			"ssl_mode": "disable"
 		}
 	],
