@@ -3,17 +3,17 @@
 		{
 			"db": "mis_amartha",
 			"host": "localhost",
-			"port": "32003",
-			"username": "postgres",
-	    "password": "postgres",
+			"port": "5432",
+			"username": "fin",
+	    "password": "toor",
 			"ssl_mode": "disable"
 		},
 		{
 			"db": "survey",
 			"host": "localhost",
-			"port": "32003",
-			"username": "postgres",
-	    "password": "postgres",
+			"port": "5432",
+			"username": "fin",
+	    "password": "toor",
 			"ssl_mode": "disable"
 		}
 	],
