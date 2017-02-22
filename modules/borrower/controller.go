@@ -2,7 +2,7 @@ package borrower
 
 import (
 	"bitbucket.org/go-mis/services"
-	//"strconv"
+	"strconv"
 	//"fmt"
 	iris "gopkg.in/kataras/iris.v4"
 	//"encoding/json"
@@ -10,6 +10,7 @@ import (
 	"bitbucket.org/go-mis/modules/loan"
 	"bitbucket.org/go-mis/modules/r"
 	productPricing "bitbucket.org/go-mis/modules/product-pricing"
+	"time"
 
 )
 
@@ -44,7 +45,7 @@ func Approve(ctx *iris.Context) {
 			services.DBCPsql.Table("r_cif_borrower").Where("\"cifId\" =?", cifData.ID).Scan(&borrower)
 
 			// reserve one loan record for this new borrower
-			loan := loan.Loan{}
+			loan := CreateLoan(payload)
 			services.DBCPsql.Table("loan").Create(&loan)
 
 			rLoanBorrower := r.RLoanBorrower{
@@ -73,7 +74,7 @@ func Approve(ctx *iris.Context) {
 			services.DBCPsql.Table("r_cif_borrower").Create(&rCifBorrower)
 
 			// reserve one loan record for this new borrower
-			loan := loan.Loan{}
+			loan := CreateLoan(payload)
 			services.DBCPsql.Table("loan").Create(&loan)
 
 			rLoanBorrower := r.RLoanBorrower{
@@ -94,7 +95,8 @@ func Approve(ctx *iris.Context) {
 
 func UseProductPricing(investorId uint64, loanId uint64) {
 	pPricing := productPricing.ProductPricing{}
-	services.DBCPsql.Table("product_pricing").Last(&pPricing)
+	currentDate := time.Now().Local()
+	services.DBCPsql.Table("product_pricing").Where("? between \"startDate\" and \"endDate\"", currentDate).Scan(&pPricing)
 
 	rInvProdPriceLoan := r.RInvestorProductPricingLoan{
 		InvestorId:investorId,
@@ -104,7 +106,7 @@ func UseProductPricing(investorId uint64, loanId uint64) {
 	services.DBCPsql.Table("r_investor_product_pricing_loan").Create(&rInvProdPriceLoan)
 }
 
-func CreateCIF(payload map[string]interface{}) cif.Cif {
+func CreateCIF (payload map[string]interface{}) cif.Cif {
 	// convert each payload  field into empty string 
 	var cpl map[string]string
 	cpl = make(map[string]string)
@@ -130,4 +132,22 @@ func CreateCIF(payload map[string]interface{}) cif.Cif {
 	newCif.Kelurahan          = cpl["client_desa"]
 	newCif.Kecamatan          = cpl["kecamatan"]
 	return newCif
+}
+
+func CreateLoan (payload map[string]interface{}) loan.Loan {
+	// convert each payload  field into empty string 
+	var cpl map[string]string
+	cpl = make(map[string]string)
+	for k, v := range payload {
+		cpl[k] = v.(string)
+	}
+
+	// map each payload field to it's respective cif field
+	newLoan := loan.Loan{}
+	newLoan.Purpose									= cpl["data_tujuan"]
+	newLoan.Tenor, _								= strconv.ParseUint(cpl["data_jangkawaktu"], 10, 64)
+	newLoan.LoanPeriod, _						= strconv.ParseInt(cpl["data_ke"], 10, 64)
+	newLoan.Rate										= 0.00 // temporary value until the input defined in the future
+
+	return newLoan
 }
