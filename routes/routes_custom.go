@@ -15,6 +15,7 @@ import (
 	"bitbucket.org/go-mis/modules/survey"
 	"bitbucket.org/go-mis/modules/user-mis"
 	"bitbucket.org/go-mis/modules/borrower"
+	"bitbucket.org/go-mis/modules/virtual-account-statement"
 	"gopkg.in/iris-contrib/middleware.v4/cors"
 	"gopkg.in/kataras/iris.v4"
 )
@@ -67,5 +68,6 @@ func InitCustomApi() {
 		v2.Any("/survey", survey.GetProspectiveBorrower)
 		v2.Any("/survey/get/:id", survey.GetProspectiveBorrowerDetail)
 		v2.Any("/borrower/approve/:id", borrower.Approve)
+		v2.Any("/virtual-account-statement", virtualAccountStatement.GetVAStatement)
 	}
 }
