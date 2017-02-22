@@ -17,8 +17,8 @@ type DisbursementFetch struct {
 	Borrower          string    `gorm:"column:borrower" json:"borrower"`
 	Group             string    `gorm:"column:group" json:"group"`
 	Branch            string    `gorm:"column:branch" json:"branch"`
-	SubmittedLoanDate time.Time `gorm:"column:submittedLoanDate" json:"submittedLoanDate"`
-	DisbursementDate  time.Time `gorm:"column:disbursementDate" json:"disbursementDate"`
+	SubmittedLoanDate string    `gorm:"column:submittedLoanDate" json:"submittedLoanDate"`
+	DisbursementDate  string    `gorm:"column:disbursementDate" json:"disbursementDate"`
 	Plafond           float64   `gorm:"column:plafond" json:"plafond"`
 	Stage             string    `gorm:"column:stage" json:"stage"`
 	CreatedAt         time.Time `gorm:"column:createdAt" json:"createdAt"`
