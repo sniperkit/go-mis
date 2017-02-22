@@ -26,23 +26,23 @@ type Loan struct {
 }
 
 type LoanFetch struct {
-	ID                uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
-	LoanPeriod        int64      `gorm:"column:loanPeriod" json:"loanPeriod"`
-	Subgroup          string     `gorm:"column:subgroup" json:"subgrop"`
-	SubmittedLoanDate *time.Time `gorm:"column:submittedLoanDate" json:"submittedLoanDate"`
-	CreditScoreGrade  string     `gorm:"column:creditScoreGrade" json:"creditScoreGrade"`
-	CreditScoreValue  float64    `gorm:"column:creditScoreValue" json:"creditScoreValue"`
-	Tenor             uint64     `gorm:"column:tenor" json:"tenor"`
-	Rate              float64    `gorm:"column:rate" json:"rate"`
-	Installment       float64    `gorm:"column:installment" json:"installment"`
-	Plafond           float64    `gorm:"column:plafond" json:"plafond"`
-	Stage             string     `gorm:"column:stage" json:"stage"`
-	CreatedAt         time.Time  `gorm:"column:createdAt" json:"createdAt"`
-	Sector            string     `gorm:"column:sector" json:"sector"`
-	Borrower          string     `gorm:"column:borrower" json:"borrower"`
-	Group             string     `gorm:"column:group" json:"group"`
-	Branch            string     `gorm:"column:branch" json:"branch"`
-	DisbursementDate  time.Time  `gorm:"column:disbursementDate" json:"disbursementDate"`
+	ID                uint64    `gorm:"primary_key" gorm:"column:_id" json:"_id"`
+	LoanPeriod        int64     `gorm:"column:loanPeriod" json:"loanPeriod"`
+	Subgroup          string    `gorm:"column:subgroup" json:"subgrop"`
+	SubmittedLoanDate string    `gorm:"column:submittedLoanDate" json:"submittedLoanDate"`
+	CreditScoreGrade  string    `gorm:"column:creditScoreGrade" json:"creditScoreGrade"`
+	CreditScoreValue  float64   `gorm:"column:creditScoreValue" json:"creditScoreValue"`
+	Tenor             uint64    `gorm:"column:tenor" json:"tenor"`
+	Rate              float64   `gorm:"column:rate" json:"rate"`
+	Installment       float64   `gorm:"column:installment" json:"installment"`
+	Plafond           float64   `gorm:"column:plafond" json:"plafond"`
+	Stage             string    `gorm:"column:stage" json:"stage"`
+	CreatedAt         time.Time `gorm:"column:createdAt" json:"createdAt"`
+	Sector            string    `gorm:"column:sector" json:"sector"`
+	Borrower          string    `gorm:"column:borrower" json:"borrower"`
+	Group             string    `gorm:"column:group" json:"group"`
+	Branch            string    `gorm:"column:branch" json:"branch"`
+	DisbursementDate  time.Time `gorm:"column:disbursementDate" json:"disbursementDate"`
 }
 
 type LoanBorrowerProfile struct {
