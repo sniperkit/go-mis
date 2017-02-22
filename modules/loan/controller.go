@@ -16,10 +16,36 @@ func Init() {
 	services.BaseCrudInit(Loan{}, []Loan{})
 }
 
+type TotalData struct {
+	TotalRows int64 `gorm:"column:totalRows" json:"totalRows"`
+}
+
 // FetchAll - fetchAll Loan data
 func FetchAll(ctx *iris.Context) {
 	branchID := ctx.Get("BRANCH_ID")
+
+	totalData := TotalData{}
+	queryTotalData := "SELECT DISTINCT COUNT(loan.*) AS \"totalRows\" "
+	queryTotalData += "FROM loan "
+	queryTotalData += "LEFT JOIN r_loan_sector ON r_loan_sector.\"loanId\" = loan.\"id\" "
+	queryTotalData += "LEFT JOIN sector ON r_loan_sector.\"sectorId\" = sector.\"id\" "
+	queryTotalData += "LEFT JOIN r_loan_borrower ON r_loan_borrower.\"borrowerId\" = loan.\"id\" "
+	queryTotalData += "LEFT JOIN borrower ON r_loan_borrower.\"borrowerId\" = borrower.\"id\" "
+	queryTotalData += "LEFT JOIN r_cif_borrower ON r_cif_borrower.\"borrowerId\" = borrower.\"id\""
+	queryTotalData += "LEFT JOIN cif ON r_cif_borrower.\"cifId\" = cif.\"id\" LEFT JOIN r_loan_group ON r_loan_group.\"loanId\" = loan.\"id\" "
+	queryTotalData += "LEFT JOIN \"group\" ON r_loan_group.\"groupId\" = \"group\".\"id\" "
+	queryTotalData += "LEFT JOIN r_loan_branch ON r_loan_branch.\"loanId\" = loan.\"id\" "
+	queryTotalData += "LEFT JOIN branch ON r_loan_branch.\"branchId\" = branch.\"id\" "
+	queryTotalData += "LEFT JOIN r_loan_disbursement ON r_loan_disbursement.\"loanId\" = loan.\"id\" "
+	queryTotalData += "LEFT JOIN disbursement ON disbursement.\"id\" = r_loan_disbursement.\"disbursementId\" "
+	queryTotalData += "WHERE branch.id = '1'"
+
+	services.DBCPsql.Raw(queryTotalData).Find(&totalData)
+
 	loans := []LoanFetch{}
+
+	var limitPagination int64 = 10
+	var offset int64 = 0
 
 	query := "SELECT DISTINCT loan.*, "
 	query += "sector.\"name\" as \"sector\", "
@@ -40,10 +66,27 @@ func FetchAll(ctx *iris.Context) {
 	query += "LEFT JOIN branch ON r_loan_branch.\"branchId\" = branch.\"id\" "
 	query += "LEFT JOIN r_loan_disbursement ON r_loan_disbursement.\"loanId\" = loan.\"id\" "
 	query += "LEFT JOIN disbursement ON disbursement.\"id\" = r_loan_disbursement.\"disbursementId\" "
-	query += "WHERE branch.id = ?"
+	query += "WHERE branch.id = ? "
+
+	if ctx.URLParam("limit") != "" {
+		query += "LIMIT " + ctx.URLParam("limit") + " "
+	} else {
+		query += "LIMIT " + strconv.FormatInt(limitPagination, 10) + " "
+	}
+
+	if ctx.URLParam("page") != "" {
+		offset, _ = strconv.ParseInt(ctx.URLParam("page"), 10, 64)
+		query += "OFFSET " + strconv.FormatInt(offset, 10)
+	} else {
+		query += "OFFSET 0"
+	}
 
 	services.DBCPsql.Raw(query, branchID).Find(&loans)
-	ctx.JSON(iris.StatusOK, iris.Map{"data": loans})
+	ctx.JSON(iris.StatusOK, iris.Map{
+		"status":    "success",
+		"totalRows": totalData.TotalRows,
+		"data":      loans,
+	})
 }
 
 // UpdateStage - Update Stage Loan

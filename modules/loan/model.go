@@ -42,7 +42,7 @@ type LoanFetch struct {
 	Borrower          string    `gorm:"column:borrower" json:"borrower"`
 	Group             string    `gorm:"column:group" json:"group"`
 	Branch            string    `gorm:"column:branch" json:"branch"`
-	DisbursementDate  time.Time `gorm:"column:disbursementDate" json:"disbursementDate"`
+	DisbursementDate  string    `gorm:"column:disbursementDate" json:"disbursementDate"`
 }
 
 type LoanBorrowerProfile struct {
