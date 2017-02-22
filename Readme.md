@@ -1,6 +1,40 @@
 MIS 2.0 - Micro-Services using Go
 
-Now integrated with jenkisn
+# PRE-REQUISITE
+
+Create a `config.json` file with below JSON sample.
+
+```
+{
+	"psql": [
+		{
+			"db": "mis_amartha_dev",
+			"host": "localhost",
+			"port": "32003",
+			"username": "postgres",
+	    "password": "postgres",
+			"ssl_mode": "disable"
+		},
+		{
+			"db": "survey",
+			"host": "localhost",
+			"port": "32003",
+			"username": "postgres",
+	    "password": "postgres",
+			"ssl_mode": "disable"
+		}
+	],
+
+  "mysql": {
+		"db": "db_mis_amartha",
+		"host": "localhost",
+		"port": "32003",
+		"username": "root",
+    "password": null,
+		"ssl_mode": "disable"
+	}
+}
+```
 
 # HOW TO RUN
 
