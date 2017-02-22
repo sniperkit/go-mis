@@ -98,49 +98,29 @@ func UseProductPricing(investorId uint64, loanId uint64) {
 }
 
 func CreateCIF(payload map[string]interface{}) cif.Cif {
-	// check each payload value which is interface is not nil
-	// convert each value into string (we only deal with string this time) 
+	// convert each payload  field into empty string 
 	var cpl map[string]string
 	cpl = make(map[string]string)
-	for k, _ := range payload {
-		if payload[k] != nil {
-			cpl[k] = payload[k].(string)
-		}
+	for k, v := range payload {
+		cpl[k] = v.(string)
 	}
 
-	// assign the data to corresppndence cif
+	// map each payload field to it's respective cif field
 	newCif := cif.Cif{}
 
+	// here the only payload that match the cif fields
 	newCif.Username						= cpl["client_simplename"]
 	newCif.Name								= cpl["client_fullname"]
 	newCif.PlaceOfBirth       = cpl["client_birthplace"]
 	newCif.DateOfBirth        = cpl["client_birthdate"]
 	newCif.IdCardNo           = cpl["client_ktp"]
-	//newCif.IdCardValidDate    = payload[""].(string)
 	newCif.IdCardFilename     = cpl["photo_ktp"]
-	//newCif.TaxCardNo          = payload[""].(string)
-	//newCif.TaxCardFilename    = payload[""].(string)
+	newCif.TaxCardNo          = cpl["client_npwp"]
 	newCif.MaritalStatus      = cpl["client_marital_status"]
 	newCif.MotherName         = cpl["client_ibu_kandung"]
 	newCif.Religion           = cpl["client_religion"]
 	newCif.Address            = cpl["client_alamat"]
-	//newCif.Kelurahan          = payload[""].(string)
+	newCif.Kelurahan          = cpl["client_desa"]
 	newCif.Kecamatan          = cpl["kecamatan"]
-	//newCif.City               = payload[""].(string)
-	//newCif.Province           = payload[""].(string)
-	//newCif.Nationality        = payload[""].(string)
-	//newCif.Zipcode            = payload[""].(string)
-	//newCif.PhoneNo            = payload[""].(string)
-	//newCif.CompanyName        = payload[""].(string)
-	//newCif.CompanyAddress     = payload[""].(string)
-	//newCif.Occupation         = payload[""].(string)
-	//newCif.Income             = payload[""].(string)
-	//newCif.IncomeSourceFund   = payload[""].(string)
-	//newCif.IncomeSourceCountry= payload[""].(string)
-	//newCif.IsActivated        = payload[""].(string)
-	//newCif.IsVAlidated        = payload[""].(string)
-	//newCif.CreatedAt          = payload[""].(string)
-	//newCif.UpdatedAt          = payload[""].(string)
-	//newCif.DeletedAt          = payload[""].(string)
 	return newCif
 }
