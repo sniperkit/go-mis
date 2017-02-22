@@ -26,8 +26,8 @@ func FetchAll(ctx *iris.Context) {
 
 	services.DBCPsql.Raw(queryTotalData).Find(&totalData)
 
-	var limitPagination uint64 = 10
-	var offset uint64 = 0
+	var limitPagination int64 = 10
+	var offset int64 = 0
 	cifInvestorBorrower := []CifInvestorBorrower{}
 
 	query := "SELECT cif.\"id\", cif.\"cifNumber\", cif.\"name\", cif.\"isActivated\", cif.\"isValidated\", "
@@ -39,16 +39,15 @@ func FetchAll(ctx *iris.Context) {
 
 	if ctx.URLParam("limit") != "" {
 		query += "LIMIT " + ctx.URLParam("limit") + " "
-		limitPagination, _ = strconv.ParseUint(ctx.URLParam("limit"), 10, 64)
 	} else {
-		query += "LIMIT " + strconv.FormatUint(limitPagination, 10) + " "
+		query += "LIMIT " + strconv.FormatInt(limitPagination, 10) + " "
 	}
 
 	if ctx.URLParam("page") != "" {
-		offset, _ = strconv.ParseUint(ctx.URLParam("page"), 10, 64)
-		query += "OFFSET " + strconv.FormatUint((limitPagination*offset), 10)
+		offset, _ = strconv.ParseInt(ctx.URLParam("page"), 10, 64)
+		query += "OFFSET " + strconv.FormatInt(offset, 10)
 	} else {
-		query += "OFFSET " + strconv.FormatUint(offset, 10)
+		query += "OFFSET 0"
 	}
 
 	services.DBCPsql.Raw(query).Find(&cifInvestorBorrower)
