@@ -2,8 +2,10 @@ package routes
 
 import (
 	"bitbucket.org/go-mis/config"
+	"bitbucket.org/go-mis/modules/agent"
 	"bitbucket.org/go-mis/modules/area"
 	"bitbucket.org/go-mis/modules/auth"
+	"bitbucket.org/go-mis/modules/borrower"
 	"bitbucket.org/go-mis/modules/branch"
 	"bitbucket.org/go-mis/modules/cashout"
 	"bitbucket.org/go-mis/modules/cif"
@@ -14,7 +16,6 @@ import (
 	"bitbucket.org/go-mis/modules/notification"
 	"bitbucket.org/go-mis/modules/survey"
 	"bitbucket.org/go-mis/modules/user-mis"
-	"bitbucket.org/go-mis/modules/borrower"
 	"bitbucket.org/go-mis/modules/virtual-account-statement"
 	"gopkg.in/iris-contrib/middleware.v4/cors"
 	"gopkg.in/kataras/iris.v4"
@@ -58,7 +59,6 @@ func InitCustomApi() {
 		v2.Any("/installment/group/:group_id/by-transaction-date/:transaction_date", installment.GetInstallmentByGroupIDAndTransactionDate)
 		v2.Any("/installment/group/:group_id/by-transaction-date/:transaction_date/submit/:status", installment.SubmitInstallmentByGroupIDAndTransactionDateWithStatus)
 		v2.Any("/installment/submit/:installment_id/status/:status", installment.SubmitInstallmentByInstallmentIDWithStatus)
-		// v2.Any("/installment/submit/:loan_id", installment.SubmitInstallment)
 		v2.Any("/disbursement", disbursement.FetchAll)
 		v2.Any("/disbursement/set/:loan_id/stage/:stage", disbursement.UpdateStage)
 		v2.Any("/user-mis", userMis.FetchUserMisAreaBranchRole)
@@ -69,5 +69,7 @@ func InitCustomApi() {
 		v2.Any("/survey/get/:id", survey.GetProspectiveBorrowerDetail)
 		v2.Any("/borrower/approve/:id", borrower.Approve)
 		v2.Any("/virtual-account-statement", virtualAccountStatement.GetVAStatement)
+		v2.Any("/agent", agent.GetAllAgentByBranchID)
 	}
+
 }

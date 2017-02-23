@@ -1,6 +1,8 @@
 package agent
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"time"
 
 	"github.com/nferruzzi/gormGIS"
@@ -54,4 +56,24 @@ func (a *Agent) SetGeopoint() {
 		Lat: a.Lat,
 		Lng: a.Lng,
 	}
+}
+
+func (a *Agent) BeforeCreate() (err error) {
+	if a.Password != "" {
+		bytePassword := []byte(a.Password)
+		sha256Bytes := sha256.Sum256(bytePassword)
+		a.Password = hex.EncodeToString(sha256Bytes[:])
+	}
+
+	return
+}
+
+func (a *Agent) BeforeUpdate() (err error) {
+	if a.Password != "" {
+		bytePassword := []byte(a.Password)
+		sha256Bytes := sha256.Sum256(bytePassword)
+		a.Password = hex.EncodeToString(sha256Bytes[:])
+	}
+
+	return
 }
