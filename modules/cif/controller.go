@@ -24,6 +24,10 @@ func FetchAll(ctx *iris.Context) {
 	queryTotalData += "LEFT JOIN r_cif_borrower ON r_cif_borrower.\"cifId\" = cif.\"id\" "
 	queryTotalData += "LEFT JOIN r_cif_investor ON r_cif_investor.\"cifId\" = cif.\"id\" "
 
+	if ctx.URLParam("search") != "" {
+		queryTotalData += "WHERE cif.name LIKE '%" + ctx.URLParam("search") + "%' "
+	}
+
 	services.DBCPsql.Raw(queryTotalData).Find(&totalData)
 
 	var limitPagination int64 = 10
@@ -36,6 +40,10 @@ func FetchAll(ctx *iris.Context) {
 	query += "FROM cif "
 	query += "LEFT JOIN r_cif_borrower ON r_cif_borrower.\"cifId\" = cif.\"id\" "
 	query += "LEFT JOIN r_cif_investor ON r_cif_investor.\"cifId\" = cif.\"id\" "
+
+	if ctx.URLParam("search") != "" {
+		query += "WHERE cif.name LIKE '%" + ctx.URLParam("search") + "%' "
+	}
 
 	if ctx.URLParam("limit") != "" {
 		query += "LIMIT " + ctx.URLParam("limit") + " "
