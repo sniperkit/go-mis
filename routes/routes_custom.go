@@ -61,6 +61,7 @@ func InitCustomApi() {
 		v2.Any("/installment/submit/:installment_id/status/:status", installment.SubmitInstallmentByInstallmentIDWithStatus)
 		v2.Any("/disbursement", disbursement.FetchAll)
 		v2.Any("/disbursement/set/:loan_id/stage/:stage", disbursement.UpdateStage)
+		v2.Any("/disbursement/get/branch/:branch_id/group/:group_id/disbursement-date/:disbursement_date", disbursement.GetDisbursementDetailByGroup)
 		v2.Any("/user-mis", userMis.FetchUserMisAreaBranchRole)
 		v2.Any("/notification", notification.SendPush)
 		v2.Any("/cashout", cashout.FetchAll)

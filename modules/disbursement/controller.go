@@ -22,73 +22,68 @@ type TotalData struct {
 // FetchAll - fetchAll Disbursement data
 func FetchAll(ctx *iris.Context) {
 	branchID := ctx.Get("BRANCH_ID")
+	disbursementFetchSchema := []DisbursementFetch{}
 
-	totalData := TotalData{}
-	queryTotalData := "SELECT COUNT(loan.*) AS \"totalRows\" "
-	queryTotalData += "FROM disbursement "
-	queryTotalData += "JOIN r_loan_disbursement ON r_loan_disbursement.\"disbursementId\" = disbursement.\"id\" "
-	queryTotalData += "JOIN loan ON r_loan_disbursement.\"loanId\" = loan.\"id\" "
-	queryTotalData += "JOIN r_loan_borrower ON r_loan_borrower.\"loanId\" = loan.\"id\" "
-	queryTotalData += "JOIN borrower ON borrower.\"id\" = r_loan_borrower.\"borrowerId\" "
-	queryTotalData += "JOIN r_cif_borrower ON r_cif_borrower.\"borrowerId\" = borrower.\"id\" "
-	queryTotalData += "JOIN cif ON cif.\"id\" = r_cif_borrower.\"cifId\" "
-	queryTotalData += "LEFT JOIN r_loan_branch ON r_loan_branch.\"loanId\" = loan.\"id\" "
-	queryTotalData += "LEFT JOIN branch ON r_loan_branch.\"branchId\" = branch.\"id\" "
-	queryTotalData += "LEFT JOIN r_loan_group ON r_loan_group.\"loanId\" = loan.\"id\" "
-	queryTotalData += "LEFT JOIN \"group\" ON r_loan_group.\"groupId\" = \"group\".\"id\" "
-	queryTotalData += "WHERE disbursement.\"stage\" IN ('PENDING', 'FAILED') "
-	queryTotalData += "AND loan.\"submittedLoanDate\" IS NOT NULL  "
-	queryTotalData += "AND loan.\"submittedLoanDate\" != '1900-01-00'  "
-	queryTotalData += "AND loan.\"submittedLoanDate\" != '#N/A'  "
-	queryTotalData += "AND loan.\"submittedLoanDate\" != '' "
-	queryTotalData += "AND to_char(DATE(loan.\"submittedLoanDate\"), 'YYYY') = to_char(DATE(now()), 'YYYY') "
-	queryTotalData += "AND branch.id = ? "
-
-	services.DBCPsql.Raw(queryTotalData, branchID).Find(&totalData)
-
-	var limitPagination int64 = 10
-	var offset int64 = 0
-
-	disbursements := []DisbursementFetch{}
-
-	query := "SELECT loan.\"id\" as \"loanId\", disbursement.\"id\", disbursement.\"disbursementDate\", disbursement.\"stage\", loan.\"submittedLoanDate\", loan.\"plafond\", \"group\".\"name\" as \"group\", branch.\"name\" as \"branch\", cif.\"name\" as \"borrower\" "
-	query += "FROM disbursement  "
-	query += "JOIN r_loan_disbursement ON r_loan_disbursement.\"disbursementId\" = disbursement.\"id\"  "
-	query += "JOIN loan ON r_loan_disbursement.\"loanId\" = loan.\"id\"  "
-	query += "JOIN r_loan_borrower ON r_loan_borrower.\"loanId\" = loan.\"id\"  "
-	query += "JOIN borrower ON borrower.\"id\" = r_loan_borrower.\"borrowerId\" "
-	query += "JOIN r_cif_borrower ON r_cif_borrower.\"borrowerId\" = borrower.\"id\"  "
-	query += "JOIN cif ON cif.\"id\" = r_cif_borrower.\"cifId\" "
-	query += "LEFT JOIN r_loan_branch ON r_loan_branch.\"loanId\" = loan.\"id\"  "
-	query += "LEFT JOIN branch ON r_loan_branch.\"branchId\" = branch.\"id\"  "
-	query += "LEFT JOIN r_loan_group ON r_loan_group.\"loanId\" = loan.\"id\"  "
-	query += "LEFT JOIN \"group\" ON r_loan_group.\"groupId\" = \"group\".\"id\"  "
-	query += "WHERE disbursement.\"stage\" IN ('PENDING', 'FAILED')  "
-	query += "AND loan.\"submittedLoanDate\" IS NOT NULL  "
+	query := "SELECT \"group\".id AS \"groupId\", \"group\".\"name\" AS \"group\", branch.id AS \"branchId\", branch.\"name\" AS \"branch\", SUM(loan.plafond) AS \"plafond\", loan.\"submittedLoanDate\"::date AS \"submittedLoanDate\", disbursement.\"disbursementDate\"::date AS \"disbursementDate\" "
+	query += "FROM \"group\" "
+	query += "JOIN r_group_branch ON r_group_branch.\"groupId\" = \"group\".id "
+	query += "JOIN branch ON branch.id = r_group_branch.\"branchId\" "
+	query += "JOIN r_loan_group ON r_loan_group.\"groupId\" = \"group\".id "
+	query += "JOIN loan ON loan.id = r_loan_group.\"loanId\" "
+	query += "JOIN r_loan_disbursement ON r_loan_disbursement.\"loanId\" = loan.id "
+	query += "JOIN disbursement ON disbursement.id = r_loan_disbursement.\"disbursementId\" "
+	query += "WHERE disbursement.stage IN ('PENDING', 'FAILED') "
+	query += "AND loan.\"submittedLoanDate\" IS NOT NULL "
 	query += "AND loan.\"submittedLoanDate\" != '1900-01-00'  "
 	query += "AND loan.\"submittedLoanDate\" != '#N/A'  "
 	query += "AND loan.\"submittedLoanDate\" != '' "
 	query += "AND to_char(DATE(loan.\"submittedLoanDate\"), 'YYYY') = to_char(DATE(now()), 'YYYY') "
+	query += "AND to_char(DATE(disbursement.\"disbursementDate\"), 'YYYY-MM-DD') >= to_char(DATE(now()), 'YYYY-MM-DD') "
 	query += "AND branch.id = ? "
+	query += "GROUP BY \"group\".id, branch.id, branch.\"name\", loan.\"submittedLoanDate\", disbursement.\"disbursementDate\" "
+	query += "ORDER BY disbursement.\"disbursementDate\" ASC, \"group\".\"name\" ASC "
 
-	if ctx.URLParam("limit") != "" {
-		query += "LIMIT " + ctx.URLParam("limit") + " "
-	} else {
-		query += "LIMIT " + strconv.FormatInt(limitPagination, 10) + " "
-	}
-
-	if ctx.URLParam("page") != "" {
-		offset, _ = strconv.ParseInt(ctx.URLParam("page"), 10, 64)
-		query += "OFFSET " + strconv.FormatInt(offset, 10)
-	} else {
-		query += "OFFSET 0"
-	}
-
-	services.DBCPsql.Raw(query, branchID).Find(&disbursements)
+	services.DBCPsql.Raw(query, branchID).Find(&disbursementFetchSchema)
 	ctx.JSON(iris.StatusOK, iris.Map{
-		"status":    "success",
-		"totalRows": totalData.TotalRows,
-		"data":      disbursements,
+		"status": "success",
+		"data":   disbursementFetchSchema,
+	})
+}
+
+func GetDisbursementDetailByGroup(ctx *iris.Context) {
+	query := "SELECT \"group\".id AS \"groupId\", \"group\".\"name\" AS \"groupName\", branch.\"name\" AS \"branchName\", cif.\"name\" AS \"borrower\", loan.id AS \"loanId\", loan.plafond, disbursement.\"disbursementDate\"::date, disbursement.stage "
+	query += "FROM \"group\" "
+	query += "JOIN r_group_branch ON r_group_branch.\"groupId\" = \"group\".id "
+	query += "JOIN branch ON branch.id = r_group_branch.\"branchId\" "
+	query += "JOIN r_loan_group ON r_loan_group.\"groupId\" = \"group\".id "
+	query += "JOIN loan ON loan.id = r_loan_group.\"loanId\" "
+	query += "JOIN r_loan_disbursement ON r_loan_disbursement.\"loanId\" = loan.id "
+	query += "JOIN disbursement ON disbursement.id = r_loan_disbursement.\"disbursementId\" "
+	query += "JOIN r_loan_borrower ON r_loan_borrower.\"loanId\" = loan.id "
+	query += "JOIN borrower ON borrower.id = r_loan_borrower.\"borrowerId\" "
+	query += "JOIN r_cif_borrower ON r_cif_borrower.\"borrowerId\" = borrower.id "
+	query += "JOIN cif ON cif.id = r_cif_borrower.\"cifId\" "
+	query += "WHERE disbursement.stage IN ('PENDING', 'FAILED') "
+	query += "AND loan.\"submittedLoanDate\" IS NOT NULL  "
+	query += "AND loan.\"submittedLoanDate\" != '1900-01-00'   "
+	query += "AND loan.\"submittedLoanDate\" != '#N/A'   "
+	query += "AND loan.\"submittedLoanDate\" != ''  "
+	query += "AND to_char(DATE(loan.\"submittedLoanDate\"), 'YYYY') = to_char(DATE(now()), 'YYYY')  "
+	query += "AND to_char(DATE(disbursement.\"disbursementDate\"), 'YYYY-MM-DD') >= to_char(DATE(now()), 'YYYY-MM-DD')  "
+	query += "AND branch.id = ? "
+	query += "AND \"group\".id = ? "
+	query += "AND disbursement.\"disbursementDate\"::date = ? "
+
+	branchID := ctx.Param("branch_id")
+	groupID := ctx.Param("group_id")
+	disbursementDate := ctx.Param("disbursement_date")
+
+	disbursementDetailByGroupSchema := []DisbursementDetailByGroup{}
+	services.DBCPsql.Raw(query, branchID, groupID, disbursementDate).Scan(&disbursementDetailByGroupSchema)
+
+	ctx.JSON(iris.StatusOK, iris.Map{
+		"status": "success",
+		"data":   disbursementDetailByGroupSchema,
 	})
 }
 
