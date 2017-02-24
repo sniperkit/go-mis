@@ -87,6 +87,74 @@ func GetDisbursementDetailByGroup(ctx *iris.Context) {
 	})
 }
 
+// UpdateDisbursementStage - Update disbursement stage and loan stage
+func UpdateDisbursementStage(ctx *iris.Context) {
+	stage := strings.ToLower(ctx.Param("stage"))
+	loanID, errConvLoanID := strconv.ParseUint(ctx.Param("loan_id"), 10, 64)
+
+	if errConvLoanID != nil {
+		ctx.JSON(iris.StatusInternalServerError, iris.Map{
+			"status":  "error",
+			"message": errConvLoanID.Error(),
+		})
+		return
+	}
+
+	query := "SELECT disbursement.* FROM disbursement "
+	query += "INNER JOIN r_loan_disbursement ON r_loan_disbursement.\"disbursementId\" = disbursement.id "
+	query += "WHERE r_loan_disbursement.\"loanId\" = ?"
+
+	disbursementSchema := Disbursement{}
+	services.DBCPsql.Raw(query, loanID).Scan(&disbursementSchema)
+
+	if stage == "success" {
+		disbursementHistorySchema := &disbursementHistory.DisbursementHistory{StageFrom: "PENDING", StageTo: "SUCCESS"}
+		services.DBCPsql.Table("disbursement_history").Create(disbursementHistorySchema)
+
+		rDisbursementHistorySchema := &r.RDisbursementHistory{DisbursementId: disbursementSchema.ID, DisbursementHistoryId: disbursementHistorySchema.ID}
+		services.DBCPsql.Table("r_disbursement_history").Create(rDisbursementHistorySchema)
+
+		services.DBCPsql.Table("loan").Where("id = ?", loanID).UpdateColumn("stage", "INSTALLMENT")
+		services.DBCPsql.Table("disbursement").Where("id = ?", disbursementSchema.ID).UpdateColumn("stage", "SUCCESS")
+
+		ctx.JSON(iris.StatusOK, iris.Map{
+			"status": "success",
+			"data":   iris.Map{},
+		})
+		return
+	} else if stage == "failed" {
+		jsonDisbursementStage := DisbursementStageInput{}
+		if err := ctx.ReadJSON(&jsonDisbursementStage); err != nil {
+			ctx.JSON(iris.StatusBadRequest, iris.Map{
+				"status":  "error",
+				"message": err.Error(),
+			})
+			return
+		}
+
+		jsonDisbursementStage.UpdateDateValue()
+
+		disbursementHistorySchema := &disbursementHistory.DisbursementHistory{StageFrom: "PENDING", StageTo: "FAILED", LastDisbursementDate: jsonDisbursementStage.LastDisbursementDate, NextDisbursementDate: jsonDisbursementStage.NextDisbursementDate}
+		services.DBCPsql.Table("disbursement_history").Create(disbursementHistorySchema)
+
+		rDisbursementHistorySchema := &r.RDisbursementHistory{DisbursementId: disbursementSchema.ID, DisbursementHistoryId: disbursementHistorySchema.ID}
+		services.DBCPsql.Table("r_disbursement_history").Create(rDisbursementHistorySchema)
+
+		services.DBCPsql.Table("loan").Where("id = ?", loanID).UpdateColumn("stage", "DROPPING-FAILED")
+		services.DBCPsql.Table("disbursement").Where("id = ?", disbursementSchema.ID).UpdateColumn("disbursementDate", jsonDisbursementStage.NextDisbursementDate)
+
+		ctx.JSON(iris.StatusOK, iris.Map{
+			"status": "success",
+			"data":   iris.Map{},
+		})
+	} else {
+		ctx.JSON(iris.StatusBadRequest, iris.Map{
+			"status":  "error",
+			"message": "Invalid request.",
+		})
+	}
+}
+
 // UpdateStage - updateStage Disbursement data
 func UpdateStage(ctx *iris.Context) {
 	disbursementStageInput := DisbursementStageInput{}
