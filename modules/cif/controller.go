@@ -43,7 +43,8 @@ func FetchAll(ctx *iris.Context) {
 	query += "LEFT JOIN r_cif_investor ON r_cif_investor.\"cifId\" = cif.\"id\" "
 
 	if ctx.URLParam("search") != "" {
-		query += "WHERE cif.name LIKE '%" + ctx.URLParam("search") + "%' "
+		// query += "WHERE cif.name LIKE '%" + ctx.URLParam("search") + "%' "
+		queryTotalData += "WHERE cif.\"name\" ~* '" + ctx.URLParam("search") + "' "
 	}
 
 	if ctx.URLParam("limit") != "" {
