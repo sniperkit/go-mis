@@ -11,6 +11,7 @@ type UserMis struct {
 	Fullname    string     `gorm:"column:fullname" json:"fullname"`
 	Username    string     `gorm:"column:_username" json:"username"`
 	Password    string     `gorm:"column:_password" json:"password"`
+	PhoneNo     string     `gorm:"column:phoneNo" json:"phoneNo"`
 	PicUrl      string     `gorm:"column:picUrl" json:"picUrl"`
 	IsSuspended *bool      `gorm:"column:isSuspended" json:"isSuspended"`
 	CreatedAt   time.Time  `gorm:"column:createdAt" json:"createdAt"`
