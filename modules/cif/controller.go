@@ -44,7 +44,7 @@ func FetchAll(ctx *iris.Context) {
 
 	if ctx.URLParam("search") != "" {
 		// query += "WHERE cif.name LIKE '%" + ctx.URLParam("search") + "%' "
-		queryTotalData += "WHERE cif.\"name\" ~* '" + ctx.URLParam("search") + "' "
+		query += "WHERE cif.\"name\" ~* '" + ctx.URLParam("search") + "' "
 	}
 
 	if ctx.URLParam("limit") != "" {
