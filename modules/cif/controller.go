@@ -25,7 +25,8 @@ func FetchAll(ctx *iris.Context) {
 	queryTotalData += "LEFT JOIN r_cif_investor ON r_cif_investor.\"cifId\" = cif.\"id\" "
 
 	if ctx.URLParam("search") != "" {
-		queryTotalData += "WHERE cif.name LIKE '%" + ctx.URLParam("search") + "%' "
+		// queryTotalData += "WHERE cif.name LIKE '%" + ctx.URLParam("search") + "%' "
+		queryTotalData += "WHERE cif.\"name\" ~* '" + ctx.URLParam("search") + "' "
 	}
 
 	services.DBCPsql.Raw(queryTotalData).Find(&totalData)
