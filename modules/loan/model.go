@@ -9,7 +9,7 @@ type Loan struct {
 	Purpose              string     `gorm:"column:purpose" json:"purpose"`
 	URLPic1              string     `gorm:"column:urlPic1" json:"urlPic1"`
 	URLPic2              string     `gorm:"column:urlPic2" json:"urlPic2"`
-	SubmittedLoanDate    *time.Time `gorm:"column:submittedLoanDate" json:"submittedLoanDate"`
+	SubmittedLoanDate    time.Time  `gorm:"column:submittedLoanDate" json:"submittedLoanDate"`
 	SubmittedPlafond     float64    `gorm:"column:submittedPlafond" json:"submittedPlafond"`
 	SubmittedTenor       int64      `gorm:"column:submittedTenor" json:"submittedTenor"`
 	SubmittedInstallment float64    `gorm:"column:submittedInstallment" json:"submittedInstallment"`
@@ -19,7 +19,10 @@ type Loan struct {
 	Rate                 float64    `gorm:"column:rate" json:"rate"`
 	Installment          float64    `gorm:"column:installment" json:"installment"`
 	Plafond              float64    `gorm:"column:plafond" json:"plafond"`
+	GroupReserve         float64    `gorm:"column:groupReserve" json:"groupReserve"`
 	Stage                string     `gorm:"column:stage" json:"stage"`
+	IsLWK                bool       `gorm:"column:isLWK" json:"isLWK" sql:"default:false"`
+	IsUPK                bool       `gorm:"column:isUPK" json:"IsUPK" sql:"default:false"`
 	CreatedAt            time.Time  `gorm:"column:createdAt" json:"createdAt"`
 	UpdatedAt            time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
 	DeletedAt            *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
