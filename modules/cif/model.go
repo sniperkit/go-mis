@@ -24,6 +24,8 @@ type Cif struct {
 	MotherName          string     `gorm:"column:mothersName" json:"mothersName"`
 	Religion            string     `gorm:"column:religion" json:"religion"`
 	Address             string     `gorm:"column:address" json:"address"`
+	Rt		    string     `gorm:"column:rt" json:"rt"`
+	Rw		    string     `gorm:"column:rw" json:"rw"`
 	Kelurahan           string     `gorm:"column:kelurahan" json:"kelurahan"`
 	Kecamatan           string     `gorm:"column:kecamatan" json:"kecamatan"`
 	City                string     `gorm:"column:city" json:"city"`
