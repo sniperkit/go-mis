@@ -77,5 +77,6 @@ func InitCustomApi() {
 	}
 
 	iris.Get(baseURL+"/investor-without-va", investor.InvestorWithoutVA)
+	iris.Post(baseURL+"/investor-register-va", investor.InvestorRegisterVA)
 
 }
