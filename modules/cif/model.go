@@ -16,7 +16,7 @@ type Cif struct {
 	PlaceOfBirth        string     `gorm:"column:placeOfBirth" json:"placeOfBirth"`
 	DateOfBirth         string     `gorm:"column:dateOfBirth" json:"dateOfBirth"`
 	IdCardNo            string     `gorm:"column:idCardNo" json:"idCardNo"`
-	IdCardValidDate     time.Time  `gorm:"column:idCardValidDate" json:"idCardValidDate"`
+	IdCardValidDate     string     `gorm:"column:idCardValidDate" json:"idCardValidDate"`
 	IdCardFilename      string     `gorm:"column:idCardFilename" json:"idCardFilename"`
 	TaxCardNo           string     `gorm:"column:taxCardNo" json:"taxCardNo"`
 	TaxCardFilename     string     `gorm:"column:taxCardFilename" json:"taxCardFilename"`
@@ -24,6 +24,8 @@ type Cif struct {
 	MotherName          string     `gorm:"column:mothersName" json:"mothersName"`
 	Religion            string     `gorm:"column:religion" json:"religion"`
 	Address             string     `gorm:"column:address" json:"address"`
+	RT                  string     `gorm:"column:rt" json:"rt"`
+	RW                  string     `gorm:"column:rw" json:"rw"`
 	Kelurahan           string     `gorm:"column:kelurahan" json:"kelurahan"`
 	Kecamatan           string     `gorm:"column:kecamatan" json:"kecamatan"`
 	City                string     `gorm:"column:city" json:"city"`

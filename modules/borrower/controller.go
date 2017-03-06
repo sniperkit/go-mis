@@ -37,11 +37,12 @@ func Approve(ctx *iris.Context) {
 	// get CIF with with idCardNo = ktp
 	cifData := cif.Cif{}
 	if ktp != "" {
-		services.DBCPsql.Table("cif").Select("\"idCardNo\"").Where("\"idCardNo\" = ?", ktp).Scan(&cifData)
+		services.DBCPsql.Table("cif").Where("\"idCardNo\" = ?", ktp).Scan(&cifData)
+
 		if cifData.IdCardNo != "" {
 			// found. use existing cif
 			// get borrower id
-			borrower := Borrower{}
+			borrower := r.RCifBorrower{}
 			services.DBCPsql.Table("r_cif_borrower").Where("\"cifId\" =?", cifData.ID).Scan(&borrower)
 
 			// reserve one loan record for this new borrower
@@ -50,7 +51,7 @@ func Approve(ctx *iris.Context) {
 
 			rLoanBorrower := r.RLoanBorrower{
 				LoanId:     loan.ID,
-				BorrowerId: borrower.ID,
+				BorrowerId: borrower.BorrowerId,
 			}
 			services.DBCPsql.Table("r_loan_borrower").Create(&rLoanBorrower)
 
@@ -58,6 +59,7 @@ func Approve(ctx *iris.Context) {
 			// get the newest one
 			UseProductPricing(0, loan.ID)
 			go CreateRelationLoanToGroup(loan.ID, groupID)
+			go CreateRelationLoanToBranch(loan.ID, groupID)
 			go CreateDisbursementRecord(loan.ID, payload["disbursementDate"].(string))
 		} else {
 			// not found. create new CIF
@@ -88,6 +90,7 @@ func Approve(ctx *iris.Context) {
 			// get the newest one
 			UseProductPricing(0, loan.ID)
 			go CreateRelationLoanToGroup(loan.ID, groupID)
+			go CreateRelationLoanToBranch(loan.ID, groupID)
 			go CreateDisbursementRecord(loan.ID, payload["disbursementDate"].(string))
 		}
 
@@ -180,6 +183,15 @@ func CreateLoan(payload map[string]interface{}) loan.Loan {
 func CreateRelationLoanToGroup(loanID uint64, groupID uint64) {
 	rLoanGroupSchema := &r.RLoanGroup{LoanId: loanID, GroupId: groupID}
 	services.DBCPsql.Table("r_loan_group").Create(&rLoanGroupSchema)
+}
+
+// CreateRelationLoanToBranch - create relation loan to branch
+func CreateRelationLoanToBranch(loanID uint64, groupID uint64) {
+	rGroupBranch := r.RGroupBranch{}
+	services.DBCPsql.Table("r_group_branch").Where("\"groupId\" = ?", groupID).First(&rGroupBranch)
+
+	rLoanBranch := &r.RLoanBranch{LoanId: loanID, BranchId: rGroupBranch.BranchId}
+	services.DBCPsql.Table("r_loan_branch").Create(&rLoanBranch)
 }
 
 // CreateDisbursementRecord - Create a new disbursement record
