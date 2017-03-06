@@ -38,9 +38,13 @@ func FetchAll(ctx *iris.Context) {
 	queryTotalData += "LEFT JOIN branch ON r_loan_branch.\"branchId\" = branch.\"id\" "
 	queryTotalData += "LEFT JOIN r_loan_disbursement ON r_loan_disbursement.\"loanId\" = loan.\"id\" "
 	queryTotalData += "LEFT JOIN disbursement ON disbursement.\"id\" = r_loan_disbursement.\"disbursementId\" "
-	queryTotalData += "WHERE branch.id = '1'"
+	queryTotalData += "WHERE branch.id = ? "
 
-	services.DBCPsql.Raw(queryTotalData).Find(&totalData)
+	if ctx.URLParam("search") != "" {
+		queryTotalData += "AND cif.\"name\" ~* '" + ctx.URLParam("search") + "' "
+	}
+
+	services.DBCPsql.Raw(queryTotalData, branchID).Find(&totalData)
 
 	loans := []LoanFetch{}
 
@@ -67,6 +71,10 @@ func FetchAll(ctx *iris.Context) {
 	query += "LEFT JOIN r_loan_disbursement ON r_loan_disbursement.\"loanId\" = loan.\"id\" "
 	query += "LEFT JOIN disbursement ON disbursement.\"id\" = r_loan_disbursement.\"disbursementId\" "
 	query += "WHERE branch.id = ? "
+
+	if ctx.URLParam("search") != "" {
+		query += "AND cif.\"name\" ~* '" + ctx.URLParam("search") + "' "
+	}
 
 	if ctx.URLParam("limit") != "" {
 		query += "LIMIT " + ctx.URLParam("limit") + " "
@@ -139,8 +147,8 @@ func GetLoanDetail(ctx *iris.Context) {
 
 	queryBorrowerObj := "SELECT cif.\"cifNumber\", cif.\"name\", \"group\".\"name\" AS \"group\", area.\"name\" AS \"area\", branch.\"name\" AS \"branch\" "
 	queryBorrowerObj += "FROM loan "
-	queryBorrowerObj += "JOIN r_borrower_loan ON r_borrower_loan.\"loanId\" = loan.\"id\" "
-	queryBorrowerObj += "JOIN borrower ON borrower.\"id\" = r_borrower_loan.\"borrowerId\" "
+	queryBorrowerObj += "JOIN r_loan_borrower ON r_loan_borrower.\"loanId\" = loan.\"id\" "
+	queryBorrowerObj += "JOIN borrower ON borrower.\"id\" = r_loan_borrower.\"borrowerId\" "
 	queryBorrowerObj += "JOIN r_cif_borrower ON r_cif_borrower.\"borrowerId\" = borrower.\"id\" "
 	queryBorrowerObj += "JOIN cif ON cif.\"id\" = r_cif_borrower.\"cifId\" "
 	queryBorrowerObj += "JOIN r_loan_group ON r_loan_group.\"loanId\" = loan.\"id\" "

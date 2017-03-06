@@ -156,7 +156,7 @@ func CreateLoan(payload map[string]interface{}) loan.Loan {
 	// map each payload field to it's respective cif field
 	newLoan := loan.Loan{}
 	newLoan.Purpose = cpl["data_tujuan"]
-	newLoan.SubmittedLoanDate, _ = time.Parse("2006-01-02 15:04:05", cpl["data_tgl"])
+	newLoan.SubmittedLoanDate, _ = cpl["data_tgl"] // time.Parse("2006-01-02 15:04:05", cpl["data_tgl"])
 	newLoan.SubmittedTenor, _ = strconv.ParseInt(cpl["data_jangkawaktu"], 10, 64)
 	newLoan.SubmittedPlafond, _ = strconv.ParseFloat(cpl["data_pengajuan"], 64)
 	newLoan.SubmittedInstallment, _ = strconv.ParseFloat(cpl["installment"], 64)
@@ -189,4 +189,28 @@ func CreateDisbursementRecord(loanID uint64, disbursementDate string) {
 
 	rLoanDisbursementSchema := &r.RLoanDisbursement{LoanId: loanID, DisbursementId: disbursementSchema.ID}
 	services.DBCPsql.Table("r_loan_disbursement").Create(&rLoanDisbursementSchema)
+}
+
+// ProspectiveBorrowerUpdateStatus - update status
+func ProspectiveBorrowerUpdateStatus(ctx *iris.Context) {
+	answerID := ctx.Param("id")
+	services.DBCPsqlSurvey.Table("a_fields").Where("answer_id = ?", answerID).UpdateColumn("is_migrated", true)
+	services.DBCPsqlSurvey.Table("a_fields").Where("answer_id = ?", answerID).UpdateColumn("is_approve", true)
+
+	ctx.JSON(iris.StatusOK, iris.Map{
+		"status": "success",
+		"data":   iris.Map{},
+	})
+}
+
+// ProspectiveBorrowerUpdateStatusToReject - update status to `reject`
+func ProspectiveBorrowerUpdateStatusToReject(ctx *iris.Context) {
+	answerID := ctx.Param("id")
+	services.DBCPsqlSurvey.Table("a_fields").Where("answer_id = ?", answerID).UpdateColumn("is_migrated", true)
+	services.DBCPsqlSurvey.Table("a_fields").Where("answer_id = ?", answerID).UpdateColumn("is_approve", false)
+
+	ctx.JSON(iris.StatusOK, iris.Map{
+		"status": "success",
+		"data":   iris.Map{},
+	})
 }
