@@ -72,6 +72,7 @@ func InitCustomApi() {
 		v2.Any("/borrower/approve", borrower.Approve)
 		v2.Any("/borrower/approve/update-status/:id", borrower.ProspectiveBorrowerUpdateStatus)
 		v2.Any("/borrower/reject/update-status/:id", borrower.ProspectiveBorrowerUpdateStatusToReject)
+		v2.Get("/borrower/total-by-branch/:branch_id", borrower.GetTotalBorrowerByBranchID)
 		v2.Any("/virtual-account-statement", virtualAccountStatement.GetVAStatement)
 		v2.Any("/agent", agent.GetAllAgentByBranchID)
 	}

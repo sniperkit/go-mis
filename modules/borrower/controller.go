@@ -226,3 +226,24 @@ func ProspectiveBorrowerUpdateStatusToReject(ctx *iris.Context) {
 		"data":   iris.Map{},
 	})
 }
+
+type Count struct {
+	Total int64 `gorm:"column:count"`
+}
+
+// GetTotalBorrowerByBranchID - get total borrower
+func GetTotalBorrowerByBranchID(ctx *iris.Context) {
+	query := "SELECT DISTINCT COUNT(borrower.id)"
+	query += "FROM borrower "
+	query += "JOIN r_loan_borrower ON r_loan_borrower.\"borrowerId\" = borrower.id "
+	query += "JOIN r_loan_branch ON r_loan_branch.\"loanId\" = r_loan_borrower.\"loanId\" "
+	query += "WHERE r_loan_branch.\"branchId\" = ? AND borrower.\"deletedAt\" IS NULL "
+
+	countSchema := Count{}
+	services.DBCPsql.Raw(query, ctx.Param("branch_id")).Scan(&countSchema)
+
+	ctx.JSON(iris.StatusOK, iris.Map{
+		"status": "success",
+		"data":   countSchema.Total,
+	})
+}

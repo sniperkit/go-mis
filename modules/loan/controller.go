@@ -38,7 +38,7 @@ func FetchAll(ctx *iris.Context) {
 	queryTotalData += "LEFT JOIN branch ON r_loan_branch.\"branchId\" = branch.\"id\" "
 	queryTotalData += "LEFT JOIN r_loan_disbursement ON r_loan_disbursement.\"loanId\" = loan.\"id\" "
 	queryTotalData += "LEFT JOIN disbursement ON disbursement.\"id\" = r_loan_disbursement.\"disbursementId\" "
-	queryTotalData += "WHERE branch.id = ? "
+	queryTotalData += "WHERE branch.id = ? AND loan.\"deletedAt\" IS NULL AND loan.\"stage\" NOT IN ('END', 'END-EARLY') "
 
 	if ctx.URLParam("search") != "" {
 		queryTotalData += "AND cif.\"name\" ~* '" + ctx.URLParam("search") + "' "
@@ -70,7 +70,7 @@ func FetchAll(ctx *iris.Context) {
 	query += "LEFT JOIN branch ON r_loan_branch.\"branchId\" = branch.\"id\" "
 	query += "LEFT JOIN r_loan_disbursement ON r_loan_disbursement.\"loanId\" = loan.\"id\" "
 	query += "LEFT JOIN disbursement ON disbursement.\"id\" = r_loan_disbursement.\"disbursementId\" "
-	query += "WHERE branch.id = ? "
+	query += "WHERE branch.id = ? AND loan.\"deletedAt\" IS NULL AND loan.\"stage\" NOT IN ('END', 'END-EARLY') "
 
 	if ctx.URLParam("search") != "" {
 		query += "AND cif.\"name\" ~* '" + ctx.URLParam("search") + "' "
