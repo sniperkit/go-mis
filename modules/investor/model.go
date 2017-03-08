@@ -16,3 +16,9 @@ type Investor struct {
 	UpdatedAt        time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
 	DeletedAt        *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
 }
+
+type InvestorWithoutVaSchema struct {
+	Name       string `gorm:"column:name" json:"name"`
+	InvestorID uint64 `gorm:"column:investorId" json:"investorId"`
+	InvestorNo uint64 `gorm:"column:investorNo" json:"investorNo"`
+}

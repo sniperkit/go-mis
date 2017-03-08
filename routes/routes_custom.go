@@ -12,6 +12,7 @@ import (
 	"bitbucket.org/go-mis/modules/disbursement"
 	"bitbucket.org/go-mis/modules/group"
 	"bitbucket.org/go-mis/modules/installment"
+	"bitbucket.org/go-mis/modules/investor"
 	"bitbucket.org/go-mis/modules/investor-check"
 	"bitbucket.org/go-mis/modules/loan"
 	"bitbucket.org/go-mis/modules/notification"
@@ -45,7 +46,7 @@ func InitCustomApi() {
 	v2 := iris.Party(baseURL, auth.EnsureAuth)
 	{
 		v2.Any("/me-user-mis", auth.CurrentUserMis)
-		v2.Any("/me-agent", auth.CurrentAgent)
+		// v2.Any("/me-agent", auth.CurrentAgent)
 		v2.Any("/branch", branch.FetchAll)
 		v2.Any("/branch/:id", branch.GetByID)
 		v2.Any("/area", area.FetchAll)
@@ -72,10 +73,14 @@ func InitCustomApi() {
 		v2.Any("/borrower/approve", borrower.Approve)
 		v2.Any("/borrower/approve/update-status/:id", borrower.ProspectiveBorrowerUpdateStatus)
 		v2.Any("/borrower/reject/update-status/:id", borrower.ProspectiveBorrowerUpdateStatusToReject)
+		v2.Get("/borrower/total-by-branch/:branch_id", borrower.GetTotalBorrowerByBranchID)
 		v2.Any("/virtual-account-statement", virtualAccountStatement.GetVAStatement)
 		v2.Any("/agent", agent.GetAllAgentByBranchID)
 		v2.Any("/investor-check/datatables", investorCheck.FetchDatatables)
 		v2.Any("/investor-check/verify/:id", investorCheck.Verify)
 	}
+
+	iris.Get(baseURL+"/investor-without-va", investor.InvestorWithoutVA)
+	iris.Post(baseURL+"/investor-register-va", investor.InvestorRegisterVA)
 
 }

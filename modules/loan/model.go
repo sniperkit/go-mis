@@ -31,6 +31,7 @@ type Loan struct {
 type LoanFetch struct {
 	ID                uint64    `gorm:"primary_key" gorm:"column:_id" json:"_id"`
 	LoanPeriod        int64     `gorm:"column:loanPeriod" json:"loanPeriod"`
+	LoanType          string    `gorm:"column:loanType" json:"loanType"`
 	Subgroup          string    `gorm:"column:subgroup" json:"subgrop"`
 	SubmittedLoanDate string    `gorm:"column:submittedLoanDate" json:"submittedLoanDate"`
 	CreditScoreGrade  string    `gorm:"column:creditScoreGrade" json:"creditScoreGrade"`
