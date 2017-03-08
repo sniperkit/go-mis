@@ -13,9 +13,22 @@ func Init() {
 // FetchAll - fetchAll branchs data
 /** Todo error handling */
 func FetchAll(ctx *iris.Context) {
-	branch := getBranchWithoutManager()
-	branchManager := getBranchManager()
-	branch = combineBranchManager(branch, branchManager)
+	// branch := getBranchWithoutManager()
+	// branchManager := getBranchManager()
+	// branch = combineBranchManager(branch, branchManager)
+
+	query := "SELECT branch.id, area.\"name\" AS \"area\", branch.\"name\" AS \"name\", branch.city, branch.province, user_mis.fullname AS \"manager\", \"role\".\"name\" AS \"role\" "
+	query += "FROM branch "
+	query += "JOIN r_area_branch ON r_area_branch.\"branchId\" = branch.id "
+	query += "JOIN area ON area.id = r_area_branch.\"areaId\" "
+	query += "JOIN r_branch_user_mis ON r_branch_user_mis.\"branchId\" = branch.id "
+	query += "JOIN user_mis ON user_mis.id = r_branch_user_mis.\"branchId\" "
+	query += "JOIN r_user_mis_role ON r_user_mis_role.\"userMisId\" = user_mis.id "
+	query += "JOIN \"role\" ON \"role\".id = r_user_mis_role.\"roleId\" "
+	query += "WHERE (\"role\".\"name\" ~* 'branch manager' OR \"role\".id IS NULL) AND branch.\"deletedAt\" IS NULL "
+
+	branch := []BranchManagerArea{}
+	services.DBCPsql.Raw(query).Scan(&branch)
 
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"status": "success",
