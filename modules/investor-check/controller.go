@@ -25,8 +25,8 @@ func FetchDatatables(ctx *iris.Context) {
 	queryTotalData += "WHERE \"isValidated\" = false "
 
 	if ctx.URLParam("search") != "" {
-		query += "AND name LIKE '%" + ctx.URLParam("search") + "%' "
-		queryTotalData += "AND name LIKE '%" + ctx.URLParam("search") + "%' "
+		query += "AND name ~* '" + ctx.URLParam("search") + "' "
+		queryTotalData += "AND name ~* '" + ctx.URLParam("search") + "' "
 	}
 
 	services.DBCPsql.Raw(query).Scan(&investors)
