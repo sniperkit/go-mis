@@ -13,6 +13,7 @@ import (
 	"bitbucket.org/go-mis/modules/group"
 	"bitbucket.org/go-mis/modules/installment"
 	"bitbucket.org/go-mis/modules/investor"
+	"bitbucket.org/go-mis/modules/investor-check"
 	"bitbucket.org/go-mis/modules/loan"
 	"bitbucket.org/go-mis/modules/notification"
 	"bitbucket.org/go-mis/modules/survey"
@@ -75,6 +76,8 @@ func InitCustomApi() {
 		v2.Get("/borrower/total-by-branch/:branch_id", borrower.GetTotalBorrowerByBranchID)
 		v2.Any("/virtual-account-statement", virtualAccountStatement.GetVAStatement)
 		v2.Any("/agent", agent.GetAllAgentByBranchID)
+		v2.Any("/investor-check/datatables", investorCheck.FetchDatatables)
+		v2.Any("/investor-check/verify/:id", investorCheck.Verify)
 	}
 
 	iris.Get(baseURL+"/investor-without-va", investor.InvestorWithoutVA)
