@@ -19,12 +19,12 @@ func FetchAll(ctx *iris.Context) {
 
 	query := "SELECT branch.id, area.\"name\" AS \"area\", branch.\"name\" AS \"name\", branch.city, branch.province, user_mis.fullname AS \"manager\", \"role\".\"name\" AS \"role\" "
 	query += "FROM branch "
-	query += "JOIN r_area_branch ON r_area_branch.\"branchId\" = branch.id "
-	query += "JOIN area ON area.id = r_area_branch.\"areaId\" "
-	query += "JOIN r_branch_user_mis ON r_branch_user_mis.\"branchId\" = branch.id "
-	query += "JOIN user_mis ON user_mis.id = r_branch_user_mis.\"branchId\" "
-	query += "JOIN r_user_mis_role ON r_user_mis_role.\"userMisId\" = user_mis.id "
-	query += "JOIN \"role\" ON \"role\".id = r_user_mis_role.\"roleId\" "
+	query += "LEFT JOIN r_area_branch ON r_area_branch.\"branchId\" = branch.id "
+	query += "LEFT JOIN area ON area.id = r_area_branch.\"areaId\" "
+	query += "LEFT JOIN r_branch_user_mis ON r_branch_user_mis.\"branchId\" = branch.id "
+	query += "LEFT JOIN user_mis ON user_mis.id = r_branch_user_mis.\"branchId\" "
+	query += "LEFT JOIN r_user_mis_role ON r_user_mis_role.\"userMisId\" = user_mis.id "
+	query += "LEFT JOIN \"role\" ON \"role\".id = r_user_mis_role.\"roleId\" "
 	query += "WHERE (\"role\".\"name\" ~* 'branch manager' OR \"role\".id IS NULL) AND branch.\"deletedAt\" IS NULL "
 
 	branch := []BranchManagerArea{}
