@@ -101,7 +101,8 @@ func FetchAll(ctx *iris.Context) {
 func FetchDropping(ctx *iris.Context) {
 	loanData := []LoadDropping{}
 
-	query := "SELECT loan.id, stage, cif_borrower.\"name\" AS borrower, \"group\".\"name\" AS \"group\", investor.id AS investorid, cif_investor.name AS investor "
+	// ref: dropping.sql
+	query := "SELECT loan.id, stage, cif_borrower.\"name\" AS borrower, \"group\".\"name\" AS \"group\", cif_investor.name AS investor "
 	query += "FROM loan "
 	query += "JOIN r_loan_borrower ON r_loan_borrower.\"loanId\" = loan.id "
 	query += "JOIN borrower ON borrower.id = r_loan_borrower.\"borrowerId\" "
@@ -113,7 +114,7 @@ func FetchDropping(ctx *iris.Context) {
 	query += "JOIN investor ON investor.id = r_investor_product_pricing_loan.\"investorId\" "
 	query += "JOIN r_cif_investor ON r_cif_investor.\"investorId\" = investor.id "
 	query += "JOIN (SELECT * FROM cif WHERE \"deletedAt\" IS NULL) AS cif_investor ON cif_investor.id = r_cif_investor.\"cifId\" "
-	query += "WHERE loan.\"deletedAt\" IS NULL AND loan.stage = 'ARCHIVE'"
+	query += "WHERE loan.\"deletedAt\" IS NULL AND (loan.stage = 'ARCHIVE' OR loan.stage = 'DISBURSEMENT-FAILED')"
 
 	services.DBCPsql.Raw(query).Find(&loanData)
 
