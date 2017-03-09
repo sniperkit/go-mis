@@ -156,6 +156,12 @@ func storeInstallment(installmentId uint64, status string) {
 		return
 	}
 
+	if status == "IN-REVIEW" {
+		UpdateStageInstallmentApproveOrReject(installmentId, status)
+		fmt.Println("Installment data will be reviewed. installmentId=" + convertedInstallmentId)
+		return
+	}
+
 	/*
 	*		UPDATE STATUS TO `PROCESSING`, ONCE THE CALCULATION IS DONE, THEN UPDATE STATUS TO `SUCCESS`
 	 */
@@ -252,7 +258,7 @@ func SubmitInstallmentByGroupIDAndTransactionDateWithStatus(ctx *iris.Context) {
 	transactionDate := ctx.Param("transaction_date")
 	status := strings.ToUpper(ctx.Param("status"))
 
-	if strings.ToLower(ctx.Param("status")) == "approve" || strings.ToLower(ctx.Param("status")) == "reject" {
+	if strings.ToLower(ctx.Param("status")) == "approve" || strings.ToLower(ctx.Param("status")) == "reject" || strings.ToLower(ctx.Param("status")) == "in-review" {
 		query := "SELECT "
 		query += "\"group\".\"id\" as \"groupId\", \"group\".\"name\" as \"groupName\","
 		query += "installment.\"id\" as \"installmentId\", installment.\"type\", installment.\"paidInstallment\", installment.\"penalty\", installment.\"reserve\", installment.\"presence\", installment.\"frequency\", installment.\"stage\" "
