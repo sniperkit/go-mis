@@ -34,6 +34,7 @@ func Approve(ctx *iris.Context) {
 
 	ktp := payload["client_ktp"].(string)
 	groupID, _ := strconv.ParseUint(payload["groupId"].(string), 10, 64)
+
 	// get CIF with with idCardNo = ktp
 	cifData := cif.Cif{}
 	if ktp != "" {
@@ -165,10 +166,10 @@ func CreateLoan(payload map[string]interface{}) loan.Loan {
 	newLoan.SubmittedInstallment, _ = strconv.ParseFloat(cpl["installment"], 64)
 	newLoan.LoanPeriod, _ = strconv.ParseInt(cpl["data_ke"], 10, 64)
 
-	newLoan.Tenor, _ = strconv.ParseUint(cpl["data_jangkawaktu"], 10, 64)
+	newLoan.Tenor, _ = strconv.ParseUint(cpl["tenor"], 10, 64)
 	newLoan.Rate, _ = strconv.ParseFloat(cpl["rate"], 64) // temporary value until the input defined in the future
 	newLoan.Installment, _ = strconv.ParseFloat(cpl["installment"], 64)
-	newLoan.Plafond, _ = strconv.ParseFloat(cpl["data_pengajuan"], 64)
+	newLoan.Plafond, _ = strconv.ParseFloat(cpl["plafond"], 64)
 
 	newLoan.CreditScoreGrade = cpl["creditScoreGrade"]
 	newLoan.CreditScoreValue, _ = strconv.ParseFloat(cpl["creditScoreValue"], 64)
