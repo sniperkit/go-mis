@@ -16,6 +16,7 @@ import (
 	"bitbucket.org/go-mis/modules/investor"
 	"bitbucket.org/go-mis/modules/investor-check"
 	"bitbucket.org/go-mis/modules/loan"
+	"bitbucket.org/go-mis/modules/location"
 	"bitbucket.org/go-mis/modules/notification"
 	"bitbucket.org/go-mis/modules/survey"
 	"bitbucket.org/go-mis/modules/user-mis"
@@ -85,5 +86,5 @@ func InitCustomApi() {
 
 	iris.Get(baseURL+"/investor-without-va", investor.InvestorWithoutVA)
 	iris.Post(baseURL+"/investor-register-va", investor.InvestorRegisterVA)
-
+	iris.Get(baseURL+"/location", location.GetLocation)
 }
