@@ -2,6 +2,7 @@ package routes
 
 import (
 	"bitbucket.org/go-mis/config"
+	"bitbucket.org/go-mis/modules/account"
 	"bitbucket.org/go-mis/modules/agent"
 	"bitbucket.org/go-mis/modules/area"
 	"bitbucket.org/go-mis/modules/auth"
@@ -78,6 +79,8 @@ func InitCustomApi() {
 		v2.Any("/agent", agent.GetAllAgentByBranchID)
 		v2.Any("/investor-check/datatables", investorCheck.FetchDatatables)
 		v2.Any("/investor-check/verify/:id", investorCheck.Verify)
+		v2.Get("/investor-for-topup", investor.GetInvestorForTopup)
+		v2.Any("/topup/submit", account.DoTopup)
 	}
 
 	iris.Get(baseURL+"/investor-without-va", investor.InvestorWithoutVA)

@@ -2,6 +2,7 @@ package investor
 
 import (
 	"fmt"
+	"strconv"
 
 	"bitbucket.org/go-mis/modules/r"
 	"bitbucket.org/go-mis/modules/virtual-account"
@@ -82,5 +83,67 @@ func InvestorRegisterVA(ctx *iris.Context) {
 			"bca": vaSchemaBCA,
 			"bri": vaSchemaBRI,
 		},
+	})
+}
+
+type TotalData struct {
+	TotalRows int64 `gorm:"column:totalRows" json:"totalRows"`
+}
+
+type InvestorSchema struct {
+	AccountID  uint64 `gorm:"column:accountId" json:"accountId"`
+	CifID      uint64 `gorm:"column:cifId" json:"cifId"`
+	InvestorID uint64 `gorm:"column:investorId" json:"investorId"`
+	Fullname   string `gorm:"column:fullname" json:"fullname"`
+	Username   string `gorm:"column:username" json:"username"`
+	PhoneNo    string `gorm:"column:phoneNo" json:"phoneNo"`
+}
+
+func GetInvestorForTopup(ctx *iris.Context) {
+	queryCount := "SELECT count(*) as \"totalRows\" "
+	queryCount += "FROM investor "
+	queryCount += "JOIN r_cif_investor ON r_cif_investor.\"investorId\" = investor.id "
+	queryCount += "JOIN cif ON cif.id = r_cif_investor.\"cifId\" "
+	queryCount += "JOIN r_account_investor ON r_account_investor.\"investorId\" = investor.id "
+	queryCount += "WHERE cif.\"deletedAt\" IS NULL AND investor.\"deletedAt\" IS NULL "
+
+	queryGetInvestor := "SELECT r_account_investor.id AS \"accountId\", cif.id AS \"cifId\", investor.id AS \"investorId\", cif.\"name\" AS \"fullname\", cif.\"username\" AS \"username\", cif.\"phoneNo\"   "
+	queryGetInvestor += "FROM investor "
+	queryGetInvestor += "JOIN r_cif_investor ON r_cif_investor.\"investorId\" = investor.id "
+	queryGetInvestor += "JOIN cif ON cif.id = r_cif_investor.\"cifId\" "
+	queryGetInvestor += "JOIN r_account_investor ON r_account_investor.\"investorId\" = investor.id "
+	queryGetInvestor += "WHERE cif.\"deletedAt\" IS NULL AND investor.\"deletedAt\" IS NULL "
+
+	if ctx.URLParam("search") != "" {
+		queryCount += "AND cif.\"name\" ~* '" + ctx.URLParam("search") + "' "
+		queryGetInvestor += "AND cif.\"name\" ~* '" + ctx.URLParam("search") + "' "
+	}
+
+	var limitPagination int64 = 10
+	var offset int64 = 0
+
+	if ctx.URLParam("limit") != "" {
+		queryGetInvestor += "LIMIT " + ctx.URLParam("limit") + " "
+	} else {
+		queryGetInvestor += "LIMIT " + strconv.FormatInt(limitPagination, 10) + " "
+	}
+
+	if ctx.URLParam("page") != "" {
+		offset, _ = strconv.ParseInt(ctx.URLParam("page"), 10, 64)
+		queryGetInvestor += "OFFSET " + strconv.FormatInt(offset, 10)
+	} else {
+		queryGetInvestor += "OFFSET 0"
+	}
+
+	totalData := TotalData{}
+	services.DBCPsql.Raw(queryCount).Find(&totalData)
+
+	investorSchema := []InvestorSchema{}
+	services.DBCPsql.Raw(queryGetInvestor).Find(&investorSchema)
+
+	ctx.JSON(iris.StatusOK, iris.Map{
+		"status":    "success",
+		"totalRows": totalData.TotalRows,
+		"data":      investorSchema,
 	})
 }
