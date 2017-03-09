@@ -19,10 +19,12 @@ func FetchDatatables(ctx *iris.Context) {
 	query := "SELECT id, name, \"idCardNo\", \"idCardFilename\", \"taxCardNo\", \"taxCardFilename\" "
 	query += "FROM cif "
 	query += "WHERE \"isValidated\" = false "
+	query += "AND \"deletedAt\" IS NULL "
 
 	queryTotalData := "SELECT count(cif.*) as \"totalRows\" "
 	queryTotalData += "FROM cif "
 	queryTotalData += "WHERE \"isValidated\" = false "
+	queryTotalData += "AND \"deletedAt\" IS NULL "
 
 	if ctx.URLParam("search") != "" {
 		query += "AND name ~* '" + ctx.URLParam("search") + "' "
