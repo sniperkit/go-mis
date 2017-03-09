@@ -222,7 +222,7 @@ func storeInstallment(installmentId uint64, status string) {
 // UpdateStageInstallmentApproveOrReject - Update installment stage
 func UpdateStageInstallmentApproveOrReject(installmentId uint64, status string) {
 	convertedInstallmentID := strconv.FormatUint(installmentId, 10)
-	fmt.Println("Updating status to `APPROVE`. installmentId=" + convertedInstallmentID)
+	fmt.Println("Updating status to " + status + ". installmentId=" + convertedInstallmentID)
 
 	installmentHistorySchema := &installmentHistory.InstallmentHistory{StageFrom: "PENDING", StageTo: status}
 	services.DBCPsql.Table("installment_history").Create(installmentHistorySchema)
@@ -234,7 +234,7 @@ func UpdateStageInstallmentApproveOrReject(installmentId uint64, status string) 
 
 	services.DBCPsql.Table("installment").Where("\"id\" = ?", installmentId).UpdateColumn("stage", status)
 
-	fmt.Println("Done. Updated status to `APPROVE`. installmentId=" + convertedInstallmentID)
+	fmt.Println("Done. Updated status to " + status + ". installmentId=" + convertedInstallmentID)
 }
 
 // SubmitInstallmentByInstallmentIDWithStatus - approve or reject installment by installment_id
