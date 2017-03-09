@@ -2,6 +2,7 @@ package routes
 
 import (
 	"bitbucket.org/go-mis/config"
+	"bitbucket.org/go-mis/modules/account"
 	"bitbucket.org/go-mis/modules/agent"
 	"bitbucket.org/go-mis/modules/area"
 	"bitbucket.org/go-mis/modules/auth"
@@ -15,6 +16,7 @@ import (
 	"bitbucket.org/go-mis/modules/investor"
 	"bitbucket.org/go-mis/modules/investor-check"
 	"bitbucket.org/go-mis/modules/loan"
+	"bitbucket.org/go-mis/modules/location"
 	"bitbucket.org/go-mis/modules/notification"
 	"bitbucket.org/go-mis/modules/survey"
 	"bitbucket.org/go-mis/modules/user-mis"
@@ -58,6 +60,7 @@ func InitCustomApi() {
 		v2.Any("/loan/get/:id", loan.GetLoanDetail)
 		v2.Any("/loan/set/:id/stage/:stage", loan.UpdateStage)
 		v2.Any("/installment", installment.FetchAll)
+		v2.Any("/installment-by-type/:type", installment.FetchByType)
 		v2.Any("/installment/group/:group_id/by-transaction-date/:transaction_date", installment.GetInstallmentByGroupIDAndTransactionDate)
 		v2.Any("/installment/group/:group_id/by-transaction-date/:transaction_date/submit/:status", installment.SubmitInstallmentByGroupIDAndTransactionDateWithStatus)
 		v2.Any("/installment/submit/:installment_id/status/:status", installment.SubmitInstallmentByInstallmentIDWithStatus)
@@ -80,9 +83,11 @@ func InitCustomApi() {
 		v2.Any("/investor-check/verify/:id", investorCheck.Verify)
 		v2.Get("/dropping", loan.FetchDropping)
 		v2.Post("/dropping/refund/:loan_id/move-stage-to/:stage", loan.RefundAndChangeStageTo)
+		v2.Get("/investor-for-topup", investor.GetInvestorForTopup)
+		v2.Any("/topup/submit", account.DoTopup)
 	}
 
 	iris.Get(baseURL+"/investor-without-va", investor.InvestorWithoutVA)
 	iris.Post(baseURL+"/investor-register-va", investor.InvestorRegisterVA)
-
+	iris.Get(baseURL+"/location", location.GetLocation)
 }
