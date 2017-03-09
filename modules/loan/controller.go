@@ -178,3 +178,16 @@ func GetLoanDetail(ctx *iris.Context) {
 		},
 	})
 }
+
+// GetAkadData - Get data to be shown in Akad
+func GetAkadData(ctx *iris.Context) {
+	loanID, _ := strconv.Atoi(ctx.Param("id"))
+	data := Akad{}
+
+	services.DBCPsql.Table("loan").Where("\"deletedAt\" IS NULL AND id = ? ", loanID).Find(&data)
+
+	ctx.JSON(iris.StatusOK, iris.Map{
+		"status": "success",
+		"data":   data,
+	})
+}

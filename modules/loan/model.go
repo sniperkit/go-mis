@@ -57,3 +57,8 @@ type LoanBorrowerProfile struct {
 	Branch    string `gorm:"branch" json:"branch"`
 	Group     string `gorm:"group" json:"group"`
 }
+
+type Akad struct {
+	ID      uint64 `gorm:"primary_key" gorm:"column:_id" json:"_id"`
+	Purpose string `gorm:"column:purpose" json:"purpose"`
+}

@@ -57,6 +57,7 @@ func InitCustomApi() {
 		v2.Any("/loan", loan.FetchAll)
 		v2.Any("/loan/get/:id", loan.GetLoanDetail)
 		v2.Any("/loan/set/:id/stage/:stage", loan.UpdateStage)
+		v2.Any("/loan/akad/:id", loan.GetAkadData)
 		v2.Any("/installment", installment.FetchAll)
 		v2.Any("/installment/group/:group_id/by-transaction-date/:transaction_date", installment.GetInstallmentByGroupIDAndTransactionDate)
 		v2.Any("/installment/group/:group_id/by-transaction-date/:transaction_date/submit/:status", installment.SubmitInstallmentByGroupIDAndTransactionDateWithStatus)
