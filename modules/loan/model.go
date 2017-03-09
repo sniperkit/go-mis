@@ -57,3 +57,11 @@ type LoanBorrowerProfile struct {
 	Branch    string `gorm:"branch" json:"branch"`
 	Group     string `gorm:"group" json:"group"`
 }
+
+type LoadDropping struct {
+	ID       uint64 `gorm:"primary_key" gorm:"column:_id" json:"_id"`
+	Borrower string `gorm:"column:borrower" json:"borrower"`
+	Group    string `gorm:"column:group" json:"group"`
+	Stage    string `gorm:"column:stage" json:"stage"`
+	Investor string `gorm:"column:investor" json:"investor"`
+}
