@@ -72,3 +72,7 @@ type RefundBase struct {
 	AccountID  uint64  `gorm:"column:account_id"`
 	Plafond    float64 `gorm:"column:plafond"`
 }
+
+type AccountSum struct {
+	Sum float64 `gorm:"column:sum"`
+}

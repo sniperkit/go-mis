@@ -315,27 +315,27 @@ func RefundAndChangeStageTo(ctx *iris.Context) {
 	services.DBCPsql.Table("r_account_transaction_debit").Create(&rTransaction)
 
 	// calculate account balance and save it to account
-	query := "SELECT coalesce(sum(account_transaction_credit.amount), 0) AS \"credit\", coalesce(sum(account_transaction_debit.amount), 0) AS \"debit\" "
-	query += "FROM account "
-	query += "LEFT JOIN r_account_transaction_credit ON r_account_transaction_credit.\"accountId\" = account.id "
-	query += "LEFT JOIN account_transaction_credit ON account_transaction_credit.id = r_account_transaction_credit.\"accountTransactionCreditId\" "
-	query += "LEFT JOIN r_account_transaction_debit ON r_account_transaction_debit.\"accountId\" = account.id "
-	query += "LEFT JOIN account_transaction_debit ON account_transaction_debit.id = r_account_transaction_debit.\"accountTransactionDebitId\" "
-	query += "WHERE account.id = ? "
-	query += "AND account_transaction_debit.\"deletedAt\" IS NULL AND account_transaction_credit.\"deletedAt\" IS NULL "
+	queryTotalDebit := "SELECT SUM(account_transaction_debit.amount) "
+	queryTotalDebit += "FROM account_transaction_debit "
+	queryTotalDebit += "JOIN r_account_transaction_debit ON 	r_account_transaction_debit.\"accountTransactionDebitId\" = 					account_transaction_debit.id "
+	queryTotalDebit += "WHERE r_account_transaction_debit.\"accountId\" = ? "
 
-	paramBalance := account.ParamBalance{}
-	services.DBCPsql.Raw(query, refundBase.AccountID).Scan(&paramBalance)
+	queryTotalCredit := "SELECT SUM(account_transaction_credit.amount) "
+	queryTotalCredit += "FROM account_transaction_credit "
+	queryTotalCredit += "JOIN r_account_transaction_credit ON 	r_account_transaction_credit.\"accountTransactionCreditId\" = 					account_transaction_credit.id "
+	queryTotalCredit += "WHERE r_account_transaction_credit.\"accountId\" = ? "
 
-	totalBalance := paramBalance.Debit - paramBalance.Credit
-	services.DBCPsql.Table("account").Where("id = ?", refundBase.AccountID).Updates(account.Account{TotalDebit: paramBalance.Debit, TotalCredit: paramBalance.Credit, TotalBalance: totalBalance})
+	debit := AccountSum{}
+	credit := AccountSum{}
+	services.DBCPsql.Raw(queryTotalDebit, refundBase.AccountID).Scan(&debit)
+	services.DBCPsql.Raw(queryTotalCredit, refundBase.AccountID).Scan(&credit)
+	totalBalance := debit.Sum - credit.Sum
+
+	services.DBCPsql.Table("account").Where("id = ?", refundBase.AccountID).Updates(account.Account{TotalDebit: debit.Sum, TotalCredit: credit.Sum, TotalBalance: totalBalance})
 
 	ctx.JSON(iris.StatusOK, iris.Map{
-		"status":       "success",
-		"stageFrom":    loanStage,
-		"stageTo":      stage,
-		"refundBase":   refundBase,
-		"transaction":  transaction,
-		"paramBalance": paramBalance,
+		"status":    "success",
+		"stageFrom": loanStage,
+		"stageTo":   stage,
 	})
 }
