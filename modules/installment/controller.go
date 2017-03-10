@@ -215,10 +215,10 @@ func storeInstallment(installmentId uint64, status string) {
 
 	querySumDebitAndCredit := "SELECT SUM(account_transaction_debit.\"amount\") as \"totalDebit\", SUM(account_transaction_credit.\"amount\")  as \"totalCredit\" "
 	querySumDebitAndCredit += "FROM account "
-	querySumDebitAndCredit += "JOIN r_account_transaction_debit ON r_account_transaction_debit.\"accountId\" = account.\"id\" "
-	querySumDebitAndCredit += "JOIN account_transaction_debit ON account_transaction_debit.\"id\" = r_account_transaction_debit.\"accountTransactionDebitId\" "
-	querySumDebitAndCredit += "JOIN r_account_transaction_credit ON r_account_transaction_credit.\"accountId\" = account.\"id\" "
-	querySumDebitAndCredit += "JOIN account_transaction_credit ON account_transaction_credit.\"id\" = r_account_transaction_credit.\"accountTransactionCreditId\" "
+	querySumDebitAndCredit += "LEFT JOIN r_account_transaction_debit ON r_account_transaction_debit.\"accountId\" = account.\"id\" "
+	querySumDebitAndCredit += "LEFT JOIN account_transaction_debit ON account_transaction_debit.\"id\" = r_account_transaction_debit.\"accountTransactionDebitId\" "
+	querySumDebitAndCredit += "LEFT JOIN r_account_transaction_credit ON r_account_transaction_credit.\"accountId\" = account.\"id\" "
+	querySumDebitAndCredit += "LEFT JOIN account_transaction_credit ON account_transaction_credit.\"id\" = r_account_transaction_credit.\"accountTransactionCreditId\" "
 	querySumDebitAndCredit += "WHERE account.\"id\" = ?"
 
 	accountTransactionDebitAndCreditSchema := AccountTransactionDebitAndCredit{}
