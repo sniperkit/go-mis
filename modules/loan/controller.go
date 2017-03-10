@@ -3,7 +3,12 @@ package loan
 import (
 	"fmt"
 	"strconv"
+	"time"
 
+	"errors"
+
+	"bitbucket.org/go-mis/modules/account"
+	accountTransactionDebit "bitbucket.org/go-mis/modules/account-transaction-debit"
 	"bitbucket.org/go-mis/modules/installment"
 	loanHistory "bitbucket.org/go-mis/modules/loan-history"
 	"bitbucket.org/go-mis/modules/r"
@@ -119,19 +124,89 @@ func FetchAll(ctx *iris.Context) {
 	})
 }
 
+// FetchDropping - Fetch loans which in ARCHIVE or DISBURSEMENT-FAILED stage
+func FetchDropping(ctx *iris.Context) {
+	loanData := []LoanDropping{}
+
+	// ref: dropping.sql
+	query := "SELECT loan.id, stage, cif_borrower.\"name\" AS borrower, \"group\".\"name\" AS \"group\", cif_investor.name AS investor "
+	query += "FROM loan "
+	query += "JOIN r_loan_borrower ON r_loan_borrower.\"loanId\" = loan.id "
+	query += "JOIN borrower ON borrower.id = r_loan_borrower.\"borrowerId\" "
+	query += "JOIN r_cif_borrower ON r_cif_borrower.\"borrowerId\" = borrower.id "
+	query += "JOIN (SELECT * FROM cif WHERE \"deletedAt\" IS NULL) AS cif_borrower ON cif_borrower.id = r_cif_borrower.\"cifId\" "
+	query += "JOIN r_loan_group ON r_loan_group.\"loanId\" = loan.id "
+	query += "JOIN \"group\" ON \"group\".id = r_loan_group.\"groupId\" "
+	query += "JOIN r_investor_product_pricing_loan ON r_investor_product_pricing_loan.\"loanId\"= loan.id "
+	query += "JOIN investor ON investor.id = r_investor_product_pricing_loan.\"investorId\" "
+	query += "JOIN r_cif_investor ON r_cif_investor.\"investorId\" = investor.id "
+	query += "JOIN (SELECT * FROM cif WHERE \"deletedAt\" IS NULL) AS cif_investor ON cif_investor.id = r_cif_investor.\"cifId\" "
+	query += "WHERE loan.\"deletedAt\" IS NULL AND (loan.stage = 'ARCHIVE' OR loan.stage = 'DISBURSEMENT-FAILED')"
+
+	services.DBCPsql.Raw(query).Find(&loanData)
+
+	ctx.JSON(iris.StatusOK, iris.Map{
+		"status": "success",
+		"data":   loanData,
+	})
+}
+
 // UpdateStage - Update Stage Loan
 func UpdateStage(ctx *iris.Context) {
-	loanData := Loan{}
+	// Habib: logic dipindah ke executeUpdateStage supaya bisa di-reuse
+	// loanData := Loan{}
 
-	loanID := ctx.Param("id")
+	// loanID := ctx.Param("id")
+	// stage := ctx.Param("stage")
+	// services.DBCPsql.First(&loanData, loanID)
+	// if loanData == (Loan{}) {
+	// 	ctx.JSON(iris.StatusInternalServerError, iris.Map{
+	// 		"status":  "error",
+	// 		"message": "Can't find any loan detail.",
+	// 	})
+	// 	return
+	// }
+
+	// loanHistoryData := loanHistory.LoanHistory{StageFrom: loanData.Stage, StageTo: stage, Remark: "loanId=" + fmt.Sprintf("%v", loanData.ID) + " updated stage to " + stage}
+	// services.DBCPsql.Table("loan_history").Create(&loanHistoryData)
+
+	// rLoanHistory := r.RLoanHistory{LoanId: loanData.ID, LoanHistoryId: loanHistoryData.ID}
+	// services.DBCPsql.Table("r_loan_history").Create(&rLoanHistory)
+
+	// services.DBCPsql.Table("loan").Where("\"id\" = ?", loanData.ID).UpdateColumn("stage", stage)
+
+	// ctx.JSON(iris.StatusOK, iris.Map{
+	// 	"status":    "success",
+	// 	"stageFrom": loanData.Stage,
+	// 	"stageTo":   stage,
+	// })
+
+	loanID, _ := strconv.ParseUint(ctx.Param("id"), 10, 64)
 	stage := ctx.Param("stage")
-	services.DBCPsql.First(&loanData, loanID)
-	if loanData == (Loan{}) {
+
+	loanStage, err := executeUpdateStage(loanID, stage)
+	if err != nil {
 		ctx.JSON(iris.StatusInternalServerError, iris.Map{
 			"status":  "error",
 			"message": "Can't find any loan detail.",
 		})
 		return
+	}
+
+	ctx.JSON(iris.StatusOK, iris.Map{
+		"status":    "success",
+		"stageFrom": loanStage,
+		"stageTo":   stage,
+	})
+	return
+}
+
+func executeUpdateStage(id uint64, stage string) (string, error) {
+	loanData := Loan{}
+	services.DBCPsql.Where("id = ?", id).First(&loanData)
+	fmt.Printf("%v", loanData)
+	if loanData == (Loan{}) {
+		return "", errors.New("loan not found")
 	}
 
 	loanHistoryData := loanHistory.LoanHistory{StageFrom: loanData.Stage, StageTo: stage, Remark: "loanId=" + fmt.Sprintf("%v", loanData.ID) + " updated stage to " + stage}
@@ -142,11 +217,7 @@ func UpdateStage(ctx *iris.Context) {
 
 	services.DBCPsql.Table("loan").Where("\"id\" = ?", loanData.ID).UpdateColumn("stage", stage)
 
-	ctx.JSON(iris.StatusOK, iris.Map{
-		"status":    "success",
-		"stageFrom": loanData.Stage,
-		"stageTo":   stage,
-	})
+	return loanData.Stage, nil
 }
 
 func GetLoanDetail(ctx *iris.Context) {
@@ -198,5 +269,73 @@ func GetLoanDetail(ctx *iris.Context) {
 			"borrower":    borrowerObj,
 			"installment": installmentObj,
 		},
+	})
+}
+
+// RefundAndChangeStageTo - refund investor balance and change loan stage
+func RefundAndChangeStageTo(ctx *iris.Context) {
+	loanID, _ := strconv.ParseUint(ctx.Param("loan_id"), 10, 64)
+	stage := ctx.Param("stage")
+
+	loanStage, err := executeUpdateStage(loanID, stage)
+	if err != nil {
+		ctx.JSON(iris.StatusInternalServerError, iris.Map{
+			"status":  "error",
+			"message": "Can't find any loan detail.",
+		})
+		return
+	}
+
+	// get loan_id, investor_id, account_id, plafond
+	refundBase := RefundBase{}
+	// ref: refund-base.sql
+	queryRefundBase := "SELECT loan.id AS loan_id, investor.id AS investor_id, account.id AS account_id, loan.plafond "
+	queryRefundBase += "FROM loan "
+	queryRefundBase += "JOIN r_investor_product_pricing_loan ON r_investor_product_pricing_loan.\"loanId\" = loan.id "
+	queryRefundBase += "JOIN investor ON investor.id = r_investor_product_pricing_loan.\"investorId\" "
+	queryRefundBase += "JOIN r_account_investor ON r_account_investor.\"investorId\" = investor.id "
+	queryRefundBase += "JOIN account ON account.id = r_account_investor.\"accountId\" "
+	queryRefundBase += "WHERE loan.\"deletedAt\" IS NULL AND loan.id = ? "
+	services.DBCPsql.Raw(queryRefundBase, loanID).First(&refundBase)
+
+	// add new account_transaction_debit entry
+	transaction := accountTransactionDebit.AccountTransactionDebit{
+		Type:            "REFUND",
+		TransactionDate: time.Now(),
+		Amount:          refundBase.Plafond,
+		Remark:          "",
+	}
+	services.DBCPsql.Table("account_transaction_debit").Create(&transaction)
+
+	// connect the entry to investor account
+	rTransaction := r.RAccountTransactionDebit{
+		AccountId:                 refundBase.AccountID,
+		AccountTransactionDebitId: transaction.ID,
+	}
+	services.DBCPsql.Table("r_account_transaction_debit").Create(&rTransaction)
+
+	// calculate account balance and save it to account
+	queryTotalDebit := "SELECT SUM(account_transaction_debit.amount) "
+	queryTotalDebit += "FROM account_transaction_debit "
+	queryTotalDebit += "JOIN r_account_transaction_debit ON 	r_account_transaction_debit.\"accountTransactionDebitId\" = 					account_transaction_debit.id "
+	queryTotalDebit += "WHERE r_account_transaction_debit.\"accountId\" = ? "
+
+	queryTotalCredit := "SELECT SUM(account_transaction_credit.amount) "
+	queryTotalCredit += "FROM account_transaction_credit "
+	queryTotalCredit += "JOIN r_account_transaction_credit ON 	r_account_transaction_credit.\"accountTransactionCreditId\" = 					account_transaction_credit.id "
+	queryTotalCredit += "WHERE r_account_transaction_credit.\"accountId\" = ? "
+
+	debit := AccountSum{}
+	credit := AccountSum{}
+	services.DBCPsql.Raw(queryTotalDebit, refundBase.AccountID).Scan(&debit)
+	services.DBCPsql.Raw(queryTotalCredit, refundBase.AccountID).Scan(&credit)
+	totalBalance := debit.Sum - credit.Sum
+
+	services.DBCPsql.Table("account").Where("id = ?", refundBase.AccountID).Updates(account.Account{TotalDebit: debit.Sum, TotalCredit: credit.Sum, TotalBalance: totalBalance})
+
+	ctx.JSON(iris.StatusOK, iris.Map{
+		"status":    "success",
+		"stageFrom": loanStage,
+		"stageTo":   stage,
 	})
 }
