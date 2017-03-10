@@ -82,7 +82,7 @@ func InitCustomApi() {
 		v2.Any("/investor-check/datatables", investorCheck.FetchDatatables)
 		v2.Any("/investor-check/verify/:id", investorCheck.Verify)
 		v2.Get("/dropping", loan.FetchDropping)
-		v2.Post("/dropping/refund/:loan_id/move-stage-to/:stage", loan.RefundAndChangeStageTo)
+		v2.Any("/dropping/refund/:loan_id/move-stage-to/:stage", loan.RefundAndChangeStageTo)
 		v2.Get("/investor-for-topup", investor.GetInvestorForTopup)
 		v2.Any("/topup/submit", account.DoTopup)
 	}
