@@ -57,7 +57,7 @@ func FetchAll(ctx *iris.Context) {
 
 	services.DBCPsql.Raw(queryTotalData, branchID).Find(&totalData)
 
-	loans := []LoanFetch{}
+	loans := []LoanDatatable{}
 
 	var limitPagination int64 = 10
 	var offset int64 = 0

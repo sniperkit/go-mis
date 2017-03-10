@@ -29,6 +29,18 @@ type Loan struct {
 	DeletedAt            *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
 }
 
+type LoanDatatable struct {
+	ID                uint64  `gorm:"primary_key" gorm:"column:_id" json:"_id"`
+	Borrower          string  `gorm:"column:borrower" json:"borrower"`
+	Group             string  `gorm:"column:group" json:"group"`
+	SubmittedLoanDate string  `gorm:"column:submittedLoanDate" json:"submittedLoanDate"`
+	DisbursementDate  string  `gorm:"column:disbursementDate" json:"disbursementDate"`
+	Plafond           float64 `gorm:"column:plafond" json:"plafond"`
+	Tenor             uint64  `gorm:"column:tenor" json:"tenor"`
+	Rate              float64 `gorm:"column:rate" json:"rate"`
+	Stage             string  `gorm:"column:stage" json:"stage"`
+}
+
 type LoanFetch struct {
 	ID                uint64    `gorm:"primary_key" gorm:"column:_id" json:"_id"`
 	LoanPeriod        int64     `gorm:"column:loanPeriod" json:"loanPeriod"`
