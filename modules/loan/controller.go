@@ -206,7 +206,21 @@ func GetAkadData(ctx *iris.Context) {
 	loanID, _ := strconv.Atoi(ctx.Param("id"))
 	data := Akad{}
 
-	services.DBCPsql.Table("loan").Where("\"deletedAt\" IS NULL AND id = ? ", loanID).Find(&data)
+	query := "SELECT loan.\"agreementType\", loan.\"updatedAt\", loan.purpose, loan.plafond, loan.tenor, loan.installment, cif_investor.name as investor, cif_borrower.name as borrower, \"group\".\"name\" as \"group\" "
+	query += "FROM loan "
+	query += "JOIN r_investor_product_pricing_loan ON r_investor_product_pricing_loan.\"loanId\" = loan.id "
+	query += "JOIN investor ON investor.id = r_investor_product_pricing_loan.\"investorId\" "
+	query += "JOIN r_cif_investor ON r_cif_investor.\"investorId\" = investor.id "
+	query += "JOIN ( SELECT * FROM cif WHERE cif.\"deletedAt\" is null ) AS cif_investor ON cif_investor.id = r_cif_investor.\"cifId\" "
+	query += "JOIN r_loan_borrower ON r_loan_borrower.\"loanId\" = loan.id "
+	query += "JOIN borrower ON borrower.id  = r_loan_borrower.\"borrowerId\" "
+	query += "JOIN r_cif_borrower ON r_cif_borrower.\"borrowerId\" = borrower.id "
+	query += "JOIN ( SELECT * FROM cif WHERE cif.\"deletedAt\" is null ) AS cif_borrower ON cif_borrower.id = r_cif_borrower.\"cifId\" "
+	query += "JOIN r_loan_group ON r_loan_group.\"loanId\" = loan.id "
+	query += "JOIN \"group\" ON \"group\".id = r_loan_group.\"groupId\" "
+	query += "WHERE loan.\"deletedAt\" IS NULL AND loan.id = ? "
+
+	services.DBCPsql.Raw(query, loanID).Find(&data)
 
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"status": "success",

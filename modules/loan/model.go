@@ -71,6 +71,14 @@ type LoanBorrowerProfile struct {
 }
 
 type Akad struct {
-	ID      uint64 `gorm:"primary_key" gorm:"column:_id" json:"_id"`
-	Purpose string `gorm:"column:purpose" json:"purpose"`
+	ID            uint64    `gorm:"primary_key" gorm:"column:_id" json:"_id"`
+	AgreementType string    `gorm:"column:agreementType" json:"agreementType"`
+	Purpose       string    `gorm:"column:purpose" json:"purpose"`
+	Plafond       float64   `gorm:"column:plafond" json:"plafond"`
+	Tenor         uint64    `gorm:"column:tenor" json:"tenor"`
+	Installment   float64   `gorm:"column:installment" json:"installment"`
+	Investor      string    `gorm:"column:investor" json:"investor"`
+	Borrower      string    `gorm:"column:borrower" json:"borrower"`
+	Group         string    `gorm:"column:group" json:"group"`
+	UpdatedAt     time.Time `gorm:"column:updatedAt" json:"updatedAt"`
 }
