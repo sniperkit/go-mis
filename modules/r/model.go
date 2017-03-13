@@ -423,3 +423,13 @@ type RLoanOrder struct {
 	UpdatedAt   time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
 	DeletedAt   *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
 }
+
+// Relation `account_transaction_credit` to `cashout`
+type RAccountTransactionCreditCashout struct {
+	ID                         uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
+	AccountTransactionCreditID uint64     `gorm:"column:accountTransactionCreditId" json:"accountTransactionCreditId"`
+	CashoutID                  uint64     `gorm:"column:cashoutId" json:"cashoutId"`
+	CreatedAt                  time.Time  `gorm:"column:createdAt" json:"createdAt"`
+	UpdatedAt                  time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
+	DeletedAt                  *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
+}
