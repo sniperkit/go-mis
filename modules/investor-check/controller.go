@@ -58,10 +58,17 @@ func FetchDatatables(ctx *iris.Context) {
 // Verify - verify the selected investor
 func Verify(ctx *iris.Context) {
 	id, _ := strconv.Atoi(ctx.Param("id"))
+	// status type: verified or declined
+	status := ctx.Param("status")
 
-	services.DBCPsql.Table("cif").Where("id = ?", id).Update("isValidated", true)
+	if status == "verified" {
+		services.DBCPsql.Table("cif").Where("id = ?", id).Update("isValidated", true)
+	} else {
+		// send notification email to investor
+	}
 
 	ctx.JSON(iris.StatusOK, iris.Map{
-		"status": "success",
+		"status":             "success",
+		"verificationStatus": status,
 	})
 }
