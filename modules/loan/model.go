@@ -71,16 +71,21 @@ type LoanBorrowerProfile struct {
 }
 
 type Akad struct {
-	ID            uint64    `gorm:"primary_key" gorm:"column:_id" json:"_id"`
-	AgreementType string    `gorm:"column:agreementType" json:"agreementType"`
-	Purpose       string    `gorm:"column:purpose" json:"purpose"`
-	Plafond       float64   `gorm:"column:plafond" json:"plafond"`
-	Tenor         uint64    `gorm:"column:tenor" json:"tenor"`
-	Installment   float64   `gorm:"column:installment" json:"installment"`
-	Investor      string    `gorm:"column:investor" json:"investor"`
-	Borrower      string    `gorm:"column:borrower" json:"borrower"`
-	Group         string    `gorm:"column:group" json:"group"`
-	UpdatedAt     time.Time `gorm:"column:updatedAt" json:"updatedAt"`
+	ID                 uint64  `gorm:"primary_key" gorm:"column:_id" json:"_id"`
+	AgreementType      string  `gorm:"column:agreementType" json:"agreementType"`
+	Purpose            string  `gorm:"column:purpose" json:"purpose"`
+	Plafond            float64 `gorm:"column:plafond" json:"plafond"`
+	Tenor              uint64  `gorm:"column:tenor" json:"tenor"`
+	Installment        float64 `gorm:"column:installment" json:"installment"`
+	Rate               float64 `gorm:"column:rate" json:"rate"`
+	SubmittedLoanDate  string  `gorm:"column:submittedLoanDate" json:"submittedLoanDate"`
+	Investor           string  `gorm:"column:investor" json:"investor"`
+	Borrower           string  `gorm:"column:borrower" json:"borrower"`
+	Group              string  `gorm:"column:group" json:"group"`
+	ReturnOfInvestment float64 `gorm:"column:returnOfInvestment" json:"returnOfInvestment"`
+	AdminitrationFee   float64 `gorm:"column:administrationFee" json:"administrationFee"`
+	ServiceFee         float64 `gorm:"column:serviceFee" json:"serviceFee"`
+	DisbursementDate   string  `gorm:"column:disbursementDate" json:"disbursementDate"`
 }
 
 type LoanDropping struct {
