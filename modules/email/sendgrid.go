@@ -1,4 +1,4 @@
-package modules
+package email
 
 import (
 	"fmt"
@@ -6,6 +6,14 @@ import (
 	"bitbucket.org/go-mis/config"
 	"github.com/parnurzeal/gorequest"
 )
+
+// SendgridEmailTemplate - select email template
+func SendgridEmailTemplate(key string) string {
+	var template = make(map[string]string, 10)
+	template["UNVERIFIED_DATA"] = "088a5e63-a4f6-4ccd-bed4-765ae5021088"
+
+	return template[key]
+}
 
 // Sendgrid - Init Class
 type Sendgrid struct {
@@ -43,7 +51,7 @@ func (s *Sendgrid) SetSubject(subject string) {
 }
 
 func (s *Sendgrid) SetVerificationBodyEmail(template string, first_name string, full_name string, email string, url string) {
-	s.emailParam.Template = template
+	s.emailParam.Template = SendgridEmailTemplate(template)
 	var subs map[string]interface{} = map[string]interface{}{
 		"[%first_name%]": first_name,
 		"[%full_name%]":  full_name,
