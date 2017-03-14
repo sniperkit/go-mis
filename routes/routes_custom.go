@@ -19,6 +19,7 @@ import (
 	"bitbucket.org/go-mis/modules/location"
 	"bitbucket.org/go-mis/modules/notification"
 	"bitbucket.org/go-mis/modules/survey"
+	"bitbucket.org/go-mis/modules/transaction"
 	"bitbucket.org/go-mis/modules/user-mis"
 	"bitbucket.org/go-mis/modules/virtual-account-statement"
 	"gopkg.in/iris-contrib/middleware.v4/cors"
@@ -86,6 +87,7 @@ func InitCustomApi() {
 		v2.Any("/dropping/refund/:loan_id/move-stage-to/:stage", loan.RefundAndChangeStageTo)
 		v2.Get("/investor-for-topup", investor.GetInvestorForTopup)
 		v2.Any("/topup/submit", account.DoTopup)
+		v2.Get("/transaction/:type/:investor_id/:start_date/:end_date", transaction.GetData)
 	}
 
 	iris.Get(baseURL+"/investor-without-va", investor.InvestorWithoutVA)
