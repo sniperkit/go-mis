@@ -3,6 +3,8 @@ package investorCheck
 import (
 	"strconv"
 
+	"bitbucket.org/go-mis/modules/cif"
+	email "bitbucket.org/go-mis/modules/email"
 	"bitbucket.org/go-mis/services"
 	iris "gopkg.in/kataras/iris.v4"
 )
@@ -58,10 +60,25 @@ func FetchDatatables(ctx *iris.Context) {
 // Verify - verify the selected investor
 func Verify(ctx *iris.Context) {
 	id, _ := strconv.Atoi(ctx.Param("id"))
+	// status type: verified or declined
+	status := ctx.Param("status")
 
-	services.DBCPsql.Table("cif").Where("id = ?", id).Update("isValidated", true)
+	if status == "verified" {
+		services.DBCPsql.Table("cif").Where("id = ?", id).Update("isValidated", true)
+	} else {
+		cifSchema := cif.Cif{}
+		services.DBCPsql.Table("cif").Where("id = ?", id).Scan(&cifSchema)
+
+		sendgrid := email.Sendgrid{}
+		sendgrid.SetFrom("Amartha", "no-reply@amartha.com")
+		sendgrid.SetTo(cifSchema.Name, cifSchema.Username)
+		sendgrid.SetSubject(cifSchema.Name + ", Verifikasi Data Anda Gagal")
+		sendgrid.SetVerificationBodyEmail("UNVERIFIED_DATA", cifSchema.Name, cifSchema.Name, cifSchema.Username, "")
+		sendgrid.SendEmail()
+	}
 
 	ctx.JSON(iris.StatusOK, iris.Map{
-		"status": "success",
+		"status":             "success",
+		"verificationStatus": status,
 	})
 }

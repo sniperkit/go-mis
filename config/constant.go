@@ -17,6 +17,7 @@ var (
 	PsqlHostAddressMisAmartha string
 	PsqlHostAddressSurvey     string
 	MysqlHostAddress          string
+	UploaderApiPath           string
 )
 
 type Config struct {
@@ -43,6 +44,8 @@ func init() {
 	configPath := flag.String("config", "./config.json", "Config file path")
 	logMode := flag.Bool("log-mode", false, "Log mode")
 	env := flag.String("env", "production", "Default environment")
+
+	UploaderApiPath = "https://upload.amartha.id/"
 
 	// Parse all command flags
 	flag.Parse()
