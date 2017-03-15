@@ -44,7 +44,7 @@ func DoTopup(ctx *iris.Context) {
 	services.DBCPsql.Create(accountTransactionDebitSchema)
 
 	rAccountTransactionDebitSchema := &r.RAccountTransactionDebit{AccountId: paramTopup.AccountID, AccountTransactionDebitId: accountTransactionDebitSchema.ID}
-	services.DBCPsql.Create(&rAccountTransactionDebitSchema)
+	services.DBCPsql.Create(rAccountTransactionDebitSchema)
 
 	// query := "SELECT coalesce(sum(account_transaction_credit.amount), 0) AS \"credit\", coalesce(sum(account_transaction_debit.amount), 0) AS \"debit\" "
 	// query += "FROM account "
