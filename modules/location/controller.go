@@ -33,7 +33,7 @@ func GetLocationById(ctx *iris.Context) {
 	locationCode := ctx.Param("location_code")
 	locationSchema := Location{}
 
-	services.DBCPsql.Table("inf_location").Where("location_code = ?", locationCode).Scan(&locationSchema)
+	services.DBCPsql.Table("inf_location").Where("\"locationCode\" = ?", locationCode).Scan(&locationSchema)
 
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"status": "success",
