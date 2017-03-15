@@ -1,5 +1,8 @@
 MIS 2.0 - Micro-Services using Go
 
+# Deploy Branch
+Deploy branch is connected to jenkins. It will build and deploy when you push to deploy branch
+
 # PRE-REQUISITE
 
 Create a `config.json` file with below JSON sample.
