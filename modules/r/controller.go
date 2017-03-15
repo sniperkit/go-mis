@@ -131,4 +131,7 @@ func Init() {
 
 	services.DBCPsql.AutoMigrate(&RAccountTransactionCreditCashout{})
 	services.BaseCrudInitWithDomain("r-account-transaction-credit-cashout", RAccountTransactionCreditCashout{}, []RAccountTransactionCreditCashout{})
+
+	services.DBCPsql.AutoMigrate(&RAdjustmentAccountTransactionDebit{})
+	services.BaseCrudInitWithDomain("r-adjustment-account-transaction-debit", RAdjustmentAccountTransactionDebit{}, []RAdjustmentAccountTransactionDebit{})
 }
