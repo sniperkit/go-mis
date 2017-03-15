@@ -6,6 +6,8 @@ import (
 	"strings"
 	"time"
 
+	"bitbucket.org/go-mis/modules/account"
+	accountTransactionCredit "bitbucket.org/go-mis/modules/account-transaction-credit"
 	accountTransactionDebit "bitbucket.org/go-mis/modules/account-transaction-debit"
 	installmentHistory "bitbucket.org/go-mis/modules/installment-history"
 	"bitbucket.org/go-mis/modules/r"
@@ -213,19 +215,25 @@ func storeInstallment(installmentId uint64, status string) {
 	rAccountTransactionDebit := &r.RAccountTransactionDebit{AccountId: loanInvestorAccountIDSchema.AccountID, AccountTransactionDebitId: accountTransactionDebitSchema.ID}
 	services.DBCPsql.Table("r_account_transaction_debit").Create(rAccountTransactionDebit)
 
-	querySumDebitAndCredit := "SELECT SUM(account_transaction_debit.\"amount\") as \"totalDebit\", SUM(account_transaction_credit.\"amount\")  as \"totalCredit\" "
-	querySumDebitAndCredit += "FROM account "
-	querySumDebitAndCredit += "LEFT JOIN r_account_transaction_debit ON r_account_transaction_debit.\"accountId\" = account.\"id\" "
-	querySumDebitAndCredit += "LEFT JOIN account_transaction_debit ON account_transaction_debit.\"id\" = r_account_transaction_debit.\"accountTransactionDebitId\" "
-	querySumDebitAndCredit += "LEFT JOIN r_account_transaction_credit ON r_account_transaction_credit.\"accountId\" = account.\"id\" "
-	querySumDebitAndCredit += "LEFT JOIN account_transaction_credit ON account_transaction_credit.\"id\" = r_account_transaction_credit.\"accountTransactionCreditId\" "
-	querySumDebitAndCredit += "WHERE account.\"id\" = ?"
+	// querySumDebitAndCredit := "SELECT SUM(account_transaction_debit.\"amount\") as \"totalDebit\", SUM(account_transaction_credit.\"amount\")  as \"totalCredit\" "
+	// querySumDebitAndCredit += "FROM account "
+	// querySumDebitAndCredit += "LEFT JOIN r_account_transaction_debit ON r_account_transaction_debit.\"accountId\" = account.\"id\" "
+	// querySumDebitAndCredit += "LEFT JOIN account_transaction_debit ON account_transaction_debit.\"id\" = r_account_transaction_debit.\"accountTransactionDebitId\" "
+	// querySumDebitAndCredit += "LEFT JOIN r_account_transaction_credit ON r_account_transaction_credit.\"accountId\" = account.\"id\" "
+	// querySumDebitAndCredit += "LEFT JOIN account_transaction_credit ON account_transaction_credit.\"id\" = r_account_transaction_credit.\"accountTransactionCreditId\" "
+	// querySumDebitAndCredit += "WHERE account.\"id\" = ?"
 
-	accountTransactionDebitAndCreditSchema := AccountTransactionDebitAndCredit{}
-	services.DBCPsql.Raw(querySumDebitAndCredit, loanInvestorAccountIDSchema.AccountID).Scan(&accountTransactionDebitAndCreditSchema)
+	// accountTransactionDebitAndCreditSchema := AccountTransactionDebitAndCredit{}
+	// services.DBCPsql.Raw(querySumDebitAndCredit, loanInvestorAccountIDSchema.AccountID).Scan(&accountTransactionDebitAndCreditSchema)
 
-	totalBalance := accountTransactionDebitAndCreditSchema.TotalDebit - accountTransactionDebitAndCreditSchema.TotalCredit
-	services.DBCPsql.Table("account").Exec("UPDATE account SET \"totalDebit\" = ?, \"totalCredit\" = ?, \"totalBalance\" = ? WHERE \"id\" = ?", accountTransactionDebitAndCreditSchema.TotalDebit, accountTransactionDebitAndCreditSchema.TotalCredit, totalBalance, loanInvestorAccountIDSchema.AccountID)
+	// totalBalance := accountTransactionDebitAndCreditSchema.TotalDebit - accountTransactionDebitAndCreditSchema.TotalCredit
+	// services.DBCPsql.Table("account").Exec("UPDATE account SET \"totalDebit\" = ?, \"totalCredit\" = ?, \"totalBalance\" = ? WHERE \"id\" = ?", accountTransactionDebitAndCreditSchema.TotalDebit, accountTransactionDebitAndCreditSchema.TotalCredit, totalBalance, loanInvestorAccountIDSchema.AccountID)
+
+	totalDebit := accountTransactionDebit.GetTotalAccountTransactionDebit(loanInvestorAccountIDSchema.AccountID)
+	totalCredit := accountTransactionCredit.GetTotalAccountTransactionCredit(loanInvestorAccountIDSchema.AccountID)
+
+	totalBalance := totalDebit - totalCredit
+	services.DBCPsql.Table("account").Where("id = ?", loanInvestorAccountIDSchema.AccountID).Updates(account.Account{TotalDebit: totalDebit, TotalCredit: totalCredit, TotalBalance: totalBalance})
 
 	fmt.Println("Calculation process has been done. installmentId=" + convertedInstallmentId)
 
