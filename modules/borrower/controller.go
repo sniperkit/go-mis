@@ -68,8 +68,8 @@ func Approve(ctx *iris.Context) {
 			services.DBCPsql.Table("cif").Create(&cifData)
 
 			// reserve one row for this new borrower
-			newBorrower := Borrower{}
-			services.DBCPsql.Table("borrower").Create(&newBorrower)
+			newBorrower := &Borrower{Village: payload["client_desa"].(string)}
+			services.DBCPsql.Table("borrower").Create(newBorrower)
 
 			rCifBorrower := r.RCifBorrower{
 				CifId:      cifData.ID,
@@ -145,6 +145,8 @@ func CreateCIF(payload map[string]interface{}) cif.Cif {
 	newCif.Address = cpl["client_alamat"]
 	newCif.Kelurahan = cpl["client_desa"]
 	newCif.Kecamatan = cpl["kecamatan"]
+	newCif.RT = cpl["client_rt"]
+	newCif.RW = cpl["client_rw"]
 	return newCif
 }
 
