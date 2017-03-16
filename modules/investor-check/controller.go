@@ -111,6 +111,11 @@ func Verify(ctx *iris.Context) {
 
 		if cifSchema.PhoneNo != "" {
 			// send sms notification
+			fmt.Println("Sending sms ... ")
+			twilio := services.InitTwilio()
+			message := "Selamat akun anda sudah berhasil kami verifikasi"
+			twilio.SetParam(cifSchema.PhoneNo, message)
+			twilio.SendSMS()
 		}
 
 	} else {
