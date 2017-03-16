@@ -247,7 +247,7 @@ type RAccountInvestor struct {
 type RInvestorVirtualAccount struct {
 	ID               uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
 	InvestorId       uint64     `gorm:"column:investorId" json:"investorId"`
-	VirtualAccountId uint64     `gorm:"column:virtualAccountId" json:"virtualAccountId"`
+	VirtualAccountId uint64     `gorm:"column:vaId" json:"virtualAccountId"`
 	CreatedAt        time.Time  `gorm:"column:createdAt" json:"createdAt"`
 	UpdatedAt        time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
 	DeletedAt        *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
@@ -412,4 +412,34 @@ type RInvestorProductPricingLoan struct {
 	CreatedAt        time.Time  `gorm:"column:createdAt" json:"createdAt"`
 	UpdatedAt        time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
 	DeletedAt        *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
+}
+
+// Relation `loan` to `loan-order`
+type RLoanOrder struct {
+	ID          uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
+	LoanOrderId uint64     `gorm:"column:loanOrderId" json:"loanOrderId"`
+	LoanId      uint64     `gorm:"column:loanId" json:"loanId"`
+	CreatedAt   time.Time  `gorm:"column:createdAt" json:"createdAt"`
+	UpdatedAt   time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
+	DeletedAt   *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
+}
+
+// Relation `account_transaction_credit` to `cashout`
+type RAccountTransactionCreditCashout struct {
+	ID                         uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
+	AccountTransactionCreditID uint64     `gorm:"column:accountTransactionCreditId" json:"accountTransactionCreditId"`
+	CashoutID                  uint64     `gorm:"column:cashoutId" json:"cashoutId"`
+	CreatedAt                  time.Time  `gorm:"column:createdAt" json:"createdAt"`
+	UpdatedAt                  time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
+	DeletedAt                  *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
+}
+
+// Relation `adjustment` to `account_transaction_debit`
+type RAdjustmentAccountTransactionDebit struct {
+	ID                        uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
+	AdjustmentID              uint64     `gorm:"column:adjustmentId" json:"adjustmentId"`
+	AccountTransactionDebitID uint64     `gorm:"column:accountTransactionDebitId" json:"accountTransactionDebitId"`
+	CreatedAt                 time.Time  `gorm:"column:createdAt" json:"createdAt"`
+	UpdatedAt                 time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
+	DeletedAt                 *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
 }

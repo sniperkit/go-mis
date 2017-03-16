@@ -125,4 +125,13 @@ func Init() {
 
 	services.DBCPsql.AutoMigrate(&RInvestorProductPricingLoan{})
 	services.BaseCrudInitWithDomain("r-investor-product-pricing-loan", RInvestorProductPricingLoan{}, []RInvestorProductPricingLoan{})
+
+	services.DBCPsql.AutoMigrate(&RLoanOrder{})
+	services.BaseCrudInitWithDomain("r-loan-order", RLoanOrder{}, []RLoanOrder{})
+
+	services.DBCPsql.AutoMigrate(&RAccountTransactionCreditCashout{})
+	services.BaseCrudInitWithDomain("r-account-transaction-credit-cashout", RAccountTransactionCreditCashout{}, []RAccountTransactionCreditCashout{})
+
+	services.DBCPsql.AutoMigrate(&RAdjustmentAccountTransactionDebit{})
+	services.BaseCrudInitWithDomain("r-adjustment-account-transaction-debit", RAdjustmentAccountTransactionDebit{}, []RAdjustmentAccountTransactionDebit{})
 }

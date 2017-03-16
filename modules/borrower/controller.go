@@ -34,14 +34,16 @@ func Approve(ctx *iris.Context) {
 
 	ktp := payload["client_ktp"].(string)
 	groupID, _ := strconv.ParseUint(payload["groupId"].(string), 10, 64)
+
 	// get CIF with with idCardNo = ktp
 	cifData := cif.Cif{}
 	if ktp != "" {
-		services.DBCPsql.Table("cif").Select("\"idCardNo\"").Where("\"idCardNo\" = ?", ktp).Scan(&cifData)
+		services.DBCPsql.Table("cif").Where("\"idCardNo\" = ?", ktp).Scan(&cifData)
+
 		if cifData.IdCardNo != "" {
 			// found. use existing cif
 			// get borrower id
-			borrower := Borrower{}
+			borrower := r.RCifBorrower{}
 			services.DBCPsql.Table("r_cif_borrower").Where("\"cifId\" =?", cifData.ID).Scan(&borrower)
 
 			// reserve one loan record for this new borrower
@@ -50,7 +52,7 @@ func Approve(ctx *iris.Context) {
 
 			rLoanBorrower := r.RLoanBorrower{
 				LoanId:     loan.ID,
-				BorrowerId: borrower.ID,
+				BorrowerId: borrower.BorrowerId,
 			}
 			services.DBCPsql.Table("r_loan_borrower").Create(&rLoanBorrower)
 
@@ -58,6 +60,7 @@ func Approve(ctx *iris.Context) {
 			// get the newest one
 			UseProductPricing(0, loan.ID)
 			go CreateRelationLoanToGroup(loan.ID, groupID)
+			go CreateRelationLoanToBranch(loan.ID, groupID)
 			go CreateDisbursementRecord(loan.ID, payload["disbursementDate"].(string))
 		} else {
 			// not found. create new CIF
@@ -88,6 +91,7 @@ func Approve(ctx *iris.Context) {
 			// get the newest one
 			UseProductPricing(0, loan.ID)
 			go CreateRelationLoanToGroup(loan.ID, groupID)
+			go CreateRelationLoanToBranch(loan.ID, groupID)
 			go CreateDisbursementRecord(loan.ID, payload["disbursementDate"].(string))
 		}
 
@@ -159,13 +163,13 @@ func CreateLoan(payload map[string]interface{}) loan.Loan {
 	newLoan.SubmittedLoanDate, _ = cpl["data_tgl"] // time.Parse("2006-01-02 15:04:05", cpl["data_tgl"])
 	newLoan.SubmittedTenor, _ = strconv.ParseInt(cpl["data_jangkawaktu"], 10, 64)
 	newLoan.SubmittedPlafond, _ = strconv.ParseFloat(cpl["data_pengajuan"], 64)
-	newLoan.SubmittedInstallment, _ = strconv.ParseFloat(cpl["installment"], 64)
+	newLoan.SubmittedInstallment, _ = strconv.ParseFloat(cpl["data_rencana_angsuran"], 64)
 	newLoan.LoanPeriod, _ = strconv.ParseInt(cpl["data_ke"], 10, 64)
 
-	newLoan.Tenor, _ = strconv.ParseUint(cpl["data_jangkawaktu"], 10, 64)
+	newLoan.Tenor, _ = strconv.ParseUint(cpl["tenor"], 10, 64)
 	newLoan.Rate, _ = strconv.ParseFloat(cpl["rate"], 64) // temporary value until the input defined in the future
 	newLoan.Installment, _ = strconv.ParseFloat(cpl["installment"], 64)
-	newLoan.Plafond, _ = strconv.ParseFloat(cpl["data_pengajuan"], 64)
+	newLoan.Plafond, _ = strconv.ParseFloat(cpl["plafond"], 64)
 
 	newLoan.CreditScoreGrade = cpl["creditScoreGrade"]
 	newLoan.CreditScoreValue, _ = strconv.ParseFloat(cpl["creditScoreValue"], 64)
@@ -180,6 +184,15 @@ func CreateLoan(payload map[string]interface{}) loan.Loan {
 func CreateRelationLoanToGroup(loanID uint64, groupID uint64) {
 	rLoanGroupSchema := &r.RLoanGroup{LoanId: loanID, GroupId: groupID}
 	services.DBCPsql.Table("r_loan_group").Create(&rLoanGroupSchema)
+}
+
+// CreateRelationLoanToBranch - create relation loan to branch
+func CreateRelationLoanToBranch(loanID uint64, groupID uint64) {
+	rGroupBranch := r.RGroupBranch{}
+	services.DBCPsql.Table("r_group_branch").Where("\"groupId\" = ?", groupID).First(&rGroupBranch)
+
+	rLoanBranch := &r.RLoanBranch{LoanId: loanID, BranchId: rGroupBranch.BranchId}
+	services.DBCPsql.Table("r_loan_branch").Create(&rLoanBranch)
 }
 
 // CreateDisbursementRecord - Create a new disbursement record
@@ -212,5 +225,26 @@ func ProspectiveBorrowerUpdateStatusToReject(ctx *iris.Context) {
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"status": "success",
 		"data":   iris.Map{},
+	})
+}
+
+type Count struct {
+	Total int64 `gorm:"column:count"`
+}
+
+// GetTotalBorrowerByBranchID - get total borrower
+func GetTotalBorrowerByBranchID(ctx *iris.Context) {
+	query := "SELECT DISTINCT COUNT(borrower.id)"
+	query += "FROM borrower "
+	query += "JOIN r_loan_borrower ON r_loan_borrower.\"borrowerId\" = borrower.id "
+	query += "JOIN r_loan_branch ON r_loan_branch.\"loanId\" = r_loan_borrower.\"loanId\" "
+	query += "WHERE r_loan_branch.\"branchId\" = ? AND borrower.\"deletedAt\" IS NULL "
+
+	countSchema := Count{}
+	services.DBCPsql.Raw(query, ctx.Param("branch_id")).Scan(&countSchema)
+
+	ctx.JSON(iris.StatusOK, iris.Map{
+		"status": "success",
+		"data":   countSchema.Total,
 	})
 }

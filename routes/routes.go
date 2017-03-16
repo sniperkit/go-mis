@@ -26,6 +26,7 @@ import (
 	"bitbucket.org/go-mis/modules/loan"
 	"bitbucket.org/go-mis/modules/loan-history"
 	"bitbucket.org/go-mis/modules/loan-monitoring"
+	"bitbucket.org/go-mis/modules/loan-order"
 	"bitbucket.org/go-mis/modules/notification"
 	"bitbucket.org/go-mis/modules/product-pricing"
 	"bitbucket.org/go-mis/modules/r"
@@ -104,6 +105,9 @@ func initializeAll() {
 	config.Domain = "loan-monitoring"
 	loanMonitoring.Init()
 
+	config.Domain = "loan-order"
+	loanOrder.Init()
+
 	config.Domain = "notification"
 	notification.Init()
 
@@ -173,6 +177,8 @@ func Init() {
 		loanHistory.Init()
 	case "loan-monitoring":
 		loanMonitoring.Init()
+	case "loan-order":
+		loanOrder.Init()
 	case "notification":
 		notification.Init()
 	case "product-pricing":

@@ -6,6 +6,8 @@ import (
 	"strings"
 	"time"
 
+	"bitbucket.org/go-mis/modules/account"
+	accountTransactionCredit "bitbucket.org/go-mis/modules/account-transaction-credit"
 	accountTransactionDebit "bitbucket.org/go-mis/modules/account-transaction-debit"
 	installmentHistory "bitbucket.org/go-mis/modules/installment-history"
 	"bitbucket.org/go-mis/modules/r"
@@ -19,6 +21,7 @@ func Init() {
 }
 
 // FetchAll - fetchAll installment data
+// Habib : logicnya sudah bisa di handle sama FetchByType dgn parameter pending
 func FetchAll(ctx *iris.Context) {
 	branchID := ctx.Get("BRANCH_ID")
 	installments := []InstallmentFetch{}
@@ -36,6 +39,28 @@ func FetchAll(ctx *iris.Context) {
 	query += "ORDER BY installment.\"createdAt\"::date DESC, branch.\"name\" ASC"
 
 	services.DBCPsql.Raw(query, branchID).Find(&installments)
+	ctx.JSON(iris.StatusOK, iris.Map{"data": installments})
+}
+
+// FetchByType - fetch installment data by type ["PENDING", "IN-REVIEW"]
+func FetchByType(ctx *iris.Context) {
+	installmentType := strings.ToUpper(ctx.Param("type"))
+	branchID := ctx.Get("BRANCH_ID")
+	installments := []InstallmentFetch{}
+
+	query := "SELECT branch.\"name\" AS \"branch\", \"group\".\"id\" AS \"groupId\", \"group\".\"name\" AS \"group\", SUM(installment.\"paidInstallment\") AS \"totalPaidInstallment\", installment.\"createdAt\"::date "
+	query += "FROM installment "
+	query += "JOIN r_loan_installment ON r_loan_installment.\"installmentId\" = installment.\"id\" "
+	query += "JOIN loan ON loan.\"id\" = r_loan_installment.\"loanId\" "
+	query += "JOIN r_loan_branch ON r_loan_branch.\"loanId\" = loan.\"id\" "
+	query += "JOIN branch ON branch.\"id\" = r_loan_branch.\"branchId\"  "
+	query += "JOIN r_loan_group ON r_loan_group.\"loanId\" = loan.\"id\" "
+	query += "JOIN \"group\" ON \"group\".\"id\" = r_loan_group.\"groupId\" "
+	query += "WHERE installment.stage = ? AND branch.id = ?"
+	query += "GROUP BY installment.\"createdAt\"::date, branch.\"name\", \"group\".\"id\", \"group\".\"name\" "
+	query += "ORDER BY installment.\"createdAt\"::date DESC, branch.\"name\" ASC"
+
+	services.DBCPsql.Raw(query, installmentType, branchID).Find(&installments)
 	ctx.JSON(iris.StatusOK, iris.Map{"data": installments})
 }
 
@@ -137,12 +162,12 @@ func storeInstallment(installmentId uint64, status string) {
 	installmentSchema := Installment{}
 	services.DBCPsql.Table("installment").Where("\"id\" = ?", installmentId).First(&installmentSchema)
 
-	if installmentSchema.Stage != "PENDING" {
+	if installmentSchema.Stage != "PENDING" && installmentSchema.Stage != "IN-REVIEW" {
 		// ctx.JSON(iris.StatusBadRequest, iris.Map{
 		// 	"status":  "error",
 		// 	"message": "Current installment stage is NOT 'PENDING'. System cannot continue to process your request.",
 		// })
-		fmt.Println("Current installment stage is NOT 'PENDING'. System cannot continue to process your request. installmentId=" + convertedInstallmentId)
+		fmt.Println("Current installment stage is NEITHER 'PENDING' NOR 'IN-REVIEW'. System cannot continue to process your request. installmentId=" + convertedInstallmentId)
 		return
 	}
 
@@ -153,6 +178,12 @@ func storeInstallment(installmentId uint64, status string) {
 		// })
 		UpdateStageInstallmentApproveOrReject(installmentId, status)
 		fmt.Println("Installment data has been rejected. installmentId=" + convertedInstallmentId)
+		return
+	}
+
+	if status == "IN-REVIEW" {
+		UpdateStageInstallmentApproveOrReject(installmentId, status)
+		fmt.Println("Installment data will be reviewed. installmentId=" + convertedInstallmentId)
 		return
 	}
 
@@ -184,19 +215,25 @@ func storeInstallment(installmentId uint64, status string) {
 	rAccountTransactionDebit := &r.RAccountTransactionDebit{AccountId: loanInvestorAccountIDSchema.AccountID, AccountTransactionDebitId: accountTransactionDebitSchema.ID}
 	services.DBCPsql.Table("r_account_transaction_debit").Create(rAccountTransactionDebit)
 
-	querySumDebitAndCredit := "SELECT SUM(account_transaction_debit.\"amount\") as \"totalDebit\", SUM(account_transaction_credit.\"amount\")  as \"totalCredit\" "
-	querySumDebitAndCredit += "FROM account "
-	querySumDebitAndCredit += "JOIN r_account_transaction_debit ON r_account_transaction_debit.\"accountId\" = account.\"id\" "
-	querySumDebitAndCredit += "JOIN account_transaction_debit ON account_transaction_debit.\"id\" = r_account_transaction_debit.\"accountTransactionDebitId\" "
-	querySumDebitAndCredit += "JOIN r_account_transaction_credit ON r_account_transaction_credit.\"accountId\" = account.\"id\" "
-	querySumDebitAndCredit += "JOIN account_transaction_credit ON account_transaction_credit.\"id\" = r_account_transaction_credit.\"accountTransactionCreditId\" "
-	querySumDebitAndCredit += "WHERE account.\"id\" = ?"
+	// querySumDebitAndCredit := "SELECT SUM(account_transaction_debit.\"amount\") as \"totalDebit\", SUM(account_transaction_credit.\"amount\")  as \"totalCredit\" "
+	// querySumDebitAndCredit += "FROM account "
+	// querySumDebitAndCredit += "LEFT JOIN r_account_transaction_debit ON r_account_transaction_debit.\"accountId\" = account.\"id\" "
+	// querySumDebitAndCredit += "LEFT JOIN account_transaction_debit ON account_transaction_debit.\"id\" = r_account_transaction_debit.\"accountTransactionDebitId\" "
+	// querySumDebitAndCredit += "LEFT JOIN r_account_transaction_credit ON r_account_transaction_credit.\"accountId\" = account.\"id\" "
+	// querySumDebitAndCredit += "LEFT JOIN account_transaction_credit ON account_transaction_credit.\"id\" = r_account_transaction_credit.\"accountTransactionCreditId\" "
+	// querySumDebitAndCredit += "WHERE account.\"id\" = ?"
 
-	accountTransactionDebitAndCreditSchema := AccountTransactionDebitAndCredit{}
-	services.DBCPsql.Raw(querySumDebitAndCredit, loanInvestorAccountIDSchema.AccountID).Scan(&accountTransactionDebitAndCreditSchema)
+	// accountTransactionDebitAndCreditSchema := AccountTransactionDebitAndCredit{}
+	// services.DBCPsql.Raw(querySumDebitAndCredit, loanInvestorAccountIDSchema.AccountID).Scan(&accountTransactionDebitAndCreditSchema)
 
-	totalBalance := accountTransactionDebitAndCreditSchema.TotalDebit - accountTransactionDebitAndCreditSchema.TotalCredit
-	services.DBCPsql.Table("account").Exec("UPDATE account SET \"totalDebit\" = ?, \"totalCredit\" = ?, \"totalBalance\" = ? WHERE \"id\" = ?", accountTransactionDebitAndCreditSchema.TotalDebit, accountTransactionDebitAndCreditSchema.TotalCredit, totalBalance, loanInvestorAccountIDSchema.AccountID)
+	// totalBalance := accountTransactionDebitAndCreditSchema.TotalDebit - accountTransactionDebitAndCreditSchema.TotalCredit
+	// services.DBCPsql.Table("account").Exec("UPDATE account SET \"totalDebit\" = ?, \"totalCredit\" = ?, \"totalBalance\" = ? WHERE \"id\" = ?", accountTransactionDebitAndCreditSchema.TotalDebit, accountTransactionDebitAndCreditSchema.TotalCredit, totalBalance, loanInvestorAccountIDSchema.AccountID)
+
+	totalDebit := accountTransactionDebit.GetTotalAccountTransactionDebit(loanInvestorAccountIDSchema.AccountID)
+	totalCredit := accountTransactionCredit.GetTotalAccountTransactionCredit(loanInvestorAccountIDSchema.AccountID)
+
+	totalBalance := totalDebit - totalCredit
+	services.DBCPsql.Table("account").Where("id = ?", loanInvestorAccountIDSchema.AccountID).Updates(account.Account{TotalDebit: totalDebit, TotalCredit: totalCredit, TotalBalance: totalBalance})
 
 	fmt.Println("Calculation process has been done. installmentId=" + convertedInstallmentId)
 
@@ -216,7 +253,7 @@ func storeInstallment(installmentId uint64, status string) {
 // UpdateStageInstallmentApproveOrReject - Update installment stage
 func UpdateStageInstallmentApproveOrReject(installmentId uint64, status string) {
 	convertedInstallmentID := strconv.FormatUint(installmentId, 10)
-	fmt.Println("Updating status to `APPROVE`. installmentId=" + convertedInstallmentID)
+	fmt.Println("Updating status to " + status + ". installmentId=" + convertedInstallmentID)
 
 	installmentHistorySchema := &installmentHistory.InstallmentHistory{StageFrom: "PENDING", StageTo: status}
 	services.DBCPsql.Table("installment_history").Create(installmentHistorySchema)
@@ -228,7 +265,7 @@ func UpdateStageInstallmentApproveOrReject(installmentId uint64, status string) 
 
 	services.DBCPsql.Table("installment").Where("\"id\" = ?", installmentId).UpdateColumn("stage", status)
 
-	fmt.Println("Done. Updated status to `APPROVE`. installmentId=" + convertedInstallmentID)
+	fmt.Println("Done. Updated status to " + status + ". installmentId=" + convertedInstallmentID)
 }
 
 // SubmitInstallmentByInstallmentIDWithStatus - approve or reject installment by installment_id
@@ -252,7 +289,7 @@ func SubmitInstallmentByGroupIDAndTransactionDateWithStatus(ctx *iris.Context) {
 	transactionDate := ctx.Param("transaction_date")
 	status := strings.ToUpper(ctx.Param("status"))
 
-	if strings.ToLower(ctx.Param("status")) == "approve" || strings.ToLower(ctx.Param("status")) == "reject" {
+	if strings.ToLower(ctx.Param("status")) == "approve" || strings.ToLower(ctx.Param("status")) == "reject" || strings.ToLower(ctx.Param("status")) == "in-review" {
 		query := "SELECT "
 		query += "\"group\".\"id\" as \"groupId\", \"group\".\"name\" as \"groupName\","
 		query += "installment.\"id\" as \"installmentId\", installment.\"type\", installment.\"paidInstallment\", installment.\"penalty\", installment.\"reserve\", installment.\"presence\", installment.\"frequency\", installment.\"stage\" "

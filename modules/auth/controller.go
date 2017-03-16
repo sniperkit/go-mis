@@ -76,11 +76,15 @@ func UserMisLogin(ctx *iris.Context) {
 		return
 	}
 
+	rUserMisBranch := r.RBranchUserMis{}
+	services.DBCPsql.Table("r_branch_user_mis").Where(" \"userMisId\" = ? ", userMisObj.ID).First(&rUserMisBranch)
+
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"status": "success",
 		"data": iris.Map{
 			"name":        userMisObj.Fullname,
 			"accessToken": accessTokenHash,
+			"branchId":    rUserMisBranch.BranchId,
 			"role": iris.Map{
 				"assignedRole": roleObj.Name,
 				"config":       roleObj.Config,
@@ -131,9 +135,4 @@ func CurrentUserMis(ctx *iris.Context) {
 			"name": userMisObj.Fullname,
 		},
 	})
-}
-
-// CurrentAgent - get current agent data
-func CurrentAgent(ctx *iris.Context) {
-
 }
