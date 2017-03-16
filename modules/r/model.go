@@ -443,3 +443,13 @@ type RAdjustmentAccountTransactionDebit struct {
 	UpdatedAt                 time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
 	DeletedAt                 *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
 }
+
+// Relation `adjustment` to `installment`
+type RInstallmentAdjustment struct {
+	ID            uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
+	AdjustmentID  uint64     `gorm:"column:adjustmentId" json:"adjustmentId"`
+	InstallmentID uint64     `gorm:"column:installmentId" json:"installmentId"`
+	CreatedAt     time.Time  `gorm:"column:createdAt" json:"createdAt"`
+	UpdatedAt     time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
+	DeletedAt     *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
+}
