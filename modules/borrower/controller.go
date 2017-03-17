@@ -1,6 +1,7 @@
 package borrower
 
 import (
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"time"
@@ -8,6 +9,7 @@ import (
 	"bitbucket.org/go-mis/modules/cif"
 	"bitbucket.org/go-mis/modules/disbursement"
 	"bitbucket.org/go-mis/modules/loan"
+	loanRaw "bitbucket.org/go-mis/modules/loan-raw"
 	productPricing "bitbucket.org/go-mis/modules/product-pricing"
 	"bitbucket.org/go-mis/modules/r"
 	"bitbucket.org/go-mis/services"
@@ -35,6 +37,12 @@ func Approve(ctx *iris.Context) {
 	ktp := payload["client_ktp"].(string)
 	groupID, _ := strconv.ParseUint(payload["groupId"].(string), 10, 64)
 
+	dataRaw, err := json.Marshal(payload)
+
+	if err != nil {
+		fmt.Println(err)
+	}
+
 	// get CIF with with idCardNo = ktp
 	cifData := cif.Cif{}
 	if ktp != "" {
@@ -49,6 +57,8 @@ func Approve(ctx *iris.Context) {
 			// reserve one loan record for this new borrower
 			loan := CreateLoan(payload)
 			services.DBCPsql.Table("loan").Create(&loan)
+
+			services.DBCPsql.Table("loan_raw").Create(&loanRaw.LoanRaw{Raw: dataRaw, LoanID: loan.ID})
 
 			rLoanBorrower := r.RLoanBorrower{
 				LoanId:     loan.ID,
@@ -80,6 +90,8 @@ func Approve(ctx *iris.Context) {
 			// reserve one loan record for this new borrower
 			loan := CreateLoan(payload)
 			services.DBCPsql.Table("loan").Create(&loan)
+
+			services.DBCPsql.Table("loan_raw").Create(&loanRaw.LoanRaw{Raw: dataRaw, LoanID: loan.ID})
 
 			rLoanBorrower := r.RLoanBorrower{
 				LoanId:     loan.ID,
@@ -120,7 +132,6 @@ func UseProductPricing(investorId uint64, loanId uint64) {
 
 // CreateCIF - create CIF object
 func CreateCIF(payload map[string]interface{}) cif.Cif {
-	fmt.Printf("%+v", payload)
 	// convert each payload  field into empty string
 	var cpl map[string]string
 	cpl = make(map[string]string)
