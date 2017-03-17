@@ -73,6 +73,7 @@ type AdjustmentSchema struct {
 	AmountToAdjust float64   `gorm:"column:amountToAdjust" json:"amountToAdjust"`
 	AmountAfter    float64   `gorm:"column:amountAfter" json:"amountAfter"`
 	Remark         string    `gorm:"column:remark" json:"remark"`
+	Stage          string    `gorm:"column:stage" json:"stage"`
 	CreatedAt      time.Time `gorm:"column:createdAt" json:"createdAt"`
 }
 
@@ -202,6 +203,7 @@ func SetAdjustmentForInstallment(ctx *iris.Context) {
 		AmountToAdjust: psaSchema.AmountToAdjust,
 		AmountAfter:    psaSchema.AmountAfter,
 		Remark:         psaSchema.Remark,
+		Stage:          "PENDING",
 	}
 
 	services.DBCPsql.Table("adjustment").Create(adjustmentSchema)
@@ -213,7 +215,46 @@ func SetAdjustmentForInstallment(ctx *iris.Context) {
 
 	services.DBCPsql.Table("r_installment_adjustment").Create(rInstallmentAdjustmentSchema)
 
-	services.DBCPsql.Table("installment").Where("id = ?", installmentID).Update("paidInstallment", psaSchema.AmountAfter)
+	userMis := ctx.Get("USER_MIS").(userMis.UserMis)
+	rAdjustmentSubmittedBySchema := &r.RAdjustmentSubmittedBy{AdjustmentId: adjustmentSchema.ID, UserMisId: userMis.ID}
+	services.DBCPsql.Table("r_adjustment_submitted_by").Create(rAdjustmentSubmittedBySchema)
+
+	// services.DBCPsql.Table("installment").Where("id = ?", installmentID).Update("paidInstallment", psaSchema.AmountAfter)
+
+	ctx.JSON(iris.StatusOK, iris.Map{
+		"status": "success",
+		"data":   iris.Map{},
+	})
+}
+
+type UpdateAdjustmentInstallmentSchema struct {
+	AmountAfter   float64 `gorm:"column:amountAfter" json:"amountAfter"`
+	InstallmentID uint64  `gorm:"column:installlmentId" json:"installlmentId"`
+}
+
+// UpdateAdjustmentAndInstallment - Update adjustment stage and update installment amount
+func UpdateAdjustmentAndInstallment(ctx *iris.Context) {
+	userMis := ctx.Get("USER_MIS").(userMis.UserMis)
+	adjustmentID, _ := strconv.ParseUint(ctx.Param("adjustment_id"), 10, 64)
+	stage := ctx.URLParam("stage")
+
+	query := "SELECT adjustment.*, r_installment_adjustment.\"installmentId\" FROM adjustment "
+	query += "JOIN r_installment_adjustment ON r_installment_adjustment.\"adjustmentId\" = adjustment.id "
+	query += "WHERE adjustment.id = ? AND adjustment.\"deletedAt\" IS NULL LIMIT 1"
+
+	adjustmentSchema := UpdateAdjustmentInstallmentSchema{}
+	services.DBCPsql.Raw(query, adjustmentID).Scan(&adjustmentSchema)
+
+	if stage == "APPROVE" {
+		services.DBCPsql.Table("installment").Where("id = ?", adjustmentSchema.InstallmentID).Update("paidInstallment", adjustmentSchema.AmountAfter)
+	} else {
+		services.DBCPsql.Table("r_installment_adjustment").Where("\"adjustmentId\" = ?", adjustmentID).Update("deletedAt", time.Now())
+	}
+
+	rAdjustmentApprovedBySchema := &r.RAdjustmentApprovedBy{AdjustmentId: adjustmentID, UserMisId: userMis.ID}
+	services.DBCPsql.Table("r_adjustment_approved_by").Create(rAdjustmentApprovedBySchema)
+
+	services.DBCPsql.Table("adjustment").Where("id = ?", adjustmentID).Update("stage", stage)
 
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"status": "success",
