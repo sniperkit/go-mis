@@ -72,34 +72,35 @@ func Verify(ctx *iris.Context) {
 		cifSchema := cif.Cif{}
 		services.DBCPsql.Table("cif").Where("id = ?", id).Scan(&cifSchema)
 
-		if cifSchema.Username != "" {
 
-			// get investor id
-			inv := &r.RCifInvestor{}
-			services.DBCPsql.Table("r_cif_investor").Where("\"cifId\" = ?", id).Scan(&inv)
-			
-			// get virtual account
-			rInvVa := []r.RInvestorVirtualAccount{}
-			services.DBCPsql.Table("r_investor_virtual_account").Where("\"investorId\" = ?", inv.InvestorId).Scan(&rInvVa)
+		// get investor id
+		inv := &r.RCifInvestor{}
+		services.DBCPsql.Table("r_cif_investor").Where("\"cifId\" = ?", id).Scan(&inv)
 		
-			vaObj := &va.VirtualAccount{}
-			userVa := []va.VirtualAccount{}
-			for _, val := range rInvVa {
-				services.DBCPsql.Table("virtual_account").Where("\"id\" = ?", val.VirtualAccountId).Scan(&vaObj)
-				userVa = append(userVa, *vaObj)
-			}
+		// get virtual account
+		rInvVa := []r.RInvestorVirtualAccount{}
+		services.DBCPsql.Table("r_investor_virtual_account").Where("\"investorId\" = ?", inv.InvestorId).Scan(&rInvVa)
+	
+		vaObj := &va.VirtualAccount{}
+		userVa := []va.VirtualAccount{}
+		for _, val := range rInvVa {
+			services.DBCPsql.Table("virtual_account").Where("\"id\" = ?", val.VirtualAccountId).Scan(&vaObj)
+			userVa = append(userVa, *vaObj)
+		}
 
-			vaData := make(map[string]string)		
-			for _,val := range userVa {
-				if val.BankName == "BRI" {
-					vaData["BRI"] = val.VirtualAccountNo
-					vaData["BRI_HOLDER"] = val.VirtualAccountName
-				} else if val.BankName == "BCA" {
-					vaData["BCA"] = val.VirtualAccountNo
-					vaData["BCA_HOLDER"] = val.VirtualAccountName
-				}
+		vaData := make(map[string]string)		
+		for _,val := range userVa {
+			if val.BankName == "BRI" {
+				vaData["BRI"] = val.VirtualAccountNo
+				vaData["BRI_HOLDER"] = val.VirtualAccountName
+			} else if val.BankName == "BCA" {
+				vaData["BCA"] = val.VirtualAccountNo
+				vaData["BCA_HOLDER"] = val.VirtualAccountName
 			}
+		}
 
+
+		if cifSchema.Username != "" {
 			fmt.Println("Sending email..")
 			sendgrid := email.Sendgrid{}
 			sendgrid.SetFrom("Amartha", "no-reply@amartha.com")
@@ -113,7 +114,7 @@ func Verify(ctx *iris.Context) {
 			// send sms notification
 			fmt.Println("Sending sms ... ")
 			twilio := services.InitTwilio()
-			message := "Selamat akun anda sudah berhasil kami verifikasi"
+			message := "Selamat data Anda sudah terverifikasi. Silakan login ke dashboard Anda dan mulai berinvestasi. www.amartha.com"
 			twilio.SetParam(cifSchema.PhoneNo, message)
 			twilio.SendSMS()
 		}
