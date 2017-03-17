@@ -229,7 +229,7 @@ func SetAdjustmentForInstallment(ctx *iris.Context) {
 
 type UpdateAdjustmentInstallmentSchema struct {
 	AmountAfter   float64 `gorm:"column:amountAfter" json:"amountAfter"`
-	InstallmentID uint64  `gorm:"column:installlmentId" json:"installlmentId"`
+	InstallmentID uint64  `gorm:"column:installmentId" json:"installmentId"`
 }
 
 // UpdateAdjustmentAndInstallment - Update adjustment stage and update installment amount
