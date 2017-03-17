@@ -37,8 +37,14 @@ func Approve(ctx *iris.Context) {
 	ktp := payload["client_ktp"].(string)
 	groupID, _ := strconv.ParseUint(payload["groupId"].(string), 10, 64)
 
-	dataRaw, err := json.Marshal(payload)
+	// tanggungan, errTanggungan := json.Marshal(payload["tanggungan"])
+	// if errTanggungan != nil {
+	// 	fmt.Println(errTanggungan)
+	// }
 
+	// payload["tanggungan"] = tanggungan
+
+	dataRaw, err := json.Marshal(payload)
 	if err != nil {
 		fmt.Println(err)
 	}
