@@ -146,14 +146,42 @@ func GetInstallmentByGroupIDAndTransactionDate(ctx *iris.Context) {
 }
 
 type LoanInvestorAccountID struct {
-	LoanID     uint64 `gorm:"column:loanId" json:"loanId"`
-	InvestorID uint64 `gorm:"column:investorId" json:"investorId"`
-	AccountID  uint64 `gorm:"column:accountId" json:"accountId"`
+	LoanID     uint64  `gorm:"column:loanId" json:"loanId"`
+	InvestorID uint64  `gorm:"column:investorId" json:"investorId"`
+	AccountID  uint64  `gorm:"column:accountId" json:"accountId"`
+	PPLROI     float64 `gorm:"column:pplROI" json:"pplROI"`
 }
 
 type AccountTransactionDebitAndCredit struct {
 	TotalDebit  float64 `gorm:"column:totalDebit" json:"totalDebit"`
 	TotalCredit float64 `gorm:"column:totalCredit" json:"totalCredit"`
+}
+
+type LoanSchema struct {
+	ID                   uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
+	LoanPeriod           int64      `gorm:"column:loanPeriod" json:"loanPeriod"`
+	AgreementType        string     `gorm:"column:agreementType" json:"agreementType"`
+	Subgroup             string     `gorm:"column:subgroup" json:"subgrop"`
+	Purpose              string     `gorm:"column:purpose" json:"purpose"`
+	URLPic1              string     `gorm:"column:urlPic1" json:"urlPic1"`
+	URLPic2              string     `gorm:"column:urlPic2" json:"urlPic2"`
+	SubmittedLoanDate    string     `gorm:"column:submittedLoanDate" json:"submittedLoanDate"`
+	SubmittedPlafond     float64    `gorm:"column:submittedPlafond" json:"submittedPlafond"`
+	SubmittedTenor       int64      `gorm:"column:submittedTenor" json:"submittedTenor"`
+	SubmittedInstallment float64    `gorm:"column:submittedInstallment" json:"submittedInstallment"`
+	CreditScoreGrade     string     `gorm:"column:creditScoreGrade" json:"creditScoreGrade"`
+	CreditScoreValue     float64    `gorm:"column:creditScoreValue" json:"creditScoreValue"`
+	Tenor                uint64     `gorm:"column:tenor" json:"tenor"`
+	Rate                 float64    `gorm:"column:rate" json:"rate"`
+	Installment          float64    `gorm:"column:installment" json:"installment"`
+	Plafond              float64    `gorm:"column:plafond" json:"plafond"`
+	GroupReserve         float64    `gorm:"column:groupReserve" json:"groupReserve"`
+	Stage                string     `gorm:"column:stage" json:"stage"`
+	IsLWK                bool       `gorm:"column:isLWK" json:"isLWK" sql:"default:false"`
+	IsUPK                bool       `gorm:"column:isUPK" json:"IsUPK" sql:"default:false"`
+	CreatedAt            time.Time  `gorm:"column:createdAt" json:"createdAt"`
+	UpdatedAt            time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
+	DeletedAt            *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
 }
 
 func storeInstallment(installmentId uint64, status string) {
@@ -199,10 +227,7 @@ func storeInstallment(installmentId uint64, status string) {
 
 	fmt.Println("Start calculation process. installmentId=" + convertedInstallmentId)
 
-	accountTransactionDebitSchema := &accountTransactionDebit.AccountTransactionDebit{Type: "INSTALLMENT", TransactionDate: time.Now(), Amount: installmentSchema.PaidInstallment}
-	services.DBCPsql.Table("account_transaction_debit").Create(accountTransactionDebitSchema)
-
-	queryGetAccountInvestor := "SELECT r_loan_installment.\"loanId\", r_investor_product_pricing_loan.\"investorId\", r_account_investor.\"accountId\" "
+	queryGetAccountInvestor := "SELECT r_loan_installment.\"loanId\", r_investor_product_pricing_loan.\"investorId\", r_account_investor.\"accountId\", product_pricing.\"returnOnInvestment\" as \"pplROI\" "
 	queryGetAccountInvestor += "FROM installment "
 	queryGetAccountInvestor += "JOIN r_loan_installment ON r_loan_installment.\"installmentId\" = installment.\"id\" "
 	queryGetAccountInvestor += "JOIN r_investor_product_pricing_loan ON r_investor_product_pricing_loan.\"loanId\" = r_loan_installment.\"loanId\" "
@@ -211,6 +236,21 @@ func storeInstallment(installmentId uint64, status string) {
 
 	loanInvestorAccountIDSchema := LoanInvestorAccountID{}
 	services.DBCPsql.Raw(queryGetAccountInvestor, installmentId).Scan(&loanInvestorAccountIDSchema)
+
+	loanSchema := LoanSchema{}
+	services.DBCPsql.Table("loan").Where("id = ?", loanInvestorAccountIDSchema.LoanID).Scan(&loanSchema)
+
+	// accountTransactionDebitAmount := frequency * (plafond / tenor) + ((paidInstallment - (frequency * (plafond/tenor))) * pplROI);
+	freq := float64(installmentSchema.Frequency)
+	plafond := loanSchema.Plafond
+	tenor := float64(loanSchema.Tenor)
+	paidInstallment := installmentSchema.PaidInstallment
+	pplROI := loanInvestorAccountIDSchema.PPLROI
+
+	accountTransactionDebitAmount := freq*(plafond/tenor) + ((paidInstallment - (freq * (plafond / tenor))) * pplROI)
+
+	accountTransactionDebitSchema := &accountTransactionDebit.AccountTransactionDebit{Type: "INSTALLMENT", TransactionDate: time.Now(), Amount: accountTransactionDebitAmount}
+	services.DBCPsql.Table("account_transaction_debit").Create(accountTransactionDebitSchema)
 
 	rAccountTransactionDebit := &r.RAccountTransactionDebit{AccountId: loanInvestorAccountIDSchema.AccountID, AccountTransactionDebitId: accountTransactionDebitSchema.ID}
 	services.DBCPsql.Table("r_account_transaction_debit").Create(rAccountTransactionDebit)

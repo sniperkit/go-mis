@@ -1,6 +1,9 @@
 package adjustment
 
 import (
+	"strconv"
+	"time"
+
 	account_transaction_debit "bitbucket.org/go-mis/modules/account-transaction-debit"
 	"bitbucket.org/go-mis/modules/r"
 	"bitbucket.org/go-mis/modules/user-mis"
@@ -59,5 +62,119 @@ func SubmitAdjustment(ctx *iris.Context) {
 
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"status": "success",
+	})
+}
+
+// GetAdjustment - get list of adjustment
+func GetAdjustment(ctx *iris.Context) {
+	adjustmentSchema := []Adjustment{}
+	services.DBCPsql.Table("adjustment").Where("\"deletedAt\" IS NULL").Scan(&adjustmentSchema)
+
+	ctx.JSON(iris.StatusOK, iris.Map{
+		"status": "success",
+		"data":   adjustmentSchema,
+	})
+}
+
+type TotalData struct {
+	TotalRows int64 `gorm:"column:totalRows" json:"totalRows"`
+}
+
+type InReviewInstallment struct {
+	BorrowerID      uint64    `gorm:"column:borrowerId" json:"borrowerId"`
+	Borrower        string    `gorm:"column:borrower" json:"borrower"`
+	InstallmentID   uint64    `gorm:"column:installmentId" json:"installmentId"`
+	Type            string    `gorm:"column:type" json:"type"`
+	Presence        string    `gorm:"column:presence" json:"presence"`
+	PaidInstallment float64   `gorm:"column:paidInstallment" json:"paidInstallment"`
+	Reserve         float64   `gorm:"column:reserve" json:"reserve"`
+	Frequency       int32     `gorm:"column:frequency" json:"frequency"`
+	CreatedAt       time.Time `gorm:"column:createdAt" json:"createdAt"`
+}
+
+// GetInReviewInstallment - get list of in-review installment
+func GetInReviewInstallment(ctx *iris.Context) {
+	totalData := TotalData{}
+
+	query := "SELECT r_cif_borrower.\"borrowerId\", cif.\"name\" AS \"borrower\", installment.id AS \"installmentId\", installment.\"type\", installment.presence, installment.\"paidInstallment\", installment.reserve, installment.frequency, installment.\"createdAt\" "
+	query += "FROM installment "
+	query += "JOIN r_loan_installment ON r_loan_installment.\"installmentId\" = installment.id "
+	query += "JOIN r_loan_borrower ON r_loan_borrower.\"loanId\" = r_loan_installment.\"loanId\" "
+	query += "JOIN r_cif_borrower ON r_cif_borrower.\"borrowerId\" = r_loan_borrower.\"borrowerId\" "
+	query += "JOIN cif ON cif.id = r_cif_borrower.\"cifId\" WHERE installment.\"deletedAt\" IS NULL AND installment.stage = 'IN-REVIEW' AND (installment.\"createdAt\" BETWEEN ? AND ?) "
+
+	queryTotal := "SELECT COUNT(*) "
+	queryTotal += "FROM installment "
+	queryTotal += "JOIN r_loan_installment ON r_loan_installment.\"installmentId\" = installment.id "
+	queryTotal += "JOIN r_loan_borrower ON r_loan_borrower.\"loanId\" = r_loan_installment.\"loanId\" "
+	queryTotal += "JOIN r_cif_borrower ON r_cif_borrower.\"borrowerId\" = r_loan_borrower.\"borrowerId\" "
+	queryTotal += "JOIN cif ON cif.id = r_cif_borrower.\"cifId\" WHERE installment.\"deletedAt\" IS NULL AND installment.stage = 'IN-REVIEW' AND (installment.\"createdAt\" BETWEEN ? AND ?) "
+
+	if ctx.URLParam("LIMIT") != "" {
+		query += "LIMIT " + ctx.URLParam("LIMIT")
+		queryTotal += "LIMIT " + ctx.URLParam("LIMIT")
+	} else {
+		query += "LIMIT 10 "
+		queryTotal += "LIMIT 10 "
+	}
+
+	startDate := ctx.Param("start_date") + " 00:00:00"
+	endDate := ctx.Param("end_date") + " 00:00:00"
+
+	installmentSchema := []InReviewInstallment{}
+
+	services.DBCPsql.Raw(queryTotal, startDate, endDate).Find(&totalData)
+	services.DBCPsql.Raw(query, startDate, endDate).Scan(&installmentSchema)
+
+	ctx.JSON(iris.StatusOK, iris.Map{
+		"status":    "success",
+		"totalRows": totalData.TotalRows,
+		"data":      installmentSchema,
+	})
+
+}
+
+type paramSubmitAdjustment struct {
+	AmountBefore   float64 `json:"previousAmount"`
+	AmountToAdjust float64 `json:"amountToAdjust"`
+	AmountAfter    float64 `json:"resultAmount"`
+	Remark         string  `json:"remark"`
+}
+
+//SetAdjustmentForInstallment
+func SetAdjustmentForInstallment(ctx *iris.Context) {
+	installmentID, _ := strconv.ParseUint(ctx.Param("installment_id"), 10, 64)
+
+	psaSchema := paramSubmitAdjustment{}
+	if err := ctx.ReadJSON(&psaSchema); err != nil {
+		ctx.JSON(iris.StatusBadRequest, iris.Map{
+			"status":  "error",
+			"message": "Bad request param.",
+		})
+		return
+	}
+
+	adjustmentSchema := &Adjustment{
+		Type:           "INSTALLMENT",
+		AmountBefore:   psaSchema.AmountBefore,
+		AmountToAdjust: psaSchema.AmountToAdjust,
+		AmountAfter:    psaSchema.AmountAfter,
+		Remark:         psaSchema.Remark,
+	}
+
+	services.DBCPsql.Table("adjustment").Create(adjustmentSchema)
+
+	rInstallmentAdjustmentSchema := &r.RInstallmentAdjustment{
+		AdjustmentID:  adjustmentSchema.ID,
+		InstallmentID: installmentID,
+	}
+
+	services.DBCPsql.Table("r_installment_adjustment").Create(rInstallmentAdjustmentSchema)
+
+	services.DBCPsql.Table("installment").Where("id = ?", installmentID).Update("paidInstallment", psaSchema.AmountAfter)
+
+	ctx.JSON(iris.StatusOK, iris.Map{
+		"status": "success",
+		"data":   iris.Map{},
 	})
 }
