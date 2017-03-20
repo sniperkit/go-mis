@@ -161,7 +161,7 @@ func CreateCIF(payload map[string]interface{}) cif.Cif {
 	newCif.Religion = cpl["client_religion"]
 	newCif.Address = cpl["client_alamat"]
 	newCif.Kelurahan = cpl["client_desa"]
-	newCif.Kecamatan = cpl["kecamatan"]
+	newCif.Kecamatan = cpl["client_kecamatan"]
 	newCif.RT = cpl["client_rt"]
 	newCif.RW = cpl["client_rw"]
 
