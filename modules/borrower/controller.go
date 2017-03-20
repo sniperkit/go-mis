@@ -164,6 +164,8 @@ func CreateCIF(payload map[string]interface{}) cif.Cif {
 	newCif.Kecamatan = cpl["kecamatan"]
 	newCif.RT = cpl["client_rt"]
 	newCif.RW = cpl["client_rw"]
+
+	fmt.Printf("%+v", newCif)
 	return newCif
 }
 
