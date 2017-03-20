@@ -90,8 +90,10 @@ func InitCustomApi() {
 		v2.Any("/topup/submit", account.DoTopup)
 		v2.Get("/transaction/:type/:investor_id/:start_date/:end_date", transaction.GetData)
 		v2.Get("/adjustment", adjustment.GetAdjustment)
+		v2.Get("/adjustment/get/:adjustment_id", adjustment.GetAdjustmentDetail)
 		v2.Get("/adjustment/installment/:start_date/:end_date", adjustment.GetInReviewInstallment)
 		v2.Any("/adjustment/submit/:installment_id", adjustment.SetAdjustmentForInstallment)
+		v2.Any("/adjustment/update/:adjustment_id", adjustment.UpdateAdjustmentAndInstallment)
 		v2.Any("/submit-adjustment/:account_type", adjustment.SubmitAdjustment)
 	}
 
