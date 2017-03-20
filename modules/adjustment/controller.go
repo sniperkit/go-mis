@@ -154,8 +154,8 @@ func GetInReviewInstallment(ctx *iris.Context) {
 	queryTotal += "JOIN cif ON cif.id = r_cif_borrower.\"cifId\" WHERE installment.\"deletedAt\" IS NULL AND installment.stage = 'IN-REVIEW' AND (installment.\"createdAt\" BETWEEN ? AND ?) "
 
 	if ctx.URLParam("search") != "" {
-		query += "AND cif.\"name\" = '" + ctx.URLParam("search") + "' "
-		queryTotal += "AND cif.\"name\" = '" + ctx.URLParam("search") + "' "
+		query += "AND cif.\"name\" ~* '" + ctx.URLParam("search") + "' "
+		queryTotal += "AND cif.\"name\" ~* '" + ctx.URLParam("search") + "' "
 	}
 
 	if ctx.URLParam("LIMIT") != "" {
