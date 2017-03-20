@@ -294,7 +294,7 @@ func GetAkadData(ctx *iris.Context) {
 	query += "JOIN \"group\" ON \"group\".id = r_loan_group.\"groupId\" "
 	query += "WHERE loan.id = ? AND loan.\"deletedAt\" IS NULL "
 
-	services.DBCPsql.Raw(query, loanID).Find(&data)
+	services.DBCPsql.Raw(query, loanID).Scan(&data)
 
 	queryGetInvestor := "SELECT cif.* "
 	queryGetInvestor += "FROM r_investor_product_pricing_loan "
@@ -304,7 +304,7 @@ func GetAkadData(ctx *iris.Context) {
 
 	investorData := cif.Cif{}
 
-	services.DBCPsql.Raw(queryGetInvestor, loanID).Find(&investorData)
+	services.DBCPsql.Raw(queryGetInvestor, loanID).Scan(&investorData)
 
 	queryGetBorrower := "SELECT cif.\"name\", borrower.\"borrowerNo\" "
 	queryGetBorrower += "FROM r_loan_borrower "
@@ -315,7 +315,7 @@ func GetAkadData(ctx *iris.Context) {
 
 	borrowerData := BorrowerObj{}
 
-	services.DBCPsql.Raw(queryGetBorrower, loanID).Find(&borrowerData)
+	services.DBCPsql.Raw(queryGetBorrower, loanID).Scan(&borrowerData)
 
 	// query := "SELECT loan.id, loan.\"agreementType\", loan.purpose, loan.plafond, loan.tenor, loan.installment, loan.rate, loan.\"submittedLoanDate\", "
 	// query += "cif_investor.name as investor, cif_borrower.name as borrower, \"group\".\"name\" as \"group\", "
