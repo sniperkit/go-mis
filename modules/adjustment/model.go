@@ -9,6 +9,7 @@ type Adjustment struct {
 	AmountToAdjust float64    `gorm:"column:amountToAdjust" json:"amountToAdjust"`
 	AmountAfter    float64    `gorm:"column:amountAfter" json:"amountAfter"`
 	Remark         string     `gorm:"column:remark" json:"remark"`
+	Stage          string     `gorm:"column:stage" json:"stage"`
 	CreatedAt      time.Time  `gorm:"column:createdAt" json:"createdAt"`
 	UpdatedAt      time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
 	DeletedAt      *time.Time `gorm:"column:deletedAt" json:"deletedAt"`

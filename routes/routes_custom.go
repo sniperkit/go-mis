@@ -3,6 +3,7 @@ package routes
 import (
 	"bitbucket.org/go-mis/config"
 	"bitbucket.org/go-mis/modules/account"
+	"bitbucket.org/go-mis/modules/adjustment"
 	"bitbucket.org/go-mis/modules/agent"
 	"bitbucket.org/go-mis/modules/area"
 	"bitbucket.org/go-mis/modules/auth"
@@ -88,9 +89,16 @@ func InitCustomApi() {
 		v2.Get("/investor-for-topup", investor.GetInvestorForTopup)
 		v2.Any("/topup/submit", account.DoTopup)
 		v2.Get("/transaction/:type/:investor_id/:start_date/:end_date", transaction.GetData)
+		v2.Get("/adjustment", adjustment.GetAdjustment)
+		v2.Get("/adjustment/get/:adjustment_id", adjustment.GetAdjustmentDetail)
+		v2.Get("/adjustment/installment/:start_date/:end_date", adjustment.GetInReviewInstallment)
+		v2.Any("/adjustment/submit/:installment_id", adjustment.SetAdjustmentForInstallment)
+		v2.Any("/adjustment/update/:adjustment_id", adjustment.UpdateAdjustmentAndInstallment)
+		v2.Any("/submit-adjustment/:account_type", adjustment.SubmitAdjustment)
 	}
 
 	iris.Get(baseURL+"/investor-without-va", investor.InvestorWithoutVA)
 	iris.Post(baseURL+"/investor-register-va", investor.InvestorRegisterVA)
 	iris.Get(baseURL+"/location", location.GetLocation)
+	iris.Get(baseURL+"/location/:location_code", location.GetLocationById)
 }

@@ -1,6 +1,9 @@
 package r
 
-import "bitbucket.org/go-mis/services"
+import (
+	loanRaw "bitbucket.org/go-mis/modules/loan-raw"
+	"bitbucket.org/go-mis/services"
+)
 
 func Init() {
 	services.DBCPsql.AutoMigrate(&RCifAccessToken{})
@@ -131,4 +134,13 @@ func Init() {
 
 	services.DBCPsql.AutoMigrate(&RAccountTransactionCreditCashout{})
 	services.BaseCrudInitWithDomain("r-account-transaction-credit-cashout", RAccountTransactionCreditCashout{}, []RAccountTransactionCreditCashout{})
+
+	services.DBCPsql.AutoMigrate(&RAdjustmentAccountTransactionDebit{})
+	services.BaseCrudInitWithDomain("r-adjustment-account-transaction-debit", RAdjustmentAccountTransactionDebit{}, []RAdjustmentAccountTransactionDebit{})
+
+	services.DBCPsql.AutoMigrate(&RInstallmentAdjustment{})
+	services.BaseCrudInitWithDomain("r-installment-adjustment", RInstallmentAdjustment{}, []RInstallmentAdjustment{})
+
+	services.DBCPsql.AutoMigrate(&loanRaw.LoanRaw{})
+	services.BaseCrudInitWithDomain("r-loan-raw", loanRaw.LoanRaw{}, []loanRaw.LoanRaw{})
 }

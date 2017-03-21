@@ -2,7 +2,6 @@ package cashout
 
 import (
 	"strconv"
-	"strings"
 	"time"
 
 	"bitbucket.org/go-mis/modules/account"
@@ -19,10 +18,14 @@ func Init() {
 	services.BaseCrudInit(Cashout{}, []Cashout{})
 }
 
+type TotalData struct {
+	TotalRows int64 `gorm:"column:totalRows" json:"totalRows"`
+}
+
 // FetchAll - fetch cashout data
 func FetchAll(ctx *iris.Context) {
 	cashoutInvestors := []CashoutInvestor{}
-	stage := ctx.URLParam("stage")
+	// stage := ctx.URLParam("stage")
 
 	// query := "SELECT cashout.*, "
 	// query += "cif.\"name\" as \"investorName\", "
@@ -46,16 +49,32 @@ func FetchAll(ctx *iris.Context) {
 	query += "JOIN r_cif_investor ON r_cif_investor.\"investorId\" = r_account_investor.\"investorId\" "
 	query += "JOIN cif ON cif.id = r_cif_investor.\"cifId\" "
 
-	if len(strings.TrimSpace(stage)) == 0 {
-		services.DBCPsql.Raw(query).Find(&cashoutInvestors)
-	} else {
-		query += "WHERE cashout.\"stage\" = ? "
-		services.DBCPsql.Raw(query, stage).Find(&cashoutInvestors)
-	}
+	queryTotalData := "SELECT count(*) AS \"totalRows\" "
+	queryTotalData += "FROM cashout "
+	queryTotalData += "JOIN r_account_transaction_credit_cashout ON r_account_transaction_credit_cashout.\"cashoutId\" = cashout.id "
+	queryTotalData += "JOIN r_account_transaction_credit ON r_account_transaction_credit.\"accountTransactionCreditId\" = r_account_transaction_credit_cashout.\"accountTransactionCreditId\" "
+	queryTotalData += "JOIN account_transaction_credit ON account_transaction_credit.id = r_account_transaction_credit_cashout.\"accountTransactionCreditId\" "
+	queryTotalData += "JOIN account ON account.id = r_account_transaction_credit.\"accountId\" "
+	queryTotalData += "JOIN r_account_investor ON r_account_investor.\"accountId\" = account.id "
+	queryTotalData += "JOIN r_cif_investor ON r_cif_investor.\"investorId\" = r_account_investor.\"investorId\" "
+	queryTotalData += "JOIN cif ON cif.id = r_cif_investor.\"cifId\" "
+
+	// if len(strings.TrimSpace(stage)) == 0 {
+	// 	services.DBCPsql.Raw(query).Find(&cashoutInvestors)
+	// } else {
+	// 	query += "WHERE cashout.\"stage\" = ? "
+	// 	services.DBCPsql.Raw(query, stage).Find(&cashoutInvestors)
+	// }
+
+	totalData := TotalData{}
+
+	services.DBCPsql.Raw(query).Find(&cashoutInvestors)
+	services.DBCPsql.Raw(queryTotalData).Find(&totalData)
 
 	ctx.JSON(iris.StatusOK, iris.Map{
-		"status": "success",
-		"data":   cashoutInvestors,
+		"status":    "success",
+		"totalRows": totalData.TotalRows,
+		"data":      cashoutInvestors,
 	})
 }
 

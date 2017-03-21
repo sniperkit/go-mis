@@ -10,6 +10,7 @@ import (
 
 	"bitbucket.org/go-mis/modules/account"
 	accountTransactionDebit "bitbucket.org/go-mis/modules/account-transaction-debit"
+	cif "bitbucket.org/go-mis/modules/cif"
 	"bitbucket.org/go-mis/modules/installment"
 	loanHistory "bitbucket.org/go-mis/modules/loan-history"
 	"bitbucket.org/go-mis/modules/r"
@@ -241,16 +242,16 @@ func GetLoanDetail(ctx *iris.Context) {
 
 	queryBorrowerObj := "SELECT cif.\"cifNumber\", cif.\"name\", \"group\".\"name\" AS \"group\", area.\"name\" AS \"area\", branch.\"name\" AS \"branch\" "
 	queryBorrowerObj += "FROM loan "
-	queryBorrowerObj += "JOIN r_loan_borrower ON r_loan_borrower.\"loanId\" = loan.\"id\" "
-	queryBorrowerObj += "JOIN borrower ON borrower.\"id\" = r_loan_borrower.\"borrowerId\" "
-	queryBorrowerObj += "JOIN r_cif_borrower ON r_cif_borrower.\"borrowerId\" = borrower.\"id\" "
-	queryBorrowerObj += "JOIN cif ON cif.\"id\" = r_cif_borrower.\"cifId\" "
-	queryBorrowerObj += "JOIN r_loan_group ON r_loan_group.\"loanId\" = loan.\"id\" "
-	queryBorrowerObj += "JOIN \"group\" ON \"group\".\"id\" = r_loan_group.\"groupId\" "
-	queryBorrowerObj += "JOIN r_loan_area ON r_loan_area.\"loanId\" = loan.\"id\" "
-	queryBorrowerObj += "JOIN area ON area.\"id\" = r_loan_area.\"areaId\" "
-	queryBorrowerObj += "JOIN r_loan_branch ON r_loan_branch.\"loanId\" = loan.\"id\" "
-	queryBorrowerObj += "JOIN branch ON branch.\"id\" = r_loan_branch.\"branchId\" "
+	queryBorrowerObj += "LEFT JOIN r_loan_borrower ON r_loan_borrower.\"loanId\" = loan.\"id\" "
+	queryBorrowerObj += "LEFT JOIN borrower ON borrower.\"id\" = r_loan_borrower.\"borrowerId\" "
+	queryBorrowerObj += "LEFT JOIN r_cif_borrower ON r_cif_borrower.\"borrowerId\" = borrower.\"id\" "
+	queryBorrowerObj += "LEFT JOIN cif ON cif.\"id\" = r_cif_borrower.\"cifId\" "
+	queryBorrowerObj += "LEFT JOIN r_loan_group ON r_loan_group.\"loanId\" = loan.\"id\" "
+	queryBorrowerObj += "LEFT JOIN \"group\" ON \"group\".\"id\" = r_loan_group.\"groupId\" "
+	queryBorrowerObj += "LEFT JOIN r_loan_branch ON r_loan_branch.\"loanId\" = loan.\"id\" "
+	queryBorrowerObj += "LEFT JOIN branch ON branch.\"id\" = r_loan_branch.\"branchId\" "
+	queryBorrowerObj += "LEFT JOIN r_area_branch ON r_area_branch.\"branchId\" = branch.\"id\" "
+	queryBorrowerObj += "LEFT JOIN area ON area.\"id\" = r_area_branch.\"areaId\" "
 	queryBorrowerObj += "WHERE loan.\"id\" = ?"
 
 	services.DBCPsql.Raw(queryBorrowerObj, loanId).Find(&borrowerObj)
@@ -273,32 +274,68 @@ func GetLoanDetail(ctx *iris.Context) {
 	})
 }
 
+type BorrowerObj struct {
+	Fullname   string `gorm:"column:name" json:"name"`
+	BorrowerNo string `gorm:"column:borrowerNo" json:"borrowerNo"`
+}
+
 // GetAkadData - Get data to be shown in Akad
 func GetAkadData(ctx *iris.Context) {
 	loanID, _ := strconv.Atoi(ctx.Param("id"))
 	data := Akad{}
 
-	query := "SELECT loan.id, loan.\"agreementType\", loan.purpose, loan.plafond, loan.tenor, loan.installment, loan.rate, loan.\"submittedLoanDate\", "
-	query += "cif_investor.name as investor, cif_borrower.name as borrower, \"group\".\"name\" as \"group\", "
-	query += "product_pricing.\"returnOfInvestment\", product_pricing.\"administrationFee\", product_pricing.\"serviceFee\", "
-	query += "disbursement.\"disbursementDate\" "
+	query := "SELECT loan.*, disbursement.\"disbursementDate\", product_pricing.\"returnOfInvestment\", product_pricing.\"administrationFee\", product_pricing.\"serviceFee\", \"group\".\"name\" as \"group\" "
 	query += "FROM loan "
 	query += "JOIN r_investor_product_pricing_loan ON r_investor_product_pricing_loan.\"loanId\" = loan.id "
-	query += "JOIN investor ON investor.id = r_investor_product_pricing_loan.\"investorId\" "
-	query += "JOIN r_cif_investor ON r_cif_investor.\"investorId\" = investor.id "
-	query += "JOIN ( SELECT * FROM cif WHERE cif.\"deletedAt\" is null ) AS cif_investor ON cif_investor.id = r_cif_investor.\"cifId\" "
 	query += "JOIN product_pricing ON product_pricing.id = r_investor_product_pricing_loan.\"productPricingId\" "
-	query += "JOIN r_loan_borrower ON r_loan_borrower.\"loanId\" = loan.id "
-	query += "JOIN borrower ON borrower.id  = r_loan_borrower.\"borrowerId\" "
-	query += "JOIN r_cif_borrower ON r_cif_borrower.\"borrowerId\" = borrower.id "
-	query += "JOIN ( SELECT * FROM cif WHERE cif.\"deletedAt\" is null ) AS cif_borrower ON cif_borrower.id = r_cif_borrower.\"cifId\" "
-	query += "JOIN r_loan_group ON r_loan_group.\"loanId\" = loan.id "
-	query += "JOIN \"group\" ON \"group\".id = r_loan_group.\"groupId\" "
 	query += "JOIN r_loan_disbursement ON r_loan_disbursement.\"loanId\" = loan.id "
 	query += "JOIN disbursement ON disbursement.id = r_loan_disbursement.\"disbursementId\" "
-	query += "WHERE loan.\"deletedAt\" IS NULL AND loan.id = ? "
+	query += "JOIN r_loan_group ON r_loan_group.\"loanId\" = loan.id "
+	query += "JOIN \"group\" ON \"group\".id = r_loan_group.\"groupId\" "
+	query += "WHERE loan.id = ? AND loan.\"deletedAt\" IS NULL "
 
-	services.DBCPsql.Raw(query, loanID).Find(&data)
+	services.DBCPsql.Raw(query, loanID).Scan(&data)
+
+	queryGetInvestor := "SELECT cif.* "
+	queryGetInvestor += "FROM r_investor_product_pricing_loan "
+	queryGetInvestor += "JOIN r_cif_investor ON r_cif_investor.\"investorId\" = r_investor_product_pricing_loan.\"investorId\" "
+	queryGetInvestor += "JOIN cif ON cif.id = r_cif_investor.\"cifId\" "
+	queryGetInvestor += "WHERE r_investor_product_pricing_loan.\"loanId\" = ? AND r_investor_product_pricing_loan.\"deletedAt\" IS NULL LIMIT 1 "
+
+	investorData := cif.Cif{}
+
+	services.DBCPsql.Raw(queryGetInvestor, loanID).Scan(&investorData)
+
+	queryGetBorrower := "SELECT cif.\"name\", borrower.\"borrowerNo\" "
+	queryGetBorrower += "FROM r_loan_borrower "
+	queryGetBorrower += "JOIN borrower ON borrower.id = r_loan_borrower.\"borrowerId\" "
+	queryGetBorrower += "JOIN r_cif_borrower ON r_cif_borrower.\"borrowerId\" = borrower.id "
+	queryGetBorrower += "JOIN cif ON cif.id = r_cif_borrower.\"cifId\" "
+	queryGetBorrower += "WHERE r_loan_borrower.\"loanId\" = ? AND r_loan_borrower.\"deletedAt\" IS NULL LIMIT 1 "
+
+	borrowerData := BorrowerObj{}
+
+	services.DBCPsql.Raw(queryGetBorrower, loanID).Scan(&borrowerData)
+
+	// query := "SELECT loan.id, loan.\"agreementType\", loan.purpose, loan.plafond, loan.tenor, loan.installment, loan.rate, loan.\"submittedLoanDate\", "
+	// query += "cif_investor.name as investor, cif_borrower.name as borrower, \"group\".\"name\" as \"group\", "
+	// query += "product_pricing.\"returnOfInvestment\", product_pricing.\"administrationFee\", product_pricing.\"serviceFee\", "
+	// query += "disbursement.\"disbursementDate\" "
+	// query += "FROM loan "
+	// query += "JOIN r_investor_product_pricing_loan ON r_investor_product_pricing_loan.\"loanId\" = loan.id "
+	// query += "JOIN investor ON investor.id = r_investor_product_pricing_loan.\"investorId\" "
+	// query += "JOIN r_cif_investor ON r_cif_investor.\"investorId\" = investor.id "
+	// query += "JOIN ( SELECT * FROM cif WHERE cif.\"deletedAt\" is null ) AS cif_investor ON cif_investor.id = r_cif_investor.\"cifId\" "
+	// query += "JOIN product_pricing ON product_pricing.id = r_investor_product_pricing_loan.\"productPricingId\" "
+	// query += "JOIN r_loan_borrower ON r_loan_borrower.\"loanId\" = loan.id "
+	// query += "JOIN borrower ON borrower.id  = r_loan_borrower.\"borrowerId\" "
+	// query += "JOIN r_cif_borrower ON r_cif_borrower.\"borrowerId\" = borrower.id "
+	// query += "JOIN ( SELECT * FROM cif WHERE cif.\"deletedAt\" is null ) AS cif_borrower ON cif_borrower.id = r_cif_borrower.\"cifId\" "
+	// query += "JOIN r_loan_group ON r_loan_group.\"loanId\" = loan.id "
+	// query += "JOIN \"group\" ON \"group\".id = r_loan_group.\"groupId\" "
+	// query += "JOIN r_loan_disbursement ON r_loan_disbursement.\"loanId\" = loan.id "
+	// query += "JOIN disbursement ON disbursement.id = r_loan_disbursement.\"disbursementId\" "
+	// query += "WHERE loan.\"deletedAt\" IS NULL AND loan.id = ? "
 
 	floatTenor := float64(data.Tenor)
 	weeklyBase := Round(data.Plafond/floatTenor, 2)
@@ -362,6 +399,8 @@ func GetAkadData(ctx *iris.Context) {
 			"weeklyFeeBorrower": weeklyFeeBorrower,
 			"weeklyFeeInvestor": weeklyFeeInvestor,
 			"reserve":           reserve,
+			"borrower":          borrowerData,
+			"investor":          investorData,
 		},
 	})
 }
