@@ -277,6 +277,7 @@ func GetLoanDetail(ctx *iris.Context) {
 type BorrowerObj struct {
 	Fullname   string `gorm:"column:name" json:"name"`
 	BorrowerNo string `gorm:"column:borrowerNo" json:"borrowerNo"`
+	Group      string `gorm:"column:group" json:"group"`
 }
 
 // GetAkadData - Get data to be shown in Akad
@@ -306,12 +307,15 @@ func GetAkadData(ctx *iris.Context) {
 
 	services.DBCPsql.Raw(queryGetInvestor, loanID).Scan(&investorData)
 
-	queryGetBorrower := "SELECT cif.\"name\", borrower.\"borrowerNo\" "
-	queryGetBorrower += "FROM r_loan_borrower "
+	queryGetBorrower := "SELECT cif.\"name\", borrower.\"borrowerNo\", \"group\".name as \"group\" "
+	queryGetBorrower += "FROM loan "
+	queryGetBorrower += "JOIN r_loan_borrower on r_loan_borrower.\"loanId\" = loan.id "
 	queryGetBorrower += "JOIN borrower ON borrower.id = r_loan_borrower.\"borrowerId\" "
 	queryGetBorrower += "JOIN r_cif_borrower ON r_cif_borrower.\"borrowerId\" = borrower.id "
 	queryGetBorrower += "JOIN cif ON cif.id = r_cif_borrower.\"cifId\" "
-	queryGetBorrower += "WHERE r_loan_borrower.\"loanId\" = ? AND r_loan_borrower.\"deletedAt\" IS NULL LIMIT 1 "
+	queryGetBorrower += "JOIN r_loan_group on r_loan_group.\"loanId\" = loan.id "
+	queryGetBorrower += "JOIN \"group\" on \"group\".id = r_loan_group.\"groupId\" "
+	queryGetBorrower += "WHERE loan.id = ? AND loan.\"deletedAt\" IS NULL LIMIT 1 "
 
 	borrowerData := BorrowerObj{}
 
