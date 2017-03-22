@@ -21,6 +21,7 @@ func init() {
 		return
 	}
 
+	con.DB().SetMaxIdleConns(0)
 	con.LogMode(config.LogMode)
 	con.SingularTable(true)
 	con.Exec("CREATE EXTENSION postgis")
