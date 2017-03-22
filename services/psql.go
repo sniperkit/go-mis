@@ -26,7 +26,7 @@ func init() {
 	con.Exec("CREATE EXTENSION postgis")
 	con.Exec("CREATE EXTENSION postgis_topology")
 	con.DB().SetMaxIdleConns(0)
-	con.DB().SetMaxOpenConns(200)
+	con.DB().SetMaxOpenConns(80)
 
 	DBCPsql = con
 	fmt.Println("[INFO] Connected to PSQL. Config => " + config.PsqlHostAddressMisAmartha)
