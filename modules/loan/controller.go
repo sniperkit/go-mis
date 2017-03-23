@@ -254,7 +254,7 @@ func GetLoanDetail(ctx *iris.Context) {
 	queryBorrowerObj += "LEFT JOIN area ON area.\"id\" = r_area_branch.\"areaId\" "
 	queryBorrowerObj += "WHERE loan.\"id\" = ?"
 
-	services.DBCPsql.Raw(queryBorrowerObj, loanId).Find(&borrowerObj)
+	services.DBCPsql.Raw(queryBorrowerObj, loanId).Scan(&borrowerObj)
 
 	queryInstallmentObj := "SELECT * "
 	queryInstallmentObj += "FROM installment "
@@ -262,7 +262,7 @@ func GetLoanDetail(ctx *iris.Context) {
 	queryInstallmentObj += "JOIN loan ON loan.\"id\" = r_loan_installment.\"loanId\" "
 	queryInstallmentObj += "WHERE loan.\"id\" = ?"
 
-	services.DBCPsql.Raw(queryInstallmentObj, loanId).Find(&installmentObj)
+	services.DBCPsql.Raw(queryInstallmentObj, loanId).Scan(&installmentObj)
 
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"status": "success",
