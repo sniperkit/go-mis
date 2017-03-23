@@ -96,6 +96,14 @@ type LoanDropping struct {
 	Investor string `gorm:"column:investor" json:"investor"`
 }
 
+type LoanStageHistory struct {
+	ID        uint64    `gorm:"primary_key" gorm:"column:_id" json:"_id"`
+	StageFrom string    `gorm:"column:stageFrom" json:"stageFrom"`
+	StageTo   string    `gorm:"column:stageTo" json:"stageTo"`
+	Remark    string    `gorm:"column:remark" json:"remark"`
+	CreatedAt time.Time `gorm:"column:createdAt" json:"createdAt"`
+}
+
 type RefundBase struct {
 	LoanID     uint64  `gorm:"column:loan_id"`
 	InvestorID uint64  `gorm:"column:investor_id"`
