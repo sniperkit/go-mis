@@ -34,16 +34,16 @@ func FetchAll(ctx *iris.Context) {
 	query += "JOIN disbursement ON disbursement.id = r_loan_disbursement.\"disbursementId\" "
 	query += "WHERE disbursement.stage IN ('PENDING', 'FAILED') "
 	query += "AND loan.\"submittedLoanDate\" IS NOT NULL "
-	query += "AND loan.\"submittedLoanDate\" != '1900-01-00'  "
-	query += "AND loan.\"submittedLoanDate\" != '#N/A'  "
-	query += "AND loan.\"submittedLoanDate\" != '' "
+	// query += "AND loan.\"submittedLoanDate\" != '1900-01-00'  "
+	// query += "AND loan.\"submittedLoanDate\" != '#N/A'  "
+	// query += "AND loan.\"submittedLoanDate\" != '' "
 	query += "AND to_char(DATE(loan.\"submittedLoanDate\"), 'YYYY') = to_char(DATE(now()), 'YYYY') "
 	query += "AND to_char(DATE(disbursement.\"disbursementDate\"), 'YYYY-MM-DD') >= to_char(DATE(now()), 'YYYY-MM-DD') "
 	query += "AND branch.id = ? "
 	query += "GROUP BY \"group\".id, branch.id, branch.\"name\", loan.\"submittedLoanDate\", disbursement.\"disbursementDate\" "
 	query += "ORDER BY disbursement.\"disbursementDate\" ASC, \"group\".\"name\" ASC "
 
-	services.DBCPsql.Raw(query, branchID).Find(&disbursementFetchSchema)
+	services.DBCPsql.Raw(query, branchID).Scan(&disbursementFetchSchema)
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"status": "success",
 		"data":   disbursementFetchSchema,
