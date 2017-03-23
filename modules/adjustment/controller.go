@@ -162,8 +162,8 @@ func GetInReviewInstallment(ctx *iris.Context) {
 		query += "LIMIT " + ctx.URLParam("LIMIT")
 		queryTotal += "LIMIT " + ctx.URLParam("LIMIT")
 	} else {
-		query += "LIMIT 10 "
-		queryTotal += "LIMIT 10 "
+		query += "LIMIT 500 "
+		queryTotal += "LIMIT 500 "
 	}
 
 	startDate := ctx.Param("start_date") + " 00:00:00"
