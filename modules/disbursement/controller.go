@@ -51,7 +51,7 @@ func FetchAll(ctx *iris.Context) {
 }
 
 func GetDisbursementDetailByGroup(ctx *iris.Context) {
-	query := "SELECT \"group\".id AS \"groupId\", \"group\".\"name\" AS \"groupName\", branch.\"name\" AS \"branchName\", borrower.\"borrowerNo\", cif.\"name\" AS \"borrower\", loan.id AS \"loanId\", loan.plafond, disbursement.\"disbursementDate\"::date, disbursement.stage "
+	query := "SELECT \"group\".id AS \"groupId\", \"group\".\"name\" AS \"groupName\", branch.\"name\" AS \"branchName\", borrower.\"borrowerNo\", cif.\"name\" AS \"borrower\", loan.id AS \"loanId\", loan.plafond, disbursement.\"disbursementDate\"::date, disbursement.stage, loan.stage AS \"loanStage\" "
 	query += "FROM \"group\" "
 	query += "JOIN r_group_branch ON r_group_branch.\"groupId\" = \"group\".id "
 	query += "JOIN branch ON branch.id = r_group_branch.\"branchId\" "
