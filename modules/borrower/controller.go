@@ -242,6 +242,7 @@ func ProspectiveBorrowerUpdateStatusToReject(ctx *iris.Context) {
 	answerID := ctx.Param("id")
 	services.DBCPsqlSurvey.Table("a_fields").Where("answer_id = ?", answerID).UpdateColumn("is_migrated", true)
 	services.DBCPsqlSurvey.Table("a_fields").Where("answer_id = ?", answerID).UpdateColumn("is_approve", false)
+	services.DBCPsqlSurvey.Table("a_fields").Where("answer_id = ?", answerID).UpdateColumn("updated_at", time.Now())
 
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"status": "success",
