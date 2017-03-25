@@ -25,6 +25,8 @@ func init() {
 	con.SingularTable(true)
 	con.Exec("CREATE EXTENSION postgis")
 	con.Exec("CREATE EXTENSION postgis_topology")
+	con.DB().SetMaxIdleConns(10)
+	con.DB().SetMaxOpenConns(85)
 
 	DBCPsql = con
 	fmt.Println("[INFO] Connected to PSQL. Config => " + config.PsqlHostAddressMisAmartha)
@@ -39,6 +41,8 @@ func init() {
 
 	conSurvey.LogMode(config.LogMode)
 	conSurvey.SingularTable(true)
+	conSurvey.DB().SetMaxIdleConns(10)
+	conSurvey.DB().SetMaxOpenConns(85)
 
 	DBCPsqlSurvey = conSurvey
 	fmt.Println("[INFO] Connected to PSQL. Config => " + config.PsqlHostAddressSurvey)

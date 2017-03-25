@@ -45,4 +45,5 @@ type DisbursementDetailByGroup struct {
 	Plafond          float64   `gorm:"column:plafond" json:"plafond"`
 	DisbursementDate time.Time `gorm:"column:disbursementDate" json:"disbursementDate"`
 	Stage            string    `gorm:"column:stage" json:"stage"`
+	LoanStage        string    `gorm:"column:loanStage" json:"loanStage"`
 }

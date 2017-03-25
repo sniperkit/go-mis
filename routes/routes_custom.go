@@ -75,6 +75,7 @@ func InitCustomApi() {
 		v2.Any("/cashout", cashout.FetchAll)
 		v2.Any("/cashout/set/:cashout_id/stage/:stage", cashout.UpdateStage)
 		v2.Any("/survey", survey.GetProspectiveBorrower)
+		v2.Any("/survey/archived", survey.GetProspectiveBorrowerArchived)
 		v2.Any("/survey/get/:id", survey.GetProspectiveBorrowerDetail)
 		v2.Any("/borrower/approve", borrower.Approve)
 		v2.Any("/borrower/approve/update-status/:id", borrower.ProspectiveBorrowerUpdateStatus)

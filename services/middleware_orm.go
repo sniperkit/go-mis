@@ -26,7 +26,11 @@ func Get(model interface{}) func(ctx *iris.Context) {
 func GetById(model interface{}) func(ctx *iris.Context) {
 	return func(ctx *iris.Context) {
 		m := reflect.New(reflect.TypeOf((model.(*Container)).SingleObj)).Interface()
-		DBCPsql.Where("\"deletedAt\" IS NULL AND id = ?", ctx.Param("id")).Find(m)
+		if dbc:= DBCPsql.Where("\"deletedAt\" IS NULL AND id = ?", ctx.Param("id")).Find(m); dbc.Error != nil {
+			ctx.JSON(iris.StatusInternalServerError, iris.Map{"error": dbc.Error})
+			return
+
+		}
 		ctx.JSON(iris.StatusOK, iris.Map{"data": m})
 	}
 }
@@ -61,7 +65,10 @@ func Post(model interface{}) func(ctx *iris.Context) {
 			panic(err)
 		}
 
-		DBCPsql.Create(m)
+		if dbc := DBCPsql.Create(m); dbc.Error != nil {
+			ctx.JSON(iris.StatusInternalServerError, iris.Map{"error": dbc.Error})
+			return
+		}
 
 		ctx.JSON(iris.StatusOK, iris.Map{"data": m})
 	}
