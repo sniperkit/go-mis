@@ -36,6 +36,7 @@ func Approve(ctx *iris.Context) {
 
 	ktp := payload["client_ktp"].(string)
 	groupID, _ := strconv.ParseUint(payload["groupId"].(string), 10, 64)
+	sectorID, _ := strconv.ParseUint(payload["data_sector"].(string), 10, 64)
 
 	// tanggungan, errTanggungan := json.Marshal(payload["tanggungan"])
 	// if errTanggungan != nil {
@@ -65,6 +66,8 @@ func Approve(ctx *iris.Context) {
 			services.DBCPsql.Table("loan").Create(&loan)
 
 			services.DBCPsql.Table("loan_raw").Create(&loanRaw.LoanRaw{Raw: dataRaw, LoanID: loan.ID})
+
+			services.DBCPsql.Table("r_loan_sector").Create(&r.RLoanSector{LoanId: loan.ID, SectorId: sectorID})
 
 			rLoanBorrower := r.RLoanBorrower{
 				LoanId:     loan.ID,
@@ -98,6 +101,8 @@ func Approve(ctx *iris.Context) {
 			services.DBCPsql.Table("loan").Create(&loan)
 
 			services.DBCPsql.Table("loan_raw").Create(&loanRaw.LoanRaw{Raw: dataRaw, LoanID: loan.ID})
+
+			services.DBCPsql.Table("r_loan_sector").Create(&r.RLoanSector{LoanId: loan.ID, SectorId: sectorID})
 
 			rLoanBorrower := r.RLoanBorrower{
 				LoanId:     loan.ID,
