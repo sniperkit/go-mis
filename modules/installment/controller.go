@@ -153,7 +153,6 @@ func GetInstallmentByGroupIDAndTransactionDate(ctx *iris.Context) {
 
 		WHERE 
 
-		installment.stage = 'PENDING' 
 		AND installment."createdAt"::date = ? 
 		AND r_loan_group."groupId" = ? 
 		AND r_loan_branch."branchId" = ?
