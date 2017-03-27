@@ -131,7 +131,7 @@ func FetchDropping(ctx *iris.Context) {
 	loanData := []LoanDropping{}
 
 	// ref: dropping.sql
-	query := "SELECT loan.id, stage, cif_borrower.\"name\" AS borrower, \"group\".\"name\" AS \"group\", cif_investor.name AS investor "
+	query := "SELECT loan.id, stage, borrower.\"borrowerNo\", cif_borrower.\"name\" AS borrower, \"group\".\"name\" AS \"group\", cif_investor.name AS investor "
 	query += "FROM loan "
 	query += "JOIN r_loan_borrower ON r_loan_borrower.\"loanId\" = loan.id "
 	query += "JOIN borrower ON borrower.id = r_loan_borrower.\"borrowerId\" "
