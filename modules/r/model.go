@@ -247,7 +247,7 @@ type RAccountInvestor struct {
 type RInvestorVirtualAccount struct {
 	ID               uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
 	InvestorId       uint64     `gorm:"column:investorId" json:"investorId"`
-	VirtualAccountId uint64     `gorm:"column:virtualAccountId" json:"virtualAccountId"`
+	VirtualAccountId uint64     `gorm:"column:vaId" json:"virtualAccountId"`
 	CreatedAt        time.Time  `gorm:"column:createdAt" json:"createdAt"`
 	UpdatedAt        time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
 	DeletedAt        *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
