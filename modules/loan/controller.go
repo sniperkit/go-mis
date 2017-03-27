@@ -491,3 +491,21 @@ func Round(val float64, places int) (newVal float64) {
 	newVal = round / pow
 	return
 }
+
+// GetLoanStageHistory - get loan stage history by loan id
+func GetLoanStageHistory(ctx *iris.Context) {
+	loanID, _ := strconv.ParseUint(ctx.Param("id"), 10, 64)
+
+	query := "SELECT r_loan_history.\"createdAt\", loan_history.id, loan_history.\"stageFrom\", loan_history.\"stageTo\", loan_history.remark "
+	query += "FROM loan_history "
+	query += "JOIN r_loan_history ON r_loan_history.\"loanHistoryId\" = loan_history.id "
+	query += "WHERE loan_history.\"deletedAt\" is null and r_loan_history.\"loanId\" = ? "
+
+	historyData := []LoanStageHistory{}
+	services.DBCPsql.Raw(query, loanID).Scan(&historyData)
+
+	ctx.JSON(iris.StatusOK, iris.Map{
+		"status": "success",
+		"data":   historyData,
+	})
+}
