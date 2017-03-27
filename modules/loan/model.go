@@ -89,11 +89,12 @@ type Akad struct {
 }
 
 type LoanDropping struct {
-	ID       uint64 `gorm:"primary_key" gorm:"column:_id" json:"_id"`
-	Borrower string `gorm:"column:borrower" json:"borrower"`
-	Group    string `gorm:"column:group" json:"group"`
-	Stage    string `gorm:"column:stage" json:"stage"`
-	Investor string `gorm:"column:investor" json:"investor"`
+	ID         uint64 `gorm:"primary_key" gorm:"column:_id" json:"_id"`
+	BorrowerNo string `gorm:"column:borrowerNo" json:"borrowerNo"`
+	Borrower   string `gorm:"column:borrower" json:"borrower"`
+	Group      string `gorm:"column:group" json:"group"`
+	Stage      string `gorm:"column:stage" json:"stage"`
+	Investor   string `gorm:"column:investor" json:"investor"`
 }
 
 type LoanStageHistory struct {
