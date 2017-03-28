@@ -169,8 +169,8 @@ func CreateCIF(payload map[string]interface{}) cif.Cif {
 	newCif.Kecamatan = cpl["client_kecamatan"]
 	newCif.RT = cpl["client_rt"]
 	newCif.RW = cpl["client_rw"]
+	newCif.Income, _ = strconv.ParseFloat(cpl["data_pendapatan_istri"], 64)
 
-	fmt.Printf("%+v", newCif)
 	return newCif
 }
 
