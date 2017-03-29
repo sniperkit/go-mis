@@ -94,6 +94,7 @@ type LoanDropping struct {
 	Borrower   string `gorm:"column:borrower" json:"borrower"`
 	Group      string `gorm:"column:group" json:"group"`
 	Stage      string `gorm:"column:stage" json:"stage"`
+	InvestorID uint64 `gorm:"column:investorId" json:"investorId"`
 	Investor   string `gorm:"column:investor" json:"investor"`
 }
 
