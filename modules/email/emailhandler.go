@@ -67,19 +67,35 @@ func sendEmailInvestmentFailed(email string, name string) {
 
 }
 
-func sendEmailDisbursementSucccess(subject string, template string, email string, name string, borrowerName string, purpose string, plafon string, tenor string) {
-	sendEmailDisbursement("Disbursement Succcess", "disbursement_success", email, name, borrowerName, purpose, plafon, tenor)
+func sendEmailDisbursementSucccess(subject string, template string, email string, name string, borrowerName string, purpose string, plafon string, tenor string, totalPeople string, totalFund string, disbursementDate string) {
+	var subs = map[string]interface{}{
+		"first_name":        name,
+		"disbursement_date": disbursementDate,
+		"total_people":      totalPeople,
+		"total_fund":        totalFund,
+		"borrower_name":     borrowerName,
+		"purpose":           purpose,
+		"plafon":            plafon,
+		"tenor":             tenor,
+	}
+
+	mandrill := new(Mandrill)
+	mandrill.SetFrom("hello@amartha.com")
+	mandrill.SetTo(email)
+	mandrill.SetSubject("UPK Tertunda")
+	mandrill.SetTemplateAndRawBody("upk_delay", subs)
+	mandrill.SendEmail()
 }
 
-func sendEmailDisbursementPending(subject string, template string, email string, name string, borrowerName string, purpose string, plafon string, tenor string) {
-	sendEmailDisbursement("Disbursement Pending", "disbursement_pending", email, name, borrowerName, purpose, plafon, tenor)
+func sendEmailDisbursementPending(subject string, template string, email string, name string, borrowerName string, purpose string, plafon string, tenor string, totalPeople string, totalFund string) {
+	sendEmailDisbursement("Disbursement Pending", "disbursement_pending", email, name, borrowerName, purpose, plafon, tenor, totalPeople, totalFund)
 }
 
-func sendEmailDisbursementPostpone(subject string, template string, email string, name string, borrowerName string, purpose string, plafon string, tenor string) {
-	sendEmailDisbursement("Disbursement Failed", "disbursement_postpone", email, name, borrowerName, purpose, plafon, tenor)
+func sendEmailDisbursementPostpone(subject string, template string, email string, name string, borrowerName string, purpose string, plafon string, tenor string, totalPeople string, totalFund string) {
+	sendEmailDisbursement("Disbursement Failed", "disbursement_postpone", email, name, borrowerName, purpose, plafon, tenor, totalPeople, totalFund)
 }
 
-func sendEmailDisbursement(subject string, template string, email string, name string, borrowerName string, purpose string, plafon string, tenor string) {
+func sendEmailDisbursement(subject string, template string, email string, name string, borrowerName string, purpose string, plafon string, tenor string, totalPeople string, totalFund string) {
 
 	var subs = map[string]interface{}{
 		"first_name":    name,
