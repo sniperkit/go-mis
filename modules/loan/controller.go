@@ -131,7 +131,7 @@ func FetchDropping(ctx *iris.Context) {
 	loanData := []LoanDropping{}
 
 	// ref: dropping.sql
-	query := "SELECT loan.id, stage, cif_borrower.\"name\" AS borrower, \"group\".\"name\" AS \"group\", cif_investor.name AS investor "
+	query := "SELECT loan.id, stage, borrower.\"borrowerNo\", cif_borrower.\"name\" AS borrower, \"group\".\"name\" AS \"group\", investor.id as \"investorId\", cif_investor.name AS investor "
 	query += "FROM loan "
 	query += "JOIN r_loan_borrower ON r_loan_borrower.\"loanId\" = loan.id "
 	query += "JOIN borrower ON borrower.id = r_loan_borrower.\"borrowerId\" "
@@ -139,10 +139,10 @@ func FetchDropping(ctx *iris.Context) {
 	query += "JOIN (SELECT * FROM cif WHERE \"deletedAt\" IS NULL) AS cif_borrower ON cif_borrower.id = r_cif_borrower.\"cifId\" "
 	query += "JOIN r_loan_group ON r_loan_group.\"loanId\" = loan.id "
 	query += "JOIN \"group\" ON \"group\".id = r_loan_group.\"groupId\" "
-	query += "JOIN r_investor_product_pricing_loan ON r_investor_product_pricing_loan.\"loanId\"= loan.id "
-	query += "JOIN investor ON investor.id = r_investor_product_pricing_loan.\"investorId\" "
-	query += "JOIN r_cif_investor ON r_cif_investor.\"investorId\" = investor.id "
-	query += "JOIN (SELECT * FROM cif WHERE \"deletedAt\" IS NULL) AS cif_investor ON cif_investor.id = r_cif_investor.\"cifId\" "
+	query += "LEFT JOIN r_investor_product_pricing_loan ON r_investor_product_pricing_loan.\"loanId\"= loan.id "
+	query += "LEFT JOIN investor ON investor.id = r_investor_product_pricing_loan.\"investorId\" "
+	query += "LEFT JOIN r_cif_investor ON r_cif_investor.\"investorId\" = investor.id "
+	query += "LEFT JOIN (SELECT * FROM cif WHERE \"deletedAt\" IS NULL) AS cif_investor ON cif_investor.id = r_cif_investor.\"cifId\" "
 	query += "WHERE loan.\"deletedAt\" IS NULL AND (loan.stage = 'ARCHIVE' OR loan.stage = 'DISBURSEMENT-FAILED')"
 
 	services.DBCPsql.Raw(query).Find(&loanData)
@@ -490,4 +490,22 @@ func Round(val float64, places int) (newVal float64) {
 	}
 	newVal = round / pow
 	return
+}
+
+// GetLoanStageHistory - get loan stage history by loan id
+func GetLoanStageHistory(ctx *iris.Context) {
+	loanID, _ := strconv.ParseUint(ctx.Param("id"), 10, 64)
+
+	query := "SELECT r_loan_history.\"createdAt\", loan_history.id, loan_history.\"stageFrom\", loan_history.\"stageTo\", loan_history.remark "
+	query += "FROM loan_history "
+	query += "JOIN r_loan_history ON r_loan_history.\"loanHistoryId\" = loan_history.id "
+	query += "WHERE loan_history.\"deletedAt\" is null and r_loan_history.\"loanId\" = ? "
+
+	historyData := []LoanStageHistory{}
+	services.DBCPsql.Raw(query, loanID).Scan(&historyData)
+
+	ctx.JSON(iris.StatusOK, iris.Map{
+		"status": "success",
+		"data":   historyData,
+	})
 }

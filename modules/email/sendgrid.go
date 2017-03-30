@@ -13,7 +13,6 @@ func SendgridEmailTemplate(key string) string {
 	template["UNVERIFIED_DATA"] = "088a5e63-a4f6-4ccd-bed4-765ae5021088"
 	template["VERIFIED_DATA"] = "3099d51a-294d-4f89-8449-e13d4c3d2f8b"
 
-
 	return template[key]
 }
 
@@ -56,13 +55,13 @@ func (s *Sendgrid) VerifiedBodyEmail(template string, first_name string, email s
 	s.emailParam.Template = SendgridEmailTemplate(template)
 	var subs map[string]interface{} = map[string]interface{}{
 		"[%first_name%]": first_name,
-		"[%va_bca%]":  vaData["BCA"],
-		"[%va_bri%]":  vaData["BRI"],
-		"[%va_name%]": vaData["BCA_HOLDER"],
-		"[%email%]": email,
+		"[%va_bca%]":     vaData["BCA"],
+		"[%va_bri%]":     vaData["BRI"],
+		"[%va_name%]":    vaData["BCA_HOLDER"],
+		"[%email%]":      email,
 	}
 
-	fmt.Println("SUB:",subs)
+	fmt.Println("SUB:", subs)
 	s.emailParam.Subs = subs
 }
 
