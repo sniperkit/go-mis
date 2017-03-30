@@ -2,7 +2,6 @@ package voucher
 
 import (
 	"time"
-	"fmt"
 )
 
 type Voucher struct {
@@ -13,6 +12,7 @@ type Voucher struct {
 	StarDate 					time.Time `gorm:"column:startDate" json:"startDate"`
 	EndDate 					time.Time `gorm:"column:endDate" json:"endDate"`
 	CreatedAt 				time.Time `gorm:"column:createdAt" json:"createdAt"`
-	UpdateAt 					time.Time `gorm:"column:updateAt" json:"updateAt"`
+	UpdatedAt 					time.Time `gorm:"column:updatedAt" json:"updatedAt"`
+	DeletedAt 					time.Time `gorm:"column:deletedAt" json:"deletedAt"`
 	IsPersonal				*bool 		`gorm:"column:isPersonal" json:"isPersonal"`
 }

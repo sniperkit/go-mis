@@ -22,6 +22,7 @@ import (
 	"bitbucket.org/go-mis/modules/survey"
 	"bitbucket.org/go-mis/modules/transaction"
 	"bitbucket.org/go-mis/modules/user-mis"
+	"bitbucket.org/go-mis/modules/voucher"
 	"bitbucket.org/go-mis/modules/virtual-account-statement"
 	"gopkg.in/iris-contrib/middleware.v4/cors"
 	"gopkg.in/kataras/iris.v4"
@@ -97,6 +98,7 @@ func InitCustomApi() {
 		v2.Any("/adjustment/submit/:installment_id", adjustment.SetAdjustmentForInstallment)
 		v2.Any("/adjustment/update/:adjustment_id", adjustment.UpdateAdjustmentAndInstallment)
 		v2.Any("/submit-adjustment/:account_type", adjustment.SubmitAdjustment)
+		v2.Any("/voucher", voucher.FetchAll)
 	}
 
 	iris.Get(baseURL+"/investor-without-va", investor.InvestorWithoutVA)
