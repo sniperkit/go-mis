@@ -113,3 +113,24 @@ func sendEmailCashout(email string, name string, cashoutID string) {
 	mandrill.SendEmail()
 
 }
+
+func sendEmailUpkDelay(email string, name string, totalPeople string, totalFund string, borrowerName string, purpose string, plafon string, tenor string) {
+
+	var subs = map[string]interface{}{
+		"first_name":    name,
+		"total_people":  totalPeople,
+		"total_fund":    totalFund,
+		"borrower_name": borrowerName,
+		"purpose":       purpose,
+		"plafon":        plafon,
+		"tenor":         tenor,
+	}
+
+	mandrill := new(Mandrill)
+	mandrill.SetFrom("hello@amartha.com")
+	mandrill.SetTo(email)
+	mandrill.SetSubject("UPK Tertunda")
+	mandrill.SetTemplateAndRawBody("upk_delay", subs)
+	mandrill.SendEmail()
+
+}
