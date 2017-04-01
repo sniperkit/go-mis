@@ -212,7 +212,7 @@ func storeInstallment(installmentId uint64, status string) {
 	installmentSchema := Installment{}
 	services.DBCPsql.Table("installment").Where("\"id\" = ?", installmentId).First(&installmentSchema)
 
-	if installmentSchema.Stage != "PENDING" && installmentSchema.Stage != "IN-REVIEW" {
+	if installmentSchema.Stage != "PENDING" && installmentSchema.Stage != "IN-REVIEW" && installmentSchema.Stage != "APPROVE" {
 		// ctx.JSON(iris.StatusBadRequest, iris.Map{
 		// 	"status":  "error",
 		// 	"message": "Current installment stage is NOT 'PENDING'. System cannot continue to process your request.",
@@ -255,15 +255,20 @@ func storeInstallment(installmentId uint64, status string) {
 
 	fmt.Println("Start calculation process. installmentId=" + convertedInstallmentId)
 
-	queryGetAccountInvestor := "SELECT r_loan_installment.\"loanId\", r_investor_product_pricing_loan.\"investorId\", r_account_investor.\"accountId\", product_pricing.\"returnOnInvestment\" as \"pplROI\" "
-	queryGetAccountInvestor += "FROM installment "
-	queryGetAccountInvestor += "JOIN r_loan_installment ON r_loan_installment.\"installmentId\" = installment.\"id\" "
-	queryGetAccountInvestor += "JOIN r_investor_product_pricing_loan ON r_investor_product_pricing_loan.\"loanId\" = r_loan_installment.\"loanId\" "
-	queryGetAccountInvestor += "JOIN r_account_investor ON r_account_investor.\"investorId\" = r_investor_product_pricing_loan.\"investorId\" "
-	queryGetAccountInvestor += "WHERE installment.\"id\" = ?"
+	queryGetAccountInvestor := `SELECT r_loan_installment."loanId", r_investor_product_pricing_loan."investorId", r_account_investor."accountId", product_pricing."returnOfInvestment" as "pplROI" 
+	FROM installment 
+	JOIN r_loan_installment ON r_loan_installment."installmentId" = installment."id" 
+	JOIN r_investor_product_pricing_loan ON r_investor_product_pricing_loan."loanId" = r_loan_installment."loanId" 
+	JOIN r_account_investor ON r_account_investor."investorId" = r_investor_product_pricing_loan."investorId"
+	join product_pricing on product_pricing.id = r_investor_product_pricing_loan."productPricingId"
+	WHERE installment."id" = ?`
 
 	loanInvestorAccountIDSchema := LoanInvestorAccountID{}
-	services.DBCPsql.Raw(queryGetAccountInvestor, installmentId).Scan(&loanInvestorAccountIDSchema)
+	er := services.DBCPsql.Raw(queryGetAccountInvestor, installmentId).Scan(&loanInvestorAccountIDSchema).Error
+	if er != nil {
+		fmt.Println(er)
+		return
+	}
 
 	loanSchema := LoanSchema{}
 	services.DBCPsql.Table("loan").Where("id = ?", loanInvestorAccountIDSchema.LoanID).Scan(&loanSchema)
@@ -357,7 +362,7 @@ func SubmitInstallmentByGroupIDAndTransactionDateWithStatus(ctx *iris.Context) {
 	transactionDate := ctx.Param("transaction_date")
 	status := strings.ToUpper(ctx.Param("status"))
 
-	if strings.ToLower(ctx.Param("status")) == "approve" || strings.ToLower(ctx.Param("status")) == "reject" || strings.ToLower(ctx.Param("status")) == "in-review" {
+	if strings.ToLower(ctx.Param("status")) == "approve" || strings.ToLower(ctx.Param("status")) == "reject" || strings.ToLower(ctx.Param("status")) == "in-review" || strings.ToLower(ctx.Param("status")) == "success" {
 		query := "SELECT "
 		query += "\"group\".\"id\" as \"groupId\", \"group\".\"name\" as \"groupName\","
 		query += "installment.\"id\" as \"installmentId\", installment.\"type\", installment.\"paidInstallment\", installment.\"penalty\", installment.\"reserve\", installment.\"presence\", installment.\"frequency\", installment.\"stage\" "
@@ -368,10 +373,15 @@ func SubmitInstallmentByGroupIDAndTransactionDateWithStatus(ctx *iris.Context) {
 		query += "JOIN branch ON branch.\"id\" = r_loan_branch.\"branchId\"  "
 		query += "JOIN r_loan_group ON r_loan_group.\"loanId\" = loan.\"id\" "
 		query += "JOIN \"group\" ON \"group\".\"id\" = r_loan_group.\"groupId\" "
-		query += "WHERE installment.\"createdAt\"::date = ? AND \"group\".\"id\" = ? AND installment.\"stage\" != 'APPROVE'"
 
 		installmentDetailSchema := []InstallmentDetail{}
-		services.DBCPsql.Raw(query, transactionDate, groupID).Scan(&installmentDetailSchema)
+		if strings.ToLower(ctx.Param("status")) == "success" {
+			query += "WHERE installment.\"stage\" = 'APPROVE'"
+			services.DBCPsql.Raw(query).Scan(&installmentDetailSchema)
+		} else {
+			query += "WHERE installment.\"createdAt\"::date = ? AND \"group\".\"id\" = ? AND installment.\"stage\" != 'APPROVE'"
+			services.DBCPsql.Raw(query, transactionDate, groupID).Scan(&installmentDetailSchema)
+		}
 
 		for _, item := range installmentDetailSchema {
 			go storeInstallment(item.InstallmentID, status)
