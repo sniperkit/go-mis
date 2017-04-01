@@ -237,6 +237,12 @@ func storeInstallment(installmentId uint64, status string) {
 		return
 	}
 
+	if status == "APPROVE" {
+		UpdateStageInstallmentApproveOrReject(installmentId, status)
+		fmt.Println("Installment data has been approved. Waiting worker. installmentId=" + convertedInstallmentId)
+		return
+	}
+
 	/*
 	*		UPDATE STATUS TO `PROCESSING`, ONCE THE CALCULATION IS DONE, THEN UPDATE STATUS TO `SUCCESS`
 	 */
