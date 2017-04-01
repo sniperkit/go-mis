@@ -384,7 +384,8 @@ func SubmitInstallmentByGroupIDAndTransactionDateWithStatus(ctx *iris.Context) {
 		}
 
 		for _, item := range installmentDetailSchema {
-			go storeInstallment(item.InstallmentID, status)
+			// go storeInstallment(item.InstallmentID, status)
+			storeInstallment(item.InstallmentID, status)
 		}
 
 		ctx.JSON(iris.StatusOK, iris.Map{
