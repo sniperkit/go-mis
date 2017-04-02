@@ -17,6 +17,7 @@ import (
 	"bitbucket.org/go-mis/modules/investor"
 	"bitbucket.org/go-mis/modules/investor-check"
 	"bitbucket.org/go-mis/modules/loan"
+	"bitbucket.org/go-mis/modules/loan-order"
 	"bitbucket.org/go-mis/modules/location"
 	"bitbucket.org/go-mis/modules/notification"
 	"bitbucket.org/go-mis/modules/survey"
@@ -64,6 +65,7 @@ func InitCustomApi() {
 		v2.Any("/loan/set/:id/stage/:stage", loan.UpdateStage)
 		v2.Any("/loan/akad/:id", loan.GetAkadData)
 		v2.Any("/loan-stage-history/:id", loan.GetLoanStageHistory)
+		v2.Any("/loan-order/pending-waiting", loanOrder.FetchAllPendingWaiting)
 		v2.Any("/installment", installment.FetchAll)
 		v2.Any("/installment-by-type/:type", installment.FetchByType)
 		v2.Any("/installment/group/:group_id/by-transaction-date/:transaction_date", installment.GetInstallmentByGroupIDAndTransactionDate)
