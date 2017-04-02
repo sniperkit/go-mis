@@ -40,7 +40,8 @@ type Cif struct {
 	IncomeSourceFund    string     `gorm:"column:incomeSourceFund" json:"incomeSourceFund"`
 	IncomeSourceCountry string     `gorm:"column:incomeSourceCountry" json:"incomeSourceCountry"`
 	IsActivated         *bool      `gorm:"column:isActivated" json:"isActivated"`
-	IsVAlidated         *bool      `gorm:"column:isValidated" json:"isValidated"`
+	IsValidated         *bool      `gorm:"column:isValidated" json:"isValidated"`
+	IsVerified          *bool      `gorm:"column:isVerified" json:"isVerified"`
 	CreatedAt           time.Time  `gorm:"column:createdAt" json:"createdAt"`
 	UpdatedAt           time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
 	DeletedAt           *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
