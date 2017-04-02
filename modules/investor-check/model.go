@@ -11,6 +11,7 @@ type InvestorCheck struct {
 	TaxCardNo              string     `gorm:"column:taxCardNo" json:"taxCardNo"`
 	TaxCardFilename        string     `gorm:"column:taxCardFilename" json:"taxCardFilename"`
 	BankAccountName        string     `gorm:"column:bankAccountName" json:"bankAccountName"`
+	IsValidated            string     `gorm:"column:isValidated" json:"isValidated"`
 	VirtualAccountBankName string     `gorm:"column:virtualAccountBankName" json:"virtualAccountBankName"`
 	VirtualAccountNumber   string     `gorm:"column:virtualAccountNumber" json:"virtualAccountNumber"`
 	CreatedAt              time.Time  `gorm:"column:createdAt" json:"createdAt"`
