@@ -22,7 +22,7 @@ func FetchDatatables(ctx *iris.Context) {
 	totalData := totalData{}
 
 	query := "SELECT cif.\"name\", cif.\"phoneNo\", cif.\"idCardNo\", \"bankAccountName\", "
-	query += "cif.\"taxCardNo\", cif.\"idCardFilename\", cif.\"taxCardFilename\", cif.\"idCardNo\", "
+	query += "cif.\"taxCardNo\", cif.\"idCardFilename\", cif.\"taxCardFilename\", cif.\"idCardNo\", cif.\"isValidated\", "
 	query += "cif.\"taxCardNo\", array_to_string(array_agg(virtual_account.\"bankName\"),',') as \"virtualAccountBankName\", "
 	query += "array_to_string(array_agg(virtual_account.\"virtualAccountNo\"),',') as \"virtualAccountNumber\" "
 	query += "FROM investor "
@@ -32,11 +32,12 @@ func FetchDatatables(ctx *iris.Context) {
 	query += "JOIN cif ON cif.id = r_cif_investor.\"cifId\" "
 	query += "AND cif.\"deletedAt\" IS null AND virtual_account.\"deletedAt\" IS null "
 	query += "where cif.\"isValidated\" = false and cif.name ~* '[a-z]+' "
-	query += "group by cif.\"name\", cif.\"phoneNo\", cif.\"idCardNo\", \"bankAccountName\", cif.\"taxCardNo\", cif.\"idCardNo\", cif.\"taxCardNo\", cif.\"idCardFilename\", cif.\"taxCardFilename\" "
+	query += "group by cif.\"name\", cif.\"phoneNo\", cif.\"idCardNo\", \"bankAccountName\", cif.\"taxCardNo\", "
+	query += " cif.\"idCardNo\", cif.\"taxCardNo\", cif.\"idCardFilename\", cif.\"taxCardFilename\", cif.\"isValidated\" "
 
 	queryTotalData := "SELECT count(cif.*) as \"totalRows\" "
 	queryTotalData += "FROM cif "
-	queryTotalData += "WHERE \"isValidated\" = false "
+	queryTotalData += "WHERE \"isVerified\" = false "
 	queryTotalData += "AND \"deletedAt\" IS NULL "
 
 	if ctx.URLParam("search") != "" {
@@ -74,8 +75,15 @@ func Verify(ctx *iris.Context) {
 	// status type: verified or declined
 	status := ctx.Param("status")
 
-	if status == "verified" {
+	if status == "validated" {
 		services.DBCPsql.Table("cif").Where("id = ?", id).Update("isValidated", true)
+
+		cifSchema := cif.Cif{}
+		services.DBCPsql.Table("cif").Where("id = ?", id).Scan(&cifSchema)
+
+	} else if status == "verified" {
+
+		services.DBCPsql.Table("cif").Where("id = ?", id).Update("isVerified", true)
 
 		cifSchema := cif.Cif{}
 		services.DBCPsql.Table("cif").Where("id = ?", id).Scan(&cifSchema)
