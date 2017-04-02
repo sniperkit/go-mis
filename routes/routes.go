@@ -34,6 +34,7 @@ import (
 	"bitbucket.org/go-mis/modules/sector"
 	"bitbucket.org/go-mis/modules/user-mis"
 	"bitbucket.org/go-mis/modules/virtual-account"
+	"bitbucket.org/go-mis/modules/voucher"
 	"bitbucket.org/go-mis/modules/virtual-account-statement"
 )
 
@@ -131,6 +132,10 @@ func initializeAll() {
 	config.Domain = "virtual-account-statement"
 	virtualAccountStatement.Init()
 
+	config.Domain = "voucher"
+	voucher.Init()
+
+
 	fmt.Println("[INFO] All domain have been initialized")
 }
 
@@ -195,6 +200,8 @@ func Init() {
 		virtualAccount.Init()
 	case "virtual-account-statement":
 		virtualAccountStatement.Init()
+	case "voucher":
+		voucher.Init()
 	default:
 		initializeAll()
 	}
