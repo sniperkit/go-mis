@@ -98,6 +98,8 @@ func InitCustomApi() {
 		v2.Any("/adjustment/submit/:installment_id", adjustment.SetAdjustmentForInstallment)
 		v2.Any("/adjustment/update/:adjustment_id", adjustment.UpdateAdjustmentAndInstallment)
 		v2.Any("/submit-adjustment/:account_type", adjustment.SubmitAdjustment)
+		v2.Any("/cif-investor-account", cif.GetCifInvestorAccount)
+		v2.Any("/assign-investor-to-loan", loan.AssignInvestorToLoan)
 	}
 
 	iris.Get(baseURL+"/investor-without-va", investor.InvestorWithoutVA)
