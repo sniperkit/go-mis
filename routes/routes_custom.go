@@ -17,13 +17,13 @@ import (
 	"bitbucket.org/go-mis/modules/investor"
 	"bitbucket.org/go-mis/modules/investor-check"
 	"bitbucket.org/go-mis/modules/loan"
+	"bitbucket.org/go-mis/modules/loan-order"
 	"bitbucket.org/go-mis/modules/location"
 	"bitbucket.org/go-mis/modules/notification"
 	"bitbucket.org/go-mis/modules/survey"
 	"bitbucket.org/go-mis/modules/transaction"
 	"bitbucket.org/go-mis/modules/user-mis"
 	"bitbucket.org/go-mis/modules/voucher"
-	"bitbucket.org/go-mis/modules/loan-order"
 	"bitbucket.org/go-mis/modules/virtual-account-statement"
 	"gopkg.in/iris-contrib/middleware.v4/cors"
 	"gopkg.in/kataras/iris.v4"
@@ -48,6 +48,7 @@ func InitCustomApi() {
 		iris.Use(crs)
 	}
 	iris.Any(baseURL+"/user-mis-login", auth.UserMisLogin)
+	iris.Any(baseURL+"/installment-approve-success/:status", installment.SubmitInstallmentByGroupIDAndTransactionDateWithStatus)
 
 	v2 := iris.Party(baseURL, auth.EnsureAuth)
 	{
@@ -65,6 +66,9 @@ func InitCustomApi() {
 		v2.Any("/loan/set/:id/stage/:stage", loan.UpdateStage)
 		v2.Any("/loan/akad/:id", loan.GetAkadData)
 		v2.Any("/loan-stage-history/:id", loan.GetLoanStageHistory)
+		//v2.Any("/loan-order/pending-waiting", loanOrder.FetchAllPendingWaiting)
+		//v2.Any("/loan-order/:orderNo/accept", loanOrder.Accept)
+		//v2.Any("/loan-order/:orderNo/reject", loanOrder.Reject)
 		v2.Any("/installment", installment.FetchAll)
 		v2.Any("/installment-by-type/:type", installment.FetchByType)
 		v2.Any("/installment/group/:group_id/by-transaction-date/:transaction_date", installment.GetInstallmentByGroupIDAndTransactionDate)
@@ -88,6 +92,7 @@ func InitCustomApi() {
 		v2.Any("/agent", agent.GetAllAgentByBranchID)
 		v2.Any("/investor-check/datatables", investorCheck.FetchDatatables)
 		v2.Any("/investor-check/verify/:id/status/:status", investorCheck.Verify)
+		v2.Any("/investor-check/verified/:id/status/:status", investorCheck.Verified)
 		v2.Get("/dropping", loan.FetchDropping)
 		v2.Any("/dropping/refund/:loan_id/move-stage-to/:stage", loan.RefundAndChangeStageTo)
 		v2.Get("/investor-for-topup", investor.GetInvestorForTopup)
@@ -103,6 +108,8 @@ func InitCustomApi() {
 		v2.Any("/loan-order", loanOrder.FetchAll)
 		v2.Get("/loan-order/get/:id", loanOrder.FetchSingle)
 		v2.Any("/loan-order/accept/:orderNo", loanOrder.AcceptLoanOrder)
+		v2.Any("/cif-investor-account", cif.GetCifInvestorAccount)
+		v2.Any("/assign-investor-to-loan", loan.AssignInvestorToLoan)
 	}
 
 	iris.Get(baseURL+"/investor-without-va", investor.InvestorWithoutVA)

@@ -9,6 +9,7 @@ import (
 	"errors"
 
 	"bitbucket.org/go-mis/modules/account"
+	accountTransactionCredit "bitbucket.org/go-mis/modules/account-transaction-credit"
 	accountTransactionDebit "bitbucket.org/go-mis/modules/account-transaction-debit"
 	cif "bitbucket.org/go-mis/modules/cif"
 	"bitbucket.org/go-mis/modules/installment"
@@ -264,12 +265,22 @@ func GetLoanDetail(ctx *iris.Context) {
 
 	services.DBCPsql.Raw(queryInstallmentObj, loanId).Scan(&installmentObj)
 
+	investorCifObj := cif.Cif{}
+
+	queryInvestorObj := "SELECT * FROM cif "
+	queryInvestorObj += "JOIN r_cif_investor ON r_cif_investor.\"cifId\" = cif.id "
+	queryInvestorObj += "JOIN r_investor_product_pricing_loan ON r_investor_product_pricing_loan.\"investorId\" = r_cif_investor.\"investorId\" "
+	queryInvestorObj += "WHERE r_investor_product_pricing_loan.\"loanId\" = ? "
+
+	services.DBCPsql.Raw(queryInvestorObj, loanId).Scan(&investorCifObj)
+
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"status": "success",
 		"data": iris.Map{
 			"loan":        loanObj,
 			"borrower":    borrowerObj,
 			"installment": installmentObj,
+			"investor":    investorCifObj,
 		},
 	})
 }
@@ -507,5 +518,51 @@ func GetLoanStageHistory(ctx *iris.Context) {
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"status": "success",
 		"data":   historyData,
+	})
+}
+
+// AssignInvestorToLoan - assign investor to loan
+func AssignInvestorToLoan(ctx *iris.Context) {
+	cifID := ctx.URLParam("cifId")
+	loanID := ctx.URLParam("loanId")
+
+	rCifInvestorSchema := r.RCifInvestor{}
+	services.DBCPsql.Table("r_cif_investor").Where("\"cifId\" = ?", cifID).Scan(&rCifInvestorSchema)
+
+	loanSchema := Loan{}
+	services.DBCPsql.Table("loan").Where("\"id\" = ?", loanID).Scan(&loanSchema)
+
+	loanHistorySchema := &loanHistory.LoanHistory{StageFrom: loanSchema.Stage, StageTo: "INVESTOR", Remark: "MANUAL ASSIGN"}
+	services.DBCPsql.Table("loan_history").Create(loanHistorySchema)
+
+	rLoanHistorySchema := &r.RLoanHistory{LoanId: loanSchema.ID, LoanHistoryId: loanHistorySchema.ID}
+	services.DBCPsql.Table("r_loan_history").Create(rLoanHistorySchema)
+
+	services.DBCPsql.Table("loan").Where("id = ?", loanID).Update("stage", "INVESTOR")
+
+	services.DBCPsql.Table("r_investor_product_pricing_loan").Where("\"loanId\" = ?", loanSchema.ID).UpdateColumn("investorId", rCifInvestorSchema.InvestorId)
+
+	rAccountInvestorSchema := r.RAccountInvestor{}
+	services.DBCPsql.Table("r_account_investor").Where("\"investorId\" = ?", rCifInvestorSchema.InvestorId).Scan(&rAccountInvestorSchema)
+
+	accountTransactionCreditSchema := &accountTransactionCredit.AccountTransactionCredit{Type: "INVEST", TransactionDate: time.Now(), Amount: loanSchema.Plafond, Remark: "MANUAL ASSIGN"}
+	services.DBCPsql.Table("account_transaction_credit").Create(accountTransactionCreditSchema)
+
+	rAccountTransactionCreditSchema := &r.RAccountTransactionCredit{AccountId: rAccountInvestorSchema.AccountId, AccountTransactionCreditId: accountTransactionCreditSchema.ID}
+	services.DBCPsql.Table("r_account_transaction_credit").Create(rAccountTransactionCreditSchema)
+
+	rAccounTransactionCreditLoanSchema := &r.RAccountTransactionCreditLoan{AccountTransactionCreditId: accountTransactionCreditSchema.ID, LoanId: loanSchema.ID}
+	services.DBCPsql.Table("r_account_transaction_credit_loan").Create(rAccounTransactionCreditLoanSchema)
+
+	totalDebit := accountTransactionDebit.GetTotalAccountTransactionDebit(rAccountInvestorSchema.AccountId)
+	totalCredit := accountTransactionCredit.GetTotalAccountTransactionCredit(rAccountInvestorSchema.AccountId)
+
+	totalBalance := totalDebit - totalCredit
+
+	services.DBCPsql.Table("account").Where("id = ?", rAccountInvestorSchema.AccountId).Updates(account.Account{TotalDebit: totalDebit, TotalCredit: totalCredit, TotalBalance: totalBalance})
+
+	ctx.JSON(iris.StatusOK, iris.Map{
+		"status": "success",
+		"data":   iris.Map{},
 	})
 }

@@ -24,7 +24,8 @@ func InvestorWithoutVA(ctx *iris.Context) {
 	query += "JOIN r_cif_investor ON r_cif_investor.\"investorId\" = investor.id "
 	query += "JOIN cif ON cif.id = r_cif_investor.\"cifId\" "
 	query += "WHERE virtual_account.\"virtualAccountNo\" IS NULL  "
-	query += "AND cif.\"deletedAt\" IS NULL AND cif.\"isValidated\" = true "
+	query += "AND cif.\"deletedAt\" IS NULL "
+	query += "AND cif.\"isActivated\" = true AND cif.\"isValidated\" = true AND cif.\"isVerified\" = false "
 	query += "AND virtual_account.\"deletedAt\" IS NULL "
 
 	investorWithoutVaSchema := []InvestorWithoutVaSchema{}
