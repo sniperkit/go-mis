@@ -30,7 +30,7 @@ func FetchDatatables(ctx *iris.Context) {
 	query += "LEFT JOIN virtual_account ON virtual_account.id = r_investor_virtual_account.\"vaId\" "
 	query += "JOIN r_cif_investor ON r_cif_investor.\"investorId\" = investor.id "
 	query += "JOIN cif ON cif.id = r_cif_investor.\"cifId\" "
-	query += "where cif.\"isVerified\" = false "
+	query += "where (cif.\"isVerified\" = false or cif.\"isVerified\" is NULL) "
 	query += "and cif.\"isActivated\" = true "
 	query += "AND cif.\"deletedAt\" IS null AND virtual_account.\"deletedAt\" IS null "
 
