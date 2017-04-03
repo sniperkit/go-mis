@@ -92,7 +92,7 @@ func InitCustomApi() {
 		v2.Any("/agent", agent.GetAllAgentByBranchID)
 		v2.Any("/investor-check/datatables", investorCheck.FetchDatatables)
 		v2.Any("/investor-check/verify/:id/status/:status", investorCheck.Verify)
-		v2.Any("/investor-check/verified/:id", investorCheck.Verified)
+		//v2.Any("/investor-check/verified/:id", investorCheck.Verified)
 		v2.Get("/dropping", loan.FetchDropping)
 		v2.Any("/dropping/refund/:loan_id/move-stage-to/:stage", loan.RefundAndChangeStageTo)
 		v2.Get("/investor-for-topup", investor.GetInvestorForTopup)
