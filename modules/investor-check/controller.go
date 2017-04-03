@@ -33,8 +33,6 @@ func FetchDatatables(ctx *iris.Context) {
 	query += "AND cif.\"deletedAt\" IS null AND virtual_account.\"deletedAt\" IS null "
 	query += "where cif.\"isValidated\" = false and cif.name ~* '[a-z]+' "
 	query += "and cif.\"isActivated\" = TRUE and cif.\"idCardFilename\" is not NULL "
-	query += "group by cif.\"name\", cif.\"phoneNo\", cif.\"idCardNo\", \"bankAccountName\", cif.\"taxCardNo\", "
-	query += " cif.\"idCardNo\", cif.\"taxCardNo\", cif.\"idCardFilename\", cif.\"taxCardFilename\", cif.\"isValidated\" "
 
 	queryTotalData := "SELECT count(cif.*) as \"totalRows\" "
 	queryTotalData += "FROM cif "
@@ -46,8 +44,8 @@ func FetchDatatables(ctx *iris.Context) {
 		queryTotalData += "AND name ~* '" + ctx.URLParam("search") + "' "
 	}
 
-	services.DBCPsql.Raw(query).Scan(&investors)
-	services.DBCPsql.Raw(queryTotalData).Scan(&totalData)
+	query += "group by cif.\"name\", cif.\"phoneNo\", cif.\"idCardNo\", \"bankAccountName\", cif.\"taxCardNo\", "
+	query += " cif.\"idCardNo\", cif.\"taxCardNo\", cif.\"idCardFilename\", cif.\"taxCardFilename\", cif.\"isValidated\" "
 
 	if ctx.URLParam("limit") != "" {
 		query += "LIMIT " + ctx.URLParam("limit") + " "
@@ -60,6 +58,9 @@ func FetchDatatables(ctx *iris.Context) {
 	} else {
 		query += "OFFSET 0 "
 	}
+
+	services.DBCPsql.Raw(query).Scan(&investors)
+	services.DBCPsql.Raw(queryTotalData).Scan(&totalData)
 
 	services.DBCPsql.Raw(query).Scan(&investors)
 
