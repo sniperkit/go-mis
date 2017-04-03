@@ -34,10 +34,12 @@ func FetchDatatables(ctx *iris.Context) {
 	query += "where cif.\"isValidated\" = false and cif.name ~* '[a-z]+' "
 	query += "and cif.\"isActivated\" = TRUE and cif.\"idCardFilename\" is not NULL "
 
-	queryTotalData := "SELECT count(cif.*) as \"totalRows\" "
-	queryTotalData += "FROM cif "
-	queryTotalData += "WHERE \"isVerified\" = false "
-	queryTotalData += "AND \"deletedAt\" IS NULL "
+	// queryTotalData := "SELECT count(cif.*) as \"totalRows\" "
+	// queryTotalData += "FROM cif "
+	// queryTotalData += "WHERE \"isVerified\" = false "
+	// queryTotalData += "AND \"deletedAt\" IS NULL "
+
+	queryTotalData := "SELECT count(cif.*) as \"totalRows\" FROM cif WHERE cif.\"isValidated\" = false AND cif.\"isActivated\" = true AND cif.\"idCardFilename\" IS NOT NULL "
 
 	if ctx.URLParam("search") != "" {
 		query += "AND name ~* '" + ctx.URLParam("search") + "' "
