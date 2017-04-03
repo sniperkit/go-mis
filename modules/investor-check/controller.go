@@ -155,13 +155,11 @@ func Verify(ctx *iris.Context) {
 func Verified(ctx *iris.Context) {
 	id, _ := strconv.Atoi(ctx.Param("id"))
 	// status type: verified or declined
-	status := ctx.Param("status")
+	cifSchema := cif.Cif{}
+	services.DBCPsql.Table("cif").Where("id = ?", id).Scan(&cifSchema)
 
-	if status == "verified" {
+	if *cifSchema.IsValidated == true {
 		services.DBCPsql.Table("cif").Where("id = ?", id).Update("isVerified", true)
-
-		cifSchema := cif.Cif{}
-		services.DBCPsql.Table("cif").Where("id = ?", id).Scan(&cifSchema)
 
 		// get investor id
 		inv := &r.RCifInvestor{}
@@ -191,12 +189,13 @@ func Verified(ctx *iris.Context) {
 
 		if cifSchema.Username != "" {
 			fmt.Println("Sending email..")
-			sendgrid := email.Sendgrid{}
-			sendgrid.SetFrom("Amartha", "no-reply@amartha.com")
-			sendgrid.SetTo(cifSchema.Name, cifSchema.Username)
-			sendgrid.SetSubject(cifSchema.Name + ", Verifikasi Data Anda Berhasil")
-			sendgrid.VerifiedBodyEmail("VERIFIED_DATA", cifSchema.Name, cifSchema.Username, vaData)
-			sendgrid.SendEmail()
+			go email.SendEmailVerificationSuccess(cifSchema.Username, cifSchema.Name, vaData["BCA"], vaData["BCA_HOLDER"], vaData["BRI"], vaData["BRI_HOLDER"])
+			// sendgrid := email.Sendgrid{}
+			// sendgrid.SetFrom("Amartha", "no-reply@amartha.com")
+			// sendgrid.SetTo(cifSchema.Name, cifSchema.Username)
+			// sendgrid.SetSubject(cifSchema.Name + ", Verifikasi Data Anda Berhasil")
+			// sendgrid.VerifiedBodyEmail("VERIFIED_DATA", cifSchema.Name, cifSchema.Username, vaData)
+			// sendgrid.SendEmail()
 		}
 
 		if cifSchema.PhoneNo != "" {
@@ -208,20 +207,14 @@ func Verified(ctx *iris.Context) {
 			twilio.SendSMS()
 		}
 
+		ctx.JSON(iris.StatusOK, iris.Map{
+			"status":             "success",
+			"verificationStatus": "verified",
+		})
 	} else {
-		cifSchema := cif.Cif{}
-		services.DBCPsql.Table("cif").Where("id = ?", id).Scan(&cifSchema)
-
-		sendgrid := email.Sendgrid{}
-		sendgrid.SetFrom("Amartha", "no-reply@amartha.com")
-		sendgrid.SetTo(cifSchema.Name, cifSchema.Username)
-		sendgrid.SetSubject(cifSchema.Name + ", Verifikasi Data Anda Gagal")
-		sendgrid.SetVerificationBodyEmail("UNVERIFIED_DATA", cifSchema.Name, cifSchema.Name, cifSchema.Username, "")
-		sendgrid.SendEmail()
+		ctx.JSON(iris.StatusOK, iris.Map{
+			"status":             "success",
+			"verificationStatus": "verification failed investor not validated",
+		})
 	}
-
-	ctx.JSON(iris.StatusOK, iris.Map{
-		"status":             "success",
-		"verificationStatus": status,
-	})
 }

@@ -1,6 +1,6 @@
 package email
 
-func sendEmailVerificationSuccess(email string, name string, va_bca string, va_bca_name string, va_bri string, va_bri_name string) {
+func SendEmailVerificationSuccess(email string, name string, va_bca string, va_bca_name string, va_bri string, va_bri_name string) {
 
 	var subs = map[string]interface{}{
 		"first_name":  name,
@@ -19,7 +19,7 @@ func sendEmailVerificationSuccess(email string, name string, va_bca string, va_b
 
 }
 
-func sendEmailVerificationFailed(email string, name string) {
+func SendEmailVerificationFailed(email string, name string) {
 
 	var subs = map[string]interface{}{
 		"first_name": name,
@@ -34,7 +34,7 @@ func sendEmailVerificationFailed(email string, name string) {
 
 }
 
-func sendEmailInvestmentSuccess(email string, name string, transferDate string, transferAmount string, transferDestination string) {
+func SendEmailInvestmentSuccess(email string, name string, transferDate string, transferAmount string, transferDestination string) {
 
 	var subs = map[string]interface{}{
 		"first_name":           name,
@@ -52,7 +52,7 @@ func sendEmailInvestmentSuccess(email string, name string, transferDate string, 
 
 }
 
-func sendEmailInvestmentFailed(email string, name string) {
+func SendEmailInvestmentFailed(email string, name string) {
 
 	var subs = map[string]interface{}{
 		"first_name": name,
@@ -67,7 +67,7 @@ func sendEmailInvestmentFailed(email string, name string) {
 
 }
 
-func sendEmailDisbursementSucccess(subject string, template string, email string, name string, borrowerName string, purpose string, plafon string, tenor string, totalPeople string, totalFund string, disbursementDate string) {
+func SendEmailDisbursementSucccess(subject string, template string, email string, name string, borrowerName string, purpose string, plafon string, tenor string, totalPeople string, totalFund string, disbursementDate string) {
 	var subs = map[string]interface{}{
 		"first_name":        name,
 		"disbursement_date": disbursementDate,
@@ -87,15 +87,15 @@ func sendEmailDisbursementSucccess(subject string, template string, email string
 	mandrill.SendEmail()
 }
 
-func sendEmailDisbursementPending(subject string, template string, email string, name string, borrowerName string, purpose string, plafon string, tenor string, totalPeople string, totalFund string) {
+func SendEmailDisbursementPending(subject string, template string, email string, name string, borrowerName string, purpose string, plafon string, tenor string, totalPeople string, totalFund string) {
 	sendEmailDisbursement("Disbursement Pending", "disbursement_pending", email, name, borrowerName, purpose, plafon, tenor, totalPeople, totalFund)
 }
 
-func sendEmailDisbursementPostpone(subject string, template string, email string, name string, borrowerName string, purpose string, plafon string, tenor string, totalPeople string, totalFund string) {
+func SendEmailDisbursementPostpone(subject string, template string, email string, name string, borrowerName string, purpose string, plafon string, tenor string, totalPeople string, totalFund string) {
 	sendEmailDisbursement("Disbursement Failed", "disbursement_postpone", email, name, borrowerName, purpose, plafon, tenor, totalPeople, totalFund)
 }
 
-func sendEmailDisbursement(subject string, template string, email string, name string, borrowerName string, purpose string, plafon string, tenor string, totalPeople string, totalFund string) {
+func SendEmailDisbursement(subject string, template string, email string, name string, borrowerName string, purpose string, plafon string, tenor string, totalPeople string, totalFund string) {
 
 	var subs = map[string]interface{}{
 		"first_name":    name,
@@ -114,7 +114,7 @@ func sendEmailDisbursement(subject string, template string, email string, name s
 
 }
 
-func sendEmailCashout(email string, name string, cashoutID string) {
+func SendEmailCashout(email string, name string, cashoutID string) {
 
 	var subs = map[string]interface{}{
 		"first_name": name,
@@ -130,7 +130,7 @@ func sendEmailCashout(email string, name string, cashoutID string) {
 
 }
 
-func sendEmailUpkDelay(email string, name string, totalPeople string, totalFund string, borrowerName string, purpose string, plafon string, tenor string) {
+func SendEmailUpkDelay(email string, name string, totalPeople string, totalFund string, borrowerName string, purpose string, plafon string, tenor string) {
 
 	var subs = map[string]interface{}{
 		"first_name":    name,
