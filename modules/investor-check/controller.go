@@ -31,8 +31,9 @@ func FetchDatatables(ctx *iris.Context) {
 	query += "JOIN r_cif_investor ON r_cif_investor.\"investorId\" = investor.id "
 	query += "JOIN cif ON cif.id = r_cif_investor.\"cifId\" "
 	// query += "where (cif.\"isVerified\" = false or cif.\"isVerified\" is NULL) " // borrower will included at list
-	query += "WHERE cif.\"isVerified\" = false "
-	query += "and cif.\"isActivated\" = true "
+	query += "WHERE cif.\"isVerified\" = FALSE "
+	query += "AND cif.\"idCardFilename\" IS NOT NULL "
+	query += "and cif.\"isActivated\" = TRUE "
 	query += "AND cif.\"deletedAt\" IS null AND virtual_account.\"deletedAt\" IS null "
 
 	// queryTotalData := "SELECT count(cif.*) as \"totalRows\" "
