@@ -119,12 +119,13 @@ func Verify(ctx *iris.Context) {
 
 			if cifSchema.Username != "" {
 				fmt.Println("Sending email..")
-				sendgrid := email.Sendgrid{}
-				sendgrid.SetFrom("Amartha", "no-reply@amartha.com")
-				sendgrid.SetTo(cifSchema.Name, cifSchema.Username)
-				sendgrid.SetSubject(cifSchema.Name + ", Verifikasi Data Anda Berhasil")
-				sendgrid.VerifiedBodyEmail("VERIFIED_DATA", cifSchema.Name, cifSchema.Username, vaData)
-				sendgrid.SendEmail()
+				go email.SendEmailVerificationSuccess(cifSchema.Username, cifSchema.Name, vaData["BCA"], vaData["BCA_HOLDER"], vaData["BRI"], vaData["BRI_HOLDER"])
+				// sendgrid := email.Sendgrid{}
+				// sendgrid.SetFrom("Amartha", "no-reply@amartha.com")
+				// sendgrid.SetTo(cifSchema.Name, cifSchema.Username)
+				// sendgrid.SetSubject(cifSchema.Name + ", Verifikasi Data Anda Berhasil")
+				// sendgrid.VerifiedBodyEmail("VERIFIED_DATA", cifSchema.Name, cifSchema.Username, vaData)
+				// sendgrid.SendEmail()
 			}
 
 			if cifSchema.PhoneNo != "" {
