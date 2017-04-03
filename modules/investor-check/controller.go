@@ -21,7 +21,7 @@ func FetchDatatables(ctx *iris.Context) {
 	investors := []InvestorCheck{}
 	totalData := totalData{}
 
-	query := "SELECT cif.\"name\", cif.\"phoneNo\", cif.\"idCardNo\", \"bankAccountName\", "
+	query := "SELECT cif.\"id\", cif.\"name\", cif.\"phoneNo\", cif.\"idCardNo\", \"bankAccountName\", "
 	query += "cif.\"taxCardNo\", cif.\"idCardFilename\", cif.\"taxCardFilename\", cif.\"idCardNo\", cif.\"isValidated\", "
 	query += "cif.\"taxCardNo\", array_to_string(array_agg(virtual_account.\"bankName\"),',') as \"virtualAccountBankName\", "
 	query += "array_to_string(array_agg(virtual_account.\"virtualAccountNo\"),',') as \"virtualAccountNumber\" "
@@ -46,7 +46,7 @@ func FetchDatatables(ctx *iris.Context) {
 		queryTotalData += "AND cif.name ~* '" + ctx.URLParam("search") + "' "
 	}
 
-	query += "group by cif.\"name\", cif.\"phoneNo\", cif.\"idCardNo\", \"bankAccountName\", cif.\"taxCardNo\", "
+	query += "group by cif.\"id\", cif.\"name\", cif.\"phoneNo\", cif.\"idCardNo\", \"bankAccountName\", cif.\"taxCardNo\", "
 	query += " cif.\"idCardNo\", cif.\"taxCardNo\", cif.\"idCardFilename\", cif.\"taxCardFilename\", cif.\"isValidated\" "
 
 	if ctx.URLParam("limit") != "" {
