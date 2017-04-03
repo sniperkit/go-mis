@@ -13,16 +13,6 @@ func Init() {
 	services.BaseCrudInit(LoanOrder{}, []LoanOrder{})
 }
 
-type LoanOrderCompact struct {
-	ID           uint64  `json:"_id"`
-	Username     string  `json:"username"`
-	Name         string  `json:"name"`
-	OrderNo      string  `gorm:"column:orderNo" json:"orderNo"`
-	TotalBalance float64 `gorm:"column:totalBalance" json:"totalBalance"`
-	TotalPlafond float64 `gorm:"column:totalPlafond" json:"totalPlafond"`
-	Remark       string  `json:"remark"`
-}
-
 func FetchAll(ctx *iris.Context) {
 
 	query := `select c.username, c.name, i.id, acc."totalBalance", lo."orderNo", sum(l.plafond) "totalPlafond", lo.remark
@@ -30,7 +20,7 @@ from investor i join r_account_investor rai on i.id = rai."investorId" join acco
 join r_cif_investor rci on i.id=rci."investorId" join cif c on c.id=rci."cifId"
 join r_investor_product_pricing_loan rippl on i.id = rippl."investorId" join loan l on l.id=rippl."loanId"
 join r_loan_order rlo on l.id = rlo."loanId" join loan_order lo on lo.id = rlo."loanOrderId"
-where lo.remark = 'WAITING PAYMENT'
+where lo.remark = 'PENDING'
 group by c.username, c.name, i.id, acc."totalBalance", lo."orderNo", lo.remark`
 
 	loanOrderSchema := []LoanOrderCompact{}
@@ -53,7 +43,7 @@ from investor i join r_account_investor rai on i.id = rai."investorId" join acco
 join r_cif_investor rci on i.id=rci."investorId" join cif c on c.id=rci."cifId"
 join r_investor_product_pricing_loan rippl on i.id = rippl."investorId" join loan l on l.id=rippl."loanId"
 join r_loan_order rlo on l.id = rlo."loanId" join loan_order lo on lo.id = rlo."loanOrderId"
-where lo.remark = 'WAITING PAYMENT' and i.id = ?`
+where lo.remark = 'PENDING' and i.id = ?`
 
 	loanOrderSchema := []LoanOrderCompact{}
 
@@ -178,7 +168,7 @@ func FetchAllPendingWaiting(ctx *iris.Context) {
 	query += "join cif c on c.id = rci.\"cifId\" "
 	query += "join r_account_investor rai on rai.\"investorId\" = i.id "
 	query += "join account a on a.id = rai.\"accountId\" "
-	query += "where lo.remark = 'PENDING' or lo.remark = 'WAITING PAYMENT' "
+	query += "where lo.remark = 'PENDING' "
 	query += "and a.\"deletedAt\" isnull and l.\"deletedAt\" isnull "
 	query += "and lo.\"deletedAt\" isnull and c.\"deletedAt\" isnull "
 	query += "and i.\"deletedAt\" isnull "
