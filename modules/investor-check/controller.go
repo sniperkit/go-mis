@@ -83,55 +83,57 @@ func Verify(ctx *iris.Context) {
 		services.DBCPsql.Table("cif").Where("id = ?", id).Scan(&cifSchema)
 
 	} else if status == "verified" {
-
-		services.DBCPsql.Table("cif").Where("id = ?", id).Update("isVerified", true)
-
 		cifSchema := cif.Cif{}
 		services.DBCPsql.Table("cif").Where("id = ?", id).Scan(&cifSchema)
+		if *cifSchema.IsValidated == true {
+			services.DBCPsql.Table("cif").Where("id = ?", id).Update("isVerified", true)
 
-		// get investor id
-		inv := &r.RCifInvestor{}
-		services.DBCPsql.Table("r_cif_investor").Where("\"cifId\" = ?", id).Scan(&inv)
+			// get investor id
+			inv := &r.RCifInvestor{}
+			services.DBCPsql.Table("r_cif_investor").Where("\"cifId\" = ?", id).Scan(&inv)
 
-		// get virtual account
-		rInvVa := []r.RInvestorVirtualAccount{}
-		services.DBCPsql.Table("r_investor_virtual_account").Where("\"investorId\" = ?", inv.InvestorId).Scan(&rInvVa)
+			// get virtual account
+			rInvVa := []r.RInvestorVirtualAccount{}
+			services.DBCPsql.Table("r_investor_virtual_account").Where("\"investorId\" = ?", inv.InvestorId).Scan(&rInvVa)
 
-		vaObj := &va.VirtualAccount{}
-		userVa := []va.VirtualAccount{}
-		for _, val := range rInvVa {
-			services.DBCPsql.Table("virtual_account").Where("\"id\" = ?", val.VirtualAccountId).Scan(&vaObj)
-			userVa = append(userVa, *vaObj)
-		}
-
-		vaData := make(map[string]string)
-		for _, val := range userVa {
-			if val.BankName == "BRI" {
-				vaData["BRI"] = val.VirtualAccountNo
-				vaData["BRI_HOLDER"] = val.VirtualAccountName
-			} else if val.BankName == "BCA" {
-				vaData["BCA"] = val.VirtualAccountNo
-				vaData["BCA_HOLDER"] = val.VirtualAccountName
+			vaObj := &va.VirtualAccount{}
+			userVa := []va.VirtualAccount{}
+			for _, val := range rInvVa {
+				services.DBCPsql.Table("virtual_account").Where("\"id\" = ?", val.VirtualAccountId).Scan(&vaObj)
+				userVa = append(userVa, *vaObj)
 			}
-		}
 
-		if cifSchema.Username != "" {
-			fmt.Println("Sending email..")
-			sendgrid := email.Sendgrid{}
-			sendgrid.SetFrom("Amartha", "no-reply@amartha.com")
-			sendgrid.SetTo(cifSchema.Name, cifSchema.Username)
-			sendgrid.SetSubject(cifSchema.Name + ", Verifikasi Data Anda Berhasil")
-			sendgrid.VerifiedBodyEmail("VERIFIED_DATA", cifSchema.Name, cifSchema.Username, vaData)
-			sendgrid.SendEmail()
-		}
+			vaData := make(map[string]string)
+			for _, val := range userVa {
+				if val.BankName == "BRI" {
+					vaData["BRI"] = val.VirtualAccountNo
+					vaData["BRI_HOLDER"] = val.VirtualAccountName
+				} else if val.BankName == "BCA" {
+					vaData["BCA"] = val.VirtualAccountNo
+					vaData["BCA_HOLDER"] = val.VirtualAccountName
+				}
+			}
 
-		if cifSchema.PhoneNo != "" {
-			// send sms notification
-			fmt.Println("Sending sms ... ")
-			twilio := services.InitTwilio()
-			message := "Selamat data Anda sudah terverifikasi. Silakan login ke dashboard Anda dan mulai berinvestasi. www.amartha.com"
-			twilio.SetParam(cifSchema.PhoneNo, message)
-			twilio.SendSMS()
+			if cifSchema.Username != "" {
+				fmt.Println("Sending email..")
+				sendgrid := email.Sendgrid{}
+				sendgrid.SetFrom("Amartha", "no-reply@amartha.com")
+				sendgrid.SetTo(cifSchema.Name, cifSchema.Username)
+				sendgrid.SetSubject(cifSchema.Name + ", Verifikasi Data Anda Berhasil")
+				sendgrid.VerifiedBodyEmail("VERIFIED_DATA", cifSchema.Name, cifSchema.Username, vaData)
+				sendgrid.SendEmail()
+			}
+
+			if cifSchema.PhoneNo != "" {
+				// send sms notification
+				fmt.Println("Sending sms ... ")
+				twilio := services.InitTwilio()
+				message := "Selamat data Anda sudah terverifikasi. Silakan login ke dashboard Anda dan mulai berinvestasi. www.amartha.com"
+				twilio.SetParam(cifSchema.PhoneNo, message)
+				twilio.SendSMS()
+			}
+		} else {
+			status = "verification failed, user not validated"
 		}
 
 	} else {
@@ -156,13 +158,11 @@ func Verify(ctx *iris.Context) {
 func Verified(ctx *iris.Context) {
 	id, _ := strconv.Atoi(ctx.Param("id"))
 	// status type: verified or declined
-	status := ctx.Param("status")
+	cifSchema := cif.Cif{}
+	services.DBCPsql.Table("cif").Where("id = ?", id).Scan(&cifSchema)
 
-	if status == "verified" {
+	if *cifSchema.IsValidated == true {
 		services.DBCPsql.Table("cif").Where("id = ?", id).Update("isVerified", true)
-
-		cifSchema := cif.Cif{}
-		services.DBCPsql.Table("cif").Where("id = ?", id).Scan(&cifSchema)
 
 		// get investor id
 		inv := &r.RCifInvestor{}
@@ -192,12 +192,13 @@ func Verified(ctx *iris.Context) {
 
 		if cifSchema.Username != "" {
 			fmt.Println("Sending email..")
-			sendgrid := email.Sendgrid{}
-			sendgrid.SetFrom("Amartha", "no-reply@amartha.com")
-			sendgrid.SetTo(cifSchema.Name, cifSchema.Username)
-			sendgrid.SetSubject(cifSchema.Name + ", Verifikasi Data Anda Berhasil")
-			sendgrid.VerifiedBodyEmail("VERIFIED_DATA", cifSchema.Name, cifSchema.Username, vaData)
-			sendgrid.SendEmail()
+			go email.SendEmailVerificationSuccess(cifSchema.Username, cifSchema.Name, vaData["BCA"], vaData["BCA_HOLDER"], vaData["BRI"], vaData["BRI_HOLDER"])
+			// sendgrid := email.Sendgrid{}
+			// sendgrid.SetFrom("Amartha", "no-reply@amartha.com")
+			// sendgrid.SetTo(cifSchema.Name, cifSchema.Username)
+			// sendgrid.SetSubject(cifSchema.Name + ", Verifikasi Data Anda Berhasil")
+			// sendgrid.VerifiedBodyEmail("VERIFIED_DATA", cifSchema.Name, cifSchema.Username, vaData)
+			// sendgrid.SendEmail()
 		}
 
 		if cifSchema.PhoneNo != "" {
@@ -209,20 +210,14 @@ func Verified(ctx *iris.Context) {
 			twilio.SendSMS()
 		}
 
+		ctx.JSON(iris.StatusOK, iris.Map{
+			"status":             "success",
+			"verificationStatus": "verified",
+		})
 	} else {
-		cifSchema := cif.Cif{}
-		services.DBCPsql.Table("cif").Where("id = ?", id).Scan(&cifSchema)
-
-		sendgrid := email.Sendgrid{}
-		sendgrid.SetFrom("Amartha", "no-reply@amartha.com")
-		sendgrid.SetTo(cifSchema.Name, cifSchema.Username)
-		sendgrid.SetSubject(cifSchema.Name + ", Verifikasi Data Anda Gagal")
-		sendgrid.SetVerificationBodyEmail("UNVERIFIED_DATA", cifSchema.Name, cifSchema.Name, cifSchema.Username, "")
-		sendgrid.SendEmail()
+		ctx.JSON(iris.StatusOK, iris.Map{
+			"status":             "success",
+			"verificationStatus": "verification failed investor not validated",
+		})
 	}
-
-	ctx.JSON(iris.StatusOK, iris.Map{
-		"status":             "success",
-		"verificationStatus": status,
-	})
 }

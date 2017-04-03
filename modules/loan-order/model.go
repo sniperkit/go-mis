@@ -18,3 +18,13 @@ type LoanOrderInvestorPendingWaiting struct {
 	TotalBalance float64 `gorm:"totalBalance:remark" json:"totalBalance"`
 	TotalPlafond float64 `gorm:"totalPlafond:remark" json:"totalPlafond"`
 }
+
+type LoanOrderCompact struct {
+	ID           uint64  `json:"_id"`
+	Username     string  `json:"username"`
+	Name         string  `json:"name"`
+	OrderNo      string  `gorm:"column:orderNo" json:"orderNo"`
+	TotalBalance float64 `gorm:"column:totalBalance" json:"totalBalance"`
+	TotalPlafond float64 `gorm:"column:totalPlafond" json:"totalPlafond"`
+	Remark       string  `json:"remark"`
+}
