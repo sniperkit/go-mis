@@ -42,8 +42,8 @@ func FetchDatatables(ctx *iris.Context) {
 	queryTotalData := "SELECT count(cif.*) as \"totalRows\" FROM cif WHERE cif.\"isVerified\" = false AND cif.\"isActivated\" = true "
 
 	if ctx.URLParam("search") != "" {
-		query += "AND cif.name ~* '" + ctx.URLParam("search") + "' OR cif.id = " + ctx.URLParam("search") + " OR cif.\"createdAt\"::date = '" + ctx.URLParam("search") + "' "
-		queryTotalData += "AND cif.name ~* '" + ctx.URLParam("search") + "' OR cif.id = " + ctx.URLParam("search") + " OR cif.\"createdAt\"::date = '" + ctx.URLParam("search") + "' "
+		query += "AND cif.name ~* '" + ctx.URLParam("search") + "' "
+		queryTotalData += "AND cif.name ~* '" + ctx.URLParam("search") + "' "
 	}
 
 	query += "group by cif.\"name\", cif.\"phoneNo\", cif.\"idCardNo\", \"bankAccountName\", cif.\"taxCardNo\", "
