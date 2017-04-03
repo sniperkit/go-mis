@@ -88,11 +88,11 @@ func SendEmailDisbursementSucccess(subject string, template string, email string
 }
 
 func SendEmailDisbursementPending(subject string, template string, email string, name string, borrowerName string, purpose string, plafon string, tenor string, totalPeople string, totalFund string) {
-	sendEmailDisbursement("Disbursement Pending", "disbursement_pending", email, name, borrowerName, purpose, plafon, tenor, totalPeople, totalFund)
+	SendEmailDisbursement("Disbursement Pending", "disbursement_pending", email, name, borrowerName, purpose, plafon, tenor, totalPeople, totalFund)
 }
 
 func SendEmailDisbursementPostpone(subject string, template string, email string, name string, borrowerName string, purpose string, plafon string, tenor string, totalPeople string, totalFund string) {
-	sendEmailDisbursement("Disbursement Failed", "disbursement_postpone", email, name, borrowerName, purpose, plafon, tenor, totalPeople, totalFund)
+	SendEmailDisbursement("Disbursement Failed", "disbursement_postpone", email, name, borrowerName, purpose, plafon, tenor, totalPeople, totalFund)
 }
 
 func SendEmailDisbursement(subject string, template string, email string, name string, borrowerName string, purpose string, plafon string, tenor string, totalPeople string, totalFund string) {
