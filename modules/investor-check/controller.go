@@ -21,7 +21,7 @@ func FetchDatatables(ctx *iris.Context) {
 	investors := []InvestorCheck{}
 	totalData := totalData{}
 
-	query := "SELECT cif.\"name\", cif.\"phoneNo\", cif.\"idCardNo\", \"bankAccountName\", "
+	query := "SELECT cif.\"name\", cif.\"phoneNo\", cif.\"idCardNo\", \"bankAccountName\", cif.\"createdAt\" "
 	query += "cif.\"taxCardNo\", cif.\"idCardFilename\", cif.\"taxCardFilename\", cif.\"idCardNo\", cif.\"isValidated\", "
 	query += "cif.\"taxCardNo\", array_to_string(array_agg(virtual_account.\"bankName\"),',') as \"virtualAccountBankName\", "
 	query += "array_to_string(array_agg(virtual_account.\"virtualAccountNo\"),',') as \"virtualAccountNumber\" "
@@ -30,9 +30,9 @@ func FetchDatatables(ctx *iris.Context) {
 	query += "LEFT JOIN virtual_account ON virtual_account.id = r_investor_virtual_account.\"vaId\" "
 	query += "JOIN r_cif_investor ON r_cif_investor.\"investorId\" = investor.id "
 	query += "JOIN cif ON cif.id = r_cif_investor.\"cifId\" "
-	query += "AND cif.\"deletedAt\" IS null AND virtual_account.\"deletedAt\" IS null "
 	query += "where cif.\"isVerified\" = false "
 	query += "and cif.\"isActivated\" = true "
+	query += "AND cif.\"deletedAt\" IS null AND virtual_account.\"deletedAt\" IS null "
 
 	// queryTotalData := "SELECT count(cif.*) as \"totalRows\" "
 	// queryTotalData += "FROM cif "
@@ -42,8 +42,8 @@ func FetchDatatables(ctx *iris.Context) {
 	queryTotalData := "SELECT count(cif.*) as \"totalRows\" FROM cif WHERE cif.\"isVerified\" = false AND cif.\"isActivated\" = true "
 
 	if ctx.URLParam("search") != "" {
-		query += "AND name ~* '" + ctx.URLParam("search") + "' "
-		queryTotalData += "AND name ~* '" + ctx.URLParam("search") + "' "
+		query += "AND (name ~* '" + ctx.URLParam("search") + "' OR id = " + ctx.URLParam("search") + " OR \"createdAt\"::date = '" + ctx.URLParam("search") + "')"
+		queryTotalData += "AND (name ~* '" + ctx.URLParam("search") + "' OR id = " + ctx.URLParam("search") + " OR \"createdAt\"::date = '" + ctx.URLParam("search") + "')"
 	}
 
 	query += "group by cif.\"name\", cif.\"phoneNo\", cif.\"idCardNo\", \"bankAccountName\", cif.\"taxCardNo\", "
