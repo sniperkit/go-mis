@@ -47,7 +47,7 @@ func FetchDatatables(ctx *iris.Context) {
 	}
 
 	query += "group by cif.\"name\", cif.\"phoneNo\", cif.\"idCardNo\", \"bankAccountName\", cif.\"taxCardNo\", "
-	query += " cif.\"idCardNo\", cif.\"taxCardNo\", cif.\"idCardFilename\", cif.\"taxCardFilename\", cif.\"isValidated\" "
+	query += " cif.\"idCardNo\", cif.\"taxCardNo\", cif.\"idCardFilename\", cif.\"taxCardFilename\", cif.\"isValidated\", cif.\"createdAt\" "
 
 	if ctx.URLParam("limit") != "" {
 		query += "LIMIT " + ctx.URLParam("limit") + " "
