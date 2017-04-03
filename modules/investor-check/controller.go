@@ -32,6 +32,7 @@ func FetchDatatables(ctx *iris.Context) {
 	query += "JOIN cif ON cif.id = r_cif_investor.\"cifId\" "
 	query += "AND cif.\"deletedAt\" IS null AND virtual_account.\"deletedAt\" IS null "
 	query += "where cif.\"isValidated\" = false and cif.name ~* '[a-z]+' "
+	query += "and cif.\"isActivated\" = TRUE and cif.\"idCardFilename\" is not NULL "
 	query += "group by cif.\"name\", cif.\"phoneNo\", cif.\"idCardNo\", \"bankAccountName\", cif.\"taxCardNo\", "
 	query += " cif.\"idCardNo\", cif.\"taxCardNo\", cif.\"idCardFilename\", cif.\"taxCardFilename\", cif.\"isValidated\" "
 
