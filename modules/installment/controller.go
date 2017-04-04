@@ -130,6 +130,7 @@ func GetInstallmentByGroupIDAndTransactionDate(ctx *iris.Context) {
 		"group".name as "groupName",
 		cif.name as "cifName",
 		borrower."borrowerNo",
+		loan.id "loanId"
 		installment."id" as "installmentId", 
 		installment.type, 
 		installment."paidInstallment", 
