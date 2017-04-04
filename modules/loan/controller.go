@@ -220,6 +220,10 @@ func executeUpdateStage(id uint64, stage string) (string, error) {
 
 	services.DBCPsql.Table("loan").Where("\"id\" = ?", loanData.ID).UpdateColumn("stage", stage)
 
+	if loanData.Stage == "PRIVATE" && stage == "MARKETPLACE" {
+		services.DBCPsql.Table("r_investor_product_pricing_loan").Where(" \"loanId\" = ?", loanData.ID).Update("investorId", nil)
+	}
+
 	return loanData.Stage, nil
 }
 
