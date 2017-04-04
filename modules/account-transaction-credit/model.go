@@ -26,7 +26,7 @@ func GetTotalAccountTransactionCredit(accountID uint64) float64 {
 	query := "SELECT SUM(account_transaction_credit.amount) AS \"amount\" FROM account "
 	query += "JOIN r_account_transaction_credit ON r_account_transaction_credit.\"accountId\" = account.id "
 	query += "JOIN account_transaction_credit ON account_transaction_credit.id = r_account_transaction_credit.\"accountTransactionCreditId\" "
-	query += "WHERE account.id = ? "
+	query += "WHERE account.id = ? AND account_transaction_credit.\"deletedAt\" IS NULL "
 
 	totalSchema := Total{}
 	services.DBCPsql.Raw(query, accountID).Scan(&totalSchema)

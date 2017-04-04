@@ -21,7 +21,7 @@ func FetchDatatables(ctx *iris.Context) {
 	investors := []InvestorCheck{}
 	totalData := totalData{}
 
-	query := "SELECT cif.\"name\", cif.\"phoneNo\", cif.\"idCardNo\", \"bankAccountName\", "
+	query := "SELECT cif.\"id\", cif.\"name\", cif.\"phoneNo\", cif.\"idCardNo\", \"bankAccountName\", "
 	query += "cif.\"taxCardNo\", cif.\"idCardFilename\", cif.\"taxCardFilename\", cif.\"idCardNo\", cif.\"isValidated\", "
 	query += "cif.\"taxCardNo\", array_to_string(array_agg(virtual_account.\"bankName\"),',') as \"virtualAccountBankName\", "
 	query += "array_to_string(array_agg(virtual_account.\"virtualAccountNo\"),',') as \"virtualAccountNumber\" "
@@ -30,24 +30,26 @@ func FetchDatatables(ctx *iris.Context) {
 	query += "LEFT JOIN virtual_account ON virtual_account.id = r_investor_virtual_account.\"vaId\" "
 	query += "JOIN r_cif_investor ON r_cif_investor.\"investorId\" = investor.id "
 	query += "JOIN cif ON cif.id = r_cif_investor.\"cifId\" "
+	// query += "where (cif.\"isVerified\" = false or cif.\"isVerified\" is NULL) " // borrower will included at list
+	query += "WHERE cif.\"isVerified\" = FALSE "
+	query += "AND cif.\"idCardFilename\" IS NOT NULL "
+	query += "and cif.\"isActivated\" = TRUE "
 	query += "AND cif.\"deletedAt\" IS null AND virtual_account.\"deletedAt\" IS null "
-	query += "where cif.\"isValidated\" = false and cif.name ~* '[a-z]+' "
-	query += "and cif.\"isActivated\" = TRUE and cif.\"idCardFilename\" is not NULL "
-	query += "group by cif.\"name\", cif.\"phoneNo\", cif.\"idCardNo\", \"bankAccountName\", cif.\"taxCardNo\", "
-	query += " cif.\"idCardNo\", cif.\"taxCardNo\", cif.\"idCardFilename\", cif.\"taxCardFilename\", cif.\"isValidated\" "
 
-	queryTotalData := "SELECT count(cif.*) as \"totalRows\" "
-	queryTotalData += "FROM cif "
-	queryTotalData += "WHERE \"isVerified\" = false "
-	queryTotalData += "AND \"deletedAt\" IS NULL "
+	// queryTotalData := "SELECT count(cif.*) as \"totalRows\" "
+	// queryTotalData += "FROM cif "
+	// queryTotalData += "WHERE \"isVerified\" = false "
+	// queryTotalData += "AND \"deletedAt\" IS NULL "
+
+	queryTotalData := "SELECT count(cif.*) as \"totalRows\" FROM cif WHERE cif.\"isVerified\" = false AND cif.\"isActivated\" = true "
 
 	if ctx.URLParam("search") != "" {
-		query += "AND name ~* '" + ctx.URLParam("search") + "' "
-		queryTotalData += "AND name ~* '" + ctx.URLParam("search") + "' "
+		query += "AND cif.name ~* '" + ctx.URLParam("search") + "' "
+		queryTotalData += "AND cif.name ~* '" + ctx.URLParam("search") + "' "
 	}
 
-	services.DBCPsql.Raw(query).Scan(&investors)
-	services.DBCPsql.Raw(queryTotalData).Scan(&totalData)
+	query += "group by cif.\"id\", cif.\"name\", cif.\"phoneNo\", cif.\"idCardNo\", \"bankAccountName\", cif.\"taxCardNo\", "
+	query += " cif.\"idCardNo\", cif.\"taxCardNo\", cif.\"idCardFilename\", cif.\"taxCardFilename\", cif.\"isValidated\" "
 
 	if ctx.URLParam("limit") != "" {
 		query += "LIMIT " + ctx.URLParam("limit") + " "
@@ -60,6 +62,9 @@ func FetchDatatables(ctx *iris.Context) {
 	} else {
 		query += "OFFSET 0 "
 	}
+
+	services.DBCPsql.Raw(query).Scan(&investors)
+	services.DBCPsql.Raw(queryTotalData).Scan(&totalData)
 
 	services.DBCPsql.Raw(query).Scan(&investors)
 
@@ -116,12 +121,13 @@ func Verify(ctx *iris.Context) {
 
 			if cifSchema.Username != "" {
 				fmt.Println("Sending email..")
-				sendgrid := email.Sendgrid{}
-				sendgrid.SetFrom("Amartha", "no-reply@amartha.com")
-				sendgrid.SetTo(cifSchema.Name, cifSchema.Username)
-				sendgrid.SetSubject(cifSchema.Name + ", Verifikasi Data Anda Berhasil")
-				sendgrid.VerifiedBodyEmail("VERIFIED_DATA", cifSchema.Name, cifSchema.Username, vaData)
-				sendgrid.SendEmail()
+				go email.SendEmailVerificationSuccess(cifSchema.Username, cifSchema.Name, vaData["BCA"], vaData["BCA_HOLDER"], vaData["BRI"], vaData["BRI_HOLDER"])
+				// sendgrid := email.Sendgrid{}
+				// sendgrid.SetFrom("Amartha", "no-reply@amartha.com")
+				// sendgrid.SetTo(cifSchema.Name, cifSchema.Username)
+				// sendgrid.SetSubject(cifSchema.Name + ", Verifikasi Data Anda Berhasil")
+				// sendgrid.VerifiedBodyEmail("VERIFIED_DATA", cifSchema.Name, cifSchema.Username, vaData)
+				// sendgrid.SendEmail()
 			}
 
 			if cifSchema.PhoneNo != "" {
