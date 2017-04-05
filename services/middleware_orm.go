@@ -3,7 +3,6 @@ package services
 import (
 	"reflect"
 	"time"
-
 	"bitbucket.org/go-mis/config"
 	"gopkg.in/kataras/iris.v4"
 )
@@ -29,7 +28,6 @@ func GetById(model interface{}) func(ctx *iris.Context) {
 		if dbc:= DBCPsql.Where("\"deletedAt\" IS NULL AND id = ?", ctx.Param("id")).Find(m); dbc.Error != nil {
 			ctx.JSON(iris.StatusInternalServerError, iris.Map{"error": dbc.Error})
 			return
-
 		}
 		ctx.JSON(iris.StatusOK, iris.Map{"data": m})
 	}
