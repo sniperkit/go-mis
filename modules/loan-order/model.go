@@ -28,3 +28,14 @@ type LoanOrderCompact struct {
 	TotalPlafond float64 `gorm:"column:totalPlafond" json:"totalPlafond"`
 	Remark       string  `json:"remark"`
 }
+
+type LoanOrderDetail struct {
+	ID           uint64  `json:"_id"`
+	Username     string  `json:"username"`
+	Name         string  `json:"name"`
+	OrderNo      string  `gorm:"column:orderNo" json:"orderNo"`
+	LoanId       uint64  `gorm:"column:loanId" json:"loanId"`
+	TotalBalance float64 `gorm:"column:totalBalance" json:"totalBalance"`
+	Plafond 		 float64 `gorm:"column:plafond" json:"plafond"`
+	Remark       string  `json:"remark"`			
+}
