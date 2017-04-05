@@ -48,19 +48,30 @@ func FetchByType(ctx *iris.Context) {
 	branchID := ctx.Get("BRANCH_ID")
 	installments := []InstallmentFetch{}
 
-	query := "SELECT branch.\"name\" AS \"branch\", \"group\".\"id\" AS \"groupId\", \"group\".\"name\" AS \"group\", SUM(installment.\"paidInstallment\") AS \"totalPaidInstallment\", installment.\"createdAt\"::date "
-	query += "FROM installment "
-	query += "JOIN r_loan_installment ON r_loan_installment.\"installmentId\" = installment.\"id\" "
-	query += "JOIN loan ON loan.\"id\" = r_loan_installment.\"loanId\" "
-	query += "JOIN r_loan_branch ON r_loan_branch.\"loanId\" = loan.\"id\" "
-	query += "JOIN branch ON branch.\"id\" = r_loan_branch.\"branchId\"  "
-	query += "JOIN r_loan_group ON r_loan_group.\"loanId\" = loan.\"id\" "
-	query += "JOIN \"group\" ON \"group\".\"id\" = r_loan_group.\"groupId\" "
-	query += "WHERE installment.stage = ? AND branch.id = ?"
-	query += "GROUP BY installment.\"createdAt\"::date, branch.\"name\", \"group\".\"id\", \"group\".\"name\" "
-	query += "ORDER BY installment.\"createdAt\"::date DESC, branch.\"name\" ASC"
-
-	services.DBCPsql.Raw(query, installmentType, branchID).Find(&installments)
+	query:= `
+		SELECT 
+		branch."name" AS "branch",
+		"group"."id" AS "groupId",
+		"group"."name" AS "group",
+		SUM(installment."paidInstallment") AS "totalPaidInstallment",
+		SUM(installment.reserve) AS "totalReserve", 
+		installment."createdAt"::date
+		FROM installment
+		JOIN r_loan_installment ON r_loan_installment."installmentId" = installment."id"
+		JOIN loan ON loan."id" = r_loan_installment."loanId"
+		JOIN r_loan_branch ON r_loan_branch."loanId" = loan."id"
+		JOIN branch ON branch."id" = r_loan_branch."branchId" 
+		JOIN r_loan_group ON r_loan_group."loanId" = loan."id"
+		JOIN "group" ON "group"."id" = r_loan_group."groupId"
+		WHERE installment.stage = ? AND branch.id = ?
+		GROUP BY installment."createdAt"::date, branch."name", "group"."id", "group"."name"
+		ORDER BY installment."createdAt"::date DESC, branch."name" ASC
+	`
+	err := services.DBCPsql.Raw(query, installmentType, branchID).Find(&installments).Error;
+	if err != nil {
+		ctx.JSON(iris.StatusInternalServerError, iris.Map{"data": err})
+		return;
+	}
 	ctx.JSON(iris.StatusOK, iris.Map{"data": installments})
 }
 
@@ -160,7 +171,11 @@ func GetInstallmentByGroupIDAndTransactionDate(ctx *iris.Context) {
 	`
 
 	installmentDetailSchema := []InstallmentDetail{}
-	services.DBCPsql.Raw(query, transactionDate, groupID, branchID).Scan(&installmentDetailSchema)
+	err := services.DBCPsql.Raw(query, transactionDate, groupID, branchID).Scan(&installmentDetailSchema).Error
+	if err != nil {
+		ctx.JSON(iris.StatusInternalServerError, iris.Map{"data": err})
+		return;
+	}
 
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"status": "success",
