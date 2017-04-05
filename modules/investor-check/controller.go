@@ -24,7 +24,7 @@ func FetchDatatables(ctx *iris.Context) {
 	query := "SELECT cif.\"id\", cif.\"name\", cif.\"phoneNo\", cif.\"idCardNo\", \"bankAccountName\", "
 	query += "cif.\"taxCardNo\", cif.\"idCardFilename\", cif.\"taxCardFilename\", cif.\"idCardNo\", cif.\"isValidated\", "
 	query += "cif.\"taxCardNo\", array_to_string(array_agg(virtual_account.\"bankName\"),',') as \"virtualAccountBankName\", "
-	query += "array_to_string(array_agg(virtual_account.\"virtualAccountNo\"),',') as \"virtualAccountNumber\", investor.\"investorNo\" "
+	query += "array_to_string(array_agg(virtual_account.\"virtualAccountNo\"),',') as \"virtualAccountNumber\", investor.\"investorNo\", investor.\"createdAt\" "
 	query += "FROM investor "
 	query += "LEFT JOIN r_investor_virtual_account ON r_investor_virtual_account.\"investorId\" = investor.id "
 	query += "LEFT JOIN virtual_account ON virtual_account.id = r_investor_virtual_account.\"vaId\" "
@@ -50,7 +50,7 @@ func FetchDatatables(ctx *iris.Context) {
 
 	query += "group by cif.\"id\", cif.\"name\", cif.\"phoneNo\", cif.\"idCardNo\", \"bankAccountName\", cif.\"taxCardNo\", "
 	query += " cif.\"idCardNo\", cif.\"taxCardNo\", cif.\"idCardFilename\", cif.\"taxCardFilename\", cif.\"isValidated\", "
-	query += " investor.\"investorNo\""
+	query += " investor.\"investorNo\", investor.\"createdAt\" "
 
 	if ctx.URLParam("limit") != "" {
 		query += "LIMIT " + ctx.URLParam("limit") + " "
