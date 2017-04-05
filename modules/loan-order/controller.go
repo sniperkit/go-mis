@@ -38,7 +38,6 @@ group by c.username, c.name, i.id, acc."totalBalance", lo."orderNo", lo.remark`
 func FetchSingle(ctx *iris.Context) {
 	id, _ := strconv.Atoi(ctx.Param("id"))
 
-	
 	query := `select i.id, c.username, c.name, lo."orderNo", l.id "loanId", acc."totalBalance", l.plafond, lo.remark
 from investor i join r_account_investor rai on i.id = rai."investorId" join account acc on acc.id = rai."accountId"
 join r_cif_investor rci on i.id=rci."investorId" join cif c on c.id=rci."cifId"
@@ -46,7 +45,6 @@ join r_investor_product_pricing_loan rippl on i.id = rippl."investorId" join loa
 join r_loan_order rlo on l.id = rlo."loanId" join loan_order lo on lo.id = rlo."loanOrderId"
 where lo.remark = 'PENDING' and i.id = ?`
 
-	
 	loanOrderSchema := []LoanOrderDetail{}
 	e := services.DBCPsql.Raw(query, id).Scan(&loanOrderSchema).Error
 	if e != nil {
@@ -76,6 +74,9 @@ func AcceptLoanOrder(ctx *iris.Context) {
 	UpdateSuccess(orderNo)
 	UpdateCredit(loans, accountId)
 	UpdateAccount2(orderNo, accountId)
+	insertLoanHistory(orderNo)
+	insertRLoanHistory(orderNo)
+	updateLoanStageToInvestor(orderNo)
 
 }
 
@@ -156,6 +157,21 @@ where lo."orderNo"=?`
 
 	query = `update account set "totalCredit" = "totalCredit"+?, "totalBalance" = "totalBalance"-? where account.id = ?`
 	services.DBCPsql.Exec(query, r.Total, r.Total, accountId)
+}
+
+func insertLoanHistory(orderNo string) {
+	query := `INSERT INTO loan_history("stageFrom","stageTo","remark","createdAt","updatedAt") select  upper('CART'),upper('INVESTOR'),concat('loan id = ' ,l.id,' updated stage to INVESTOR ', ' orderNo=` + orderNo + `'),current_timestamp,current_timestamp from loan_order lo join r_loan_order rlo on rlo."loanOrderId" = lo.id join loan l on l.id = rlo."loanId" where lo."orderNo"=?`
+	services.DBCPsql.Exec(query, orderNo)
+}
+
+func insertRLoanHistory(orderNo string) {
+	query := `INSERT INTO r_loan_history("loanId","loanHistoryId","createdAt","updatedAt") select  (string_to_array(remark,' '))[4]::int as loanId,id as loanHistoryId,current_timestamp,current_timestamp from loan_history where remark like '%orderNo=` + orderNo + `'`
+	services.DBCPsql.Exec(query)
+}
+
+func updateLoanStageToInvestor(orderNo string) {
+	query := `update loan set stage ='INVESTOR' where id  IN (select l.id from loan_order lo join r_loan_order rlo on rlo."loanOrderId" = lo.id join loan l on l.id = rlo."loanId" where lo."orderNo"='` + orderNo + `')`
+	services.DBCPsql.Exec(query)
 }
 
 func FetchAllPendingWaiting(ctx *iris.Context) {
