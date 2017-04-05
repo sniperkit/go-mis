@@ -14,6 +14,7 @@ type InvestorCheck struct {
 	IsValidated            *bool      `gorm:"column:isValidated" json:"isValidated"`
 	VirtualAccountBankName string     `gorm:"column:virtualAccountBankName" json:"virtualAccountBankName"`
 	VirtualAccountNumber   string     `gorm:"column:virtualAccountNumber" json:"virtualAccountNumber"`
+	InvestorNo       			 uint64     `gorm:"column:investorNo" json:"investorNo"`
 	CreatedAt              time.Time  `gorm:"column:createdAt" json:"createdAt"`
 	UpdatedAt              time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
 	DeletedAt              *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
