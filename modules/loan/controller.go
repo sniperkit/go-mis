@@ -373,15 +373,15 @@ func GetAkadData(ctx *iris.Context) {
 	} else {
 		if submittedLoanTime.After(augustTime) {
 			switch {
-			case data.Plafond <= 3000000:
+			case data.Plafond <= 3000001:
 				reserve = 3000
-			case data.Plafond <= 5000000:
+			case data.Plafond <= 5000001:
 				reserve = 4000
-			case data.Plafond <= 7000000:
+			case data.Plafond <= 7000001:
 				reserve = 5000
-			case data.Plafond <= 9000000:
+			case data.Plafond <= 9000001:
 				reserve = 6000
-			case data.Plafond <= 11000000:
+			case data.Plafond <= 11000001:
 				reserve = 7000
 			default:
 				reserve = 8000
