@@ -5,7 +5,7 @@ import "time"
 type InvestorCheck struct {
 	ID                     uint64     `gorm:"primary_key" gorm:"column:id" json:"_id"`
 	Name                   string     `gorm:"column:name" json:"name"`
-	PhoneNo                string     `gorm:"column:name" json:"phoneNo"`
+	PhoneNo                string     `gorm:"column:phoneNo" json:"phoneNo"`
 	IDCardNo               string     `gorm:"column:idCardNo" json:"idCardNo"`
 	IDCardFilename         string     `gorm:"column:idCardFilename" json:"idCardFilename"`
 	TaxCardNo              string     `gorm:"column:taxCardNo" json:"taxCardNo"`
