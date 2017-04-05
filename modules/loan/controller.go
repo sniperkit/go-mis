@@ -222,6 +222,7 @@ func executeUpdateStage(id uint64, stage string) (string, error) {
 
 	if loanData.Stage == "PRIVATE" && stage == "MARKETPLACE" {
 		services.DBCPsql.Table("r_investor_product_pricing_loan").Where(" \"loanId\" = ?", loanData.ID).Update("investorId", nil)
+		services.DBCPsql.Table("r_investor_product_pricing_loan").Where(" \"loanId\" = ?", loanData.ID).Update("updatedAt", time.Now())
 	}
 
 	return loanData.Stage, nil
