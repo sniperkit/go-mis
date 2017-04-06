@@ -119,6 +119,9 @@ func SubmitInstallment(ctx *iris.Context) {
 	rAccountTransactionDebitData := r.RAccountTransactionDebit{AccountId: rAccountInvestor.AccountId, AccountTransactionDebitId: accountTransactionDebitData.ID}
 	go services.DBCPsql.Table("r_account_transaction_debit").Create(&rAccountTransactionDebitData)
 
+	rAccountTransactionDebitInstallmentData := r.RAccountTransactionDebitInstallment{InstallmentId: installment.ID, AccountTransactionDebitId: accountTransactionDebitData.ID}
+	go services.DBCPsql.Table("r_account_transaction_debit_installment").Create(&rAccountTransactionDebitInstallmentData)
+
 	loanInstallmentData := r.RLoanInstallment{LoanId: loanID, InstallmentId: installment.ID}
 	go services.DBCPsql.Table("r_loan_installment").Create(&loanInstallmentData)
 
@@ -303,6 +306,9 @@ func storeInstallment(installmentId uint64, status string) {
 
 	rAccountTransactionDebit := &r.RAccountTransactionDebit{AccountId: loanInvestorAccountIDSchema.AccountID, AccountTransactionDebitId: accountTransactionDebitSchema.ID}
 	services.DBCPsql.Table("r_account_transaction_debit").Create(rAccountTransactionDebit)
+
+	rAccountTransactionDebitInstallmentData := r.RAccountTransactionDebitInstallment{InstallmentId: installmentId, AccountTransactionDebitId: accountTransactionDebitSchema.ID}
+	services.DBCPsql.Table("r_account_transaction_debit_installment").Create(&rAccountTransactionDebitInstallmentData)
 
 	// querySumDebitAndCredit := "SELECT SUM(account_transaction_debit.\"amount\") as \"totalDebit\", SUM(account_transaction_credit.\"amount\")  as \"totalCredit\" "
 	// querySumDebitAndCredit += "FROM account "
