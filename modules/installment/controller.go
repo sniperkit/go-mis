@@ -404,3 +404,45 @@ func SubmitInstallmentByGroupIDAndTransactionDateWithStatus(ctx *iris.Context) {
 		})
 	}
 }
+
+//
+func SubmitInstallmentByGroupIDAndTransactionDateWithStatusAndInstallmentId(ctx *iris.Context) {
+	key := ctx.URLParam("ais")
+
+	if key == "" {
+		ctx.JSON(iris.StatusUnauthorized, iris.Map{
+			"status": "error",
+			"data": iris.Map{
+				"message": "Unauthorized access.",
+			},
+		})
+		return
+	}
+
+	query := "SELECT  "
+	query += "\"group\".\"id\" as \"groupId\", \"group\".\"name\" as \"groupName\", "
+	query += "installment.\"id\" as \"installmentId\", installment.\"type\", installment.\"paidInstallment\", installment.\"penalty\", installment.\"reserve\", installment.\"presence\", installment.\"frequency\", installment.\"stage\"  "
+	query += "FROM installment  "
+	query += "JOIN r_loan_installment ON r_loan_installment.\"installmentId\" = installment.\"id\"  "
+	query += "JOIN loan ON loan.\"id\" = r_loan_installment.\"loanId\"  "
+	query += "JOIN r_loan_branch ON r_loan_branch.\"loanId\" = loan.\"id\"  "
+	query += "JOIN branch ON branch.\"id\" = r_loan_branch.\"branchId\"   "
+	query += "JOIN r_loan_group ON r_loan_group.\"loanId\" = loan.\"id\"  "
+	query += "JOIN \"group\" ON \"group\".\"id\" = r_loan_group.\"groupId\"  "
+	query += "WHERE installment.id = 979763 AND installment.stage = 'APPROVE' "
+
+	installmentDetailSchema := []InstallmentDetail{}
+	services.DBCPsql.Raw(query).Scan(&installmentDetailSchema)
+
+	for _, item := range installmentDetailSchema {
+		// go storeInstallment(item.InstallmentID, status)
+		storeInstallment(item.InstallmentID, "SUCCESS")
+	}
+
+	ctx.JSON(iris.StatusOK, iris.Map{
+		"status": "success",
+		"data": iris.Map{
+			"message": "Your request has been received. It might need take a while to process your request.",
+		},
+	})
+}
