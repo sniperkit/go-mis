@@ -74,8 +74,7 @@ func AcceptLoanOrder(ctx *iris.Context) {
 	UpdateSuccess(orderNo)
 	UpdateCredit(loans, accountId)
 	UpdateAccount2(orderNo, accountId)
-	insertLoanHistory(orderNo)
-	insertRLoanHistory(orderNo)
+	insertLoanHistoryAndRLoanHistory(orderNo)
 	updateLoanStageToInvestor(orderNo)
 
 }
@@ -159,13 +158,10 @@ where lo."orderNo"=?`
 	services.DBCPsql.Exec(query, r.Total, r.Total, accountId)
 }
 
-func insertLoanHistory(orderNo string) {
-	query := `INSERT INTO loan_history("stageFrom","stageTo","remark","createdAt","updatedAt") select  upper('CART'),upper('INVESTOR'),concat('loan id = ' ,l.id,' updated stage to INVESTOR ', ' orderNo=` + orderNo + `'),current_timestamp,current_timestamp from loan_order lo join r_loan_order rlo on rlo."loanOrderId" = lo.id join loan l on l.id = rlo."loanId" where lo."orderNo"=?`
-	services.DBCPsql.Exec(query, orderNo)
-}
-
-func insertRLoanHistory(orderNo string) {
-	query := `INSERT INTO r_loan_history("loanId","loanHistoryId","createdAt","updatedAt") select  (string_to_array(remark,' '))[4]::int as loanId,id as loanHistoryId,current_timestamp,current_timestamp from loan_history where remark like '%orderNo=` + orderNo + `'`
+func insertLoanHistoryAndRLoanHistory(orderNo string) {
+	query := `with ins as (INSERT INTO loan_history("stageFrom","stageTo","remark","createdAt","updatedAt")
+	select  upper('CART'),upper('INVESTOR'),concat('loan id = ' ,l.id,' updated stage to INVESTOR ', ' orderNo=` + orderNo + `'),current_timestamp,current_timestamp from loan_order lo join r_loan_order rlo on rlo."loanOrderId" = lo.id join loan l on l.id = rlo."loanId" where lo."orderNo"='` + orderNo + `' returning id, (string_to_array(remark,' '))[4]::int as loanId)
+	INSERT INTO r_loan_history("loanId","loanHistoryId","createdAt","updatedAt") select  ins.loanId,ins.id ,current_timestamp,current_timestamp from ins`
 	services.DBCPsql.Exec(query)
 }
 
