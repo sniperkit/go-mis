@@ -22,6 +22,7 @@ type InstallmentFetch struct {
 	GroupID              uint64    `gorm:"column:groupId" json:"groupId"`
 	Group                string    `gorm:"column:group" json:"group"`
 	TotalPaidInstallment float64   `gorm:"column:totalPaidInstallment" json:"totalPaidInstallment"`
+	TotalReserve         float64   `gorm:"column:totalReserve" json:"totalReserve"`
 	CreatedAt            time.Time `gorm:"column:createdAt" json:"createdAt"`
 }
 
