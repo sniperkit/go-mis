@@ -48,7 +48,7 @@ func FetchByType(ctx *iris.Context) {
 	branchID := ctx.Get("BRANCH_ID")
 	installments := []InstallmentFetch{}
 
-	query:= `
+	query := `
 		SELECT 
 		branch."name" AS "branch",
 		"group"."id" AS "groupId",
@@ -67,10 +67,10 @@ func FetchByType(ctx *iris.Context) {
 		GROUP BY installment."createdAt"::date, branch."name", "group"."id", "group"."name"
 		ORDER BY installment."createdAt"::date DESC, branch."name" ASC
 	`
-	err := services.DBCPsql.Raw(query, installmentType, branchID).Find(&installments).Error;
+	err := services.DBCPsql.Raw(query, installmentType, branchID).Find(&installments).Error
 	if err != nil {
 		ctx.JSON(iris.StatusInternalServerError, iris.Map{"data": err})
-		return;
+		return
 	}
 	ctx.JSON(iris.StatusOK, iris.Map{"data": installments})
 }
@@ -177,7 +177,7 @@ func GetInstallmentByGroupIDAndTransactionDate(ctx *iris.Context) {
 	err := services.DBCPsql.Raw(query, transactionDate, groupID, branchID).Scan(&installmentDetailSchema).Error
 	if err != nil {
 		ctx.JSON(iris.StatusInternalServerError, iris.Map{"data": err})
-		return;
+		return
 	}
 
 	ctx.JSON(iris.StatusOK, iris.Map{
@@ -245,19 +245,19 @@ func storeInstallment(installmentId uint64, status string) {
 		// 	"status": "success",
 		// 	"data":   iris.Map{"message": "Installment data has been rejected."},
 		// })
-		UpdateStageInstallmentApproveOrReject(installmentId, status)
+		UpdateStageInstallmentApproveOrReject(installmentId, installmentSchema.Stage, status)
 		fmt.Println("Installment data has been rejected. installmentId=" + convertedInstallmentId)
 		return
 	}
 
 	if status == "IN-REVIEW" {
-		UpdateStageInstallmentApproveOrReject(installmentId, status)
+		UpdateStageInstallmentApproveOrReject(installmentId, installmentSchema.Stage, status)
 		fmt.Println("Installment data will be reviewed. installmentId=" + convertedInstallmentId)
 		return
 	}
 
 	if status == "APPROVE" {
-		UpdateStageInstallmentApproveOrReject(installmentId, status)
+		UpdateStageInstallmentApproveOrReject(installmentId, installmentSchema.Stage, status)
 		fmt.Println("Installment data has been approved. Waiting worker. installmentId=" + convertedInstallmentId)
 		return
 	}
@@ -266,7 +266,7 @@ func storeInstallment(installmentId uint64, status string) {
 	*		UPDATE STATUS TO `PROCESSING`, ONCE THE CALCULATION IS DONE, THEN UPDATE STATUS TO `SUCCESS`
 	 */
 
-	UpdateStageInstallmentApproveOrReject(installmentId, "PROCESSING")
+	UpdateStageInstallmentApproveOrReject(installmentId, installmentSchema.Stage, "PROCESSING")
 
 	/*
 	*		START CALCULATION PROCESS
@@ -336,7 +336,7 @@ func storeInstallment(installmentId uint64, status string) {
 	*		CALCULATION IS DONE, UPDATE INSTALLMENT STATUS FROM `PROCESSING` TO `APPROVE`
 	 */
 
-	UpdateStageInstallmentApproveOrReject(installmentId, status)
+	UpdateStageInstallmentApproveOrReject(installmentId, "PROCESSING", status)
 	// ctx.JSON(iris.StatusOK, iris.Map{
 	// 	"status": "success",
 	// 	"data": iris.Map{
@@ -346,11 +346,11 @@ func storeInstallment(installmentId uint64, status string) {
 }
 
 // UpdateStageInstallmentApproveOrReject - Update installment stage
-func UpdateStageInstallmentApproveOrReject(installmentId uint64, status string) {
+func UpdateStageInstallmentApproveOrReject(installmentId uint64, stageFrom string, status string) {
 	convertedInstallmentID := strconv.FormatUint(installmentId, 10)
 	fmt.Println("Updating status to " + status + ". installmentId=" + convertedInstallmentID)
 
-	installmentHistorySchema := &installmentHistory.InstallmentHistory{StageFrom: "PENDING", StageTo: status}
+	installmentHistorySchema := &installmentHistory.InstallmentHistory{StageFrom: stageFrom, StageTo: status}
 	services.DBCPsql.Table("installment_history").Create(installmentHistorySchema)
 
 	installmentHistoryID := installmentHistorySchema.ID
