@@ -14,6 +14,7 @@ import (
 	"bitbucket.org/go-mis/modules/r"
 	"bitbucket.org/go-mis/services"
 	iris "gopkg.in/kataras/iris.v4"
+	"github.com/jinzhu/gorm"
 )
 
 func Init() {
@@ -34,111 +35,134 @@ func Approve(ctx *iris.Context) {
 		return
 	}
 
-	ktp := payload["client_ktp"].(string)
 	groupID, _ := strconv.ParseUint(payload["groupId"].(string), 10, 64)
 	sectorID, _ := strconv.ParseUint(payload["data_sector"].(string), 10, 64)
-
-	// tanggungan, errTanggungan := json.Marshal(payload["tanggungan"])
-	// if errTanggungan != nil {
-	// 	fmt.Println(errTanggungan)
-	// }
-
-	// payload["tanggungan"] = tanggungan
 
 	dataRaw, err := json.Marshal(payload)
 	if err != nil {
 		fmt.Println(err)
 	}
 
-	// get CIF with with idCardNo = ktp
-	cifData := cif.Cif{}
-	if ktp != "" {
-		services.DBCPsql.Table("cif").Where("\"idCardNo\" = ?", ktp).Scan(&cifData)
 
-		if cifData.IdCardNo != "" {
-			// found. use existing cif
-			// get borrower id
-			borrower := r.RCifBorrower{}
-			services.DBCPsql.Table("r_cif_borrower").Where("\"cifId\" =?", cifData.ID).Scan(&borrower)
-
-			// reserve one loan record for this new borrower
-			loan := CreateLoan(payload)
-			services.DBCPsql.Table("loan").Create(&loan)
-
-			services.DBCPsql.Table("loan_raw").Create(&loanRaw.LoanRaw{Raw: dataRaw, LoanID: loan.ID})
-
-			services.DBCPsql.Table("r_loan_sector").Create(&r.RLoanSector{LoanId: loan.ID, SectorId: sectorID})
-
-			rLoanBorrower := r.RLoanBorrower{
-				LoanId:     loan.ID,
-				BorrowerId: borrower.BorrowerId,
-			}
-			services.DBCPsql.Table("r_loan_borrower").Create(&rLoanBorrower)
-
-			// which loan pricing would we like to use?
-			// get the newest one
-			UseProductPricing(0, loan.ID)
-			go CreateRelationLoanToGroup(loan.ID, groupID)
-			go CreateRelationLoanToBranch(loan.ID, groupID)
-			go CreateDisbursementRecord(loan.ID, payload["disbursementDate"].(string))
-		} else {
-			// not found. create new CIF
-			cifData = CreateCIF(payload)
-			services.DBCPsql.Table("cif").Create(&cifData)
-
-			// reserve one row for this new borrower
-			newBorrower := &Borrower{Village: payload["client_desa"].(string)}
-			services.DBCPsql.Table("borrower").Create(newBorrower)
-
-			rCifBorrower := r.RCifBorrower{
-				CifId:      cifData.ID,
-				BorrowerId: newBorrower.ID,
-			}
-			services.DBCPsql.Table("r_cif_borrower").Create(&rCifBorrower)
-
-			// reserve one loan record for this new borrower
-			loan := CreateLoan(payload)
-			services.DBCPsql.Table("loan").Create(&loan)
-
-			services.DBCPsql.Table("loan_raw").Create(&loanRaw.LoanRaw{Raw: dataRaw, LoanID: loan.ID})
-
-			services.DBCPsql.Table("r_loan_sector").Create(&r.RLoanSector{LoanId: loan.ID, SectorId: sectorID})
-
-			rLoanBorrower := r.RLoanBorrower{
-				LoanId:     loan.ID,
-				BorrowerId: newBorrower.ID,
-			}
-			services.DBCPsql.Table("r_loan_borrower").Create(&rLoanBorrower)
-
-			// which loan pricing would we like to use?
-			// get the newest one
-			UseProductPricing(0, loan.ID)
-			go CreateRelationLoanToGroup(loan.ID, groupID)
-			go CreateRelationLoanToBranch(loan.ID, groupID)
-			go CreateDisbursementRecord(loan.ID, payload["disbursementDate"].(string))
-		}
-
-	} else {
-		ctx.JSON(iris.StatusBadRequest, iris.Map{
-			"status":  "error",
-			"message": "Parameter is NOT valid.",
-		})
+	db := services.DBCPsql.Begin()
+	borrowerId, err := GetOrCreateBorrowerId(payload, db);
+	if err != nil {
+		processErrorAndRollback(ctx, db, "Error Create Borrower " + err.Error())
+		return 
 	}
 
+
+	// reserve one loan record for this new borrower
+	loan := CreateLoan(payload)
+	if db.Table("loan").Create(&loan).Error != nil {
+		processErrorAndRollback(ctx, db, "Error Create Loan")
+		return
+	}
+
+
+	if db.Table("loan_raw").Create(&loanRaw.LoanRaw{Raw: dataRaw, LoanID: loan.ID}).Error != nil {
+		processErrorAndRollback(ctx, db, "Error Create Loan Raw")
+		return
+	}
+
+	if db.Table("r_loan_sector").Create(&r.RLoanSector{LoanId: loan.ID, SectorId: sectorID}).Error != nil {
+		processErrorAndRollback(ctx, db, "Error Create Loan Sector Relation")
+		return
+	}
+
+	rLoanBorrower := r.RLoanBorrower{
+		LoanId:     loan.ID,
+		BorrowerId: borrowerId,
+	}
+	if db.Table("r_loan_borrower").Create(&rLoanBorrower).Error != nil {
+		processErrorAndRollback(ctx, db, "Error Create Loan Borrower Relation")
+		return
+	}
+
+	if UseProductPricing(0, loan.ID, db) != nil {
+		processErrorAndRollback(ctx, db, "Error Use Product Pricing")
+		return
+	}
+
+	if CreateRelationLoanToGroup(loan.ID, groupID, db) != nil {
+		processErrorAndRollback(ctx, db, "Error Create Relation to Group")
+		return
+	}
+
+
+	if CreateRelationLoanToBranch(loan.ID, groupID, db) != nil {
+		processErrorAndRollback(ctx, db, "Error Create Relation to Branch")
+		return
+	}
+
+	if CreateDisbursementRecord(loan.ID, payload["disbursementDate"].(string), db) != nil {
+		processErrorAndRollback(ctx, db, "Error Create Disbusrement")
+		return
+	}
+
+	db.Commit()
+}
+
+func GetOrCreateBorrowerId(payload map[string]interface{}, db *gorm.DB) (uint64, error) {
+	cifData := cif.Cif{}
+	ktp := payload["client_ktp"].(string)
+	db.Table("cif").Where("\"idCardNo\" = ?", ktp).Scan(&cifData)
+
+	if cifData.IdCardNo != "" {
+		// get
+		borrower := r.RCifBorrower{}
+		err := db.Table("r_cif_borrower").Where("\"cifId\" =?", cifData.ID).Scan(&borrower).Error
+		if err != nil {
+			return 0, err;
+		}
+		return borrower.BorrowerId, nil
+	} else {
+		// create
+
+		// create the CIF
+		cifData = CreateCIF(payload)
+		err := db.Table("cif").Create(&cifData).Error
+		if err != nil {
+			return 0, err;
+		}
+
+		// create the Borrower
+		newBorrower := &Borrower{Village: payload["client_desa"].(string)}
+		err = db.Table("borrower").Create(newBorrower).Error
+		if err != nil {
+			return 0, err;
+		}
+
+		// create the relation between Borrower and Cif
+		rCifBorrower := r.RCifBorrower{
+			CifId:      cifData.ID,
+			BorrowerId: newBorrower.ID,
+		}
+		err = db.Table("r_cif_borrower").Create(&rCifBorrower).Error
+		if err != nil {
+			return 0, err
+		}
+		return newBorrower.ID, nil
+	}
 }
 
 // UseProductPricing - select product pricing based on current date
-func UseProductPricing(investorId uint64, loanId uint64) {
+func UseProductPricing(investorId uint64, loanId uint64, db *gorm.DB) error {
 	pPricing := productPricing.ProductPricing{}
 	currentDate := time.Now().Local()
-	services.DBCPsql.Table("product_pricing").Where("? between \"startDate\" and \"endDate\"", currentDate).Scan(&pPricing)
+	if err := db.Table("product_pricing").Where("? between \"startDate\" and \"endDate\"", currentDate).Scan(&pPricing).Error; err != nil {
+		return err
+	}
 
 	rInvProdPriceLoan := r.RInvestorProductPricingLoan{
 		InvestorId:       investorId,
 		ProductPricingId: pPricing.ID,
 		LoanId:           loanId,
 	}
-	services.DBCPsql.Table("r_investor_product_pricing_loan").Create(&rInvProdPriceLoan)
+	if err := db.Table("r_investor_product_pricing_loan").Create(&rInvProdPriceLoan).Error; err != nil {
+		return err
+	}
+	return nil
 }
 
 // CreateCIF - create CIF object
@@ -207,27 +231,41 @@ func CreateLoan(payload map[string]interface{}) loan.Loan {
 }
 
 // CreateRelationLoanToGroup - Create relation loan to group
-func CreateRelationLoanToGroup(loanID uint64, groupID uint64) {
+func CreateRelationLoanToGroup(loanID uint64, groupID uint64, db *gorm.DB) error {
 	rLoanGroupSchema := &r.RLoanGroup{LoanId: loanID, GroupId: groupID}
-	services.DBCPsql.Table("r_loan_group").Create(&rLoanGroupSchema)
+	if err := db.Table("r_loan_group").Create(&rLoanGroupSchema).Error; err != nil {
+		return err
+	}
+	return nil
 }
 
 // CreateRelationLoanToBranch - create relation loan to branch
-func CreateRelationLoanToBranch(loanID uint64, groupID uint64) {
+func CreateRelationLoanToBranch(loanID uint64, groupID uint64, db *gorm.DB) error {
 	rGroupBranch := r.RGroupBranch{}
-	services.DBCPsql.Table("r_group_branch").Where("\"groupId\" = ?", groupID).First(&rGroupBranch)
+
+	if err := db.Table("r_group_branch").Where("\"groupId\" = ?", groupID).First(&rGroupBranch).Error; err != nil {
+		return err
+	}
 
 	rLoanBranch := &r.RLoanBranch{LoanId: loanID, BranchId: rGroupBranch.BranchId}
-	services.DBCPsql.Table("r_loan_branch").Create(&rLoanBranch)
+	if err := db.Table("r_loan_branch").Create(&rLoanBranch).Error; err != nil {
+		return err
+	}
+	return nil
 }
 
 // CreateDisbursementRecord - Create a new disbursement record
-func CreateDisbursementRecord(loanID uint64, disbursementDate string) {
+func CreateDisbursementRecord(loanID uint64, disbursementDate string, db *gorm.DB) error {
 	disbursementSchema := &disbursement.Disbursement{DisbursementDate: disbursementDate, Stage: "PENDING"}
-	services.DBCPsql.Table("disbursement").Create(&disbursementSchema)
+	if err := db.Table("disbursement").Create(&disbursementSchema).Error; err != nil {
+		return err
+	}
 
 	rLoanDisbursementSchema := &r.RLoanDisbursement{LoanId: loanID, DisbursementId: disbursementSchema.ID}
-	services.DBCPsql.Table("r_loan_disbursement").Create(&rLoanDisbursementSchema)
+	if err := db.Table("r_loan_disbursement").Create(&rLoanDisbursementSchema).Error; err != nil {
+		return err
+	}
+	return nil
 }
 
 // ProspectiveBorrowerUpdateStatus - update status
@@ -274,4 +312,12 @@ func GetTotalBorrowerByBranchID(ctx *iris.Context) {
 		"status": "success",
 		"data":   countSchema.Total,
 	})
+}
+
+func processErrorAndRollback(ctx *iris.Context, db *gorm.DB, message string) {
+	db.Rollback()
+	ctx.JSON(iris.StatusInternalServerError, iris.Map{
+		"status" : "error",
+		"message" : message,
+	});
 }
