@@ -101,7 +101,7 @@ func Approve(ctx *iris.Context) {
 	}
 
 	db.Commit()
-	ctx.JSON(iris.StatusOk, iris.Map{
+	ctx.JSON(iris.StatusOK, iris.Map{
 		"status" : "success",
 		"message" : "Loan " + string(loan.ID) + " is Created",
 	});
