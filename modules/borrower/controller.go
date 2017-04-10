@@ -101,6 +101,10 @@ func Approve(ctx *iris.Context) {
 	}
 
 	db.Commit()
+	ctx.JSON(iris.StatusOk, iris.Map{
+		"status" : "success",
+		"message" : "Loan " + string(loan.ID) + " is Created",
+	});
 }
 
 func GetOrCreateBorrowerId(payload map[string]interface{}, db *gorm.DB) (uint64, error) {
