@@ -537,7 +537,7 @@ func AssignInvestorToLoan(ctx *iris.Context) {
 	loanSchema := Loan{}
 	services.DBCPsql.Table("loan").Where("\"id\" = ?", loanID).Scan(&loanSchema)
 
-	loanHistorySchema := &loanHistory.LoanHistory{StageFrom: loanSchema.Stage, StageTo: "INVESTOR", Remark: "MANUAL ASSIGN"}
+	loanHistorySchema := &loanHistory.LoanHistory{StageFrom: loanSchema.Stage, StageTo: "INVESTOR", Remark: "MANUAL ASSIGN loanId=" + fmt.Sprintf("%v", loanSchema.ID) + " investorId=" + fmt.Sprintf("%v", rCifInvestorSchema.InvestorId)}
 	services.DBCPsql.Table("loan_history").Create(loanHistorySchema)
 
 	rLoanHistorySchema := &r.RLoanHistory{LoanId: loanSchema.ID, LoanHistoryId: loanHistorySchema.ID}
