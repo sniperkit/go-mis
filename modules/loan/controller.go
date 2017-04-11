@@ -225,6 +225,12 @@ func executeUpdateStage(id uint64, stage string) (string, error) {
 		services.DBCPsql.Table("r_investor_product_pricing_loan").Where(" \"loanId\" = ?", loanData.ID).Update("updatedAt", time.Now())
 	}
 
+	if loanData.Stage == "ARCHIVE" {
+		services.DBCPsql.Table("r_investor_product_pricing_loan").Where(" \"loanId\" = ?", loanData.ID).Update("investorId", nil)
+		services.DBCPsql.Table("r_investor_product_pricing_loan").Where(" \"loanId\" = ?", loanData.ID).Update("updatedAt", time.Now())
+		services.DBCPsql.Table("r_investor_product_pricing_loan").Where(" \"loanId\" = ?", loanData.ID).Update("deletedAt", time.Now())
+	}
+
 	return loanData.Stage, nil
 }
 
