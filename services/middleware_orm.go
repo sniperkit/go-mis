@@ -33,6 +33,7 @@ func GetById(model interface{}) func(ctx *iris.Context) {
 	}
 }
 
+
 // GET /:domain/q
 func GetByQuery(model interface{}) func(ctx *iris.Context) {
 	return func(ctx *iris.Context) {
@@ -48,6 +49,25 @@ func GetByQuery(model interface{}) func(ctx *iris.Context) {
 		}
 
 		con.Where("\"deletedAt\" IS NULL").Order("id asc").Find(m)
+
+		ctx.JSON(iris.StatusOK, iris.Map{"data": m})
+	}
+}
+
+// count object
+func GetSingle(model interface{})  func(ctx *iris.Context) {
+	return func(ctx *iris.Context) {
+		m := reflect.New(reflect.TypeOf((model.(*Container)).ArrayObj)).Interface()
+		con := DBCPsql
+		for key, val := range ctx.URLParams() {
+			if key != "apiKey" && key != "q" && ctx.URLParam("q") == "like" {
+				con = con.Where("\""+key+"\" LIKE ?", val)
+			} else if key != "apiKey" && key != "q" && ctx.URLParam("q") == "equal" {
+				con = con.Where("\""+key+"\" = ?", val)
+			}
+		}
+
+		con.Where("\"deletedAt\" IS NULL").Order("id asc limit 1").Find(m)
 
 		ctx.JSON(iris.StatusOK, iris.Map{"data": m})
 	}
@@ -157,5 +177,6 @@ func BaseCrudInitWithDomain(domain string, singleObj interface{}, arrayObj inter
 		crudParty.Post("", CheckAuthForm, Post(model))
 		crudParty.Any("/set/:id", CheckAuth, Put(model))
 		crudParty.Any("/delete/:id", CheckAuth, DeleteById(model))
+		crudParty.Any("/single", CheckAuth, GetSingle(model))
 	}
 }
