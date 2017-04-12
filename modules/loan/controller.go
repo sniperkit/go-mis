@@ -91,7 +91,7 @@ func FetchAll(ctx *iris.Context) {
 	// query += "LEFT JOIN disbursement ON disbursement.\"id\" = r_loan_disbursement.\"disbursementId\" "
 	// query += "WHERE branch.id = ? AND loan.\"deletedAt\" IS NULL AND loan.\"stage\" NOT IN ('END', 'END-EARLY') "
 
-	query := "SELECT cif.name AS \"borrower\", \"group\".\"name\" AS \"group\", loan.\"submittedLoanDate\", disbursement.\"disbursementDate\", loan.plafond, loan.tenor, loan.rate, loan.stage, loan.id FROM loan "
+	query := "SELECT loan.id as \"loanId\", cif.name AS \"borrower\", \"group\".\"name\" AS \"group\", loan.\"submittedLoanDate\", disbursement.\"disbursementDate\", loan.plafond, loan.tenor, loan.rate, loan.stage, loan.id FROM loan "
 	query += "JOIN r_loan_group ON r_loan_group.\"loanId\" = loan.id "
 	query += "JOIN r_loan_branch ON r_loan_branch.\"loanId\" = loan.id "
 	query += "JOIN r_loan_borrower ON r_loan_borrower.\"loanId\" = loan.id "
@@ -103,7 +103,11 @@ func FetchAll(ctx *iris.Context) {
 	query += "WHERE r_loan_branch.\"branchId\" = ? "
 
 	if ctx.URLParam("search") != "" {
-		query += "AND cif.\"name\" ~* '" + ctx.URLParam("search") + "' "
+		if _, err := strconv.Atoi(ctx.URLParam("search")); err == nil {
+			query += "AND cast(loan.id as text) like '%" + ctx.URLParam("search") + "%' "
+		} else {
+			query += "AND cif.\"name\" ~* '" + ctx.URLParam("search") + "' "
+		}
 	}
 
 	if ctx.URLParam("limit") != "" {
