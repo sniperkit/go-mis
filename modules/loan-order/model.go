@@ -39,3 +39,8 @@ type LoanOrderDetail struct {
 	Plafond 		 float64 `gorm:"column:plafond" json:"plafond"`
 	Remark       string  `json:"remark"`			
 }
+
+type InvestorSearch struct {
+	ID                uint64  `gorm:"primary_key" gorm:"column:_id" json:"_id"`
+	Investor					uint64  `gorm:"column:loanId" json:"loanId"`
+}
