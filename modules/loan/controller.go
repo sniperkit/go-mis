@@ -369,9 +369,9 @@ func GetAkadData(ctx *iris.Context) {
 	weeklyFeeBorrower := Round(data.Rate*data.Plafond*data.AdminitrationFee/floatTenor, 2)
 	weeklyFeeInvestor := Round(data.Rate*data.Plafond*data.ServiceFee/floatTenor, 2)
 
-	noReserveTime, _ := time.Parse("2006-01-02", "2017-03-13")
+	noReserveTime, _ := time.Parse("2006-01-02", "2017-04-03")
 	augustTime, _ := time.Parse("2006-01-02", "2016-08-29")
-	submittedLoanTime, _ := time.Parse("2006-01-02", data.SubmittedLoanDate)
+	submittedLoanTime, _ := time.Parse("2006-01-02T15:04:05-07:00", data.SubmittedLoanDate)
 
 	var reserve uint64
 	if submittedLoanTime.After(noReserveTime) {
@@ -379,15 +379,15 @@ func GetAkadData(ctx *iris.Context) {
 	} else {
 		if submittedLoanTime.After(augustTime) {
 			switch {
-			case data.Plafond <= 3000001:
+			case data.Plafond <= 3000100:
 				reserve = 3000
-			case data.Plafond <= 5000001:
+			case data.Plafond <= 5000100:
 				reserve = 4000
-			case data.Plafond <= 7000001:
+			case data.Plafond <= 7000100:
 				reserve = 5000
-			case data.Plafond <= 9000001:
+			case data.Plafond <= 9000100:
 				reserve = 6000
-			case data.Plafond <= 11000001:
+			case data.Plafond <= 11000100:
 				reserve = 7000
 			default:
 				reserve = 8000
@@ -402,7 +402,7 @@ func GetAkadData(ctx *iris.Context) {
 				reserve = 4000
 			case data.Plafond < 4500001:
 				reserve = 5000
-			case data.Plafond < 500001:
+			case data.Plafond < 5000001:
 				reserve = 6000
 			default:
 				reserve = 7000
