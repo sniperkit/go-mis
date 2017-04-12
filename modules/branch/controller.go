@@ -2,6 +2,9 @@ package branch
 
 import (
 	"bitbucket.org/go-mis/services"
+	"bitbucket.org/go-mis/modules/r"
+	"time"
+
 	iris "gopkg.in/kataras/iris.v4"
 )
 
@@ -91,4 +94,16 @@ func GetByID(ctx *iris.Context) {
 	} else {
 		ctx.JSON(iris.StatusOK, iris.Map{"data": bracnh})
 	}
+}
+
+func DeleteSingle(ctx *iris.Context) {
+	// delete the branch first
+	branch := Branch{}
+	services.DBCPsql.Model(branch).Where("\"deletedAt\" IS NULL AND id = ?", ctx.Param("id")).UpdateColumn("deletedAt", time.Now())
+
+	// delete relation from the branch to users
+	rBranchUserMis := []r.RBranchUserMis{}
+	services.DBCPsql.Model(rBranchUserMis).Where("\"deletedAt\" IS NULL AND \"branchId\" = ?", ctx.Param("id")).UpdateColumn("deletedAt", time.Now())
+
+	ctx.JSON(iris.StatusOK, iris.Map{"data": branch})
 }
