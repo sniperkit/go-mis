@@ -25,6 +25,7 @@ import (
 	"bitbucket.org/go-mis/modules/user-mis"
 	"bitbucket.org/go-mis/modules/virtual-account-statement"
 	"bitbucket.org/go-mis/modules/voucher"
+	"bitbucket.org/go-mis/modules/product-pricing"
 	"gopkg.in/iris-contrib/middleware.v4/cors"
 	"gopkg.in/kataras/iris.v4"
 )
@@ -56,6 +57,7 @@ func InitCustomApi() {
 		v2.Any("/me-user-mis", auth.CurrentUserMis)
 		// v2.Any("/me-agent", auth.CurrentAgent)
 		v2.Any("/branch", branch.FetchAll)
+		v2.Any("/branch/delete/:id", branch.DeleteSingle)
 		v2.Any("/branch/:id", branch.GetByID)
 		v2.Any("/area", area.FetchAll)
 		v2.Any("/area/:id", area.GetByID)
@@ -112,6 +114,7 @@ func InitCustomApi() {
 		v2.Any("/loan-order/reject/:orderNo", loanOrder.RejectLoanOrder)
 		v2.Any("/cif-investor-account", cif.GetCifInvestorAccount)
 		v2.Any("/assign-investor-to-loan", loan.AssignInvestorToLoan)
+		v2.Any("/product-pricing/s/investor/:searchStr", productPricing.SearchInvestor)
 	}
 
 	iris.Get(baseURL+"/investor-without-va", investor.InvestorWithoutVA)

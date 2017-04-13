@@ -414,6 +414,15 @@ type RInvestorProductPricingLoan struct {
 	DeletedAt        *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
 }
 
+type RInvestorProductPricing struct {
+	ID               uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
+	InvestorId       uint64     `gorm:"column:investorId" json:"investorId"`
+	ProductPricingId uint64     `gorm:"column:productPricingId" json:"productPricingId"`
+	CreatedAt        time.Time  `gorm:"column:createdAt" json:"createdAt"`
+	UpdatedAt        time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
+	DeletedAt        *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
+}
+
 // Relation `loan` to `loan-order`
 type RLoanOrder struct {
 	ID          uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
