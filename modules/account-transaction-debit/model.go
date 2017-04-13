@@ -17,6 +17,15 @@ type AccountTransactionDebit struct {
 	DeletedAt       *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
 }
 
+type AccountTransactionDebitLoan struct {
+	ID                        uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
+	AccountTransactionDebitID uint64     `gorm:"column:accountTransactionDebitId" json:"accountTransactionDebitId"`
+	LoanID                    uint64     `gorm:"column:loanId" json:"loanId"`
+	CreatedAt                 time.Time  `gorm:"column:createdAt" json:"createdAt"`
+	UpdatedAt                 time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
+	DeletedAt                 *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
+}
+
 type Total struct {
 	Amount float64 `gorm:"column:amount"`
 }
