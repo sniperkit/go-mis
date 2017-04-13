@@ -18,9 +18,9 @@ func SearchInvestor(ctx *iris.Context) {
 	from investor
 	join r_cif_investor on r_cif_investor."investorId" = investor.id
 	join cif on r_cif_investor."cifId" = cif.id
-	where cif.name like ? and investor."isInstitutional" = true`
+	where cif.name ~* ? and investor."isInstitutional" = true`
 
-	services.DBCPsql.Raw(query, "%"+searchStr+"%").Scan(&sInv)
+	services.DBCPsql.Raw(query, searchStr).Scan(&sInv)
 
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"status": "success",
