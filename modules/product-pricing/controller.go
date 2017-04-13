@@ -33,17 +33,17 @@ func SearchInvestor(ctx *iris.Context) {
 	})
 }
 
-func GetInvestorsByProuctPricing (ctx *iris.Context) {
+func GetInvestorsByProductPricing (ctx *iris.Context) {
 	ppId := ctx.Param("id")
-	sInv := []InvestorSearch{}
+	sInv := []InvestorSearchByProductPricing{}
 
-	query := `select investor.id, cif.name
+	query := `select investor.id, cif.name, ripp.id as "rippId"
 	from product_pricing
 	join r_investor_product_pricing ripp on ripp."productPricingId" = product_pricing.id
 	join investor on investor.id = ripp."investorId"
 	join r_cif_investor rci on rci."investorId" = investor.id
 	join cif on rci."cifId" = cif.id
-	where ripp."productPricingId" = ?`
+	where ripp."productPricingId" = ? and ripp."deletedAt" is null`
 
 	services.DBCPsql.Raw(query, ppId).Scan(&sInv)
 
