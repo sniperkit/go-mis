@@ -15,7 +15,7 @@ func FetchAll(ctx *iris.Context) {
 
 	query := "SELECT \"ID\", \"amount\", \"voucherNo\", \"description\", \"startDate\", \"endDate\", \"isPersonal\" "
 	query += "FROM voucher "
-	
+
 	if e := services.DBCPsql.Raw(query).Find(&voucher).Error; e != nil {
 		ctx.JSON(iris.StatusOK, iris.Map{
 			"status": "failed",
@@ -27,4 +27,11 @@ func FetchAll(ctx *iris.Context) {
 		"status": "success",
 		"data":   voucher,
 	})
+}
+
+func ChekVoucherByOrderNo(orderNo string) Voucher {
+	voucher := Voucher{}
+	query := `select v.* from r_loan_order_voucher as rlov join voucher as v on rlov."voucherId" = v."id" join loan_order as lo on rlov."loanOrderId" = lo."id" where lo."orderNo"=?`
+	services.DBCPsql.Raw(query).First(&voucher)
+	return voucher
 }

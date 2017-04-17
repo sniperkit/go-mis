@@ -3,7 +3,11 @@ package loanOrder
 import (
 	"fmt"
 	"strconv"
+	"time"
 
+	accountTransactionDebit "bitbucket.org/go-mis/modules/account-transaction-debit"
+	"bitbucket.org/go-mis/modules/r"
+	"bitbucket.org/go-mis/modules/voucher"
 	"bitbucket.org/go-mis/services"
 	"gopkg.in/kataras/iris.v4"
 )
@@ -221,4 +225,17 @@ func RejectLoanOrder(ctx *iris.Context) {
 		"status": "success",
 		"data":   iris.Map{},
 	})
+}
+
+func checkVoucherAndInsertToDebit(accountID uint64, orderNo string) {
+	voucher_data := voucher.ChekVoucherByOrderNo(orderNo)
+	if voucher_data != (voucher.Voucher{}) {
+		accountTRDebit := accountTransactionDebit.AccountTransactionDebit{Type: "VOUCHER", Amount: voucher_data.Amount, TransactionDate: time.Now()}
+		services.DBCPsql.Table("account_transaction_debit").Create(&accountTRDebit)
+
+		r_accountTRDebit := r.RAccountTransactionDebit{AccountId: accountID, AccountTransactionDebitId: accountTRDebit.ID}
+		services.DBCPsql.Table("r_account_transaction_debit").Create(&r_accountTRDebit)
+
+	}
+
 }
