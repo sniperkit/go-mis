@@ -107,7 +107,7 @@ func FetchAll(ctx *iris.Context) {
 		query += "AND (cif.\"name\" ~* '" + ctx.URLParam("search") + "' "
 		query += "OR \"group\".\"name\" ~* '" + ctx.URLParam("search") + "' "
 		query += "OR loan.stage ~* '" + ctx.URLParam("search") + "' "
-		
+
 		if _, err := strconv.Atoi(ctx.URLParam("search")); err == nil {
 			query += "OR cast(loan.id as text) like '" + ctx.URLParam("search") + "' "
 			query += "OR cast(borrower.\"borrowerNo\" as text) ~* '" + ctx.URLParam("search") + "')"
@@ -238,7 +238,7 @@ func executeUpdateStage(id uint64, stage string) (string, error) {
 	if loanData.Stage == "ARCHIVE" {
 		services.DBCPsql.Table("r_investor_product_pricing_loan").Where(" \"loanId\" = ?", loanData.ID).Update("investorId", nil)
 		services.DBCPsql.Table("r_investor_product_pricing_loan").Where(" \"loanId\" = ?", loanData.ID).Update("updatedAt", time.Now())
-		services.DBCPsql.Table("r_investor_product_pricing_loan").Where(" \"loanId\" = ?", loanData.ID).Update("deletedAt", time.Now())
+		// services.DBCPsql.Table("r_investor_product_pricing_loan").Where(" \"loanId\" = ?", loanData.ID).Update("deletedAt", time.Now())
 	}
 
 	return loanData.Stage, nil
@@ -446,15 +446,6 @@ func RefundAndChangeStageTo(ctx *iris.Context) {
 	loanID, _ := strconv.ParseUint(ctx.Param("loan_id"), 10, 64)
 	stage := ctx.Param("stage")
 
-	loanStage, err := executeUpdateStage(loanID, stage)
-	if err != nil {
-		ctx.JSON(iris.StatusInternalServerError, iris.Map{
-			"status":  "error",
-			"message": "Can't find any loan detail.",
-		})
-		return
-	}
-
 	// get loan_id, investor_id, account_id, plafond
 	refundBase := RefundBase{}
 	// ref: refund-base.sql
@@ -475,6 +466,13 @@ func RefundAndChangeStageTo(ctx *iris.Context) {
 		Remark:          "",
 	}
 	services.DBCPsql.Table("account_transaction_debit").Create(&transaction)
+
+	// add new account_transaction_debit_loan entry
+	transactionLoan := accountTransactionDebit.AccountTransactionDebitLoan{
+		AccountTransactionDebitID: transaction.ID,
+		LoanID: refundBase.LoanID,
+	}
+	services.DBCPsql.Table("r_account_transaction_debit_loan").Create(&transactionLoan)
 
 	// connect the entry to investor account
 	rTransaction := r.RAccountTransactionDebit{
@@ -501,6 +499,15 @@ func RefundAndChangeStageTo(ctx *iris.Context) {
 	totalBalance := debit.Sum - credit.Sum
 
 	services.DBCPsql.Table("account").Where("id = ?", refundBase.AccountID).Updates(account.Account{TotalDebit: debit.Sum, TotalCredit: credit.Sum, TotalBalance: totalBalance})
+
+	loanStage, err := executeUpdateStage(loanID, stage)
+	if err != nil {
+		ctx.JSON(iris.StatusInternalServerError, iris.Map{
+			"status":  "error",
+			"message": "Can't find any loan detail.",
+		})
+		return
+	}
 
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"status":    "success",
