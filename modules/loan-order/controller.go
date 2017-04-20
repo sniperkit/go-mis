@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"time"
 
+	accountTransactionCredit "bitbucket.org/go-mis/modules/account-transaction-credit"
 	accountTransactionDebit "bitbucket.org/go-mis/modules/account-transaction-debit"
 	"bitbucket.org/go-mis/modules/r"
 	"bitbucket.org/go-mis/modules/voucher"
@@ -75,12 +76,35 @@ func AcceptLoanOrder(ctx *iris.Context) {
 	fmt.Println("habis")
 
 	// update success
-	UpdateSuccess(orderNo)
-	CheckVoucherAndInsertToDebit(accountId, orderNo)
-	UpdateCredit(loans, accountId)
-	UpdateAccount2(orderNo, accountId)
-	insertLoanHistoryAndRLoanHistory(orderNo)
-	updateLoanStageToInvestor(orderNo)
+
+	var voucherAmount float64 = 0.0
+	voucherData := voucher.ChekVoucherByOrderNo(orderNo)
+	if voucherData != (voucher.Voucher{}) {
+		voucherAmount = voucherData.Amount
+	}
+
+	totalDebit := accountTransactionDebit.GetTotalAccountTransactionDebit(accountId)
+	totalCredit := accountTransactionCredit.GetTotalAccountTransactionCredit(accountId)
+
+	totalBalance := (totalDebit + voucherAmount) - totalCredit
+	if totalBalance < 0 {
+		ctx.JSON(iris.StatusOK, iris.Map{
+			"status":  "error",
+			"message": "totalBalance not enought",
+			"data":    iris.Map{},
+		})
+	} else {
+		UpdateSuccess(orderNo)
+		CheckVoucherAndInsertToDebit(accountId, orderNo)
+		UpdateCredit(loans, accountId)
+		UpdateAccount2(orderNo, accountId)
+		insertLoanHistoryAndRLoanHistory(orderNo)
+		updateLoanStageToInvestor(orderNo)
+		ctx.JSON(iris.StatusOK, iris.Map{
+			"status": "success",
+			"data":   iris.Map{},
+		})
+	}
 
 }
 
