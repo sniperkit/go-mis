@@ -109,6 +109,7 @@ func InitCustomApi() {
 		v2.Any("/submit-adjustment/:account_type", adjustment.SubmitAdjustment)
 		v2.Any("/voucher", voucher.FetchAll)
 		v2.Any("/loan-order", loanOrder.FetchAll)
+		v2.Get("/loan-order/get/:id", loanOrder.FetchSingle)
 		v2.Any("/loan-order/accept/:orderNo", loanOrder.AcceptLoanOrder)
 		v2.Any("/loan-order/reject/:orderNo", loanOrder.RejectLoanOrder)
 		v2.Any("/cif-investor-account", cif.GetCifInvestorAccount)

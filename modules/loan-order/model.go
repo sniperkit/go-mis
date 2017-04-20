@@ -22,7 +22,7 @@ type LoanOrderInvestorPendingWaiting struct {
 }
 
 type LoanOrderList struct {
-	ID            uint64  `gorm:"column:_id" json:"_id"`
+	ID            uint64  `gorm:"column:id" json:"_id"`
 	Username      string  `gorm:"username" json:"username"`
 	Name          string  `gorm:"name" json:"name"`
 	OrderNo       string  `gorm:"column:orderNo" json:"orderNo"`

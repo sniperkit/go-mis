@@ -1,6 +1,8 @@
 package voucher
 
 import (
+	"fmt"
+
 	"bitbucket.org/go-mis/services"
 	iris "gopkg.in/kataras/iris.v4"
 )
@@ -29,9 +31,12 @@ func FetchAll(ctx *iris.Context) {
 	})
 }
 
-func ChekVoucherByOrderNo(orderNo string) Voucher {
+func CheckVoucherByOrderNo(orderNo string) Voucher {
 	voucher := Voucher{}
-	query := `select v.* from r_loan_order_voucher as rlov join voucher as v on rlov."voucherId" = v."id" join loan_order as lo on rlov."loanOrderId" = lo."id" where lo."orderNo"=?`
-	services.DBCPsql.Raw(query).First(&voucher)
+	query := `select v.* from r_loan_order_voucher as rlov join voucher as v on rlov."voucherId" = v."id" join loan_order as lo on rlov."loanOrderId" = lo.id where lo."orderNo"='` + orderNo + `'`
+	if err := services.DBCPsql.Raw(query).Scan(&voucher).Error; err != nil {
+		fmt.Println(err)
+		fmt.Println(query)
+	}
 	return voucher
 }
