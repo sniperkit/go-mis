@@ -13,6 +13,7 @@ type Mandrill struct {
 	emailParam struct {
 		From      string                 `json:"from" `
 		To        string                 `json:"to" `
+		Bcc       string                 `json:"bcc" `
 		Template  string                 `json:"template" `
 		Subject   string                 `json:"subject" `
 		SecretKey string                 `json:"secretKey" `
@@ -28,6 +29,11 @@ func (m *Mandrill) SetFrom(email string) {
 // SetTo - SetTo Email
 func (m *Mandrill) SetTo(email string) {
 	m.emailParam.To = email
+}
+
+// SetTo - SetTo Email
+func (m *Mandrill) SetBcc(email string) {
+	m.emailParam.Bcc = email
 }
 
 // Subject - Subject Email
