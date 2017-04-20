@@ -3,6 +3,7 @@ package agent
 import (
 	"bitbucket.org/go-mis/services"
 	"gopkg.in/kataras/iris.v4"
+	"fmt"
 )
 
 func Init() {
@@ -12,8 +13,7 @@ func Init() {
 
 func GetAllAgentByBranchID(ctx *iris.Context) {
 	branchID := ctx.Get("BRANCH_ID")
-	var tmp uint64 // why this? 0 is untype constant
-	tmp = 0
+	fmt.Println(branchID)
 	agentSchema := []Agent{}
 
 	// query := "SELECT agent.* "
@@ -24,7 +24,7 @@ func GetAllAgentByBranchID(ctx *iris.Context) {
 	query := ""
 	// if not superadmin
 	// TODO: use role instead of branchID
-	if branchID != tmp {
+	if branchID.(uint64) > 0 {
 		query += "SELECT agent.id, agent.\"picUrl\", agent.\"username\", agent.fullname, agent.address,  "
 		query += "(SELECT \"name\" FROM inf_location WHERE province = agent.province AND city = '0' AND kecamatan = '0' AND kelurahan = '0' LIMIT 1) AS \"province\", "
 		query += "(SELECT \"name\" FROM inf_location WHERE province = agent.province AND city = agent.city AND kecamatan = '0' AND kelurahan = '0' LIMIT 1) AS \"city\", "
@@ -34,7 +34,7 @@ func GetAllAgentByBranchID(ctx *iris.Context) {
 		query += "INNER JOIN r_branch_agent ON r_branch_agent.\"agentId\" = agent.id "
 		query += "WHERE r_branch_agent.\"branchId\" = ? AND agent.\"deletedAt\" IS NULL"
 
-		services.DBCPsql.Raw(query).Scan(&agentSchema)
+		services.DBCPsql.Raw(query, branchID).Scan(&agentSchema)
 	} else {
 			query += `SELECT agent.id, agent."picUrl", agent."username", agent.fullname, agent.address,
 			(SELECT "name" FROM inf_location 
