@@ -41,6 +41,7 @@ type DisbursementDetailByGroup struct {
 	GroupName        string    `gorm:"column:groupName" json:"groupName"`
 	BranchName       string    `gorm:"column:branchName" json:"branchName"`
 	Borrower         string    `gorm:"column:borrower" json:"borrower"`
+	BorrowerNo       string    `gorm:"column:borrowerNo" json:"borrowerNo"`
 	LoanID           uint64    `gorm:"column:loanId" json:"loanId"`
 	Plafond          float64   `gorm:"column:plafond" json:"plafond"`
 	DisbursementDate time.Time `gorm:"column:disbursementDate" json:"disbursementDate"`
