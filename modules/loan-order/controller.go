@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"time"
 
+	accountTransactionCredit "bitbucket.org/go-mis/modules/account-transaction-credit"
 	accountTransactionDebit "bitbucket.org/go-mis/modules/account-transaction-debit"
 	"bitbucket.org/go-mis/modules/r"
 	"bitbucket.org/go-mis/modules/voucher"
@@ -75,12 +76,35 @@ func AcceptLoanOrder(ctx *iris.Context) {
 	fmt.Println("habis")
 
 	// update success
-	UpdateSuccess(orderNo)
-	CheckVoucherAndInsertToDebit(accountId, orderNo)
-	UpdateCredit(loans, accountId)
-	UpdateAccount2(orderNo, accountId)
-	insertLoanHistoryAndRLoanHistory(orderNo)
-	updateLoanStageToInvestor(orderNo)
+
+	var voucherAmount float64 = 0.0
+	voucherData := voucher.ChekVoucherByOrderNo(orderNo)
+	if voucherData != (voucher.Voucher{}) {
+		voucherAmount = voucherData.Amount
+	}
+
+	totalDebit := accountTransactionDebit.GetTotalAccountTransactionDebit(accountId)
+	totalCredit := accountTransactionCredit.GetTotalAccountTransactionCredit(accountId)
+
+	totalBalance := (totalDebit + voucherAmount) - totalCredit
+	if totalBalance < 0 {
+		ctx.JSON(iris.StatusOK, iris.Map{
+			"status":  "error",
+			"message": "totalBalance not enought",
+			"data":    iris.Map{},
+		})
+	} else {
+		UpdateSuccess(orderNo)
+		CheckVoucherAndInsertToDebit(accountId, orderNo)
+		UpdateCredit(loans, accountId)
+		UpdateAccount2(orderNo, accountId)
+		insertLoanHistoryAndRLoanHistory(orderNo)
+		updateLoanStageToInvestor(orderNo)
+		ctx.JSON(iris.StatusOK, iris.Map{
+			"status": "success",
+			"data":   iris.Map{},
+		})
+	}
 
 }
 
@@ -109,7 +133,7 @@ func GetLoans(orderNo string) []int64 {
 	return l
 }
 
-func UpdateCredit(loans []int64, accountId int64) {
+func UpdateCredit(loans []int64, accountId uint64) {
 	for _, loanId := range loans {
 
 		query := `with ins_1 as (insert into account_transaction_credit ("type","amount","transactionDate","createdAt")
@@ -124,7 +148,7 @@ func UpdateCredit(loans []int64, accountId int64) {
 	}
 }
 
-func UpdateAccount(orderNo string, accountId int64) {
+func UpdateAccount(orderNo string, accountId uint64) {
 	query := `with ins as (select SUM(plafond) "total"
 	from loan l join r_loan_order rlo on l.id = rlo."loanId"
 	join loan_order lo on lo.id = rlo."loanOrderId"
@@ -135,10 +159,10 @@ func UpdateAccount(orderNo string, accountId int64) {
 }
 
 type AccId struct {
-	AccountId int64 `gorm:"column:accountId"`
+	AccountId uint64 `gorm:"column:accountId"`
 }
 
-func GetAccountId(orderNo string) int64 {
+func GetAccountId(orderNo string) uint64 {
 	query := `select rai."accountId" from loan_order lo
 	join r_loan_order rlo on rlo."loanOrderId" = lo.id
 	join r_investor_product_pricing_loan rippl on rippl."loanId" = rlo."loanId"
@@ -150,7 +174,7 @@ func GetAccountId(orderNo string) int64 {
 	return accId.AccountId
 }
 
-func UpdateAccount2(orderNo string, accountId int64) {
+func UpdateAccount2(orderNo string, accountId uint64) {
 	query := `select SUM(plafond) "total"
 from loan l join r_loan_order rlo on l.id = rlo."loanId"
 join loan_order lo on lo.id = rlo."loanOrderId"
