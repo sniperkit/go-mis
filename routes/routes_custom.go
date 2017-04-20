@@ -20,12 +20,12 @@ import (
 	"bitbucket.org/go-mis/modules/loan-order"
 	"bitbucket.org/go-mis/modules/location"
 	"bitbucket.org/go-mis/modules/notification"
+	"bitbucket.org/go-mis/modules/product-pricing"
 	"bitbucket.org/go-mis/modules/survey"
 	"bitbucket.org/go-mis/modules/transaction"
 	"bitbucket.org/go-mis/modules/user-mis"
 	"bitbucket.org/go-mis/modules/virtual-account-statement"
 	"bitbucket.org/go-mis/modules/voucher"
-	"bitbucket.org/go-mis/modules/product-pricing"
 	"gopkg.in/iris-contrib/middleware.v4/cors"
 	"gopkg.in/kataras/iris.v4"
 )
@@ -109,7 +109,6 @@ func InitCustomApi() {
 		v2.Any("/submit-adjustment/:account_type", adjustment.SubmitAdjustment)
 		v2.Any("/voucher", voucher.FetchAll)
 		v2.Any("/loan-order", loanOrder.FetchAll)
-		v2.Get("/loan-order/get/:id", loanOrder.FetchSingle)
 		v2.Any("/loan-order/accept/:orderNo", loanOrder.AcceptLoanOrder)
 		v2.Any("/loan-order/reject/:orderNo", loanOrder.RejectLoanOrder)
 		v2.Any("/cif-investor-account", cif.GetCifInvestorAccount)

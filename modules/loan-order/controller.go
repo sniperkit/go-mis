@@ -20,15 +20,26 @@ func Init() {
 
 func FetchAll(ctx *iris.Context) {
 
-	query := `select c.username, c.name, i.id, acc."totalBalance", lo."orderNo", sum(l.plafond) "totalPlafond", lo.remark
-from investor i join r_account_investor rai on i.id = rai."investorId" join account acc on acc.id = rai."accountId"
-join r_cif_investor rci on i.id=rci."investorId" join cif c on c.id=rci."cifId"
-join r_investor_product_pricing_loan rippl on i.id = rippl."investorId" join loan l on l.id=rippl."loanId"
-join r_loan_order rlo on l.id = rlo."loanId" join loan_order lo on lo.id = rlo."loanOrderId"
-where lo.remark = 'PENDING'
-group by c.username, c.name, i.id, acc."totalBalance", lo."orderNo", lo.remark`
+	query := "select lo.id , c.name, c.username, a.\"totalBalance\",\"orderNo\",sum(l.plafond) as \"totalPlafond\", "
+	query += "case when rlov.id is not null then TRUE else FALSE end \"usingVoucher\", "
+	query += "case when rlov.id is not null then v.amount else 0 end \"voucherAmount\" "
+	query += "from loan l join r_loan_order rlo on l.id = rlo.\"loanId\" "
+	query += "join loan_order lo on lo.id = rlo.\"loanOrderId\" "
+	query += "join r_investor_product_pricing_loan rippl on rippl.\"loanId\" = l.id "
+	query += "join investor i on i.id = rippl.\"investorId\" "
+	query += "join r_cif_investor rci on rci.\"investorId\" = i.id "
+	query += "join cif c on c.id = rci.\"cifId\" "
+	query += "join r_account_investor rai on rai.\"investorId\" = i.id "
+	query += "join account a on a.id = rai.\"accountId\" "
+	query += "left join r_loan_order_voucher rlov on rlov.\"loanOrderId\" = lo.id "
+	query += "left join voucher v on v.id = rlov.\"voucherId\" "
+	query += "where lo.remark = 'PENDING' "
+	query += "and a.\"deletedAt\" isnull and l.\"deletedAt\" isnull "
+	query += "and lo.\"deletedAt\" isnull and c.\"deletedAt\" isnull "
+	query += "and i.\"deletedAt\" isnull "
+	query += "group by c.name, c.username,a.\"totalBalance\",\"orderNo\",lo.id, rlov.id, v.amount order by lo.id desc"
 
-	loanOrderSchema := []LoanOrderCompact{}
+	loanOrderSchema := []LoanOrderList{}
 	e := services.DBCPsql.Raw(query).Scan(&loanOrderSchema).Error
 	if e != nil {
 		fmt.Println(e)

@@ -21,14 +21,15 @@ type LoanOrderInvestorPendingWaiting struct {
 	VoucherAmount float64 `gorm:"voucherAmount" json:"voucherAmount"`
 }
 
-type LoanOrderCompact struct {
-	ID           uint64  `json:"_id"`
-	Username     string  `json:"username"`
-	Name         string  `json:"name"`
-	OrderNo      string  `gorm:"column:orderNo" json:"orderNo"`
-	TotalBalance float64 `gorm:"column:totalBalance" json:"totalBalance"`
-	TotalPlafond float64 `gorm:"column:totalPlafond" json:"totalPlafond"`
-	Remark       string  `json:"remark"`
+type LoanOrderList struct {
+	ID            uint64  `gorm:"column:_id" json:"_id"`
+	Username      string  `gorm:"username" json:"username"`
+	Name          string  `gorm:"name" json:"name"`
+	OrderNo       string  `gorm:"column:orderNo" json:"orderNo"`
+	TotalBalance  float64 `gorm:"column:totalBalance" json:"totalBalance"`
+	TotalPlafond  float64 `gorm:"column:totalPlafond" json:"totalPlafond"`
+	UsingVoucher  bool    `gorm:"column:usingVoucher" json:"usingVoucher"`
+	VoucherAmount float64 `gorm:"column:voucherAmount" json:"voucherAmount"`
 }
 
 type LoanOrderDetail struct {
