@@ -3,7 +3,6 @@ package agent
 import (
 	"bitbucket.org/go-mis/services"
 	"gopkg.in/kataras/iris.v4"
-	"fmt"
 )
 
 func Init() {
@@ -13,7 +12,6 @@ func Init() {
 
 func GetAllAgentByBranchID(ctx *iris.Context) {
 	branchID := ctx.Get("BRANCH_ID")
-	fmt.Println(branchID)
 	agentSchema := []Agent{}
 
 	// query := "SELECT agent.* "
