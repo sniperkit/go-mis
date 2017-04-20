@@ -109,7 +109,7 @@ func GetLoans(orderNo string) []int64 {
 	return l
 }
 
-func UpdateCredit(loans []int64, accountId int64) {
+func UpdateCredit(loans []int64, accountId uint64) {
 	for _, loanId := range loans {
 
 		query := `with ins_1 as (insert into account_transaction_credit ("type","amount","transactionDate","createdAt")
@@ -124,7 +124,7 @@ func UpdateCredit(loans []int64, accountId int64) {
 	}
 }
 
-func UpdateAccount(orderNo string, accountId int64) {
+func UpdateAccount(orderNo string, accountId uint64) {
 	query := `with ins as (select SUM(plafond) "total"
 	from loan l join r_loan_order rlo on l.id = rlo."loanId"
 	join loan_order lo on lo.id = rlo."loanOrderId"
@@ -135,10 +135,10 @@ func UpdateAccount(orderNo string, accountId int64) {
 }
 
 type AccId struct {
-	AccountId int64 `gorm:"column:accountId"`
+	AccountId uint64 `gorm:"column:accountId"`
 }
 
-func GetAccountId(orderNo string) int64 {
+func GetAccountId(orderNo string) uint64 {
 	query := `select rai."accountId" from loan_order lo
 	join r_loan_order rlo on rlo."loanOrderId" = lo.id
 	join r_investor_product_pricing_loan rippl on rippl."loanId" = rlo."loanId"
@@ -150,7 +150,7 @@ func GetAccountId(orderNo string) int64 {
 	return accId.AccountId
 }
 
-func UpdateAccount2(orderNo string, accountId int64) {
+func UpdateAccount2(orderNo string, accountId uint64) {
 	query := `select SUM(plafond) "total"
 from loan l join r_loan_order rlo on l.id = rlo."loanId"
 join loan_order lo on lo.id = rlo."loanOrderId"
@@ -178,7 +178,10 @@ func updateLoanStageToInvestor(orderNo string) {
 func FetchAllPendingWaiting(ctx *iris.Context) {
 	loansOrderPendingWaiting := []LoanOrderInvestorPendingWaiting{}
 
-	query := "select lo.id , c.name, a.\"totalBalance\",\"orderNo\",sum(plafond) as totalPlafond from loan l join r_loan_order rlo on l.id = rlo.\"loanId\" "
+	query := "select lo.id , c.name, a.\"totalBalance\",\"orderNo\",sum(plafond) as totalPlafond, "
+	query += "case when rlov.id is not null then TRUE else FALSE end \"usingVoucher\", "
+	query += "case when rlov.id is not null then v.amount else 0 end \"voucherAmount\" "
+	query += "from loan l join r_loan_order rlo on l.id = rlo.\"loanId\" "
 	query += "join loan_order lo on lo.id = rlo.\"loanOrderId\" "
 	query += "join r_investor_product_pricing_loan rippl on rippl.\"loanId\" = l.id "
 	query += "join investor i on i.id = rippl.\"investorId\" "
@@ -186,11 +189,13 @@ func FetchAllPendingWaiting(ctx *iris.Context) {
 	query += "join cif c on c.id = rci.\"cifId\" "
 	query += "join r_account_investor rai on rai.\"investorId\" = i.id "
 	query += "join account a on a.id = rai.\"accountId\" "
+	query += "left join r_loan_order_voucher rlov on rlov.\"loanOrderId\" = lo.id "
+	query += "left join voucher v on v.id = rlov.\"voucherId\" "
 	query += "where lo.remark = 'PENDING' "
 	query += "and a.\"deletedAt\" isnull and l.\"deletedAt\" isnull "
 	query += "and lo.\"deletedAt\" isnull and c.\"deletedAt\" isnull "
 	query += "and i.\"deletedAt\" isnull "
-	query += "group by c.name,a.\"totalBalance\",\"orderNo\",lo.id order by lo.id desc "
+	query += "group by c.name,a.\"totalBalance\",\"orderNo\",lo.id, rlov.id, v.amount order by lo.id desc "
 
 	services.DBCPsql.Raw(query).Find(&loansOrderPendingWaiting)
 	ctx.JSON(iris.StatusOK, iris.Map{

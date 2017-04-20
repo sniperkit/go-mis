@@ -12,11 +12,13 @@ type LoanOrder struct {
 }
 
 type LoanOrderInvestorPendingWaiting struct {
-	ID           uint64  `gorm:"primary_key" gorm:"column:_id" json:"_id"`
-	OrderNo      string  `gorm:"column:orderNo" json:"orderNo"`
-	Name         string  `gorm:"name:remark" json:"name"`
-	TotalBalance float64 `gorm:"totalBalance:remark" json:"totalBalance"`
-	TotalPlafond float64 `gorm:"totalPlafond:remark" json:"totalPlafond"`
+	ID            uint64  `gorm:"primary_key" gorm:"column:_id" json:"_id"`
+	OrderNo       string  `gorm:"column:orderNo" json:"orderNo"`
+	Name          string  `gorm:"name:remark" json:"name"`
+	TotalBalance  float64 `gorm:"totalBalance:remark" json:"totalBalance"`
+	TotalPlafond  float64 `gorm:"totalPlafond:remark" json:"totalPlafond"`
+	UsingVoucher  bool    `gorm:"usingVoucher" json:"usingVoucher"`
+	VoucherAmount float64 `gorm:"voucherAmount" json:"voucherAmount"`
 }
 
 type LoanOrderCompact struct {
@@ -36,11 +38,11 @@ type LoanOrderDetail struct {
 	OrderNo      string  `gorm:"column:orderNo" json:"orderNo"`
 	LoanId       uint64  `gorm:"column:loanId" json:"loanId"`
 	TotalBalance float64 `gorm:"column:totalBalance" json:"totalBalance"`
-	Plafond 		 float64 `gorm:"column:plafond" json:"plafond"`
-	Remark       string  `json:"remark"`			
+	Plafond      float64 `gorm:"column:plafond" json:"plafond"`
+	Remark       string  `json:"remark"`
 }
 
 type InvestorSearch struct {
-	ID                uint64  `gorm:"primary_key" gorm:"column:_id" json:"_id"`
-	Investor					uint64  `gorm:"column:loanId" json:"loanId"`
+	ID       uint64 `gorm:"primary_key" gorm:"column:_id" json:"_id"`
+	Investor uint64 `gorm:"column:loanId" json:"loanId"`
 }
