@@ -115,6 +115,7 @@ func InitCustomApi() {
 		v2.Any("/cif-investor-account", cif.GetCifInvestorAccount)
 		v2.Any("/assign-investor-to-loan", loan.AssignInvestorToLoan)
 		v2.Any("/product-pricing/s/investor/:searchStr", productPricing.SearchInvestor)
+		v2.Any("/product-pricing/get/:id", productPricing.GetInvestorsByProductPricing)
 	}
 
 	iris.Get(baseURL+"/investor-without-va", investor.InvestorWithoutVA)
