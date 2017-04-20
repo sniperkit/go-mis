@@ -76,6 +76,7 @@ func AcceptLoanOrder(ctx *iris.Context) {
 
 	// update success
 	UpdateSuccess(orderNo)
+	CheckVoucherAndInsertToDebit(accountId, orderNo)
 	UpdateCredit(loans, accountId)
 	UpdateAccount2(orderNo, accountId)
 	insertLoanHistoryAndRLoanHistory(orderNo)
@@ -227,7 +228,7 @@ func RejectLoanOrder(ctx *iris.Context) {
 	})
 }
 
-func checkVoucherAndInsertToDebit(accountID uint64, orderNo string) {
+func CheckVoucherAndInsertToDebit(accountID uint64, orderNo string) {
 	voucher_data := voucher.ChekVoucherByOrderNo(orderNo)
 	if voucher_data != (voucher.Voucher{}) {
 		accountTRDebit := accountTransactionDebit.AccountTransactionDebit{Type: "VOUCHER", Amount: voucher_data.Amount, TransactionDate: time.Now()}
