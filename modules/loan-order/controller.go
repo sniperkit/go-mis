@@ -271,20 +271,21 @@ func RejectLoanOrder(ctx *iris.Context) {
 
 	queryUpdateVouher := "update voucher set \"deletedAt\" = current_timestamp where id in (select v.id from voucher v join r_loan_order_voucher rlov on rlov.\"voucherId\" = v.id  join loan_order lo on lo.id = rlov.\"loanOrderId\" where \"orderNo\" = '" + orderNo + "');"
 	services.DBCPsql.Exec(queryUpdateVouher)
+
 	queryUpdateRLoanOrderVouher := "update r_loan_order_voucher set \"deletedAt\" = current_timestamp where id in( select rlov.id from r_loan_order_voucher rlov join loan_order lo on lo.id = rlov.\"loanOrderId\" where \"orderNo\" = '" + orderNo + "');"
 	services.DBCPsql.Exec(queryUpdateRLoanOrderVouher)
 
 	queryUpdateLoanOrderRemark := "update loan_order set remark = 'FAILED' where \"orderNo\" = '" + orderNo + "'"
 	services.DBCPsql.Exec(queryUpdateLoanOrderRemark)
 
+	queryUpdateRipplInvestorID := "update r_investor_product_pricing_loan set \"investorId\" = null where \"loanId\" in (select l.id from loan l join r_loan_order rlo on l.id = rlo.\"loanId\" join loan_order lo on lo.id = rlo.\"loanOrderId\" where lo.\"orderNo\"='" + orderNo + "');"
+	services.DBCPsql.Exec(queryUpdateRipplInvestorID)
+
 	queryUpdateLoanOrderDeleted := "update loan_order set \"deletedAt\" = current_timestamp where \"orderNo\" = '" + orderNo + "';"
 	services.DBCPsql.Exec(queryUpdateLoanOrderDeleted)
 
 	queryUpdateRLoanOrderDeleted := "update r_loan_order set \"deletedAt\" = current_timestamp where id in (select rlo.id from r_loan_order rlo join loan_order lo on lo.id = rlo.\"loanOrderId\" where \"orderNo\" = '" + orderNo + "');"
 	services.DBCPsql.Exec(queryUpdateRLoanOrderDeleted)
-
-	queryUpdateRipplInvestorID := "update r_investor_product_pricing_loan set \"investorId\" = null where \"loanId\" in (select l.id from loan l join r_loan_order rlo on l.id = rlo.\"loanId\" join loan_order lo on lo.id = rlo.\"loanOrderId\" where lo.\"orderNo\"='" + orderNo + "');"
-	services.DBCPsql.Exec(queryUpdateRipplInvestorID)
 
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"status": "success",
