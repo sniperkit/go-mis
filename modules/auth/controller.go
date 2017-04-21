@@ -107,6 +107,7 @@ func UserMisLogin(ctx *iris.Context) {
 				},
 				"branches":branches,
 				"roleId": roleObj.ID,
+				"areaId": rAreaUserMis.AreaId,
 			},
 		})
 	} else {
