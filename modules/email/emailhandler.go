@@ -13,6 +13,7 @@ func SendEmailVerificationSuccess(email string, name string, va_bca string, va_b
 	mandrill := new(Mandrill)
 	mandrill.SetFrom("hello@amartha.com")
 	mandrill.SetTo(email)
+	mandrill.SetBcc("investing@amartha.com")
 	mandrill.SetSubject("Verification Success")
 	mandrill.SetTemplateAndRawBody("verification_success", subs)
 	mandrill.SendEmail()

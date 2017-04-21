@@ -1,10 +1,17 @@
 package loanOrder
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
+	"time"
 
+	accountTransactionCredit "bitbucket.org/go-mis/modules/account-transaction-credit"
+	accountTransactionDebit "bitbucket.org/go-mis/modules/account-transaction-debit"
+	"bitbucket.org/go-mis/modules/r"
+	"bitbucket.org/go-mis/modules/voucher"
 	"bitbucket.org/go-mis/services"
+	"github.com/jinzhu/gorm"
 	"gopkg.in/kataras/iris.v4"
 )
 
@@ -15,15 +22,26 @@ func Init() {
 
 func FetchAll(ctx *iris.Context) {
 
-	query := `select c.username, c.name, i.id, acc."totalBalance", lo."orderNo", sum(l.plafond) "totalPlafond", lo.remark
-from investor i join r_account_investor rai on i.id = rai."investorId" join account acc on acc.id = rai."accountId"
-join r_cif_investor rci on i.id=rci."investorId" join cif c on c.id=rci."cifId"
-join r_investor_product_pricing_loan rippl on i.id = rippl."investorId" join loan l on l.id=rippl."loanId"
-join r_loan_order rlo on l.id = rlo."loanId" join loan_order lo on lo.id = rlo."loanOrderId"
-where lo.remark = 'PENDING'
-group by c.username, c.name, i.id, acc."totalBalance", lo."orderNo", lo.remark`
+	query := "select lo.id , c.name, c.username, a.\"totalBalance\",\"orderNo\",sum(l.plafond) as \"totalPlafond\", "
+	query += "case when rlov.id is not null then TRUE else FALSE end \"usingVoucher\", "
+	query += "case when rlov.id is not null then v.amount else 0 end \"voucherAmount\" "
+	query += "from loan l join r_loan_order rlo on l.id = rlo.\"loanId\" "
+	query += "join loan_order lo on lo.id = rlo.\"loanOrderId\" "
+	query += "join r_investor_product_pricing_loan rippl on rippl.\"loanId\" = l.id "
+	query += "join investor i on i.id = rippl.\"investorId\" "
+	query += "join r_cif_investor rci on rci.\"investorId\" = i.id "
+	query += "join cif c on c.id = rci.\"cifId\" "
+	query += "join r_account_investor rai on rai.\"investorId\" = i.id "
+	query += "join account a on a.id = rai.\"accountId\" "
+	query += "left join r_loan_order_voucher rlov on rlov.\"loanOrderId\" = lo.id "
+	query += "left join voucher v on v.id = rlov.\"voucherId\" "
+	query += "where lo.remark = 'PENDING' "
+	query += "and a.\"deletedAt\" isnull and l.\"deletedAt\" isnull "
+	query += "and lo.\"deletedAt\" isnull and c.\"deletedAt\" isnull "
+	query += "and i.\"deletedAt\" isnull "
+	query += "group by c.name, c.username,a.\"totalBalance\",\"orderNo\",lo.id, rlov.id, v.amount order by lo.id desc"
 
-	loanOrderSchema := []LoanOrderCompact{}
+	loanOrderSchema := []LoanOrderList{}
 	e := services.DBCPsql.Raw(query).Scan(&loanOrderSchema).Error
 	if e != nil {
 		fmt.Println(e)
@@ -71,20 +89,71 @@ func AcceptLoanOrder(ctx *iris.Context) {
 	fmt.Println("habis")
 
 	// update success
-	UpdateSuccess(orderNo)
-	UpdateCredit(loans, accountId)
-	UpdateAccount2(orderNo, accountId)
-	insertLoanHistoryAndRLoanHistory(orderNo)
-	updateLoanStageToInvestor(orderNo)
+
+	var voucherAmount float64 = 0.0
+	voucherData := voucher.CheckVoucherByOrderNo(orderNo)
+	if voucherData != (voucher.Voucher{}) {
+		voucherAmount = voucherData.Amount
+	}
+
+	totalDebit := accountTransactionDebit.GetTotalAccountTransactionDebit(accountId)
+	totalCredit := accountTransactionCredit.GetTotalAccountTransactionCredit(accountId)
+
+	totalBalance := (totalDebit + voucherAmount) - totalCredit
+	if totalBalance < 0 {
+		ctx.JSON(iris.StatusOK, iris.Map{
+			"status":  "error",
+			"message": "totalBalance not enought",
+			"data":    iris.Map{},
+		})
+		return
+	}
+
+	db := services.DBCPsql.Begin()
+
+	if err := UpdateSuccess(orderNo, db); err != nil {
+		processErrorAndRollback(ctx, orderNo, db, err, "Update Success")
+		return
+	}
+
+	if err := CheckVoucherAndInsertToDebit(accountId, orderNo, db); err != nil {
+		processErrorAndRollback(ctx, orderNo, db, err, "Check Voucher and Insert into Debit")
+		return
+	}
+	if err := UpdateCredit(loans, accountId, db); err != nil {
+		processErrorAndRollback(ctx, orderNo, db, err, "Update Credit")
+		return
+	}
+	if err := UpdateAccountCredit(orderNo, accountId, db); err != nil {
+		processErrorAndRollback(ctx, orderNo, db, err, "Update Account")
+		return
+	}
+	if err := insertLoanHistoryAndRLoanHistory(orderNo, db); err != nil {
+		processErrorAndRollback(ctx, orderNo, db, err, "Insert Loan History")
+		return
+	}
+	if err := updateLoanStageToInvestor(orderNo, db); err != nil {
+		processErrorAndRollback(ctx, orderNo, db, err, "Update Loan Stage")
+		return
+	}
+
+	db.Commit()
+
+	ctx.JSON(iris.StatusOK, iris.Map{
+		"status": "success",
+		"data":   "",
+	})
 
 }
 
-func UpdateSuccess(orderNo string) {
+func processErrorAndRollback(ctx *iris.Context, orderNo string, db *gorm.DB, err error, process string) {
+	db.Rollback()
+	ctx.JSON(iris.StatusInternalServerError, iris.Map{"error": "Error on " + process + " " + err.Error()})
+}
+
+func UpdateSuccess(orderNo string, db *gorm.DB) error {
 	query := `update loan_order set remark = 'SUCCESS' where "orderNo" = ?`
-	err := services.DBCPsql.Exec(query, orderNo).Error
-	if err != nil {
-		fmt.Println(err)
-	}
+	return db.Exec(query, orderNo).Error
 }
 
 type LoanId struct {
@@ -104,7 +173,7 @@ func GetLoans(orderNo string) []int64 {
 	return l
 }
 
-func UpdateCredit(loans []int64, accountId int64) {
+func UpdateCredit(loans []int64, accountId uint64, db *gorm.DB) error {
 	for _, loanId := range loans {
 
 		query := `with ins_1 as (insert into account_transaction_credit ("type","amount","transactionDate","createdAt")
@@ -115,25 +184,18 @@ func UpdateCredit(loans []int64, accountId int64) {
 			insert into r_account_transaction_credit ("accountTransactionCreditId","accountId","createdAt")
 			select ins_2."accountTransactionCreditId",?, current_timestamp from ins_2`
 
-		services.DBCPsql.Exec(query, loanId, accountId)
+		if err := db.Exec(query, loanId, accountId).Error; err != nil {
+			return err
+		}
 	}
-}
-
-func UpdateAccount(orderNo string, accountId int64) {
-	query := `with ins as (select SUM(plafond) "total"
-	from loan l join r_loan_order rlo on l.id = rlo."loanId"
-	join loan_order lo on lo.id = rlo."loanOrderId"
-	where lo."orderNo"=?)
-	update account set "totalCredit" = "totalCredit"+ins."total", "totalDebit" = "totalDebit"+ins."total"  from ins where account.id = ?`
-
-	services.DBCPsql.Exec(query, orderNo, accountId) // ntar
+	return nil
 }
 
 type AccId struct {
-	AccountId int64 `gorm:"column:accountId"`
+	AccountId uint64 `gorm:"column:accountId"`
 }
 
-func GetAccountId(orderNo string) int64 {
+func GetAccountId(orderNo string) uint64 {
 	query := `select rai."accountId" from loan_order lo
 	join r_loan_order rlo on rlo."loanOrderId" = lo.id
 	join r_investor_product_pricing_loan rippl on rippl."loanId" = rlo."loanId"
@@ -145,35 +207,40 @@ func GetAccountId(orderNo string) int64 {
 	return accId.AccountId
 }
 
-func UpdateAccount2(orderNo string, accountId int64) {
+func UpdateAccountCredit(orderNo string, accountId uint64, db *gorm.DB) error {
 	query := `select SUM(plafond) "total"
 from loan l join r_loan_order rlo on l.id = rlo."loanId"
 join loan_order lo on lo.id = rlo."loanOrderId"
 where lo."orderNo"=?`
 
 	r := struct{ Total int64 }{}
-	services.DBCPsql.Raw(query, orderNo).Scan(&r)
+	if err := db.Raw(query, orderNo).Scan(&r).Error; err != nil {
+		return err
+	}
 
 	query = `update account set "totalCredit" = "totalCredit"+?, "totalBalance" = "totalBalance"-? where account.id = ?`
-	services.DBCPsql.Exec(query, r.Total, r.Total, accountId)
+	return db.Exec(query, r.Total, r.Total, accountId).Error
 }
 
-func insertLoanHistoryAndRLoanHistory(orderNo string) {
+func insertLoanHistoryAndRLoanHistory(orderNo string, db *gorm.DB) error {
 	query := `with ins as (INSERT INTO loan_history("stageFrom","stageTo","remark","createdAt","updatedAt")
 	select  upper('CART'),upper('INVESTOR'),concat('loan id = ' ,l.id,' updated stage to INVESTOR ', ' orderNo=` + orderNo + `'),current_timestamp,current_timestamp from loan_order lo join r_loan_order rlo on rlo."loanOrderId" = lo.id join loan l on l.id = rlo."loanId" where lo."orderNo"='` + orderNo + `' returning id, (string_to_array(remark,' '))[4]::int as loanId)
 	INSERT INTO r_loan_history("loanId","loanHistoryId","createdAt","updatedAt") select  ins.loanId,ins.id ,current_timestamp,current_timestamp from ins`
-	services.DBCPsql.Exec(query)
+	return db.Exec(query).Error
 }
 
-func updateLoanStageToInvestor(orderNo string) {
+func updateLoanStageToInvestor(orderNo string, db *gorm.DB) error {
 	query := `update loan set stage ='INVESTOR' where id  IN (select l.id from loan_order lo join r_loan_order rlo on rlo."loanOrderId" = lo.id join loan l on l.id = rlo."loanId" where lo."orderNo"='` + orderNo + `')`
-	services.DBCPsql.Exec(query)
+	return db.Exec(query).Error
 }
 
 func FetchAllPendingWaiting(ctx *iris.Context) {
 	loansOrderPendingWaiting := []LoanOrderInvestorPendingWaiting{}
 
-	query := "select lo.id , c.name, a.\"totalBalance\",\"orderNo\",sum(plafond) as totalPlafond from loan l join r_loan_order rlo on l.id = rlo.\"loanId\" "
+	query := "select lo.id , c.name, a.\"totalBalance\",\"orderNo\",sum(plafond) as totalPlafond, "
+	query += "case when rlov.id is not null then TRUE else FALSE end \"usingVoucher\", "
+	query += "case when rlov.id is not null then v.amount else 0 end \"voucherAmount\" "
+	query += "from loan l join r_loan_order rlo on l.id = rlo.\"loanId\" "
 	query += "join loan_order lo on lo.id = rlo.\"loanOrderId\" "
 	query += "join r_investor_product_pricing_loan rippl on rippl.\"loanId\" = l.id "
 	query += "join investor i on i.id = rippl.\"investorId\" "
@@ -181,11 +248,13 @@ func FetchAllPendingWaiting(ctx *iris.Context) {
 	query += "join cif c on c.id = rci.\"cifId\" "
 	query += "join r_account_investor rai on rai.\"investorId\" = i.id "
 	query += "join account a on a.id = rai.\"accountId\" "
+	query += "left join r_loan_order_voucher rlov on rlov.\"loanOrderId\" = lo.id "
+	query += "left join voucher v on v.id = rlov.\"voucherId\" "
 	query += "where lo.remark = 'PENDING' "
 	query += "and a.\"deletedAt\" isnull and l.\"deletedAt\" isnull "
 	query += "and lo.\"deletedAt\" isnull and c.\"deletedAt\" isnull "
 	query += "and i.\"deletedAt\" isnull "
-	query += "group by c.name,a.\"totalBalance\",\"orderNo\",lo.id order by lo.id desc "
+	query += "group by c.name,a.\"totalBalance\",\"orderNo\",lo.id, rlov.id, v.amount order by lo.id desc "
 
 	services.DBCPsql.Raw(query).Find(&loansOrderPendingWaiting)
 	ctx.JSON(iris.StatusOK, iris.Map{
@@ -202,11 +271,15 @@ func RejectLoanOrder(ctx *iris.Context) {
 
 	queryUpdateVouher := "update voucher set \"deletedAt\" = current_timestamp where id in (select v.id from voucher v join r_loan_order_voucher rlov on rlov.\"voucherId\" = v.id  join loan_order lo on lo.id = rlov.\"loanOrderId\" where \"orderNo\" = '" + orderNo + "');"
 	services.DBCPsql.Exec(queryUpdateVouher)
+
 	queryUpdateRLoanOrderVouher := "update r_loan_order_voucher set \"deletedAt\" = current_timestamp where id in( select rlov.id from r_loan_order_voucher rlov join loan_order lo on lo.id = rlov.\"loanOrderId\" where \"orderNo\" = '" + orderNo + "');"
 	services.DBCPsql.Exec(queryUpdateRLoanOrderVouher)
 
 	queryUpdateLoanOrderRemark := "update loan_order set remark = 'FAILED' where \"orderNo\" = '" + orderNo + "'"
 	services.DBCPsql.Exec(queryUpdateLoanOrderRemark)
+
+	queryUpdateRipplInvestorID := "update r_investor_product_pricing_loan set \"investorId\" = null where \"loanId\" in (select l.id from loan l join r_loan_order rlo on l.id = rlo.\"loanId\" join loan_order lo on lo.id = rlo.\"loanOrderId\" where lo.\"orderNo\"='" + orderNo + "');"
+	services.DBCPsql.Exec(queryUpdateRipplInvestorID)
 
 	queryUpdateLoanOrderDeleted := "update loan_order set \"deletedAt\" = current_timestamp where \"orderNo\" = '" + orderNo + "';"
 	services.DBCPsql.Exec(queryUpdateLoanOrderDeleted)
@@ -214,11 +287,30 @@ func RejectLoanOrder(ctx *iris.Context) {
 	queryUpdateRLoanOrderDeleted := "update r_loan_order set \"deletedAt\" = current_timestamp where id in (select rlo.id from r_loan_order rlo join loan_order lo on lo.id = rlo.\"loanOrderId\" where \"orderNo\" = '" + orderNo + "');"
 	services.DBCPsql.Exec(queryUpdateRLoanOrderDeleted)
 
-	queryUpdateRipplInvestorID := "update r_investor_product_pricing_loan set \"investorId\" = null where \"loanId\" in (select l.id from loan l join r_loan_order rlo on l.id = rlo.\"loanId\" join loan_order lo on lo.id = rlo.\"loanOrderId\" where lo.\"orderNo\"='" + orderNo + "');"
-	services.DBCPsql.Exec(queryUpdateRipplInvestorID)
-
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"status": "success",
 		"data":   iris.Map{},
 	})
+}
+
+func CheckVoucherAndInsertToDebit(accountID uint64, orderNo string, db *gorm.DB) error {
+	voucher_data := voucher.CheckVoucherByOrderNo(orderNo)
+	if voucher_data == (voucher.Voucher{}) {
+		return errors.New("Voucher is not valid" + fmt.Sprintf("%+v", voucher_data))
+	}
+
+	accountTRDebit := accountTransactionDebit.AccountTransactionDebit{Type: "VOUCHER", Amount: voucher_data.Amount, TransactionDate: time.Now()}
+	if err := db.Table("account_transaction_debit").Create(&accountTRDebit).Error; err != nil {
+		return err
+	}
+
+	r_accountTRDebit := r.RAccountTransactionDebit{AccountId: accountID, AccountTransactionDebitId: accountTRDebit.ID}
+	if err := db.Table("r_account_transaction_debit").Create(&r_accountTRDebit).Error; err != nil {
+		return err
+	}
+
+	query := `update account set "totalDebit" = "totalDebit"+?, "totalBalance" = "totalBalance"+? where account.id = ?`
+	time.Sleep(1000 * time.Millisecond)
+	return db.Exec(query, voucher_data.Amount, voucher_data.Amount, accountID).Error
+
 }
