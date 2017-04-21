@@ -84,13 +84,16 @@ func UserMisLogin(ctx *iris.Context) {
 		services.DBCPsql.Raw(query, userMisObj.ID).Scan(&rAreaUserMis)
 		
 		// get all branches in this area
-		rAreaBranch := []r.RAreaBranch{}
-		query = `select "branchId" from r_area_branch where "areaId" = ?`
-		services.DBCPsql.Raw(query, rAreaUserMis.AreaId).Scan(&rAreaBranch)
-		var branches []uint64
-		for _, val := range rAreaBranch {
-			branches = append(branches, val.BranchId)					
+		type branchType struct {
+			Id uint64 `json:"id"`
+			Name string `json:"name"`
 		}
+
+		branches := []branchType{}
+		query = `select branch.id, branch."name" from r_area_branch 
+						join branch on branch.Id = r_area_branch.id
+						where "areaId" = ?`
+		services.DBCPsql.Raw(query, rAreaUserMis.AreaId).Scan(&branches)
 
 		rUserMisBranch := r.RBranchUserMis{}
 		services.DBCPsql.Table("r_branch_user_mis").Where(" \"userMisId\" = ? ", userMisObj.ID).First(&rUserMisBranch)
