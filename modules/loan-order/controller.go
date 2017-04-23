@@ -120,6 +120,7 @@ func AcceptLoanOrder(ctx *iris.Context) {
 		processErrorAndRollback(ctx, orderNo, db, err, "Check Voucher and Insert into Debit")
 		return
 	}
+
 	if err := UpdateCredit(loans, accountId, db); err != nil {
 		processErrorAndRollback(ctx, orderNo, db, err, "Update Credit")
 		return
@@ -177,12 +178,12 @@ func UpdateCredit(loans []int64, accountId uint64, db *gorm.DB) error {
 	for _, loanId := range loans {
 
 		query := `with ins_1 as (insert into account_transaction_credit ("type","amount","transactionDate","createdAt")
-		select 'INVEST', plafond, current_timestamp, current_timestamp from loan l where l.id = 34216 returning id),
+		select 'INVEST', plafond, current_timestamp + interval '1 second', current_timestamp + interval '1 second' from loan l where l.id = 34216 returning id),
 		ins_2 as (
 			insert into r_account_transaction_credit_loan ("loanId","accountTransactionCreditId","createdAt")
 			select ?, ins_1.id,current_timestamp from ins_1 returning "accountTransactionCreditId")
 			insert into r_account_transaction_credit ("accountTransactionCreditId","accountId","createdAt")
-			select ins_2."accountTransactionCreditId",?, current_timestamp from ins_2`
+			select ins_2."accountTransactionCreditId",?, current_timestamp + interval '1 second' from ins_2`
 
 		if err := db.Exec(query, loanId, accountId).Error; err != nil {
 			return err
