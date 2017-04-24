@@ -1,7 +1,6 @@
 package loanOrder
 
 import (
-	"errors"
 	"fmt"
 	"strconv"
 	"time"
@@ -83,13 +82,7 @@ func AcceptLoanOrder(ctx *iris.Context) {
 	loans := GetLoans(orderNo)
 	// account
 	accountId := GetAccountId(orderNo)
-	fmt.Println("susatu")
-	fmt.Printf("%v", loans)
-	fmt.Printf("%v", accountId)
-	fmt.Println("habis")
-
 	// update success
-
 	var voucherAmount float64 = 0.0
 	voucherData := voucher.CheckVoucherByOrderNo(orderNo)
 	if voucherData != (voucher.Voucher{}) {
@@ -297,7 +290,7 @@ func RejectLoanOrder(ctx *iris.Context) {
 func CheckVoucherAndInsertToDebit(accountID uint64, orderNo string, db *gorm.DB) error {
 	voucher_data := voucher.CheckVoucherByOrderNo(orderNo)
 	if voucher_data == (voucher.Voucher{}) {
-		return errors.New("Voucher is not valid" + fmt.Sprintf("%+v", voucher_data))
+		return nil
 	}
 
 	accountTRDebit := accountTransactionDebit.AccountTransactionDebit{Type: "VOUCHER", Amount: voucher_data.Amount, TransactionDate: time.Now()}
@@ -311,7 +304,6 @@ func CheckVoucherAndInsertToDebit(accountID uint64, orderNo string, db *gorm.DB)
 	}
 
 	query := `update account set "totalDebit" = "totalDebit"+?, "totalBalance" = "totalBalance"+? where account.id = ?`
-	time.Sleep(1000 * time.Millisecond)
 	return db.Exec(query, voucher_data.Amount, voucher_data.Amount, accountID).Error
 
 }
