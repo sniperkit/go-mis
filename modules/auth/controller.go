@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"time"
+	"regexp"
 
 	"bitbucket.org/go-mis/config"
 	"bitbucket.org/go-mis/modules/access-token"
@@ -76,21 +77,63 @@ func UserMisLogin(ctx *iris.Context) {
 		return
 	}
 
-	rUserMisBranch := r.RBranchUserMis{}
-	services.DBCPsql.Table("r_branch_user_mis").Where(" \"userMisId\" = ? ", userMisObj.ID).First(&rUserMisBranch)
+	// for dashboard
+	re := regexp.MustCompile("(?i)area\\s*manager") // area manager, Area Manager, ArEaManager are valid
+	if re.FindString(roleObj.Name) != "" { // area manager
+		// get the area of this user 
+		rAreaUserMis := r.RAreaUserMis{} 
+		query := `select "areaId" from r_area_user_mis where "userMisId" = ?`
+		services.DBCPsql.Raw(query, userMisObj.ID).Scan(&rAreaUserMis)
+		
+		// get all branches in this area
+		type branchType struct {
+			Id uint64 `json:"id"`
+			Name string `json:"name"`
+		}
 
-	ctx.JSON(iris.StatusOK, iris.Map{
-		"status": "success",
-		"data": iris.Map{
-			"name":        userMisObj.Fullname,
-			"accessToken": accessTokenHash,
-			"branchId":    rUserMisBranch.BranchId,
-			"role": iris.Map{
-				"assignedRole": roleObj.Name,
-				"config":       roleObj.Config,
+		branches := []branchType{}
+		query = `select branch.id, branch."name" from r_area_branch 
+						join branch on branch.Id = r_area_branch.id
+						where "areaId" = ?`
+		services.DBCPsql.Raw(query, rAreaUserMis.AreaId).Scan(&branches)
+
+		rUserMisBranch := r.RBranchUserMis{}
+		services.DBCPsql.Table("r_branch_user_mis").Where(" \"userMisId\" = ? ", userMisObj.ID).First(&rUserMisBranch)
+
+		ctx.JSON(iris.StatusOK, iris.Map{
+			"status": "success",
+			"data": iris.Map{
+				"name":        userMisObj.Fullname,
+				"accessToken": accessTokenHash,
+				"branchId":    rUserMisBranch.BranchId,
+				"role": iris.Map{
+					"assignedRole": roleObj.Name,
+					"config":       roleObj.Config,
+				},
+				"branches":branches,
+				"roleId": roleObj.ID,
+				"areaId": rAreaUserMis.AreaId,
 			},
-		},
-	})
+		})
+	} else {
+		rUserMisBranch := r.RBranchUserMis{}
+		services.DBCPsql.Table("r_branch_user_mis").Where(" \"userMisId\" = ? ", userMisObj.ID).First(&rUserMisBranch)
+
+		ctx.JSON(iris.StatusOK, iris.Map{
+			"status": "success",
+			"data": iris.Map{
+				"name":        userMisObj.Fullname,
+				"accessToken": accessTokenHash,
+				"branchId":    rUserMisBranch.BranchId,
+				"role": iris.Map{
+					"assignedRole": roleObj.Name,
+					"config":       roleObj.Config,
+				},
+			},
+		})
+	}
+
+	
 }
 
 // EnsureAuth - validate access token
