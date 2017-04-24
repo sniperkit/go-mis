@@ -5,6 +5,11 @@ import (
 	"gopkg.in/kataras/iris.v4"
 )
 
+func Init() {
+	services.DBCPsql.AutoMigrate(&Survey{})
+	services.BaseCrudInit(Survey{}, []Survey{})
+}
+
 // GetProspectiveBorrower - get prospective borrower which is not migrated
 func GetProspectiveBorrower(ctx *iris.Context) {
 	aFields := []AFields{}

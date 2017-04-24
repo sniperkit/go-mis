@@ -32,10 +32,11 @@ import (
 	"bitbucket.org/go-mis/modules/r"
 	"bitbucket.org/go-mis/modules/role"
 	"bitbucket.org/go-mis/modules/sector"
+	"bitbucket.org/go-mis/modules/survey"
 	"bitbucket.org/go-mis/modules/user-mis"
 	"bitbucket.org/go-mis/modules/virtual-account"
-	"bitbucket.org/go-mis/modules/voucher"
 	"bitbucket.org/go-mis/modules/virtual-account-statement"
+	"bitbucket.org/go-mis/modules/voucher"
 )
 
 // If domain is NOT specified,
@@ -123,6 +124,9 @@ func initializeAll() {
 	config.Domain = "sector"
 	sector.Init()
 
+	config.Domain = "survey"
+	survey.Init()
+
 	config.Domain = "user-mis"
 	userMis.Init()
 
@@ -134,7 +138,6 @@ func initializeAll() {
 
 	config.Domain = "voucher"
 	voucher.Init()
-
 
 	fmt.Println("[INFO] All domain have been initialized")
 }
@@ -194,6 +197,8 @@ func Init() {
 		role.Init()
 	case "sector":
 		sector.Init()
+	case "survey":
+		survey.Init()
 	case "user-mis":
 		userMis.Init()
 	case "virtual-account":
