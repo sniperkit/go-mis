@@ -27,7 +27,7 @@ func GetProspectiveBorrower(ctx *iris.Context) {
 	surveySchema := []SurveySchema{}
 	q := `SELECT survey.*, branch."name" as "branch", "group"."name" as "group", agent.fullname as "agent"
 	 	FROM survey 
-		LEFT JOIN r_group_branch ON r_group_branch."groupId" = survey."groupId
+		LEFT JOIN r_group_branch ON r_group_branch."groupId" = survey."groupId"
 		LEFT JOIN branch ON branch.id = r_group_branch."branchId"
 		LEFT JOIN agent ON agent.id = survey."agentId"
 		LEFT JOIN "group" ON "group".id = survey."groupId"
