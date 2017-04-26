@@ -110,14 +110,13 @@ func GetByAreaId(ctx *iris.Context)(error, []BranchManagerPrima){
   _id_ := ctx.Get("id")
 
   result := []BranchManagerPrima{}
-	if err := services.DBCPsql.Raw(query).Find(&result, _id_).Error; err != nil{
+	if err := services.DBCPsql.Raw(query, _id_).Find(&result).Error; err != nil{
 		return err, []BranchManagerPrima{}
 	}
 	return nil, result;
 }
 
 func IristGetByAreaId(ctx *iris.Context){
-	// err, result := GetByAreaId(ctx.Get()
 	err, result := GetByAreaId(ctx)
 	if err != nil{
 		ctx.JSON(iris.StatusInternalServerError, iris.Map{"data": err})
