@@ -96,6 +96,36 @@ func GetByID(ctx *iris.Context) {
 	}
 }
 
+func GetByAreaId(ctx *iris.Context)(error, []BranchManagerPrima){
+	query := "SELECT branch.\"id\", branch.\"name\", user_mis.\"fullname\" AS Manager, role.\"name\" AS role, area.\"name\" AS area "
+	query += "FROM branch "
+  query += "LEFT JOIN r_area_branch ON r_area_branch.\"branchId\" = branch.\"id\" "
+  query += "LEFT JOIN area ON area.\"id\" = r_area_branch.\"areaId\" "
+  query += "LEFT JOIN r_branch_user_mis ON r_branch_user_mis.\"branchId\" = branch.\"id\" "
+  query += "LEFT JOIN user_mis ON user_mis.\"id\" = r_branch_user_mis.\"userMisId\" "
+  query += "LEFT JOIN r_user_mis_role ON r_user_mis_role.\"userMisId\" = user_mis.\"id\" "
+  query += "LEFT JOIN role ON role.\"id\" = r_user_mis_role.\"roleId\" "
+  query += "WHERE branch.\"deletedAt\" IS NULL AND (role.name LIKE 'Branch Manager' OR role.\"name\" IS null) AND area.\"id\" = ? "
+
+  _id_ := ctx.Get("id")
+
+  result := []BranchManagerPrima{}
+	if err := services.DBCPsql.Raw(query).Find(&result, _id_).Error; err != nil{
+		return err, []BranchManagerPrima{}
+	}
+	return nil, result;
+}
+
+func IristGetByAreaId(ctx *iris.Context){
+	// err, result := GetByAreaId(ctx.Get()
+	err, result := GetByAreaId(ctx)
+	if err != nil{
+		ctx.JSON(iris.StatusInternalServerError, iris.Map{"data": err})
+		return;
+	}
+		ctx.JSON(iris.StatusOK, iris.Map{"data": result})
+}
+
 func DeleteSingle(ctx *iris.Context) {
 	// delete the branch first
 	branch := Branch{}
