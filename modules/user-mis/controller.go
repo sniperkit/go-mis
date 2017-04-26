@@ -3,6 +3,8 @@ package userMis
 import (
 	"bitbucket.org/go-mis/services"
 	"gopkg.in/kataras/iris.v4"
+	"bitbucket.org/go-mis/modules/r"
+	"time"
 )
 
 func Init() {
@@ -28,4 +30,20 @@ func FetchUserMisAreaBranchRole(ctx *iris.Context) {
 		"status": "success",
 		"data":   arrUserMisAreaBranchRole,
 	})
+}
+
+func DeleteUserMis (ctx *iris.Context) {
+	// delete user
+	m := UserMis{}
+	services.DBCPsql.Model(m).Where("\"deletedAt\" IS NULL AND id = ?", ctx.Param("id")).UpdateColumn("deletedAt", time.Now())
+
+	// delete relation to role, area, and branch
+	var mRel []interface{}
+	mRel = append(mRel, r.RUserMisRole{}, r.RBranchUserMis{}, r.RAreaUserMis{})
+	for _, val := range mRel {
+		services.DBCPsql.Model(mrel).Where("\"deletedAt\" IS NULL AND \"userMisId\" = ?", ctx.Param("id")).UpdateColumn("deletedAt", time.Now())
+	}
+
+	ctx.JSON(iris.StatusOK, iris.Map{"data": m})
+
 }
