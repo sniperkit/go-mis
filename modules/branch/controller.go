@@ -96,7 +96,7 @@ func GetByID(ctx *iris.Context) {
 	}
 }
 
-func GetByAreaId(ctx *iris.Context)(error, []BranchManagerPrima){
+func GetByAreaId(ctx *iris.Context)(error, []BranchManagerAreaManager){
 	query := "SELECT branch.\"id\", branch.\"name\", user_mis.\"fullname\" AS Manager, role.\"name\" AS role, area.\"name\" AS area "
 	query += "FROM branch "
   query += "LEFT JOIN r_area_branch ON r_area_branch.\"branchId\" = branch.\"id\" "
@@ -109,9 +109,9 @@ func GetByAreaId(ctx *iris.Context)(error, []BranchManagerPrima){
 
   _id_ := ctx.Get("id")
 
-  result := []BranchManagerPrima{}
+  result := []BranchManagerAreaManager{}
 	if err := services.DBCPsql.Raw(query, _id_).Find(&result).Error; err != nil{
-		return err, []BranchManagerPrima{}
+		return err, []BranchManagerAreaManager{}
 	}
 	return nil, result;
 }
