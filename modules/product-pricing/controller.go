@@ -18,7 +18,7 @@ func SearchInvestor(ctx *iris.Context) {
   from investor
   join r_cif_investor on r_cif_investor."investorId" = investor.id
   join cif on r_cif_investor."cifId" = cif.id
-  where cif.name ~* ? 
+  where cif.name ~* ?
   and investor."isInstitutional" = true
   and not exists (
   	select 1 from r_investor_product_pricing ripp
@@ -29,11 +29,40 @@ func SearchInvestor(ctx *iris.Context) {
 
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"status": "success",
-		"data": sInv,
+		"data":   sInv,
 	})
 }
 
-func GetInvestorsByProductPricing (ctx *iris.Context) {
+func Create(ctx *iris.Context) {
+	m := ProductPricing{}
+	err := ctx.ReadJSON(&m)
+	if err != nil {
+		panic(err)
+	}
+	if *m.IsInstutitional == true {
+		pplist := []ProductPricing{}
+		query := `select * from product_pricing where product_pricing."isInstitutional" = true `
+		query += `and ( product_pricing."startDate" between ? and ? or product_pricing."endDate" between ? and ? or `
+		query += `? between product_pricing."startDate" and product_pricing."endDate" or ? between product_pricing."startDate" and product_pricing."endDate") `
+
+		services.DBCPsql.Raw(query, m.StartDate, m.EndDate, m.StartDate, m.EndDate, m.StartDate, m.EndDate).Scan(&pplist)
+
+		if len(pplist) > 0 {
+			ctx.JSON(iris.StatusInternalServerError, iris.Map{"status": "error", "message": "date overlap", "data": pplist})
+		} else {
+			services.DBCPsql.Create(&m)
+			ctx.JSON(iris.StatusOK, iris.Map{"status": "success", "data": m})
+		}
+
+	} else {
+		services.DBCPsql.Create(&m)
+
+		ctx.JSON(iris.StatusOK, iris.Map{"status": "success", "data": m})
+
+	}
+}
+
+func GetInvestorsByProductPricing(ctx *iris.Context) {
 	ppId := ctx.Param("id")
 	sInv := []InvestorSearchByProductPricing{}
 
@@ -49,6 +78,6 @@ func GetInvestorsByProductPricing (ctx *iris.Context) {
 
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"status": "success",
-		"data": sInv,
+		"data":   sInv,
 	})
 }
