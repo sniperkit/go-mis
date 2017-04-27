@@ -44,12 +44,12 @@ func Create(ctx *iris.Context) {
 		if len(pplist) > 0 {
 			ctx.JSON(iris.StatusInternalServerError, iris.Map{"error": "date overlap", "data": pplist})
 		} else {
-			services.DBCPsql.Table("product_pricing").Create(m)
+			services.DBCPsql.Create(&m)
 			ctx.JSON(iris.StatusOK, iris.Map{"data": m})
 		}
 
 	} else {
-		services.DBCPsql.Table("product_pricing").Create(m)
+		services.DBCPsql.Create(&m)
 
 		ctx.JSON(iris.StatusOK, iris.Map{"data": m})
 
