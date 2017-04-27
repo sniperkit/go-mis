@@ -37,21 +37,22 @@ func Create(ctx *iris.Context) {
 	if *m.IsInstutitional == true {
 		pplist := []ProductPricing{}
 		query := `select * from product_pricing where product_pricing."isInstitutional" = true `
-		query += `and ( product_pricing."startDate" between ? and ? or product_pricing."endDate" between ? and ? ) `
+		query += `and ( product_pricing."startDate" between ? and ? or product_pricing."endDate" between ? and ? or `
+		query += `? between product_pricing."startDate" and product_pricing."endDate" or ? between product_pricing."startDate" and product_pricing."endDate") `
 
-		services.DBCPsql.Raw(query, m.StartDate, m.EndDate, m.StartDate, m.EndDate).Scan(&pplist)
+		services.DBCPsql.Raw(query, m.StartDate, m.EndDate, m.StartDate, m.EndDate, m.StartDate, m.EndDate).Scan(&pplist)
 
 		if len(pplist) > 0 {
-			ctx.JSON(iris.StatusInternalServerError, iris.Map{"error": "date overlap", "data": pplist})
+			ctx.JSON(iris.StatusInternalServerError, iris.Map{"status": "error", "message": "date overlap", "data": pplist})
 		} else {
 			services.DBCPsql.Create(&m)
-			ctx.JSON(iris.StatusOK, iris.Map{"data": m})
+			ctx.JSON(iris.StatusOK, iris.Map{"status": "success", "data": m})
 		}
 
 	} else {
 		services.DBCPsql.Create(&m)
 
-		ctx.JSON(iris.StatusOK, iris.Map{"data": m})
+		ctx.JSON(iris.StatusOK, iris.Map{"status": "success", "data": m})
 
 	}
 
