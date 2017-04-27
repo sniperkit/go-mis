@@ -14,7 +14,7 @@ func SendEmailVerificationSuccess(email string, name string, va_bca string, va_b
 	mandrill.SetFrom("hello@amartha.com")
 	mandrill.SetTo(email)
 	mandrill.SetBcc("investing@amartha.com")
-	mandrill.SetSubject("Verification Success")
+	mandrill.SetSubject("[Amartha] Selamat Data Anda Sudah Terverifikasi ")
 	mandrill.SetTemplateAndRawBody("verification_success", subs)
 	mandrill.SendEmail()
 
@@ -29,7 +29,7 @@ func SendEmailVerificationFailed(email string, name string) {
 	mandrill := new(Mandrill)
 	mandrill.SetFrom("hello@amartha.com")
 	mandrill.SetTo(email)
-	mandrill.SetSubject("Verification Failed")
+	mandrill.SetSubject("[Amartha] Verifikasi Data Anda Gagal ")
 	mandrill.SetTemplateAndRawBody("verification_failed", subs)
 	mandrill.SendEmail()
 
@@ -47,7 +47,7 @@ func SendEmailInvestmentSuccess(email string, name string, transferDate string, 
 	mandrill := new(Mandrill)
 	mandrill.SetFrom("hello@amartha.com")
 	mandrill.SetTo(email)
-	mandrill.SetSubject("Investment Success")
+	mandrill.SetSubject("[Amartha] Selamat, Transaksi Anda Berhasil")
 	mandrill.SetTemplateAndRawBody("investment_success", subs)
 	mandrill.SendEmail()
 
@@ -62,7 +62,7 @@ func SendEmailInvestmentFailed(email string, name string) {
 	mandrill := new(Mandrill)
 	mandrill.SetFrom("hello@amartha.com")
 	mandrill.SetTo(email)
-	mandrill.SetSubject("Investment Failed")
+	mandrill.SetSubject("[Amartha] Transaksi Anda Gagal")
 	mandrill.SetTemplateAndRawBody("investment_failed", subs)
 	mandrill.SendEmail()
 
@@ -83,17 +83,17 @@ func SendEmailDisbursementSucccess(subject string, template string, email string
 	mandrill := new(Mandrill)
 	mandrill.SetFrom("hello@amartha.com")
 	mandrill.SetTo(email)
-	mandrill.SetSubject("UPK Tertunda")
-	mandrill.SetTemplateAndRawBody("upk_delay", subs)
+	mandrill.SetSubject("[Amartha] Pencairan Mitra Usaha Anda Telah Berhasil")
+	mandrill.SetTemplateAndRawBody("disbursement_success", subs)
 	mandrill.SendEmail()
 }
 
 func SendEmailDisbursementPending(subject string, template string, email string, name string, borrowerName string, purpose string, plafon string, tenor string, totalPeople string, totalFund string) {
-	SendEmailDisbursement("Disbursement Pending", "disbursement_pending", email, name, borrowerName, purpose, plafon, tenor, totalPeople, totalFund)
+	SendEmailDisbursement("[Amartha] Pencairan Mitra Usaha Anda Gagal", "disbursement_pending", email, name, borrowerName, purpose, plafon, tenor, totalPeople, totalFund)
 }
 
 func SendEmailDisbursementPostpone(subject string, template string, email string, name string, borrowerName string, purpose string, plafon string, tenor string, totalPeople string, totalFund string) {
-	SendEmailDisbursement("Disbursement Failed", "disbursement_postpone", email, name, borrowerName, purpose, plafon, tenor, totalPeople, totalFund)
+	SendEmailDisbursement("[Amartha] Pencairan Mitra Usaha Anda Gagal", "disbursement_postpone", email, name, borrowerName, purpose, plafon, tenor, totalPeople, totalFund)
 }
 
 func SendEmailDisbursement(subject string, template string, email string, name string, borrowerName string, purpose string, plafon string, tenor string, totalPeople string, totalFund string) {
@@ -125,7 +125,7 @@ func SendEmailCashout(email string, name string, cashoutID string) {
 	mandrill := new(Mandrill)
 	mandrill.SetFrom("hello@amartha.com")
 	mandrill.SetTo(email)
-	mandrill.SetSubject("Cashout Success")
+	mandrill.SetSubject("[Amartha] Cashout Request Anda Telah Kami Terima")
 	mandrill.SetTemplateAndRawBody("cashout_success", subs)
 	mandrill.SendEmail()
 
@@ -146,7 +146,7 @@ func SendEmailUpkDelay(email string, name string, totalPeople string, totalFund 
 	mandrill := new(Mandrill)
 	mandrill.SetFrom("hello@amartha.com")
 	mandrill.SetTo(email)
-	mandrill.SetSubject("UPK Tertunda")
+	mandrill.SetSubject("[Amartha] Penundaan Pencairan")
 	mandrill.SetTemplateAndRawBody("upk_delay", subs)
 	mandrill.SendEmail()
 
