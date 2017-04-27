@@ -24,6 +24,42 @@ func SearchInvestor(ctx *iris.Context) {
 
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"status": "success",
-		"data": sInv,
+		"data":   sInv,
 	})
+}
+
+func Create(ctx *iris.Context) {
+	m := ProductPricing{}
+	err := ctx.ReadJSON(&m)
+	if err != nil {
+		panic(err)
+	}
+	if *m.IsInstutitional == true {
+		pplist := []ProductPricing{}
+		query := `select * from product_pricing where product_pricing."isInstitutional" = true `
+		query += `and( product_pricing."startDate" between ? and ? or product_pricing."endDate" between ? and ?`
+
+		services.DBCPsql.Raw(query, m.StartDate, m.EndDate, m.StartDate, m.EndDate).Scan(&pplist)
+
+		if len(pplist) > 0 {
+			ctx.JSON(iris.StatusInternalServerError, iris.Map{"error": "date overlap"})
+		} else {
+			if dbc := services.DBCPsql.Table("product-pricing").Create(m); dbc.Error != nil {
+				ctx.JSON(iris.StatusInternalServerError, iris.Map{"error": dbc.Error})
+				return
+			}
+
+			ctx.JSON(iris.StatusOK, iris.Map{"data": m})
+		}
+
+	} else {
+		if dbc := services.DBCPsql.Table("product-pricing").Create(m); dbc.Error != nil {
+			ctx.JSON(iris.StatusInternalServerError, iris.Map{"error": dbc.Error})
+			return
+		}
+
+		ctx.JSON(iris.StatusOK, iris.Map{"data": m})
+
+	}
+
 }

@@ -116,6 +116,7 @@ func InitCustomApi() {
 		v2.Any("/cif-investor-account", cif.GetCifInvestorAccount)
 		v2.Any("/assign-investor-to-loan", loan.AssignInvestorToLoan)
 		v2.Any("/product-pricing/s/investor/:searchStr", productPricing.SearchInvestor)
+		v2.Any("/product-pricing", productPricing.Create)
 		v2.Any("/prospective-borrower", prospectiveBorrower.GetProspectiveBorrower)
 		v2.Any("/prospective-borrower/get/:id", prospectiveBorrower.GetProspectiveBorrowerDetail)
 		v2.Any("/prospective-borrower/set/:id/status/:status", prospectiveBorrower.UpdateStatusProspectiveBorrower)
