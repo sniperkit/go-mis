@@ -119,6 +119,9 @@ func InitCustomApi() {
 		v2.Any("/prospective-borrower", prospectiveBorrower.GetProspectiveBorrower)
 		v2.Any("/prospective-borrower/get/:id", prospectiveBorrower.GetProspectiveBorrowerDetail)
 		v2.Any("/prospective-borrower/set/:id/status/:status", prospectiveBorrower.UpdateStatusProspectiveBorrower)
+		v2.Any("/installment-review/get/:branch_id/day/:schedule_day", installment.GetPendingInstallment)
+		v2.Any("/installment-review/by-group/:group_id", installment.GetPendingInstallmentDetail)
+		v2.Any("/installment-review/set/:installment_id", installment.UpdateInstallmentByInstallmentID)
 	}
 
 	iris.Get(baseURL+"/investor-without-va", investor.InvestorWithoutVA)
