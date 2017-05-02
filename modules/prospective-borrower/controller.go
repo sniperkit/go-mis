@@ -24,6 +24,7 @@ type SurveySchema struct {
 
 // GetProspectiveBorrower - Get prospective borrower v2
 func GetProspectiveBorrower(ctx *iris.Context) {
+	branchID := ctx.Get("BRANCH_ID")
 	surveySchema := []SurveySchema{}
 	q := `SELECT survey.*, branch."name" as "branch", "group"."name" as "group", agent.fullname as "agent"
 	 	FROM survey 
@@ -31,10 +32,10 @@ func GetProspectiveBorrower(ctx *iris.Context) {
 		LEFT JOIN branch ON branch.id = r_group_branch."branchId"
 		LEFT JOIN agent ON agent.id = survey."agentId"
 		LEFT JOIN "group" ON "group".id = survey."groupId"
-		WHERE "isMigrate" = false AND "isApprove" = false AND survey."deletedAt" IS NULL
+		WHERE branch.id = ? AND "isMigrate" = false AND "isApprove" = false AND survey."deletedAt" IS NULL
 		ORDER BY survey.id asc
 	`
-	services.DBCPsql.Table("survey").Raw(q).Scan(&surveySchema)
+	services.DBCPsql.Table("survey").Raw(q, branchID).Scan(&surveySchema)
 
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"status": "success",
