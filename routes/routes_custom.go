@@ -56,6 +56,7 @@ func InitCustomApi() {
 	v2 := iris.Party(baseURL, auth.EnsureAuth)
 	{
 		v2.Any("/me-user-mis", auth.CurrentUserMis)
+		v2.Any("/update-user-branch/:branch_id", userMis.UpdateUserBranch)
 		// v2.Any("/me-agent", auth.CurrentAgent)
 		v2.Any("/branch", branch.FetchAll)
 		v2.Any("/branch/delete/:id", branch.DeleteSingle)
