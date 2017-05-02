@@ -3,7 +3,10 @@ package prospectiveBorrower
 import (
 	"time"
 
+	"bitbucket.org/go-mis/modules/branch"
+	"bitbucket.org/go-mis/modules/role"
 	"bitbucket.org/go-mis/modules/survey"
+	"bitbucket.org/go-mis/modules/user-mis"
 	"bitbucket.org/go-mis/services"
 	iris "gopkg.in/kataras/iris.v4"
 )
@@ -24,17 +27,54 @@ type SurveySchema struct {
 
 // GetProspectiveBorrower - Get prospective borrower v2
 func GetProspectiveBorrower(ctx *iris.Context) {
-	surveySchema := []SurveySchema{}
-	q := `SELECT survey.*, branch."name" as "branch", "group"."name" as "group", agent.fullname as "agent"
-	 	FROM survey 
-		LEFT JOIN r_group_branch ON r_group_branch."groupId" = survey."groupId"
-		LEFT JOIN branch ON branch.id = r_group_branch."branchId"
-		LEFT JOIN agent ON agent.id = survey."agentId"
-		LEFT JOIN "group" ON "group".id = survey."groupId"
-		WHERE "isMigrate" = false AND "isApprove" = false AND survey."deletedAt" IS NULL
-		ORDER BY survey.id asc
+	roles := []role.Role{}
+	qRole := `SELECT "role".* FROM "role"
+		JOIN r_user_mis_role rumr ON rumr."roleId" = "role".id 
+		WHERE ("role"."name" ~* 'admin' OR "role"."name" ~* 'area') AND rumr."userMisId" = ?
 	`
-	services.DBCPsql.Table("survey").Raw(q).Scan(&surveySchema)
+
+	userMis := ctx.Get("USER_MIS").(userMis.UserMis)
+	services.DBCPsql.Raw(qRole, userMis.ID).Scan(&roles)
+
+	surveySchema := []SurveySchema{}
+	if len(roles) == 0 {
+		branchID := ctx.Get("BRANCH_ID")
+		q := `SELECT survey.*, branch."name" as "branch", "group"."name" as "group", agent.fullname as "agent"
+			FROM survey 
+			LEFT JOIN r_group_branch ON r_group_branch."groupId" = survey."groupId"
+			LEFT JOIN branch ON branch.id = r_group_branch."branchId"
+			LEFT JOIN agent ON agent.id = survey."agentId"
+			LEFT JOIN "group" ON "group".id = survey."groupId"
+			WHERE branch.id = ? AND "isMigrate" = false AND "isApprove" = false AND survey."deletedAt" IS NULL
+			ORDER BY survey.id asc
+		`
+		services.DBCPsql.Table("survey").Raw(q, branchID).Scan(&surveySchema)
+	} else {
+		qBranch := `
+		SELECT branch.* FROM branch
+		JOIN r_area_branch rab ON rab."branchId" = branch.id
+		JOIN r_area_user_mis raum ON raum."areaId" = rab."areaId"
+		WHERE raum."userMisId" = ?
+		`
+		branches := []branch.Branch{}
+		services.DBCPsql.Raw(qBranch, userMis.ID).Scan(&branches)
+
+		branchIds := make([]uint64, len(branches))
+		for i, current := range branches {
+			branchIds[i] = current.ID
+		}
+
+		q := `SELECT survey.*, branch."name" as "branch", "group"."name" as "group", agent.fullname as "agent"
+			FROM survey 
+			LEFT JOIN r_group_branch ON r_group_branch."groupId" = survey."groupId"
+			LEFT JOIN branch ON branch.id = r_group_branch."branchId"
+			LEFT JOIN agent ON agent.id = survey."agentId"
+			LEFT JOIN "group" ON "group".id = survey."groupId"
+			WHERE branch.id in (?) AND "isMigrate" = false AND "isApprove" = false AND survey."deletedAt" IS NULL
+			ORDER BY survey.id asc
+		`
+		services.DBCPsql.Table("survey").Raw(q, branchIds).Scan(&surveySchema)
+	}
 
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"status": "success",
