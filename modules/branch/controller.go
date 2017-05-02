@@ -74,6 +74,30 @@ func getBranchManager() []BranchManager {
 	return result
 }
 
+func GetBranchbyArea(ctx *iris.Context)(error, []BranchByArea){
+	query := "SELECT branch.\"id\", area.name, branch.name FROM branch "
+	query += "LEFT JOIN r_area_branch ON r_area_branch.\"branchId\" = branch.id "
+	query += "LEFT JOIN area ON area.id = r_area_branch.\"areaId\" "
+	query += "WHERE r_area_branch.\"areaId\" = ? "
+
+	areaId := ctx.Get("id");
+	result := []BranchByArea{}
+
+	if err := services.DBCPsql.Raw(query, areaId).Find(&result).Error; err != nil{
+		return err, []BranchByArea{}
+	}
+	return nil, result
+}
+
+func IrisGetByAreaId(ctx *iris.Context){
+	err, result := GetBranchbyArea(ctx)
+	if err != nil{
+		ctx.JSON(iris.StatusInternalServerError, iris.Map{"data": err})
+		return;
+	}
+		ctx.JSON(iris.StatusOK, iris.Map{"data": result})
+}
+
 func combineBranchManager(branch []BranchManagerArea, branchManager []BranchManager) []BranchManagerArea {
 	for i := 0; i < len(branch); i++ {
 		for j := 0; j < len(branchManager); j++ {
