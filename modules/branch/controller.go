@@ -82,7 +82,7 @@ func GetBranchbyArea(ctx *iris.Context)(error, []BranchByArea){
 
 	areaId := ctx.Get("id");
 	result := []BranchByArea{}
-
+ 
 	if err := services.DBCPsql.Raw(query, areaId).Find(&result).Error; err != nil{
 		return err, []BranchByArea{}
 	}
