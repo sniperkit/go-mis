@@ -36,7 +36,6 @@ func CheckVoucherByOrderNo(orderNo string) Voucher {
 	query := `select v.* from r_loan_order_voucher as rlov join voucher as v on rlov."voucherId" = v."id" join loan_order as lo on rlov."loanOrderId" = lo.id where lo."orderNo"='` + orderNo + `'`
 	if err := services.DBCPsql.Raw(query).Scan(&voucher).Error; err != nil {
 		fmt.Println(err)
-		fmt.Println(query)
 	}
 	return voucher
 }

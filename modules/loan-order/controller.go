@@ -217,9 +217,21 @@ where lo."orderNo"=?`
 }
 
 func insertLoanHistoryAndRLoanHistory(orderNo string, db *gorm.DB) error {
+
+	getInvestorIdquery := `select "investorId" from r_investor_product_pricing_loan rippl
+						join r_loan_order rlo on rlo."loanId" = rippl."loanId" join loan_order lo on lo.id = rlo."loanOrderId"
+						where lo."orderNo"='` + orderNo + `'`
+
+	investorIdStruct := struct {
+		InvestorId uint64 `gorm:"column:investorId"`
+	}{}
+	db.Raw(getInvestorIdquery).Scan(&investorIdStruct)
+
 	query := `with ins as (INSERT INTO loan_history("stageFrom","stageTo","remark","createdAt","updatedAt")
-	select  upper('ORDERED'),upper('INVESTOR'),concat('loan id = ' ,l.id,' updated stage to INVESTOR ', ' orderNo=` + orderNo + `'),current_timestamp,current_timestamp from loan_order lo join r_loan_order rlo on rlo."loanOrderId" = lo.id join loan l on l.id = rlo."loanId" where lo."orderNo"='` + orderNo + `' returning id, (string_to_array(remark,' '))[4]::int as loanId)
-	INSERT INTO r_loan_history("loanId","loanHistoryId","createdAt","updatedAt") select  ins.loanId,ins.id ,current_timestamp,current_timestamp from ins`
+					select  upper('ORDERED'),upper('INVESTOR'),concat('loan id = ' ,l.id,' updated stage to INVESTOR ', ' orderNo = %d investorId %d'),current_timestamp,current_timestamp from loan_order lo join r_loan_order rlo on rlo."loanOrderId" = lo.id join loan l on l.id = rlo."loanId" where lo."orderNo"='` + orderNo + `' returning id, (string_to_array(remark,' '))[4]::int as loanId)
+					INSERT INTO r_loan_history("loanId","loanHistoryId","createdAt","updatedAt") select  ins.loanId,ins.id ,current_timestamp,current_timestamp from ins`
+
+	query = fmt.Sprintf(query, orderNo, investorIdStruct.InvestorId)
 	return db.Exec(query).Error
 }
 
