@@ -105,29 +105,59 @@ func AcceptLoanOrder(ctx *iris.Context) {
 	db := services.DBCPsql.Begin()
 
 	if err := UpdateSuccess(orderNo, db); err != nil {
+		fmt.Printf("%v", err)
 		processErrorAndRollback(ctx, orderNo, db, err, "Update Success")
+		ctx.JSON(iris.StatusInternalServerError, iris.Map{
+			"status":  "error",
+			"message": err,
+		})
 		return
 	}
 
 	if err := CheckVoucherAndInsertToDebit(accountId, orderNo, db); err != nil {
+		fmt.Printf("%v", err)
 		processErrorAndRollback(ctx, orderNo, db, err, "Check Voucher and Insert into Debit")
+		ctx.JSON(iris.StatusInternalServerError, iris.Map{
+			"status":  "error",
+			"message": err,
+		})
 		return
 	}
 
 	if err := UpdateCredit(loans, accountId, db); err != nil {
+		fmt.Printf("%v", err)
 		processErrorAndRollback(ctx, orderNo, db, err, "Update Credit")
+		ctx.JSON(iris.StatusInternalServerError, iris.Map{
+			"status":  "error",
+			"message": err,
+		})
 		return
 	}
 	if err := UpdateAccountCredit(orderNo, accountId, db); err != nil {
+		fmt.Printf("%v", err)
 		processErrorAndRollback(ctx, orderNo, db, err, "Update Account")
+		ctx.JSON(iris.StatusInternalServerError, iris.Map{
+			"status":  "error",
+			"message": err,
+		})
 		return
 	}
 	if err := insertLoanHistoryAndRLoanHistory(orderNo, db); err != nil {
+		fmt.Printf("%v", err)
 		processErrorAndRollback(ctx, orderNo, db, err, "Insert Loan History")
+		ctx.JSON(iris.StatusInternalServerError, iris.Map{
+			"status":  "error",
+			"message": err,
+		})
 		return
 	}
 	if err := updateLoanStageToInvestor(orderNo, db); err != nil {
+		fmt.Printf("%v", err)
 		processErrorAndRollback(ctx, orderNo, db, err, "Update Loan Stage")
+		ctx.JSON(iris.StatusInternalServerError, iris.Map{
+			"status":  "error",
+			"message": err,
+		})
 		return
 	}
 
@@ -228,7 +258,7 @@ func insertLoanHistoryAndRLoanHistory(orderNo string, db *gorm.DB) error {
 	db.Raw(getInvestorIdquery).Scan(&investorIdStruct)
 
 	query := `with ins as (INSERT INTO loan_history("stageFrom","stageTo","remark","createdAt","updatedAt")
-					select  upper('ORDERED'),upper('INVESTOR'),concat('loan id = ' ,l.id,' updated stage to INVESTOR ', ' orderNo = %d investorId %d'),current_timestamp,current_timestamp from loan_order lo join r_loan_order rlo on rlo."loanOrderId" = lo.id join loan l on l.id = rlo."loanId" where lo."orderNo"='` + orderNo + `' returning id, (string_to_array(remark,' '))[4]::int as loanId)
+					select  upper('ORDERED'),upper('INVESTOR'),concat('loan id = ' ,l.id,' updated stage to INVESTOR ', ' orderNo = %d investorId = %d '),current_timestamp,current_timestamp from loan_order lo join r_loan_order rlo on rlo."loanOrderId" = lo.id join loan l on l.id = rlo."loanId" where lo."orderNo"='` + orderNo + `' returning id, (string_to_array(remark,' '))[4]::int as loanId)
 					INSERT INTO r_loan_history("loanId","loanHistoryId","createdAt","updatedAt") select  ins.loanId,ins.id ,current_timestamp,current_timestamp from ins`
 
 	query = fmt.Sprintf(query, orderNo, investorIdStruct.InvestorId)
