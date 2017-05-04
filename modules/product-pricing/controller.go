@@ -48,7 +48,7 @@ func Create(ctx *iris.Context) {
 		services.DBCPsql.Raw(query, m.StartDate, m.EndDate, m.StartDate, m.EndDate, m.StartDate, m.EndDate).Scan(&pplist)
 
 		if len(pplist) > 0 {
-			ctx.JSON(iris.StatusInternalServerError, iris.Map{"status": "error", "message": "date overlap", "data": pplist})
+			ctx.JSON(iris.StatusInternalServerError, iris.Map{"status": "error", "message": "Date Overlap, please choose another date.", "data": pplist})
 		} else {
 			services.DBCPsql.Create(&m)
 			ctx.JSON(iris.StatusOK, iris.Map{"status": "success", "data": m})
