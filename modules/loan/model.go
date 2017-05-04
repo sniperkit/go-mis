@@ -81,6 +81,7 @@ type Akad struct {
 	Installment        float64 `gorm:"column:installment" json:"installment"`
 	Rate               float64 `gorm:"column:rate" json:"rate"`
 	SubmittedLoanDate  string  `gorm:"column:submittedLoanDate" json:"submittedLoanDate"`
+	InvestorID         uint64  `gorm:"column:investorId" json:"investorId"`
 	Investor           string  `gorm:"column:investor" json:"investor"`
 	Borrower           string  `gorm:"column:borrower" json:"borrower"`
 	Group              string  `gorm:"column:group" json:"group"`
