@@ -60,7 +60,7 @@ func InitCustomApi() {
 		v2.Any("/branch", branch.FetchAll)
 		v2.Any("/branch-area/:id", branch.IristGetByAreaId)
 		v2.Any("/branch/delete/:id", branch.DeleteSingle)
-		v2.Any("/branch/:id", branch.GetByID)
+		v2.Any("/branch/:id", branch.GetBranchById)
 		v2.Any("/area", area.FetchAll)
 		v2.Any("/area/:id", area.GetByID)
 		v2.Any("/cif", cif.FetchAll)
