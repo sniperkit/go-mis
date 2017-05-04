@@ -20,6 +20,12 @@ type Branch struct {
 	DeletedAt *time.Time       `gorm:"column:deletedAt" json:"deletedAt"`
 }
 
+type BranchByArea struct{	
+	ID        uint64 `gorm:"primary_key" gorm:"column:_id" json:"_id"`
+	Area      string `gorm:"column:name" json:"area"`
+	Branch    string `gorm:"column:name" json:"branch"`
+}
+
 type BranchManagerArea struct {
 	ID       uint64 `gorm:"primary_key" gorm:"column:_id" json:"_id"`
 	Name     string `gorm:"column:name" json:"name"`

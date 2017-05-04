@@ -79,12 +79,16 @@ func UserMisLogin(ctx *iris.Context) {
 	rUserMisBranch := r.RBranchUserMis{}
 	services.DBCPsql.Table("r_branch_user_mis").Where(" \"userMisId\" = ? ", userMisObj.ID).First(&rUserMisBranch)
 
+	rAreaUserMis := r.RAreaUserMis{}
+	services.DBCPsql.Table("r_area_user_mis").Where(" \"userMisId\" = ? ", userMisObj.ID).First(&rAreaUserMis)
+
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"status": "success",
 		"data": iris.Map{
 			"name":        userMisObj.Fullname,
 			"accessToken": accessTokenHash,
 			"branchId":    rUserMisBranch.BranchId,
+			"areaId":    rAreaUserMis.AreaId,
 			"role": iris.Map{
 				"assignedRole": roleObj.Name,
 				"config":       roleObj.Config,

@@ -60,7 +60,7 @@ from investor i join r_account_investor rai on i.id = rai."investorId" join acco
 join r_cif_investor rci on i.id=rci."investorId" join cif c on c.id=rci."cifId"
 join r_investor_product_pricing_loan rippl on i.id = rippl."investorId" join loan l on l.id=rippl."loanId"
 join r_loan_order rlo on l.id = rlo."loanId" join loan_order lo on lo.id = rlo."loanOrderId"
-where lo.remark = 'PENDING' and i.id = ?`
+where lo.remark = 'PENDING' and lo.id = ?`
 
 	loanOrderSchema := []LoanOrderDetail{}
 	e := services.DBCPsql.Raw(query, id).Scan(&loanOrderSchema).Error
