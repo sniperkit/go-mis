@@ -3,6 +3,7 @@ package branch
 import (
 	"bitbucket.org/go-mis/services"
 	"bitbucket.org/go-mis/modules/r"
+	"fmt"
 	"time"
 
 	iris "gopkg.in/kataras/iris.v4"
@@ -49,6 +50,31 @@ func FetchAll(ctx *iris.Context) {
 		"data":   branch,
 	})
 }
+
+func GetBranchById(ctx *iris.Context){
+	
+	query := "SELECT branch.\"id\", branch.\"name\" AS \"name\", branch.\"province\", branch.\"city\" ,user_mis.\"fullname\" AS \"manager\", role.\"name\" AS \"role\", area.\"name\" AS \"area\" "
+	query += "FROM branch "
+	query += "LEFT JOIN r_branch_user_mis ON r_branch_user_mis.\"branchId\" = branch.\"id\" "
+	query += "LEFT JOIN user_mis ON user_mis.\"id\" = r_branch_user_mis.\"userMisId\" "
+	query += "LEFT JOIN r_user_mis_role ON r_user_mis_role.\"userMisId\" = user_mis.\"id\" "
+	query += "LEFT JOIN \"role\" ON \"role\".\"id\" = r_user_mis_role.\"roleId\" "
+	query += "LEFT JOIN r_area_branch ON r_area_branch.\"branchId\" = branch.\"id\" "
+	query += "LEFT JOIN area ON area.\"id\" = r_area_branch.\"areaId\" "
+	query += "WHERE branch.\"deletedAt\" IS NULL AND branch.\"id\" = ? AND (role.\"name\" LIKE '%Branch Manager%' or role.\"name\" IS NULL)"
+
+	id := ctx.Get("id")
+	fmt.Printf("%+v",id)
+	branch := BranchManagerArea{}
+	services.DBCPsql.Raw(query, id).Scan(&branch)
+
+	ctx.JSON(iris.StatusOK, iris.Map{
+		"status": "success",
+		"data":   branch,
+	})
+}
+
+
 
 func getBranchWithoutManager() []BranchManagerArea {
 	query := "SELECT branch.\"id\", branch.\"name\", branch.\"city\", branch.\"province\", area.\"name\" as \"area\" "
@@ -137,29 +163,3 @@ func DeleteSingle(ctx *iris.Context) {
 	ctx.JSON(iris.StatusOK, iris.Map{"data": branch})
 }
 
-func GetBranchById(ctx *iris.Context){
-	id := ctx.Get("id")
-	branch := BranchManagerArea{}
-
-	query := "SELECT branch.\"id\", branch.\"name\" AS \"name\", branch.\"province\", branch.\"city\" ,user_mis.\"fullname\" AS \"manager\", role.\"name\" AS \"role\", area.\"name\" AS \"area\" "
-	query += "FROM branch "
-	query += "LEFT JOIN r_branch_user_mis ON r_branch_user_mis.\"branchId\" = branch.\"id\" "
-	query += "LEFT JOIN user_mis ON user_mis.\"id\" = r_branch_user_mis.\"userMisId\" "
-	query += "LEFT JOIN r_user_mis_role ON r_user_mis_role.\"userMisId\" = user_mis.\"id\" "
-	query += "LEFT JOIN \"role\" ON \"role\".\"id\" = r_user_mis_role.\"roleId\" "
-	query += "LEFT JOIN r_area_branch ON r_area_branch.\"branchId\" = branch.\"id\" "
-	query += "LEFT JOIN area ON area.\"id\" = r_area_branch.\"areaId\" "
-	query += "WHERE branch.\"deletedAt\" IS NULL AND branch.\"id\" = ? AND (role.\"name\" LIKE '%Branch Manager%')"
-
-	if e := services.DBCPsql.Raw(query, id).Scan(&branch).Error; e != nil {
-		ctx.JSON(iris.StatusOK, iris.Map{
-			"status": "failed",
-			"data":   e,
-		})
-		return
-	}
-	ctx.JSON(iris.StatusOK, iris.Map{
-		"status": "success",
-		"data":   branch,
-	})
-}
