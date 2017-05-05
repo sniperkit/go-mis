@@ -19,6 +19,7 @@ import (
 	"bitbucket.org/go-mis/modules/loan"
 	"bitbucket.org/go-mis/modules/loan-order"
 	"bitbucket.org/go-mis/modules/location"
+	"bitbucket.org/go-mis/modules/sector"
 	"bitbucket.org/go-mis/modules/notification"
 	"bitbucket.org/go-mis/modules/product-pricing"
 	prospectiveBorrower "bitbucket.org/go-mis/modules/prospective-borrower"
@@ -124,6 +125,7 @@ func InitCustomApi() {
 		v2.Any("/prospective-borrower", prospectiveBorrower.GetProspectiveBorrower)
 		v2.Any("/prospective-borrower/get/:id", prospectiveBorrower.GetProspectiveBorrowerDetail)
 		v2.Any("/prospective-borrower/set/:id/status/:status", prospectiveBorrower.UpdateStatusProspectiveBorrower)
+		v2.Any("/sector/detail/:id", sector.GetSectorById)
 	}
 
 	iris.Get(baseURL+"/investor-without-va", investor.InvestorWithoutVA)
