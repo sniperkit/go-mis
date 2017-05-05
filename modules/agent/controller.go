@@ -68,3 +68,37 @@ func GetAllAgentByBranchID(ctx *iris.Context) {
 		"data":   agentSchema,
 	})
 }
+
+func GetAgentById(ctx *iris.Context){
+		result := AgentBranch{}
+		query := "SELECT agent.\"id\" AS id, "
+	  query += "agent.\"username\" AS \"username\", "
+	  query += "agent.\"fullname\" AS \"fullname\", "
+	  query += "agent.\"password\" AS \"password\", "
+	  query += "agent.\"bankName\" AS \"bankName\", "
+		query += "agent.\"bankAccountName\" AS \"bankAccountName\", "
+	  query += "agent.\"bankAccountNo\" AS \"bankAccountName\", "
+	  query += "agent.\"picUrl\" AS \"picUrl\", "
+	  query += "agent.\"phoneNo\" AS \"phoneNo\", "
+	  query += "agent.\"address\" AS \"address\", "
+	  query += "agent.\"kelurahan\" AS \"kelurahan\", "
+	  query += "agent.\"kecamatan\" AS \"kecamatan\", "
+	  query += "agent.\"city\" AS \"city\", "
+		query += "agent.\"province\" AS \"province\", "
+		query += "agent.\"nationality\" AS \"nationality\", "
+	  query += "agent.\"lat\" AS \"lat\", "
+	  query += "agent.\"lng\" AS \"lng\", "
+	  query += "branch.\"name\" AS \"branchName\" "
+		query += "FROM agent "
+		query += "LEFT JOIN r_branch_agent ON r_branch_agent.\"agentId\" = agent.\"id\" "
+		query += "LEFT JOIN branch ON branch.\"id\" = r_branch_agent.\"branchId\" "
+		query += "WHERE agent.\"id\" = ?"
+
+		id := ctx.Get("id")
+		services.DBCPsql.Raw(query, id).Scan(&result)
+		ctx.JSON(iris.StatusOK, iris.Map{
+			"status": "success",
+			"data":   result,
+		})
+
+}
