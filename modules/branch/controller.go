@@ -3,7 +3,6 @@ package branch
 import (
 	"bitbucket.org/go-mis/services"
 	"bitbucket.org/go-mis/modules/r"
-	"fmt"
 	"time"
 
 	iris "gopkg.in/kataras/iris.v4"
@@ -64,7 +63,6 @@ func GetBranchById(ctx *iris.Context){
 	query += "WHERE branch.\"deletedAt\" IS NULL AND branch.\"id\" = ? AND (role.\"name\" LIKE '%Branch Manager%' or role.\"name\" IS NULL)"
 
 	id := ctx.Get("id")
-	fmt.Printf("%+v",id)
 	branch := BranchManagerArea{}
 	services.DBCPsql.Raw(query, id).Scan(&branch)
 
