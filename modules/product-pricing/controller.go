@@ -81,3 +81,13 @@ func GetInvestorsByProductPricing(ctx *iris.Context) {
 		"data":   sInv,
 	})
 }
+
+
+func DeleteProductPricing(ctx *iris.Context){
+	ppId := ctx.Param("ppId")
+	invId := ctx.Param("invId")
+	productPricing := ProductPricing{}
+	query := `UPDATE r_investor_product_pricing SET "deletedAt" = now() WHERE "investorId" = ? AND "productPricingId" = ?`
+	services.DBCPsql.Raw(query, invId, ppId).Scan(&productPricing);
+	ctx.JSON(iris.StatusOK, iris.Map{"data": productPricing})
+}
