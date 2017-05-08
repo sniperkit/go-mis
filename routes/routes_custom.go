@@ -19,10 +19,10 @@ import (
 	"bitbucket.org/go-mis/modules/loan"
 	"bitbucket.org/go-mis/modules/loan-order"
 	"bitbucket.org/go-mis/modules/location"
-	"bitbucket.org/go-mis/modules/sector"
 	"bitbucket.org/go-mis/modules/notification"
 	"bitbucket.org/go-mis/modules/product-pricing"
 	prospectiveBorrower "bitbucket.org/go-mis/modules/prospective-borrower"
+	"bitbucket.org/go-mis/modules/sector"
 	"bitbucket.org/go-mis/modules/survey"
 	"bitbucket.org/go-mis/modules/transaction"
 	"bitbucket.org/go-mis/modules/user-mis"
@@ -123,6 +123,7 @@ func InitCustomApi() {
 		v2.Any("/product-pricing", productPricing.Create)
 		v2.Any("/product-pricing/get/:id", productPricing.GetInvestorsByProductPricing)
 		v2.Any("/prospective-borrower", prospectiveBorrower.GetProspectiveBorrower)
+		v2.Any("/prospective-borrower/archived", prospectiveBorrower.GetArchivedProspectiveBorrower)
 		v2.Any("/prospective-borrower/get/:id", prospectiveBorrower.GetProspectiveBorrowerDetail)
 		v2.Any("/prospective-borrower/set/:id/status/:status", prospectiveBorrower.UpdateStatusProspectiveBorrower)
 		v2.Any("/sector/detail/:id", sector.GetSectorById)
