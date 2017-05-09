@@ -58,13 +58,13 @@ func InvestorRegisterVA(ctx *iris.Context) {
 		return
 	}
 
-	vaSchemaBCA := &virtualAccount.VirtualAccount{VirtualAccountCode: "04435", VirtualAccountName: investorVASchema.InvestorName, VirtualAccountNo: investorVASchema.VaBca}
+	vaSchemaBCA := &virtualAccount.VirtualAccount{BankName: "BCA", VirtualAccountCode: "04435", VirtualAccountName: investorVASchema.InvestorName, VirtualAccountNo: investorVASchema.VaBca}
 	services.DBCPsql.Create(vaSchemaBCA)
 
 	rInvestorVaBca := &r.RInvestorVirtualAccount{InvestorId: investorVASchema.InvestorID, VirtualAccountId: vaSchemaBCA.ID}
 	services.DBCPsql.Create(rInvestorVaBca)
 
-	vaSchemaBRI := &virtualAccount.VirtualAccount{VirtualAccountCode: "99959", VirtualAccountName: investorVASchema.InvestorName, VirtualAccountNo: investorVASchema.VaBri}
+	vaSchemaBRI := &virtualAccount.VirtualAccount{BankName: "BRI", VirtualAccountCode: "99959", VirtualAccountName: investorVASchema.InvestorName, VirtualAccountNo: investorVASchema.VaBri}
 	services.DBCPsql.Create(vaSchemaBRI)
 
 	rInvestorVaBri := &r.RInvestorVirtualAccount{InvestorId: investorVASchema.InvestorID, VirtualAccountId: vaSchemaBRI.ID}

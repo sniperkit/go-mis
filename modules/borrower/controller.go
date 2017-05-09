@@ -200,6 +200,7 @@ func CreateCIF(payload map[string]interface{}) cif.Cif {
 	newCif.RT = cpl["client_rt"]
 	newCif.RW = cpl["client_rw"]
 	newCif.Income = wifeIncome + husbandIncome + otherIncome
+	newCif.Occupation = cpl["client_job"]
 
 	return newCif
 }

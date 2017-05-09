@@ -58,13 +58,16 @@ func InitCustomApi() {
 	{
 		v2.Any("/me-user-mis", auth.CurrentUserMis)
 		v2.Any("/me-notif", auth.Nofif)
+		v2.Any("/update-user-branch/:branch_id", userMis.UpdateUserBranch)
 		// v2.Any("/me-agent", auth.CurrentAgent)
 		v2.Any("/branch", branch.FetchAll)
 		v2.Any("/branch-area/:id", branch.IristGetByAreaId)
 		v2.Any("/branch/delete/:id", branch.DeleteSingle)
 		v2.Any("/branch/detail/:id", branch.GetBranchById)
+		v2.Any("/branch/:id", branch.GetByID)
+		v2.Any("/branch/area/:id", branch.IrisGetByAreaId)
 		v2.Any("/area", area.FetchAll)
-		v2.Any("/area/:id", area.GetByID)
+		v2.Any("/area/:id", area.GetByIdAreaManager)
 		v2.Any("/cif", cif.FetchAll)
 		v2.Any("/cif/get/summary", cif.GetCifSummary)
 		v2.Any("/group", group.FetchAll)
@@ -127,6 +130,9 @@ func InitCustomApi() {
 		v2.Any("/prospective-borrower/get/:id", prospectiveBorrower.GetProspectiveBorrowerDetail)
 		v2.Any("/prospective-borrower/set/:id/status/:status", prospectiveBorrower.UpdateStatusProspectiveBorrower)
 		v2.Any("/sector/detail/:id", sector.GetSectorById)
+		v2.Any("/installment-review/get/:branch_id/day/:schedule_day", installment.GetPendingInstallment)
+		v2.Any("/installment-review/by-group/:group_id", installment.GetPendingInstallmentDetail)
+		v2.Any("/installment-review/set/:installment_id", installment.UpdateInstallmentByInstallmentID)
 	}
 
 	iris.Get(baseURL+"/investor-without-va", investor.InvestorWithoutVA)

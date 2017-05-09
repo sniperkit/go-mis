@@ -1,15 +1,25 @@
 package userMis
 
 import (
+	"time"
+
+	"bitbucket.org/go-mis/modules/r"
 	"bitbucket.org/go-mis/services"
 	"gopkg.in/kataras/iris.v4"
-	"bitbucket.org/go-mis/modules/r"
-	"time"
 )
 
 func Init() {
 	services.DBCPsql.AutoMigrate(&UserMis{})
 	services.BaseCrudInit(UserMis{}, []UserMis{})
+}
+
+func UpdateUserBranch(ctx *iris.Context) {
+	userObj := ctx.Get("USER_MIS").(UserMis)
+	branchId := ctx.Get("branch_id")
+
+	userMisBranch := r.RBranchUserMis{}
+	query := "update r_branch_user_mis set \"branchId\" = ? where \"userMisId\" = ?"
+	services.DBCPsql.Raw(query, branchId, userObj.ID).Scan(&userMisBranch)
 }
 
 func FetchUserMisAreaBranchRole(ctx *iris.Context) {
@@ -32,7 +42,7 @@ func FetchUserMisAreaBranchRole(ctx *iris.Context) {
 	})
 }
 
-func DeleteUserMis (ctx *iris.Context) {
+func DeleteUserMis(ctx *iris.Context) {
 	// delete user
 	m := UserMis{}
 	services.DBCPsql.Model(m).Where("\"deletedAt\" IS NULL AND id = ?", ctx.Param("id")).UpdateColumn("deletedAt", time.Now())

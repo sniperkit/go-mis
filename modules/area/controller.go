@@ -39,6 +39,32 @@ func FetchAll(ctx *iris.Context) {
 	})
 }
 
+func GetByIdAreaManager(ctx *iris.Context){
+	id := ctx.Get("id")
+	area := AreaManager{}
+
+	query := "SELECT area.\"name\", area.\"id\",area.\"city\" AS \"city\", area.\"province\" AS \"province\", user_mis.\"fullname\" AS \"manager\", role.\"name\" AS \"role\" "
+	query += "FROM area "
+	query += "LEFT JOIN r_area_user_mis ON r_area_user_mis.\"areaId\" = area.\"id\" " 
+	query += "LEFT JOIN user_mis ON user_mis.\"id\" = r_area_user_mis.\"userMisId\" "
+	query += "LEFT JOIN r_user_mis_role ON r_user_mis_role.\"userMisId\" = user_mis.\"id\" "
+	query += "LEFT JOIN role ON role.\"id\" = r_user_mis_role.\"roleId\" "
+	query += "WHERE area.\"deletedAt\" IS NULL AND area.\"id\" = ? AND (\"role\".\"name\" LIKE '%Area Manager%' OR \"role\".\"name\" IS NULL)"
+
+
+	if e := services.DBCPsql.Raw(query, id).Scan(&area).Error; e != nil {
+		ctx.JSON(iris.StatusOK, iris.Map{
+			"status": "failed",
+			"data":   e,
+		})
+		return
+	}
+	ctx.JSON(iris.StatusOK, iris.Map{
+		"status": "success",
+		"data":   area,
+	})
+}
+
 // GetByID agent by id
 func GetByID(ctx *iris.Context) {
 	area := Area{}

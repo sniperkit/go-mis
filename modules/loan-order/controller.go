@@ -60,7 +60,7 @@ from investor i join r_account_investor rai on i.id = rai."investorId" join acco
 join r_cif_investor rci on i.id=rci."investorId" join cif c on c.id=rci."cifId"
 join r_investor_product_pricing_loan rippl on i.id = rippl."investorId" join loan l on l.id=rippl."loanId"
 join r_loan_order rlo on l.id = rlo."loanId" join loan_order lo on lo.id = rlo."loanOrderId"
-where lo.remark = 'PENDING' and i.id = ?`
+where lo.remark = 'PENDING' and lo.id = ?`
 
 	loanOrderSchema := []LoanOrderDetail{}
 	e := services.DBCPsql.Raw(query, id).Scan(&loanOrderSchema).Error
@@ -171,14 +171,14 @@ func UpdateCredit(loans []int64, accountId uint64, db *gorm.DB) error {
 	for _, loanId := range loans {
 
 		query := `with ins_1 as (insert into account_transaction_credit ("type","amount","transactionDate","createdAt")
-		select 'INVEST', plafond, current_timestamp + interval '1 second', current_timestamp + interval '1 second' from loan l where l.id = 34216 returning id),
+		select 'INVEST', plafond, current_timestamp + interval '1 second', current_timestamp + interval '1 second' from loan l where l.id = ? returning id),
 		ins_2 as (
 			insert into r_account_transaction_credit_loan ("loanId","accountTransactionCreditId","createdAt")
 			select ?, ins_1.id,current_timestamp from ins_1 returning "accountTransactionCreditId")
 			insert into r_account_transaction_credit ("accountTransactionCreditId","accountId","createdAt")
 			select ins_2."accountTransactionCreditId",?, current_timestamp + interval '1 second' from ins_2`
 
-		if err := db.Exec(query, loanId, accountId).Error; err != nil {
+		if err := db.Exec(query, loanId, loanId, accountId).Error; err != nil {
 			return err
 		}
 	}
@@ -216,10 +216,25 @@ where lo."orderNo"=?`
 	return db.Exec(query, r.Total, r.Total, accountId).Error
 }
 
+type InvestorStruct struct {
+	ID uint64 `gorm:"column:investorId"`
+}
+
 func insertLoanHistoryAndRLoanHistory(orderNo string, db *gorm.DB) error {
+
+	getInvestorIdQuery := `select "investorId" from r_investor_product_pricing_loan rippl
+												join r_loan_order rlo on rlo."loanId" = rippl."loanId"
+												join loan_order lo on lo.id = rlo."loanOrderId" where lo."orderNo"='` + orderNo + `'`
+
+	investorStruct := InvestorStruct{}
+
+	db.Raw(getInvestorIdQuery).Scan(&investorStruct)
+
 	query := `with ins as (INSERT INTO loan_history("stageFrom","stageTo","remark","createdAt","updatedAt")
-	select  upper('CART'),upper('INVESTOR'),concat('loan id = ' ,l.id,' updated stage to INVESTOR ', ' orderNo=` + orderNo + `'),current_timestamp,current_timestamp from loan_order lo join r_loan_order rlo on rlo."loanOrderId" = lo.id join loan l on l.id = rlo."loanId" where lo."orderNo"='` + orderNo + `' returning id, (string_to_array(remark,' '))[4]::int as loanId)
-	INSERT INTO r_loan_history("loanId","loanHistoryId","createdAt","updatedAt") select  ins.loanId,ins.id ,current_timestamp,current_timestamp from ins`
+					select  upper('ORDERED'),upper('INVESTOR'),concat('loan id = ' ,l.id,' updated stage to INVESTOR ', ' orderNo = %d investorId %d '),current_timestamp,current_timestamp from loan_order lo join r_loan_order rlo on rlo."loanOrderId" = lo.id join loan l on l.id = rlo."loanId" where lo."orderNo"='` + orderNo + `' returning id, (string_to_array(remark,' '))[4]::int as loanId)
+					INSERT INTO r_loan_history("loanId","loanHistoryId","createdAt","updatedAt") select  ins.loanId,ins.id ,current_timestamp,current_timestamp from ins`
+
+	query = fmt.Sprintf(query, orderNo, investorStruct.ID)
 	return db.Exec(query).Error
 }
 
@@ -260,11 +275,13 @@ func FetchAllPendingWaiting(ctx *iris.Context) {
 func RejectLoanOrder(ctx *iris.Context) {
 	orderNo := ctx.Param("orderNo")
 
-	queryUpdateLoanStage := "update loan set stage = 'MARKETPLACE' where id in (select l.id from loan l join r_loan_order rlo on l.id = rlo.\"loanId\" join loan_order lo on lo.id = rlo.\"loanOrderId\" where lo.\"orderNo\"='" + orderNo + "');"
+	queryUpdateLoanStage := "update loan set stage = 'PRIVATE' where id in (select l.id from loan l join r_loan_order rlo on l.id = rlo.\"loanId\" join loan_order lo on lo.id = rlo.\"loanOrderId\" where lo.\"orderNo\"='" + orderNo + "');"
 	services.DBCPsql.Exec(queryUpdateLoanStage)
 
-	queryUpdateVouher := "update voucher set \"deletedAt\" = current_timestamp where id in (select v.id from voucher v join r_loan_order_voucher rlov on rlov.\"voucherId\" = v.id  join loan_order lo on lo.id = rlov.\"loanOrderId\" where \"orderNo\" = '" + orderNo + "');"
-	services.DBCPsql.Exec(queryUpdateVouher)
+	queryInsertLoanHistory := `with ins as (INSERT INTO loan_history("stageFrom","stageTo","remark","createdAt","updatedAt")
+	select  upper('ORDERED'),upper('PRIVATE'),concat('loan id = ' ,l.id,' updated stage to PRIVATE ', ' orderNo=` + orderNo + `'),current_timestamp,current_timestamp from loan_order lo join r_loan_order rlo on rlo."loanOrderId" = lo.id join loan l on l.id = rlo."loanId" where lo."orderNo"='` + orderNo + `' returning id, (string_to_array(remark,' '))[4]::int as loanId)
+	INSERT INTO r_loan_history("loanId","loanHistoryId","createdAt","updatedAt") select  ins.loanId,ins.id ,current_timestamp,current_timestamp from ins`
+	services.DBCPsql.Exec(queryInsertLoanHistory)
 
 	queryUpdateRLoanOrderVouher := "update r_loan_order_voucher set \"deletedAt\" = current_timestamp where id in( select rlov.id from r_loan_order_voucher rlov join loan_order lo on lo.id = rlov.\"loanOrderId\" where \"orderNo\" = '" + orderNo + "');"
 	services.DBCPsql.Exec(queryUpdateRLoanOrderVouher)
@@ -293,7 +310,7 @@ func CheckVoucherAndInsertToDebit(accountID uint64, orderNo string, db *gorm.DB)
 		return nil
 	}
 
-	accountTRDebit := accountTransactionDebit.AccountTransactionDebit{Type: "VOUCHER", Amount: voucher_data.Amount, TransactionDate: time.Now()}
+	accountTRDebit := accountTransactionDebit.AccountTransactionDebit{Type: "VOUCHER", Amount: voucher_data.Amount, Remark: voucher_data.VoucherNo, TransactionDate: time.Now()}
 	if err := db.Table("account_transaction_debit").Create(&accountTRDebit).Error; err != nil {
 		return err
 	}

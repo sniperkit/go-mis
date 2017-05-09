@@ -467,3 +467,137 @@ func SubmitInstallmentByGroupIDAndTransactionDateWithStatusAndInstallmentId(ctx 
 		},
 	})
 }
+
+// PendingInstallmentSchema - struct - pending installment
+type PendingInstallmentSchema struct {
+	BranchID                     uint64  `gorm:"column:branchId" json:"branchId"`
+	Branch                       string  `gorm:"column:branch" json:"branch"`
+	GroupID                      uint64  `gorm:"column:groupId" json:"groupId"`
+	Group                        string  `gorm:"column:group" json:"group"`
+	TotalAmountInstallmentPerDay float64 `gorm:"column:totalInstallmentPerDay" json:"totalAmountInstallmentPerDay"`
+	TotalPaidInstallment         float64 `gorm:"column:paidInstallment" json:"totalPaidInstallment"`
+}
+
+// GetPendingInstallment - get pending installment
+func GetPendingInstallment(ctx *iris.Context) {
+	branchID := ctx.Param("branch_id")
+	scheduleDay := ctx.Param("schedule_day")
+
+	query := `
+		select b."groupIdeal",a.* from (
+		SELECT count(distinct(loan.id)),branch.id AS "branchId", branch."name" AS "branch", 
+		"group".id AS "groupId", "group"."name" AS "group", 
+		sum((loan.installment*installment.frequency)) AS "totalInstallmentPerDay", sum(installment."paidInstallment") AS "paidInstallment", 
+		array_agg(loan.id) AS "loanIds",
+		array_agg(installment.id) AS "installmentIds"
+		FROM branch
+		JOIN r_loan_branch ON r_loan_branch."branchId" = branch.id
+		JOIN loan ON loan.id = r_loan_branch."loanId"
+		JOIN r_loan_group ON r_loan_group."loanId" = loan.id
+		JOIN "group" ON "group"."id" = r_loan_group."groupId"
+		LEFT JOIN r_loan_installment ON r_loan_installment."loanId" = loan.id
+		LEFT JOIN installment ON installment.id = r_loan_installment."installmentId"
+		WHERE branch.id = ?
+		AND "group"."scheduleDay" = ?
+		AND installment.stage = 'PENDING'
+		AND loan."deletedAt" IS NULL 
+		AND "group"."deletedAt" IS NULL
+		AND "branch"."deletedAt" IS NULL
+		AND installment."deletedAt" IS null and loan."stage" = 'INSTALLMENT'
+		GROUP BY "group".id, branch.id) a join
+		(select g.id "gId", count(distinct(l.id)) "groupIdeal" from loan l join r_loan_group rlg on l.id = rlg."loanId" join "group" g on g.id = rlg."groupId" where g."scheduleDay" = 'Rabu' and l.stage = 'INSTALLMENT' group by "gId") b on b."gId"=a."groupId"
+	`
+
+	pendingInstallmentSchema := []PendingInstallmentSchema{}
+	services.DBCPsql.Raw(query, branchID, scheduleDay).Scan(&pendingInstallmentSchema)
+
+	ctx.JSON(iris.StatusOK, iris.Map{
+		"status": "success",
+		"data":   pendingInstallmentSchema,
+	})
+}
+
+type PendingInstallmentDetailSchema struct {
+	BorrowerNo           uint64  `gorm:"column:borrowerNo" json:"borrowerNo"`
+	Borrower             string  `gorm:"column:borrower" json:"borrower"`
+	LoanID               uint64  `gorm:"column:loanId" json:"loanId"`
+	BaseInstallment      float64 `gorm:"column:baseInstallment" json:"baseInstallment"`
+	ProjectedInstallment float64 `gorm:"column:projectedInstallment" json:"projectedInstallment"`
+	PaidInstallment      float64 `gorm:"column:paidInstallment" json:"paidInstallment"`
+	Frequency            uint32  `gorm:"column:frequency" json:"frequency"`
+	Reserve              float64 `gorm:"column:reserve" json:"reserve"`
+	InstallmentID        uint64  `gorm:"column:installmentId" json:"installmentId"`
+	Type                 string  `gorm:"column:type" json:"type"`
+	CreatedAt            string  `gorm:"column:installmentCreatedAt" json:"installmentCreatedAt"`
+}
+
+// GetPendingInstallmentDetail - get pending installment detail
+func GetPendingInstallmentDetail(ctx *iris.Context) {
+	groupID := ctx.Param("group_id")
+
+	query := `
+		SELECT
+		borrower."borrowerNo", cif.name AS "borrower",
+		loan.id AS "loanId", loan.installment AS "baseInstallment", (loan.installment*installment.frequency) AS "projectedInstallment",
+		installment."paidInstallment", installment.frequency, installment.reserve, installment.id AS "installmentId", installment."type", installment."createdAt"::date AS "installmentCreatedAt"
+		FROM installment
+		JOIN r_loan_installment ON r_loan_installment."installmentId" = installment.id
+		JOIN r_loan_group ON r_loan_group."loanId" = r_loan_installment."loanId"
+		JOIN loan ON loan.id = r_loan_installment."loanId"
+		JOIN r_loan_borrower ON r_loan_borrower."loanId" = loan.id
+		JOIN borrower ON borrower.id = r_loan_borrower."borrowerId"
+		JOIN r_cif_borrower ON r_cif_borrower."borrowerId" = borrower.id
+		JOIN cif ON cif.id = r_cif_borrower."cifId"
+		WHERE r_loan_group."groupId" = ? AND installment.stage = 'PENDING' AND 
+		installment."deletedAt" IS NULL AND loan."deletedAt" IS NULL AND borrower."deletedAt" IS NULL AND cif."deletedAt" IS null
+	`
+
+	pendingInstallmentDetailSchema := []PendingInstallmentDetailSchema{}
+	services.DBCPsql.Raw(query, groupID).Scan(&pendingInstallmentDetailSchema)
+
+	ctx.JSON(iris.StatusOK, iris.Map{
+		"status": "success",
+		"data":   pendingInstallmentDetailSchema,
+	})
+}
+
+type UpdateInstallmentJSON struct {
+	PaidInstallment float64 `json:"paidInstallment"`
+	Reserve         float64 `json:"reserve"`
+}
+
+// UpdateInstallmentByInstallmentID - update installment data
+func UpdateInstallmentByInstallmentID(ctx *iris.Context) {
+	installmentID := ctx.Param("installment_id")
+
+	updateInstallmentJSON := UpdateInstallmentJSON{}
+	if err := ctx.ReadJSON(&updateInstallmentJSON); err != nil {
+		ctx.JSON(iris.StatusInternalServerError, iris.Map{
+			"status":  "error",
+			"message": err,
+		})
+		return
+	}
+
+	fmt.Printf("%+v", updateInstallmentJSON)
+
+	query := `
+		UPDATE installment
+		SET "paidInstallment" = ?, reserve = ?, "updatedAt" = current_timestamp
+		WHERE installment.id = ?
+	`
+
+	if err := services.DBCPsql.Exec(query, updateInstallmentJSON.PaidInstallment, updateInstallmentJSON.Reserve, installmentID).Error; err != nil {
+		ctx.JSON(iris.StatusInternalServerError, iris.Map{
+			"status":  "error",
+			"message": err,
+		})
+		return
+	}
+
+	ctx.JSON(iris.StatusInternalServerError, iris.Map{
+		"status": "success",
+		"data":   iris.Map{},
+	})
+
+}
