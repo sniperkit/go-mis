@@ -33,8 +33,8 @@ func GetArchivedProspectiveBorrower(ctx *iris.Context) {
 		WHERE ("role"."name" ~* 'admin' OR "role"."name" ~* 'area') AND rumr."userMisId" = ?
 	`
 
-	userMis := ctx.Get("USER_MIS").(userMis.UserMis)
-	services.DBCPsql.Raw(qRole, userMis.ID).Scan(&roles)
+	userMisSchema := ctx.Get("USER_MIS").(userMis.UserMis)
+	services.DBCPsql.Raw(qRole, userMisSchema.ID).Scan(&roles)
 
 	surveySchema := []SurveySchema{}
 	if len(roles) == 0 {
@@ -57,7 +57,7 @@ func GetArchivedProspectiveBorrower(ctx *iris.Context) {
 		WHERE raum."userMisId" = ?
 		`
 		branches := []branch.Branch{}
-		services.DBCPsql.Raw(qBranch, userMis.ID).Scan(&branches)
+		services.DBCPsql.Raw(qBranch, userMisSchema.ID).Scan(&branches)
 
 		branchIds := make([]uint64, len(branches))
 		for i, current := range branches {
