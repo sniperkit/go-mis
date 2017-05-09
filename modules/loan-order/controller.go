@@ -310,7 +310,7 @@ func CheckVoucherAndInsertToDebit(accountID uint64, orderNo string, db *gorm.DB)
 		return nil
 	}
 
-	accountTRDebit := accountTransactionDebit.AccountTransactionDebit{Type: "VOUCHER", Amount: voucher_data.Amount, TransactionDate: time.Now()}
+	accountTRDebit := accountTransactionDebit.AccountTransactionDebit{Type: "VOUCHER", Amount: voucher_data.Amount, Remark: voucher_data.VoucherNo, TransactionDate: time.Now()}
 	if err := db.Table("account_transaction_debit").Create(&accountTRDebit).Error; err != nil {
 		return err
 	}
