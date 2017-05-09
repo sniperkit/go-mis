@@ -171,14 +171,14 @@ func UpdateCredit(loans []int64, accountId uint64, db *gorm.DB) error {
 	for _, loanId := range loans {
 
 		query := `with ins_1 as (insert into account_transaction_credit ("type","amount","transactionDate","createdAt")
-		select 'INVEST', plafond, current_timestamp + interval '1 second', current_timestamp + interval '1 second' from loan l where l.id = 34216 returning id),
+		select 'INVEST', plafond, current_timestamp + interval '1 second', current_timestamp + interval '1 second' from loan l where l.id = ? returning id),
 		ins_2 as (
 			insert into r_account_transaction_credit_loan ("loanId","accountTransactionCreditId","createdAt")
 			select ?, ins_1.id,current_timestamp from ins_1 returning "accountTransactionCreditId")
 			insert into r_account_transaction_credit ("accountTransactionCreditId","accountId","createdAt")
 			select ins_2."accountTransactionCreditId",?, current_timestamp + interval '1 second' from ins_2`
 
-		if err := db.Exec(query, loanId, accountId).Error; err != nil {
+		if err := db.Exec(query, loanId, loanId, accountId).Error; err != nil {
 			return err
 		}
 	}
