@@ -149,8 +149,8 @@ func GetOrCreateBorrowerId(payload map[string]interface{}, db *gorm.DB) (uint64,
 // UseProductPricing - select product pricing based on current date
 func UseProductPricing(investorId uint64, loanId uint64, db *gorm.DB) error {
 	pPricing := productPricing.ProductPricing{}
-	currentDate := time.Now().Local()
-	if err := db.Table("product_pricing").Where("? between \"startDate\" and \"endDate\"", currentDate).Scan(&pPricing).Error; err != nil {
+	if err := db.Table("product_pricing").Where(" current_date::date between \"startDate\"::date and \"endDate\"::date").Scan(&pPricing).Error; err != nil {
+		print(err)
 		return err
 	}
 
@@ -159,7 +159,9 @@ func UseProductPricing(investorId uint64, loanId uint64, db *gorm.DB) error {
 		ProductPricingId: pPricing.ID,
 		LoanId:           loanId,
 	}
+
 	if err := db.Table("r_investor_product_pricing_loan").Create(&rInvProdPriceLoan).Error; err != nil {
+		print(err)
 		return err
 	}
 	return nil
