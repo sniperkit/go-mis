@@ -13,8 +13,8 @@ import (
 	productPricing "bitbucket.org/go-mis/modules/product-pricing"
 	"bitbucket.org/go-mis/modules/r"
 	"bitbucket.org/go-mis/services"
-	iris "gopkg.in/kataras/iris.v4"
 	"github.com/jinzhu/gorm"
+	iris "gopkg.in/kataras/iris.v4"
 )
 
 func Init() {
@@ -43,14 +43,12 @@ func Approve(ctx *iris.Context) {
 		fmt.Println(err)
 	}
 
-
 	db := services.DBCPsql.Begin()
-	borrowerId, err := GetOrCreateBorrowerId(payload, db);
+	borrowerId, err := GetOrCreateBorrowerId(payload, db)
 	if err != nil {
-		processErrorAndRollback(ctx, db, "Error Create Borrower " + err.Error())
-		return 
+		processErrorAndRollback(ctx, db, "Error Create Borrower "+err.Error())
+		return
 	}
-
 
 	// reserve one loan record for this new borrower
 	loan := CreateLoan(payload)
@@ -58,7 +56,6 @@ func Approve(ctx *iris.Context) {
 		processErrorAndRollback(ctx, db, "Error Create Loan")
 		return
 	}
-
 
 	if db.Table("loan_raw").Create(&loanRaw.LoanRaw{Raw: dataRaw, LoanID: loan.ID}).Error != nil {
 		processErrorAndRollback(ctx, db, "Error Create Loan Raw")
@@ -89,7 +86,6 @@ func Approve(ctx *iris.Context) {
 		return
 	}
 
-
 	if CreateRelationLoanToBranch(loan.ID, groupID, db) != nil {
 		processErrorAndRollback(ctx, db, "Error Create Relation to Branch")
 		return
@@ -102,9 +98,9 @@ func Approve(ctx *iris.Context) {
 
 	db.Commit()
 	ctx.JSON(iris.StatusOK, iris.Map{
-		"status" : "success",
-		"message" : "Loan " + string(loan.ID) + " is Created",
-	});
+		"status":  "success",
+		"message": "Loan " + string(loan.ID) + " is Created",
+	})
 }
 
 func GetOrCreateBorrowerId(payload map[string]interface{}, db *gorm.DB) (uint64, error) {
@@ -117,7 +113,7 @@ func GetOrCreateBorrowerId(payload map[string]interface{}, db *gorm.DB) (uint64,
 		borrower := r.RCifBorrower{}
 		err := db.Table("r_cif_borrower").Where("\"cifId\" =?", cifData.ID).Scan(&borrower).Error
 		if err != nil {
-			return 0, err;
+			return 0, err
 		}
 		return borrower.BorrowerId, nil
 	} else {
@@ -127,14 +123,14 @@ func GetOrCreateBorrowerId(payload map[string]interface{}, db *gorm.DB) (uint64,
 		cifData = CreateCIF(payload)
 		err := db.Table("cif").Create(&cifData).Error
 		if err != nil {
-			return 0, err;
+			return 0, err
 		}
 
 		// create the Borrower
 		newBorrower := &Borrower{Village: payload["client_desa"].(string)}
 		err = db.Table("borrower").Create(newBorrower).Error
 		if err != nil {
-			return 0, err;
+			return 0, err
 		}
 
 		// create the relation between Borrower and Cif
@@ -181,6 +177,10 @@ func CreateCIF(payload map[string]interface{}) cif.Cif {
 	// map each payload field to it's respective cif field
 	newCif := cif.Cif{}
 
+	wifeIncome, _ := strconv.ParseFloat(cpl["data_pendapatan_istri"], 64)
+	husbandIncome, _ := strconv.ParseFloat(cpl["data_pendapatan_suami"], 64)
+	otherIncome, _ := strconv.ParseFloat(cpl["data_pendapatan_lain"], 64)
+
 	// here the only payload that match the cif fields
 	newCif.Username = cpl["client_simplename"]
 	newCif.Name = cpl["client_fullname"]
@@ -197,7 +197,7 @@ func CreateCIF(payload map[string]interface{}) cif.Cif {
 	newCif.Kecamatan = cpl["client_kecamatan"]
 	newCif.RT = cpl["client_rt"]
 	newCif.RW = cpl["client_rw"]
-	newCif.Income, _ = strconv.ParseFloat(cpl["data_pendapatan_istri"], 64)
+	newCif.Income = wifeIncome + husbandIncome + otherIncome
 
 	return newCif
 }
@@ -321,7 +321,7 @@ func GetTotalBorrowerByBranchID(ctx *iris.Context) {
 func processErrorAndRollback(ctx *iris.Context, db *gorm.DB, message string) {
 	db.Rollback()
 	ctx.JSON(iris.StatusInternalServerError, iris.Map{
-		"status" : "error",
-		"message" : message,
-	});
+		"status":  "error",
+		"message": message,
+	})
 }
