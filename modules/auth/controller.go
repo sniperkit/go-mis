@@ -4,8 +4,8 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
-	"time"
 	"regexp"
+	"time"
 
 	"bitbucket.org/go-mis/config"
 	"bitbucket.org/go-mis/modules/access-token"
@@ -79,20 +79,20 @@ func UserMisLogin(ctx *iris.Context) {
 
 	// for dashboard
 	re := regexp.MustCompile("(?i)area\\s*manager") // area manager, Area Manager, ArEaManager are valid
-	if re.FindString(roleObj.Name) != "" { // area manager
-		// get the area of this user 
-		rAreaUserMis := r.RAreaUserMis{} 
+	if re.FindString(roleObj.Name) != "" {          // area manager
+		// get the area of this user
+		rAreaUserMis := r.RAreaUserMis{}
 		query := `select "areaId" from r_area_user_mis where "userMisId" = ?`
 		services.DBCPsql.Raw(query, userMisObj.ID).Scan(&rAreaUserMis)
-		
+
 		// get all branches in this area
 		type branchType struct {
-			Id uint64 `json:"id"`
+			Id   uint64 `json:"id"`
 			Name string `json:"name"`
 		}
 
 		branches := []branchType{}
-		query = `select branch.id, branch."name" from r_area_branch 
+		query = `select branch.id, branch."name" from r_area_branch
 						join branch on branch.Id = r_area_branch.id
 						where "areaId" = ?`
 		services.DBCPsql.Raw(query, rAreaUserMis.AreaId).Scan(&branches)
@@ -110,9 +110,9 @@ func UserMisLogin(ctx *iris.Context) {
 					"assignedRole": roleObj.Name,
 					"config":       roleObj.Config,
 				},
-				"branches":branches,
-				"roleId": roleObj.ID,
-				"areaId": rAreaUserMis.AreaId,
+				"branches": branches,
+				"roleId":   roleObj.ID,
+				"areaId":   rAreaUserMis.AreaId,
 			},
 		})
 	} else {
@@ -133,7 +133,6 @@ func UserMisLogin(ctx *iris.Context) {
 		})
 	}
 
-	
 }
 
 // EnsureAuth - validate access token
@@ -176,6 +175,24 @@ func CurrentUserMis(ctx *iris.Context) {
 		"data": iris.Map{
 			"id":   userMisObj.ID,
 			"name": userMisObj.Fullname,
+		},
+	})
+}
+
+type Count struct {
+	Total int64 `gorm:"column:count" json:"total" `
+}
+
+// Nofif - get notif user
+func Nofif(ctx *iris.Context) {
+	query := `select count(*) from product_pricing where product_pricing."isInstitutional" = false and current_date::date between product_pricing."startDate"::date and product_pricing."endDate"::date`
+
+	countSchema := Count{}
+	services.DBCPsql.Raw(query).Scan(&countSchema)
+	ctx.JSON(iris.StatusOK, iris.Map{
+		"status": "success",
+		"data": iris.Map{
+			"ppretail_active": countSchema.Total,
 		},
 	})
 }
