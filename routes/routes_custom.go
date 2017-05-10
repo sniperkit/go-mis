@@ -127,6 +127,7 @@ func InitCustomApi() {
 		v2.Any("/product-pricing", productPricing.Create)
 		v2.Any("/product-pricing/get/:id", productPricing.GetInvestorsByProductPricing)
 		v2.Any("/prospective-borrower", prospectiveBorrower.GetProspectiveBorrower)
+		v2.Any("/prospective-borrower/archived", prospectiveBorrower.GetArchivedProspectiveBorrower)
 		v2.Any("/prospective-borrower/get/:id", prospectiveBorrower.GetProspectiveBorrowerDetail)
 		v2.Any("/prospective-borrower/set/:id/status/:status", prospectiveBorrower.UpdateStatusProspectiveBorrower)
 		v2.Any("/sector/detail/:id", sector.GetSectorById)
