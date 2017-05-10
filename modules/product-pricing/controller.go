@@ -2,6 +2,7 @@ package productPricing
 
 import (
 	"bitbucket.org/go-mis/services"
+	"bitbucket.org/go-mis/modules/r"
 	"gopkg.in/kataras/iris.v4"
 )
 
@@ -35,6 +36,9 @@ func SearchInvestor(ctx *iris.Context) {
 
 func Create(ctx *iris.Context) {
 	m := ProductPricing{}
+
+	
+
 	err := ctx.ReadJSON(&m)
 	if err != nil {
 		panic(err)
@@ -51,6 +55,16 @@ func Create(ctx *iris.Context) {
 			ctx.JSON(iris.StatusInternalServerError, iris.Map{"status": "error", "message": "Date Overlap, please choose another date.", "data": pplist})
 		} else {
 			services.DBCPsql.Create(&m)
+
+			for _, val := range m.Investors {
+				r := r.RInvestorProductPricing{}
+				r.InvestorId=val.ID
+				r.ProductPricingId=m.ID
+				if err := services.DBCPsql.Create(&r).Error; err != nil {
+					panic(err)
+				}
+			}
+
 			ctx.JSON(iris.StatusOK, iris.Map{"status": "success", "data": m})
 		}
 
@@ -80,4 +94,14 @@ func GetInvestorsByProductPricing(ctx *iris.Context) {
 		"status": "success",
 		"data":   sInv,
 	})
+}
+
+
+func DeleteProductPricing(ctx *iris.Context){
+	ppId := ctx.Param("ppId")
+	invId := ctx.Param("invId")
+	productPricing := ProductPricing{}
+	query := `UPDATE r_investor_product_pricing SET "deletedAt" = now() WHERE "investorId" = ? AND "productPricingId" = ?`
+	services.DBCPsql.Raw(query, invId, ppId).Scan(&productPricing);
+	ctx.JSON(iris.StatusOK, iris.Map{"data": productPricing})
 }
