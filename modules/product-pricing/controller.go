@@ -1,6 +1,7 @@
 package productPricing
 
 import (
+"fmt"
 	"bitbucket.org/go-mis/services"
 	"gopkg.in/kataras/iris.v4"
 )
@@ -34,32 +35,42 @@ func SearchInvestor(ctx *iris.Context) {
 }
 
 func Create(ctx *iris.Context) {
-	m := ProductPricing{}
-	err := ctx.ReadJSON(&m)
-	if err != nil {
-		panic(err)
+	a := []InvestorPost{}
+
+	fmt.Printf("%d", a[0].ID)
+  /*
+	b := ctx.ReadJSON(&a)
+	for _, val := range b {
+		fmt.Println(val)
 	}
-	if *m.IsInstutitional == true {
-		pplist := []ProductPricing{}
-		query := `select * from product_pricing where product_pricing."isInstitutional" = true `
-		query += `and ( product_pricing."startDate" between ? and ? or product_pricing."endDate" between ? and ? or `
-		query += `? between product_pricing."startDate" and product_pricing."endDate" or ? between product_pricing."startDate" and product_pricing."endDate") `
+	*/
 
-		services.DBCPsql.Raw(query, m.StartDate, m.EndDate, m.StartDate, m.EndDate, m.StartDate, m.EndDate).Scan(&pplist)
+	// m := ProductPricing{}
+	// err := ctx.ReadJSON(&m)
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// if *m.IsInstutitional == true {
+	// 	pplist := []ProductPricing{}
+	// 	query := `select * from product_pricing where product_pricing."isInstitutional" = true `
+	// 	query += `and ( product_pricing."startDate" between ? and ? or product_pricing."endDate" between ? and ? or `
+	// 	query += `? between product_pricing."startDate" and product_pricing."endDate" or ? between product_pricing."startDate" and product_pricing."endDate") `
 
-		if len(pplist) > 0 {
-			ctx.JSON(iris.StatusInternalServerError, iris.Map{"status": "error", "message": "Date Overlap, please choose another date.", "data": pplist})
-		} else {
-			services.DBCPsql.Create(&m)
-			ctx.JSON(iris.StatusOK, iris.Map{"status": "success", "data": m})
-		}
+	// 	services.DBCPsql.Raw(query, m.StartDate, m.EndDate, m.StartDate, m.EndDate, m.StartDate, m.EndDate).Scan(&pplist)
 
-	} else {
-		services.DBCPsql.Create(&m)
+	// 	if len(pplist) > 0 {
+	// 		ctx.JSON(iris.StatusInternalServerError, iris.Map{"status": "error", "message": "Date Overlap, please choose another date.", "data": pplist})
+	// 	} else {
+	// 		services.DBCPsql.Create(&m)
+	// 		ctx.JSON(iris.StatusOK, iris.Map{"status": "success", "data": m})
+	// 	}
 
-		ctx.JSON(iris.StatusOK, iris.Map{"status": "success", "data": m})
+	// } else {
+	// 	services.DBCPsql.Create(&m)
 
-	}
+	// 	ctx.JSON(iris.StatusOK, iris.Map{"status": "success", "data": m})
+
+	// }
 }
 
 func GetInvestorsByProductPricing(ctx *iris.Context) {

@@ -25,3 +25,8 @@ type InvestorSearchByProductPricing struct {
 	Investor					string  `gorm:"column:name" json:"name"`
 	RippId						uint64  `gorm:"column:rippId" json:"rippId"`
 }
+
+type InvestorPost struct{
+	ID 								uint64 `json:"id"`
+	Name 							string `json:"name"`
+}
