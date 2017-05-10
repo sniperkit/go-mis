@@ -1,8 +1,8 @@
 package productPricing
 
 import (
-"fmt"
 	"bitbucket.org/go-mis/services"
+	"bitbucket.org/go-mis/modules/r"
 	"gopkg.in/kataras/iris.v4"
 )
 
@@ -35,49 +35,45 @@ func SearchInvestor(ctx *iris.Context) {
 }
 
 func Create(ctx *iris.Context) {
-	pp := ProductPricing{}
-	 err := ctx.ReadJSON(&pp)
-	 if err != nil {
-		panic(err)
-	 }
+	m := ProductPricing{}
+
 	
-	for _, val := range pp.Investors {
-		fmt.Printf("id: %d", val.ID)
-		fmt.Printf("name: %s\n", val.Name)
+
+	err := ctx.ReadJSON(&m)
+	if err != nil {
+		panic(err)
 	}
-  /*
-	b := ctx.ReadJSON(&a)
-	for _, val := range b {
-		fmt.Println(val)
+	if *m.IsInstutitional == true {
+		pplist := []ProductPricing{}
+		query := `select * from product_pricing where product_pricing."isInstitutional" = true `
+		query += `and ( product_pricing."startDate" between ? and ? or product_pricing."endDate" between ? and ? or `
+		query += `? between product_pricing."startDate" and product_pricing."endDate" or ? between product_pricing."startDate" and product_pricing."endDate") `
+
+		services.DBCPsql.Raw(query, m.StartDate, m.EndDate, m.StartDate, m.EndDate, m.StartDate, m.EndDate).Scan(&pplist)
+
+		if len(pplist) > 0 {
+			ctx.JSON(iris.StatusInternalServerError, iris.Map{"status": "error", "message": "Date Overlap, please choose another date.", "data": pplist})
+		} else {
+			services.DBCPsql.Create(&m)
+
+			for _, val := range m.Investors {
+				r := r.RInvestorProductPricing{}
+				r.InvestorId=val.ID
+				r.ProductPricingId=m.ID
+				if err := services.DBCPsql.Create(&r).Error; err != nil {
+					panic(err)
+				}
+			}
+
+			ctx.JSON(iris.StatusOK, iris.Map{"status": "success", "data": m})
+		}
+
+	} else {
+		services.DBCPsql.Create(&m)
+
+		ctx.JSON(iris.StatusOK, iris.Map{"status": "success", "data": m})
+
 	}
-	*/
-
-	// m := ProductPricing{}
-	// err := ctx.ReadJSON(&m)
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// if *m.IsInstutitional == true {
-	// 	pplist := []ProductPricing{}
-	// 	query := `select * from product_pricing where product_pricing."isInstitutional" = true `
-	// 	query += `and ( product_pricing."startDate" between ? and ? or product_pricing."endDate" between ? and ? or `
-	// 	query += `? between product_pricing."startDate" and product_pricing."endDate" or ? between product_pricing."startDate" and product_pricing."endDate") `
-
-	// 	services.DBCPsql.Raw(query, m.StartDate, m.EndDate, m.StartDate, m.EndDate, m.StartDate, m.EndDate).Scan(&pplist)
-
-	// 	if len(pplist) > 0 {
-	// 		ctx.JSON(iris.StatusInternalServerError, iris.Map{"status": "error", "message": "Date Overlap, please choose another date.", "data": pplist})
-	// 	} else {
-	// 		services.DBCPsql.Create(&m)
-	// 		ctx.JSON(iris.StatusOK, iris.Map{"status": "success", "data": m})
-	// 	}
-
-	// } else {
-	// 	services.DBCPsql.Create(&m)
-
-	// 	ctx.JSON(iris.StatusOK, iris.Map{"status": "success", "data": m})
-
-	// }
 }
 
 func GetInvestorsByProductPricing(ctx *iris.Context) {
