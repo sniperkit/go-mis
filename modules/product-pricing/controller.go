@@ -35,9 +35,16 @@ func SearchInvestor(ctx *iris.Context) {
 }
 
 func Create(ctx *iris.Context) {
-	a := []InvestorPost{}
-
-	fmt.Printf("%d", a[0].ID)
+	pp := ProductPricing{}
+	 err := ctx.ReadJSON(&pp)
+	 if err != nil {
+		panic(err)
+	 }
+	
+	for _, val := range pp.Investors {
+		fmt.Printf("id: %d", val.ID)
+		fmt.Printf("name: %s\n", val.Name)
+	}
   /*
 	b := ctx.ReadJSON(&a)
 	for _, val := range b {

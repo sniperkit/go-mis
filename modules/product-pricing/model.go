@@ -13,6 +13,7 @@ type ProductPricing struct {
 	CreatedAt          time.Time  `gorm:"column:createdAt" json:"createdAt"`
 	UpdatedAt          time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
 	DeletedAt          *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
+	Investors 			 	 []InvestorPost `json:"InvestorList"`
 }
 
 type InvestorSearch struct {
