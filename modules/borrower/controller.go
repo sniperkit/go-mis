@@ -300,7 +300,7 @@ type Count struct {
 
 // GetTotalBorrowerByBranchID - get total borrower
 func GetTotalBorrowerByBranchID(ctx *iris.Context) {
-	query := "SELECT DISTINCT COUNT(borrower.id)"
+	query := "SELECT COUNT(DISTINCT borrower.id)"
 	query += "FROM borrower "
 	query += "JOIN r_loan_borrower ON r_loan_borrower.\"borrowerId\" = borrower.id "
 	query += "JOIN r_loan_branch ON r_loan_branch.\"loanId\" = r_loan_borrower.\"loanId\" "
