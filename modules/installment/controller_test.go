@@ -11,8 +11,6 @@ import (
 
 
 func TestSubmitInstallmentByInstallmentIDWithStatus(t *testing.T) {
-	t.Log("kucing");
-
 	framework := iris.New()
 
 	ctx := framework.AcquireCtx(&fasthttp.RequestCtx{});
@@ -23,10 +21,10 @@ func TestSubmitInstallmentByInstallmentIDWithStatus(t *testing.T) {
 }
 
 func TestStoreInstallment(t *testing.T) {
-	StoreInstallment(978625, "success")
+	StoreInstallment(978626, "success")
 }
 
-func TestUpdateLoanStageNormal(t *testing.T) {
+func TestUpdateLoanStage(t *testing.T) {
 
 	// initial database
 	if err := exec.Command("sh", "db.sh").Run(); err != nil {
@@ -87,8 +85,25 @@ func TestUpdateLoanStageNormal(t *testing.T) {
 	if err := db.Table("loan").First(&loan).Error; err != nil {
 		t.Error(err)
 	}
+
 	if loan.Stage != "END-EARLY" {
 		t.Error("Loan is not change to END-EARLY");
 	}
 
+	var count int32
+	if err := db.Table("loan_history").Where("remark = 'Automatic update stage END loanId = 1'").Count(&count).Error; err != nil {
+		t.Error(err)
+	}
+	
+	if count != 1 {
+		t.Error("loan History loanId 1 not exists")
+	}
+
+	if err := db.Table("loan_history").Where("remark = 'Automatic update stage END-EARLY loanId = 2'").Count(&count).Error; err != nil {
+		t.Error(err)
+	}
+
+	if count != 1 {
+		t.Error("loan History loanId 2 not exists")
+	}
 }

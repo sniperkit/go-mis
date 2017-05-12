@@ -10,6 +10,7 @@ import (
 	accountTransactionCredit "bitbucket.org/go-mis/modules/account-transaction-credit"
 	accountTransactionDebit "bitbucket.org/go-mis/modules/account-transaction-debit"
 	installmentHistory "bitbucket.org/go-mis/modules/installment-history"
+	loanHistory "bitbucket.org/go-mis/modules/loan-history"
 	"bitbucket.org/go-mis/modules/r"
 	"bitbucket.org/go-mis/services"
 	iris "gopkg.in/kataras/iris.v4"
@@ -527,9 +528,10 @@ func UpdateLoanStage(installment Installment, loanId uint64, db *gorm.DB) error 
 		ID        string `gorm:"column:id"`
 		Frequency int32 `gorm:"column:frequency"`
 		Tenor     int32 `gorm:"column:tenor"`
+		Stage	string `gorm:"column:stage"`
 	}{}
 
-	query := ` SELECT loan.id as id, SUM(frequency) as frequency, tenor FROM loan JOIN r_loan_installment on loan.id = "loanId" JOIN installment on installment.id = "installmentId" WHERE loan.id = ? AND installment.stage = 'SUCCESS' AND installment."deletedAt" isnull AND r_loan_installment."deletedAt" isnull GROUP BY loan.id`
+	query := ` SELECT loan.id as id, SUM(frequency) as frequency, tenor, loan.stage as stage FROM loan JOIN r_loan_installment on loan.id = "loanId" JOIN installment on installment.id = "installmentId" WHERE loan.id = ? AND installment.stage = 'SUCCESS' AND installment."deletedAt" isnull AND r_loan_installment."deletedAt" isnull GROUP BY loan.id`
 
 	if err := db.Raw(query, loanId).Scan(&loan).Error; err != nil {
 		return err
@@ -540,21 +542,33 @@ func UpdateLoanStage(installment Installment, loanId uint64, db *gorm.DB) error 
 		return nil
 	}
 
+	var stageTo string
+
 	if installment.Frequency < 3 {
-		if err := db.Table("loan").Where("id = ?", loanId).UpdateColumn("stage", "END").Error; err != nil {
-			return err
-		}
-		return nil
+		stageTo = "END"
+
+	} else {
+		stageTo = "END-EARLY"
 	}
 
-	if installment.Frequency >= 3 {
-		if err := db.Table("loan").Where("id = ?", loanId).UpdateColumn("stage", "END-EARLY").Error; err != nil {
-			return err
-		}
-		return nil
+
+	if err := db.Table("loan").Where("id = ?", loanId).UpdateColumn("stage", stageTo).Error; err != nil {
+		return err
+	}
+
+	loanHistoryData := loanHistory.LoanHistory{StageFrom: loan.Stage, StageTo: stageTo, Remark: fmt.Sprintf("Automatic update stage %s loanId = %d", stageTo, loanId)}
+	if err := db.Table("loan_history").Create(&loanHistoryData).Error; err != nil {
+		return err
+	}
+
+	rLoanHistory := r.RLoanHistory{LoanId: loanId, LoanHistoryId: loanHistoryData.ID}
+	if err := db.Table("r_loan_history").Create(&rLoanHistory).Error; err != nil {
+		return err
 	}
 
 	// supposed not to go here
 	//return error.New("Somethings is wrong")
 	return nil
 }
+
+

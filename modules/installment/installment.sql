@@ -24,9 +24,13 @@ SET default_with_oids = false;
 DROP TABLE IF EXISTS installment;
 DROP TABLE IF EXISTS r_loan_installment;
 DROP TABLE IF EXISTS loan;
+DROP TABLE IF EXISTS r_loan_history;
+DROP TABLE IF EXISTS loan_history;
 DROP SEQUENCE IF EXISTS installment_id_seq;
 DROP SEQUENCE IF EXISTS r_loan_installment_id_seq;
 DROP SEQUENCE IF EXISTS loan_id_seq;
+DROP SEQUENCE IF EXISTS r_loan_history_id_seq;
+DROP SEQUENCE IF EXISTS loan_history_id_seq;
 
 --
 -- Name: installment; Type: TABLE; Schema: public; Owner: mis_amartha
@@ -437,6 +441,123 @@ CREATE INDEX r_loan_installment_id__del_idx ON r_loan_installment USING btree (i
 CREATE INDEX r_loan_installment_id_idx ON r_loan_installment USING btree (id);
 
 
+--
+-- Name: loan_history; Type: TABLE; Schema: public; Owner: mis_amartha
+--
+
+CREATE TABLE loan_history (
+    id integer NOT NULL,
+    "stageFrom" text,
+    "stageTo" text,
+    remark text,
+    "createdAt" timestamp with time zone,
+    "updatedAt" timestamp with time zone,
+    "deletedAt" timestamp with time zone
+);
+
+
+--
+-- Name: loan_history_id_seq; Type: SEQUENCE; Schema: public; Owner: mis_amartha
+--
+
+CREATE SEQUENCE loan_history_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: loan_history_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: mis_amartha
+--
+
+ALTER SEQUENCE loan_history_id_seq OWNED BY loan_history.id;
+
+
+--
+-- Name: r_loan_history; Type: TABLE; Schema: public; Owner: mis_amartha
+--
+
+CREATE TABLE r_loan_history (
+    id integer NOT NULL,
+    "loanId" integer,
+    "loanHistoryId" integer,
+    "createdAt" timestamp with time zone,
+    "updatedAt" timestamp with time zone,
+    "deletedAt" timestamp with time zone
+);
+
+
+--
+-- Name: r_loan_history_id_seq; Type: SEQUENCE; Schema: public; Owner: mis_amartha
+--
+
+CREATE SEQUENCE r_loan_history_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: r_loan_history_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: mis_amartha
+--
+
+ALTER SEQUENCE r_loan_history_id_seq OWNED BY r_loan_history.id;
+
+
+--
+-- Name: loan_history id; Type: DEFAULT; Schema: public; Owner: mis_amartha
+--
+
+ALTER TABLE ONLY loan_history ALTER COLUMN id SET DEFAULT nextval('loan_history_id_seq'::regclass);
+
+
+--
+-- Name: r_loan_history id; Type: DEFAULT; Schema: public; Owner: mis_amartha
+--
+
+ALTER TABLE ONLY r_loan_history ALTER COLUMN id SET DEFAULT nextval('r_loan_history_id_seq'::regclass);
+
+
+
+--
+-- Name: loan_history loan_history_pkey; Type: CONSTRAINT; Schema: public; Owner: mis_amartha
+--
+
+ALTER TABLE ONLY loan_history
+    ADD CONSTRAINT loan_history_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: r_loan_history r_loan_history_pkey; Type: CONSTRAINT; Schema: public; Owner: mis_amartha
+--
+
+ALTER TABLE ONLY r_loan_history
+    ADD CONSTRAINT r_loan_history_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: loan_history_id_idx; Type: INDEX; Schema: public; Owner: mis_amartha
+--
+
+CREATE INDEX loan_history_id_idx ON loan_history USING btree (id);
+
+
+--
+-- Name: r_loan_history_id__del_idx; Type: INDEX; Schema: public; Owner: mis_amartha
+--
+
+CREATE INDEX r_loan_history_id__del_idx ON r_loan_history USING btree (id, "deletedAt");
+
+
+--
+-- Name: r_loan_history_id_idx; Type: INDEX; Schema: public; Owner: mis_amartha
+--
+
+CREATE INDEX r_loan_history_id_idx ON r_loan_history USING btree (id);
 --
 -- PostgreSQL database dump complete
 --
