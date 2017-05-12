@@ -13,6 +13,7 @@ import (
 	"bitbucket.org/go-mis/modules/r"
 	"bitbucket.org/go-mis/services"
 	iris "gopkg.in/kataras/iris.v4"
+	"github.com/jinzhu/gorm"
 )
 
 func Init() {
@@ -73,63 +74,6 @@ func FetchByType(ctx *iris.Context) {
 		return
 	}
 	ctx.JSON(iris.StatusOK, iris.Map{"data": installments})
-}
-
-// SubmitInstallment - submit installment data
-func SubmitInstallment(ctx *iris.Context) {
-	installment := Installment{}
-	tempLoanID := ctx.Param("loan_id")
-
-	loanID, err := strconv.ParseUint(tempLoanID, 10, 64)
-
-	if err != nil {
-		ctx.JSON(iris.StatusExpectationFailed, iris.Map{
-			"status":  "error",
-			"message": err.Error(),
-		})
-		return
-	}
-
-	err = ctx.ReadJSON(&installment)
-	if err != nil {
-		ctx.JSON(iris.StatusInternalServerError, iris.Map{
-			"status":  "error",
-			"message": err.Error(),
-		})
-		return
-	}
-
-	services.DBCPsql.Table("installment").Create(&installment)
-
-	installmentHistoryData := installmentHistory.InstallmentHistory{StageFrom: installment.Stage, StageTo: installment.Stage}
-	services.DBCPsql.Table("r_installment_history").Create(&installmentHistoryData)
-
-	rInstallmentHistoryData := r.RInstallmentHistory{InstallmentId: installment.ID, InstallmentHistoryId: installmentHistoryData.ID}
-	services.DBCPsql.Table("r_installment_history").Create(&rInstallmentHistoryData)
-
-	accountTransactionDebitData := accountTransactionDebit.AccountTransactionDebit{Type: "INSTALLMENT", Amount: installment.PaidInstallment}
-	services.DBCPsql.Table("account_transaction_debit").Create(&accountTransactionDebitData)
-
-	rLoanInvestorProductPricing := r.RInvestorProductPricingLoan{}
-	services.DBCPsql.Table("r_investor_product_pricing_loan").Where("\"loanId\" = ?", loanID).First(&rLoanInvestorProductPricing)
-
-	rAccountInvestor := r.RAccountInvestor{}
-	services.DBCPsql.Table("r_account_investor").Where("\"investorId\" = ?", rLoanInvestorProductPricing.InvestorId).First(&rAccountInvestor)
-
-	rAccountTransactionDebitData := r.RAccountTransactionDebit{AccountId: rAccountInvestor.AccountId, AccountTransactionDebitId: accountTransactionDebitData.ID}
-	go services.DBCPsql.Table("r_account_transaction_debit").Create(&rAccountTransactionDebitData)
-
-	rAccountTransactionDebitInstallmentData := r.RAccountTransactionDebitInstallment{InstallmentId: installment.ID, AccountTransactionDebitId: accountTransactionDebitData.ID}
-	go services.DBCPsql.Table("r_account_transaction_debit_installment").Create(&rAccountTransactionDebitInstallmentData)
-
-	loanInstallmentData := r.RLoanInstallment{LoanId: loanID, InstallmentId: installment.ID}
-	go services.DBCPsql.Table("r_loan_installment").Create(&loanInstallmentData)
-
-	ctx.JSON(iris.StatusInternalServerError, iris.Map{
-		"status": "success",
-		"data":   installment,
-	})
-
 }
 
 //GetInstallmentByGroupIDAndTransactionDate - get list of installment by group and transaction date
@@ -225,26 +169,18 @@ type LoanSchema struct {
 	DeletedAt            *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
 }
 
-func storeInstallment(installmentId uint64, status string) {
+func StoreInstallment(installmentId uint64, status string) {
 	convertedInstallmentId := strconv.FormatUint(installmentId, 10)
 	fmt.Println("[INFO] Storing installment. installmentID=" + convertedInstallmentId + " status=" + status)
 	installmentSchema := Installment{}
 	services.DBCPsql.Table("installment").Where("\"id\" = ?", installmentId).First(&installmentSchema)
 
 	if installmentSchema.Stage != "PENDING" && installmentSchema.Stage != "IN-REVIEW" && installmentSchema.Stage != "APPROVE" {
-		// ctx.JSON(iris.StatusBadRequest, iris.Map{
-		// 	"status":  "error",
-		// 	"message": "Current installment stage is NOT 'PENDING'. System cannot continue to process your request.",
-		// })
-		fmt.Println("Current installment stage is NEITHER 'PENDING' NOR 'IN-REVIEW'. System cannot continue to process your request. installmentId=" + convertedInstallmentId)
+		fmt.Println("Current installment stage is NEITHER 'PENDING' NOR 'IN-REVIEW' nor 'APPROVE'. System cannot continue to process your request. installmentId=" + convertedInstallmentId)
 		return
 	}
 
 	if status == "REJECT" {
-		// ctx.JSON(iris.StatusOK, iris.Map{
-		// 	"status": "success",
-		// 	"data":   iris.Map{"message": "Installment data has been rejected."},
-		// })
 		UpdateStageInstallmentApproveOrReject(installmentId, installmentSchema.Stage, status)
 		fmt.Println("Installment data has been rejected. installmentId=" + convertedInstallmentId)
 		return
@@ -310,20 +246,6 @@ func storeInstallment(installmentId uint64, status string) {
 	rAccountTransactionDebitInstallmentData := r.RAccountTransactionDebitInstallment{InstallmentId: installmentId, AccountTransactionDebitId: accountTransactionDebitSchema.ID}
 	services.DBCPsql.Table("r_account_transaction_debit_installment").Create(&rAccountTransactionDebitInstallmentData)
 
-	// querySumDebitAndCredit := "SELECT SUM(account_transaction_debit.\"amount\") as \"totalDebit\", SUM(account_transaction_credit.\"amount\")  as \"totalCredit\" "
-	// querySumDebitAndCredit += "FROM account "
-	// querySumDebitAndCredit += "LEFT JOIN r_account_transaction_debit ON r_account_transaction_debit.\"accountId\" = account.\"id\" "
-	// querySumDebitAndCredit += "LEFT JOIN account_transaction_debit ON account_transaction_debit.\"id\" = r_account_transaction_debit.\"accountTransactionDebitId\" "
-	// querySumDebitAndCredit += "LEFT JOIN r_account_transaction_credit ON r_account_transaction_credit.\"accountId\" = account.\"id\" "
-	// querySumDebitAndCredit += "LEFT JOIN account_transaction_credit ON account_transaction_credit.\"id\" = r_account_transaction_credit.\"accountTransactionCreditId\" "
-	// querySumDebitAndCredit += "WHERE account.\"id\" = ?"
-
-	// accountTransactionDebitAndCreditSchema := AccountTransactionDebitAndCredit{}
-	// services.DBCPsql.Raw(querySumDebitAndCredit, loanInvestorAccountIDSchema.AccountID).Scan(&accountTransactionDebitAndCreditSchema)
-
-	// totalBalance := accountTransactionDebitAndCreditSchema.TotalDebit - accountTransactionDebitAndCreditSchema.TotalCredit
-	// services.DBCPsql.Table("account").Exec("UPDATE account SET \"totalDebit\" = ?, \"totalCredit\" = ?, \"totalBalance\" = ? WHERE \"id\" = ?", accountTransactionDebitAndCreditSchema.TotalDebit, accountTransactionDebitAndCreditSchema.TotalCredit, totalBalance, loanInvestorAccountIDSchema.AccountID)
-
 	totalDebit := accountTransactionDebit.GetTotalAccountTransactionDebit(loanInvestorAccountIDSchema.AccountID)
 	totalCredit := accountTransactionCredit.GetTotalAccountTransactionCredit(loanInvestorAccountIDSchema.AccountID)
 
@@ -333,16 +255,14 @@ func storeInstallment(installmentId uint64, status string) {
 	fmt.Println("Calculation process has been done. installmentId=" + convertedInstallmentId)
 
 	/*
-	*		CALCULATION IS DONE, UPDATE INSTALLMENT STATUS FROM `PROCESSING` TO `APPROVE`
-	 */
+	*		CALCULATION IS DONE, UPDATE INSTALLMENT STATUS FROM `PROCESSING` TO `SUCCESS`
+	*/
+
+	if err := UpdateLoanStage(installmentSchema, loanSchema.ID, services.DBCPsql); err != nil {
+		fmt.Printf("Skip Update loan %d to END is failed. Error = %s\n", loanSchema.ID, err.Error())
+	}
 
 	UpdateStageInstallmentApproveOrReject(installmentId, "PROCESSING", status)
-	// ctx.JSON(iris.StatusOK, iris.Map{
-	// 	"status": "success",
-	// 	"data": iris.Map{
-	// 		"message": "Installment has been updated to " + status,
-	// 	},
-	// })
 }
 
 // UpdateStageInstallmentApproveOrReject - Update installment stage
@@ -368,7 +288,7 @@ func SubmitInstallmentByInstallmentIDWithStatus(ctx *iris.Context) {
 	installmentID, _ := strconv.ParseUint(ctx.Param("installment_id"), 10, 64)
 	status := strings.ToUpper(ctx.Param("status"))
 
-	go storeInstallment(installmentID, status)
+	go StoreInstallment(installmentID, status)
 
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"status": "success",
@@ -406,8 +326,8 @@ func SubmitInstallmentByGroupIDAndTransactionDateWithStatus(ctx *iris.Context) {
 		}
 
 		for _, item := range installmentDetailSchema {
-			// go storeInstallment(item.InstallmentID, status)
-			storeInstallment(item.InstallmentID, status)
+			// go StoreInstallment(item.InstallmentID, status)
+			StoreInstallment(item.InstallmentID, status)
 		}
 
 		ctx.JSON(iris.StatusOK, iris.Map{
@@ -456,8 +376,8 @@ func SubmitInstallmentByGroupIDAndTransactionDateWithStatusAndInstallmentId(ctx 
 	services.DBCPsql.Raw(query).Scan(&installmentDetailSchema)
 
 	for _, item := range installmentDetailSchema {
-		// go storeInstallment(item.InstallmentID, status)
-		storeInstallment(item.InstallmentID, "SUCCESS")
+		// go StoreInstallment(item.InstallmentID, status)
+		StoreInstallment(item.InstallmentID, "SUCCESS")
 	}
 
 	ctx.JSON(iris.StatusOK, iris.Map{
@@ -600,4 +520,41 @@ func UpdateInstallmentByInstallmentID(ctx *iris.Context) {
 		"data":   iris.Map{},
 	})
 
+}
+
+func UpdateLoanStage(installment Installment, loanId uint64, db *gorm.DB) error {
+	var loan = struct {
+		ID        string `gorm:"column:id"`
+		Frequency int32 `gorm:"column:frequency"`
+		Tenor     int32 `gorm:"column:tenor"`
+	}{}
+
+	query := ` SELECT loan.id as id, SUM(frequency) as frequency, tenor FROM loan JOIN r_loan_installment on loan.id = "loanId" JOIN installment on installment.id = "installmentId" WHERE loan.id = ? AND installment.stage = 'SUCCESS' AND installment."deletedAt" isnull AND r_loan_installment."deletedAt" isnull GROUP BY loan.id`
+
+	if err := db.Raw(query, loanId).Scan(&loan).Error; err != nil {
+		return err
+	}
+
+	if loan.Frequency + installment.Frequency < loan.Tenor {
+		// frequency is below tenor so dont go on
+		return nil
+	}
+
+	if installment.Frequency < 3 {
+		if err := db.Table("loan").Where("id = ?", loanId).UpdateColumn("stage", "END").Error; err != nil {
+			return err
+		}
+		return nil
+	}
+
+	if installment.Frequency >= 3 {
+		if err := db.Table("loan").Where("id = ?", loanId).UpdateColumn("stage", "END-EARLY").Error; err != nil {
+			return err
+		}
+		return nil
+	}
+
+	// supposed not to go here
+	//return error.New("Somethings is wrong")
+	return nil
 }
