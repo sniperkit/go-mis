@@ -33,7 +33,7 @@ func FetchAll(ctx *iris.Context) {
 
 func CheckVoucherByOrderNo(orderNo string) Voucher {
 	voucher := Voucher{}
-	query := `select v.* from r_loan_order_voucher as rlov join voucher as v on rlov."voucherId" = v."id" join loan_order as lo on rlov."loanOrderId" = lo.id where and rlov."deletedAt" isnull and lo."orderNo"='` + orderNo + `'`
+	query := `select v.* from r_loan_order_voucher as rlov join voucher as v on rlov."voucherId" = v."id" join loan_order as lo on rlov."loanOrderId" = lo.id where rlov."deletedAt" isnull and lo."orderNo"='` + orderNo + `'`
 	if err := services.DBCPsql.Raw(query).Scan(&voucher).Error; err != nil {
 		fmt.Println(err)
 	}
