@@ -106,3 +106,83 @@ func GetCifInvestorAccount(ctx *iris.Context) {
 		"data":   cifInvestorAccountObj,
 	})
 }
+
+func GetCifBorrower (ctx *iris.Context){
+	borrowerId := ctx.Get("id")
+
+	query := "SELECT borrower.\"id\" as \"borrowerId\", "
+	query += " borrower.\"borrowerNo\" as \"borrowerNo\", "
+	query += " borrower.\"isCheckedTerm\" as \"isCheckedTerm\", "
+	query += " borrower.\"isCheckedPrivacy\" as \"isCheckedPrivacy\", "
+	query += " borrower.\"id\" as \"village\", "
+	query += " cif.\"cifNumber\" as \"cifNumber\", "
+	query += " cif.\"username\" as \"username\", "
+	query += " cif.\"password\" as \"password\", "
+	query += " cif.\"name\" as \"name\", "
+	query += " cif.\"gender\" as \"gender\", "
+	query += " cif.\"placeOfBirth\" as \"placeOfBirth\", "
+	query += " cif.\"dateOfBirth\" as \"dateOfBirth\", "
+	query += " cif.\"idCardNo\" as \"idCardNo\", "
+	query += " cif.\"idCardValidDate\" as \"idCardValidDate\", "
+	query += " cif.\"idCardFilename\" as \"idCardFilename\", "
+	query += " cif.\"taxCardNo\" as \"taxCardNo\", "
+	query += " cif.\"taxCardFilename\" as \"taxCardFilename\", "
+	query += " cif.\"maritalStatus\" as \"maritalStatus\", "
+	query += " cif.\"mothersName\" as \"mothersName\", "
+	query += " cif.\"religion\" as \"religion\", "
+	query += " cif.\"address\" as \"address\", "
+	query += " cif.\"rt\" as \"rt\", "
+	query += " cif.\"rw\" as \"rw\", "
+	query += " cif.\"kelurahan\" as \"kelurahan\", "
+	query += " cif.\"kecamatan\" as \"kecamatan\", "
+	query += " cif.\"province\" as \"province\", "
+	query += " cif.\"nationality\" as \"nationality\", "
+	query += " cif.\"zipcode\" as \"zipcode\", "
+	query += " cif.\"phoneNo\" as \"phoneNo\", "
+	query += " cif.\"companyName\" as \"companyName\", "
+	query += " cif.\"companyAddress\" as \"companyAddress\", "
+	query += " cif.\"occupation\" as \"occupation\", "
+	query += " cif.\"income\" as \"income\", "
+	query += " cif.\"incomeSourceFund\" as \"incomeSourceFund\", "
+	query += " cif.\"incomeSourceCountry\" as \"incomeSourceCountry\", "
+	query += " cif.\"isActivated\" as \"isActivated\", "
+	query += " cif.\"isValidated\" as \"isValidated\", "
+	query += " cif.\"isVerified\" as \"isVerified\" "
+	query += "FROM borrower "
+	query += "LEFT JOIN r_cif_borrower rcb ON rcb.\"borrowerId\" = borrower.\"id\" "
+	query += "LEFT JOIN cif ON cif.\"id\" = rcb.\"cifId\" "
+	query += "WHERE borrower.\"id\" = ? "
+
+	borrowerAll := CifBorrower{}
+
+	services.DBCPsql.Raw(query, borrowerId).Scan(&borrowerAll)
+	ctx.JSON(iris.StatusOK, iris.Map{
+		"status": "success",
+		"data":   borrowerAll,
+	})
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
