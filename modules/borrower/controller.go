@@ -12,6 +12,7 @@ import (
 	loanRaw "bitbucket.org/go-mis/modules/loan-raw"
 	productPricing "bitbucket.org/go-mis/modules/product-pricing"
 	"bitbucket.org/go-mis/modules/r"
+	"bitbucket.org/go-mis/modules/survey"
 	"bitbucket.org/go-mis/services"
 	"github.com/jinzhu/gorm"
 	iris "gopkg.in/kataras/iris.v4"
@@ -22,8 +23,9 @@ func Init() {
 	services.BaseCrudInit(Borrower{}, []Borrower{})
 }
 
-// Approve prospective borrower
+// Approve prospective borrower, sourceType: OLD/NEW
 func Approve(ctx *iris.Context) {
+	sourceType := ctx.Param("source-type")
 
 	// map the payload
 	payload := make(map[string]interface{}, 0)
@@ -34,6 +36,19 @@ func Approve(ctx *iris.Context) {
 		})
 		return
 	}
+
+	loanID := CreateBorrowerData(ctx, payload, sourceType)
+
+	ctx.JSON(iris.StatusOK, iris.Map{
+		"status": "success",
+		"data": iris.Map{
+			"message": "Loan " + string(loanID) + " is Created",
+		},
+	})
+}
+
+// CreateBorrowerData - sourceType: OLD/NEW
+func CreateBorrowerData(ctx *iris.Context, payload map[string]interface{}, sourceType string) uint64 {
 
 	groupID, _ := strconv.ParseUint(payload["groupId"].(string), 10, 64)
 	sectorID, _ := strconv.ParseUint(payload["data_sector"].(string), 10, 64)
@@ -47,24 +62,24 @@ func Approve(ctx *iris.Context) {
 	borrowerId, err := GetOrCreateBorrowerId(payload, db)
 	if err != nil {
 		processErrorAndRollback(ctx, db, "Error Create Borrower "+err.Error())
-		return
+		return 0
 	}
 
 	// reserve one loan record for this new borrower
 	loan := CreateLoan(payload)
 	if db.Table("loan").Create(&loan).Error != nil {
 		processErrorAndRollback(ctx, db, "Error Create Loan")
-		return
+		return 0
 	}
 
 	if db.Table("loan_raw").Create(&loanRaw.LoanRaw{Raw: dataRaw, LoanID: loan.ID}).Error != nil {
 		processErrorAndRollback(ctx, db, "Error Create Loan Raw")
-		return
+		return 0
 	}
 
 	if db.Table("r_loan_sector").Create(&r.RLoanSector{LoanId: loan.ID, SectorId: sectorID}).Error != nil {
 		processErrorAndRollback(ctx, db, "Error Create Loan Sector Relation")
-		return
+		return 0
 	}
 
 	rLoanBorrower := r.RLoanBorrower{
@@ -73,34 +88,102 @@ func Approve(ctx *iris.Context) {
 	}
 	if db.Table("r_loan_borrower").Create(&rLoanBorrower).Error != nil {
 		processErrorAndRollback(ctx, db, "Error Create Loan Borrower Relation")
-		return
+		return 0
 	}
 
 	if UseProductPricing(0, loan.ID, db) != nil {
 		processErrorAndRollback(ctx, db, "Error Use Product Pricing")
-		return
+		return 0
 	}
 
 	if CreateRelationLoanToGroup(loan.ID, groupID, db) != nil {
 		processErrorAndRollback(ctx, db, "Error Create Relation to Group")
-		return
+		return 0
 	}
 
 	if CreateRelationLoanToBranch(loan.ID, groupID, db) != nil {
 		processErrorAndRollback(ctx, db, "Error Create Relation to Branch")
-		return
+		return 0
 	}
 
 	if CreateDisbursementRecord(loan.ID, payload["disbursementDate"].(string), db) != nil {
 		processErrorAndRollback(ctx, db, "Error Create Disbusrement")
-		return
+		return 0
+	}
+
+	if sourceType == "OLD" {
+		dbSurvey := services.DBCPsqlSurvey.Begin()
+
+		idCardNo := payload["client_ktp"].(string)
+		if setOldSurveyStatus(idCardNo, "APPROVE", dbSurvey) != nil {
+			processErrorAndRollback(ctx, db, "Error Setting Data in DB Survey")
+			return 0
+		}
+
+		dbSurvey.Commit()
+	} else {
+		uuid := payload["uuid"].(string)
+		if setNewSurveyStatus(uuid, "APPROVE", db) != nil {
+			processErrorAndRollback(ctx, db, "Error Setting Data in DB Survey")
+			return 0
+		}
 	}
 
 	db.Commit()
-	ctx.JSON(iris.StatusOK, iris.Map{
-		"status":  "success",
-		"message": "Loan " + string(loan.ID) + " is Created",
-	})
+
+	return loan.ID
+}
+
+// status: APPROVE/REJECT
+func setOldSurveyStatus(idCardNo string, status string, db *gorm.DB) error {
+	query := "select * from a_fields where key = 'client_ktp' and val = ? order by id desc limit 1"
+	aFields := survey.AFields{}
+	services.DBCPsqlSurvey.Raw(query, idCardNo).Scan(&aFields)
+
+	var statusBoolean bool
+	if status == "APPROVE" {
+		statusBoolean = true
+	} else {
+		statusBoolean = false
+	}
+
+	if err := db.Table("a_fields").Where("answer_id = ?", aFields.AnswerId).UpdateColumn("is_migrated", true).Error; err != nil {
+		return err
+	}
+
+	if err := db.Table("a_fields").Where("answer_id = ?", aFields.AnswerId).UpdateColumn("is_approve", statusBoolean).Error; err != nil {
+		return err
+	}
+
+	if err := db.Table("a_fields").Where("answer_id = ?", aFields.AnswerId).UpdateColumn("updated_at", "now").Error; err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// status: APPROVE/REJECT
+func setNewSurveyStatus(uuid string, status string, db *gorm.DB) error {
+	var statusBoolean bool
+	if status == "APPROVE" {
+		statusBoolean = true
+	} else {
+		statusBoolean = false
+	}
+
+	if err := db.Table("survey").Where("uuid = ? AND \"deletedAt\" IS NULL", uuid).UpdateColumn("isMigrate", true).Error; err != nil {
+		return err
+	}
+
+	if err := db.Table("survey").Where("uuid = ? AND \"deletedAt\" IS NULL", uuid).UpdateColumn("isApprove", statusBoolean).Error; err != nil {
+		return err
+	}
+
+	if err := db.Table("survey").Where("uuid = ? AND \"deletedAt\" IS NULL", uuid).UpdateColumn("updatedAt", "now").Error; err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func GetOrCreateBorrowerId(payload map[string]interface{}, db *gorm.DB) (uint64, error) {
@@ -216,6 +299,8 @@ func CreateLoan(payload map[string]interface{}) loan.Loan {
 
 	// map each payload field to it's respective cif field
 	newLoan := loan.Loan{}
+	newLoan.URLPic1 = cpl["photo_client"]
+	newLoan.URLPic2 = cpl["photo_client_square"]
 	newLoan.Purpose = cpl["data_tujuan"]
 	newLoan.SubmittedLoanDate, _ = cpl["data_tgl"] // time.Parse("2006-01-02 15:04:05", cpl["data_tgl"])
 	newLoan.SubmittedTenor, _ = strconv.ParseInt(cpl["data_jangkawaktu"], 10, 64)
@@ -306,7 +391,7 @@ type Count struct {
 
 // GetTotalBorrowerByBranchID - get total borrower
 func GetTotalBorrowerByBranchID(ctx *iris.Context) {
-	query := "SELECT DISTINCT COUNT(borrower.id)"
+	query := "SELECT COUNT(DISTINCT borrower.id)"
 	query += "FROM borrower "
 	query += "JOIN r_loan_borrower ON r_loan_borrower.\"borrowerId\" = borrower.id "
 	query += "JOIN r_loan_branch ON r_loan_branch.\"loanId\" = r_loan_borrower.\"loanId\" "
