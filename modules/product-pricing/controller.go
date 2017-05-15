@@ -43,9 +43,9 @@ func Create(ctx *iris.Context) {
 	if err != nil {
 		panic(err)
 	}
-	if *m.IsInstutitional == true {
+	if *m.IsInstutitional == false {
 		pplist := []ProductPricing{}
-		query := `select * from product_pricing where product_pricing."isInstitutional" = true `
+		query := `select * from product_pricing where product_pricing."isInstitutional" = false `
 		query += `and ( product_pricing."startDate" between ? and ? or product_pricing."endDate" between ? and ? or `
 		query += `? between product_pricing."startDate" and product_pricing."endDate" or ? between product_pricing."startDate" and product_pricing."endDate") `
 
@@ -55,21 +55,19 @@ func Create(ctx *iris.Context) {
 			ctx.JSON(iris.StatusInternalServerError, iris.Map{"status": "error", "message": "Date Overlap, please choose another date.", "data": pplist})
 		} else {
 			services.DBCPsql.Create(&m)
-
-			for _, val := range m.Investors {
-				r := r.RInvestorProductPricing{}
-				r.InvestorId=val.ID
-				r.ProductPricingId=m.ID
-				if err := services.DBCPsql.Create(&r).Error; err != nil {
-					panic(err)
-				}
-			}
-
 			ctx.JSON(iris.StatusOK, iris.Map{"status": "success", "data": m})
 		}
-
 	} else {
 		services.DBCPsql.Create(&m)
+
+		for _, val := range m.Investors {
+			r := r.RInvestorProductPricing{}
+			r.InvestorId=val.ID
+			r.ProductPricingId=m.ID
+			if err := services.DBCPsql.Create(&r).Error; err != nil {
+				panic(err)
+			}
+		}
 
 		ctx.JSON(iris.StatusOK, iris.Map{"status": "success", "data": m})
 
