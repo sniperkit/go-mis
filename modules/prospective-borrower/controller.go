@@ -23,6 +23,7 @@ type SurveySchema struct {
 	CreditScoreGrade string    `gorm:"column:creditScoreGrade" json:"creditScoreGrade"`
 	CreditScoreValue float64   `gorm:"column:creditScoreValue" json:"creditScoreValue"`
 	CreatedAt        time.Time `gorm:"column:createdAt" json:"createdAt"`
+	UpdatedAt        time.Time `gorm:"column:updatedAt" json:"updatedAt"`
 }
 
 // GetArchivedProspectiveBorrower - Get archived prospective borrower v2
@@ -158,7 +159,7 @@ func UpdateStatusProspectiveBorrower(ctx *iris.Context) {
 
 	services.DBCPsql.Table("survey").Where("id = ? AND \"deletedAt\" IS NULL", id).UpdateColumn("isMigrate", true)
 	services.DBCPsql.Table("survey").Where("id = ? AND \"deletedAt\" IS NULL", id).UpdateColumn("isApprove", status)
-	services.DBCPsql.Table("survey").Where("id = ? AND \"deletedAt\" IS NULL", id).UpdateColumn("updatedAt", "current_timestamp")
+	services.DBCPsql.Table("survey").Where("id = ? AND \"deletedAt\" IS NULL", id).UpdateColumn("updatedAt", "now()")
 
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"status": "success",
