@@ -293,6 +293,8 @@ func CreateLoan(payload map[string]interface{}) loan.Loan {
 
 	// map each payload field to it's respective cif field
 	newLoan := loan.Loan{}
+	newLoan.URLPic1 = cpl["photo_client"]
+	newLoan.URLPic2 = cpl["photo_client_square"]
 	newLoan.Purpose = cpl["data_tujuan"]
 	newLoan.SubmittedLoanDate, _ = cpl["data_tgl"] // time.Parse("2006-01-02 15:04:05", cpl["data_tgl"])
 	newLoan.SubmittedTenor, _ = strconv.ParseInt(cpl["data_jangkawaktu"], 10, 64)
