@@ -23,7 +23,7 @@ func SearchInvestor(ctx *iris.Context) {
   and investor."isInstitutional" = true
   and not exists (
   	select 1 from r_investor_product_pricing ripp
-  	where ripp."investorId" = investor.id
+  	where ripp."investorId" = investor.id and ripp."deletedAt" is null
   )`
 
 	services.DBCPsql.Raw(query, searchStr).Scan(&sInv)
