@@ -35,6 +35,9 @@ func AgentRekap(ctx *iris.Context) {
 
 	}
 
-	ctx.JSON(iris.StatusOK, resReport)
+	ctx.JSON(iris.StatusOK, iris.Map{
+		"status": "success",
+		"data":   resReport,
+	})
 
 }
