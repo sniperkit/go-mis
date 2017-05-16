@@ -22,6 +22,7 @@ import (
 	"bitbucket.org/go-mis/modules/notification"
 	"bitbucket.org/go-mis/modules/product-pricing"
 	prospectiveBorrower "bitbucket.org/go-mis/modules/prospective-borrower"
+	"bitbucket.org/go-mis/modules/reports"
 	"bitbucket.org/go-mis/modules/sector"
 	"bitbucket.org/go-mis/modules/survey"
 	"bitbucket.org/go-mis/modules/transaction"
@@ -138,6 +139,8 @@ func InitCustomApi() {
 		v2.Any("/installment-review/get/:branch_id/day/:schedule_day", installment.GetPendingInstallment)
 		v2.Any("/installment-review/by-group/:group_id", installment.GetPendingInstallmentDetail)
 		v2.Any("/installment-review/set/:installment_id", installment.UpdateInstallmentByInstallmentID)
+
+		v2.Any("/reports/agent", reports.AgentRekap)
 	}
 
 	iris.Get(baseURL+"/investor-without-va", investor.InvestorWithoutVA)
