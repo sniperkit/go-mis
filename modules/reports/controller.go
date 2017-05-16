@@ -5,23 +5,34 @@ import (
 
 	"bitbucket.org/go-mis/config"
 
-	"github.com/kataras/iris"
 	"github.com/parnurzeal/gorequest"
+	iris "gopkg.in/kataras/iris.v4"
 )
 
 // AgentRekap - AgentRekap bridge
 func AgentRekap(ctx *iris.Context) {
-	agentId := ctx.GetString("agentId")
-	date := ctx.GetString("date")
+	agentID := ctx.URLParam("agentId")
+	date := ctx.URLParam("date")
+	//fmt.Print(agentID)
 	var resReport ResReport
 
-	urlStr := config.UploaderApiPath + "report?agentId=" + agentId + "&date=" + date + "&secretKey=n0de-U>lo4d3r"
+	urlStr := config.UploaderApiPath + "report?agentId=" + agentID + "&date=" + date + "&secretKey=n0de-U>lo4d3r"
 	request := gorequest.New()
 	_, _, errs := request.Get(urlStr).
 		EndStruct(&resReport)
 
 	if len(errs) > 0 {
 		fmt.Print(errs)
+	}
+
+	if (resReport == ResReport{}) {
+		resReport.Status = "error"
+		resReport.Message = "error bridge to uploader"
+	}
+
+	if resReport.Path != "" {
+		resReport.Path = config.UploaderApiPath + resReport.Path
+
 	}
 
 	ctx.JSON(iris.StatusOK, resReport)
