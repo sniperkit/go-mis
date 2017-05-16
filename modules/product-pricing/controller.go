@@ -45,7 +45,7 @@ func Create(ctx *iris.Context) {
 	}
 	if *m.IsInstutitional == false {
 		pplist := []ProductPricing{}
-		query := `select * from product_pricing where product_pricing."isInstitutional" = false `
+		query := `select * from product_pricing where product_pricing."isInstitutional" = false AND product_pricing."deletedAt" IS NULL `
 		query += `and ( product_pricing."startDate" between ? and ? or product_pricing."endDate" between ? and ? or `
 		query += `? between product_pricing."startDate" and product_pricing."endDate" or ? between product_pricing."startDate" and product_pricing."endDate") `
 
