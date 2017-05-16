@@ -94,8 +94,19 @@ func GetInvestorsByProductPricing(ctx *iris.Context) {
 	})
 }
 
-
 func DeleteProductPricing(ctx *iris.Context){
+	ppId := ctx.Param("id")
+	productPricing := ProductPricing{}
+
+	query := "WITH upd AS (UPDATE product_pricing SET \"deletedAt\" = now() WHERE id = ? RETURNING id) "
+	query += "UPDATE r_investor_product_pricing ripp SET \"deletedAt\" = now() FROM upd WHERE ripp.\"productPricingId\" = upd.\"id\""
+
+	services.DBCPsql.Raw(query, ppId).Scan(&productPricing);
+
+	ctx.JSON(iris.StatusOK, iris.Map{"data": productPricing})
+
+}
+func DeleteProductPricingInvestor(ctx *iris.Context){
 	ppId := ctx.Param("ppId")
 	invId := ctx.Param("invId")
 	productPricing := ProductPricing{}
