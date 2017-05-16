@@ -17,6 +17,7 @@ import (
 	"bitbucket.org/go-mis/modules/r"
 	"bitbucket.org/go-mis/services"
 	"gopkg.in/kataras/iris.v4"
+	"bitbucket.org/go-mis/modules/product-pricing"
 )
 
 func Init() {
@@ -295,6 +296,13 @@ func GetLoanDetail(ctx *iris.Context) {
 
 	services.DBCPsql.Raw(queryInvestorObj, loanId).Scan(&investorCifObj)
 
+	productPricingObj  := productPricing.ProductPricing{}
+	queryProductPricing := "SELECT product_pricing.\"id\", product_pricing.\"returnOfInvestment\", product_pricing.\"administrationFee\", "
+	queryProductPricing += "product_pricing.\"serviceFee\", product_pricing.\"startDate\", product_pricing.\"endDate\", product_pricing.\"isInstitutional\" "
+	queryProductPricing += "FROM product_pricing "
+	queryProductPricing += "LEFT JOIN r_investor_product_pricing_loan ON r_investor_product_pricing_loan.\"productPricingId\"=product_pricing.\"id\" WHERE r_investor_product_pricing_loan.\"loanId\" = ?"
+	services.DBCPsql.Raw(queryProductPricing,loanId).Scan(&productPricingObj)
+
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"status": "success",
 		"data": iris.Map{
@@ -302,6 +310,7 @@ func GetLoanDetail(ctx *iris.Context) {
 			"borrower":    borrowerObj,
 			"installment": installmentObj,
 			"investor":    investorCifObj,
+			"productPricing":    productPricingObj,
 		},
 	})
 }
