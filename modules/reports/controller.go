@@ -16,7 +16,7 @@ func AgentRekap(ctx *iris.Context) {
 	//fmt.Print(agentID)
 	var resReport ResReport
 
-	urlStr := config.UploaderApiPath + "report/agent?agentId=" + agentID + "&date=" + date + "&secretKey=n0de-U>lo4d3r"
+	urlStr := config.UploaderApiPath + "report/agent?agentId=" + agentID + "&installmentDate=" + date + "&secretKey=n0de-U>lo4d3r"
 	request := gorequest.New()
 	_, _, errs := request.Get(urlStr).
 		EndStruct(&resReport)
