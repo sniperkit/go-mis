@@ -212,7 +212,7 @@ func Verified(ctx *iris.Context) {
 			// send sms notification
 			fmt.Println("Sending sms ... ")
 			twilio := services.InitTwilio()
-			message := "Selamat data Anda sudah terverifikasi. Silakan login ke dashboard Anda dan mulai berinvestasi. www.amartha.com"
+			message := "Selamat data Anda sudah terverifikasi. Silakan login ke dashboard Anda dan mulai berinvestasi. www.amartha.com \n\nAmartha"
 			twilio.SetParam(cifSchema.PhoneNo, message)
 			twilio.SendSMS()
 		}
