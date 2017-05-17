@@ -16,6 +16,7 @@ func AgentRekap(ctx *iris.Context) {
 	//fmt.Print(agentID)
 	var resReport ResReport
 
+	fmt.Println("Call node uploader")
 	urlStr := config.UploaderApiPath + "report/agent?agentId=" + agentID + "&installmentDate=" + date + "&secretKey=n0de-U>lo4d3r"
 	request := gorequest.New()
 	_, _, errs := request.Get(urlStr).
@@ -24,7 +25,7 @@ func AgentRekap(ctx *iris.Context) {
 	if len(errs) > 0 {
 		fmt.Print(errs)
 	}
-
+	fmt.Println("URL : ",urlStr)
 	if (resReport == ResReport{}) {
 		resReport.Status = "error"
 		resReport.Message = "error bridge to uploader"
