@@ -39,6 +39,10 @@ func Approve(ctx *iris.Context) {
 
 	loanID := CreateBorrowerData(ctx, payload, sourceType)
 
+	if loanID < 1 {
+		return
+	}
+	
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"status": "success",
 		"data": iris.Map{
