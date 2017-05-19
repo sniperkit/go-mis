@@ -92,10 +92,11 @@ func FetchAll(ctx *iris.Context) {
 	// query += "LEFT JOIN disbursement ON disbursement.\"id\" = r_loan_disbursement.\"disbursementId\" "
 	// query += "WHERE branch.id = ? AND loan.\"deletedAt\" IS NULL AND loan.\"stage\" NOT IN ('END', 'END-EARLY') "
 
-	query := "SELECT loan.id as \"loanId\", cif.name AS \"borrower\", borrower.\"borrowerNo\", \"group\".\"name\" AS \"group\", loan.\"submittedLoanDate\", disbursement.\"disbursementDate\", loan.plafond, loan.tenor, loan.rate, loan.stage, loan.id FROM loan "
+	query := "SELECT loan.id as \"loanId\", cif.name AS \"borrower\", borrower.\"borrowerNo\", \"group\".\"name\" AS \"group\", loan.\"submittedLoanDate\", disbursement.\"disbursementDate\", loan.plafond, loan.tenor, loan.rate, loan.stage, loan.id, r_investor_product_pricing_loan.\"investorId\" as \"investorId\" FROM loan "
 	query += "JOIN r_loan_group ON r_loan_group.\"loanId\" = loan.id "
 	query += "JOIN r_loan_branch ON r_loan_branch.\"loanId\" = loan.id "
 	query += "JOIN r_loan_borrower ON r_loan_borrower.\"loanId\" = loan.id "
+	query += "JOIN r_investor_product_pricing_loan ON r_investor_product_pricing_loan.\"loanId\" = loan.id "
 	query += "JOIN borrower ON r_loan_borrower.\"borrowerId\" = borrower.id "
 	query += "JOIN r_loan_disbursement ON r_loan_disbursement.\"loanId\" = loan.id "
 	query += "JOIN r_cif_borrower ON r_cif_borrower.\"borrowerId\" = r_loan_borrower.\"borrowerId\" "
@@ -316,9 +317,14 @@ func GetLoanDetail(ctx *iris.Context) {
 }
 
 type BorrowerObj struct {
-	Fullname   string `gorm:"column:name" json:"name"`
-	BorrowerNo string `gorm:"column:borrowerNo" json:"borrowerNo"`
-	Group      string `gorm:"column:group" json:"group"`
+	Fullname   	string `gorm:"column:name" json:"name"`
+	BorrowerNo 	string `gorm:"column:borrowerNo" json:"borrowerNo"`
+	Branch 			string `gorm:"column:branch" json:"branch"`
+	IdCardNo		string `gorm:"column:idCardNo" json:"idCardNo"`
+	Address		 	string `gorm:"column:address" json:"address"`
+	Kelurahan		string `gorm:"column:kelurahan" json:"kelurahan"`
+	Kecamatan		string `gorm:"column:kecamatan " json:"kecamatan"`
+	Group      	string `gorm:"column:group" json:"group"`
 }
 
 // GetAkadData - Get data to be shown in Akad
@@ -350,7 +356,7 @@ func GetAkadData(ctx *iris.Context) {
 
 	services.DBCPsql.Raw(queryGetInvestor, loanID).Scan(&investorData)
 
-	queryGetBorrower := "SELECT cif.\"name\", borrower.\"borrowerNo\", \"group\".name as \"group\" "
+	queryGetBorrower := "SELECT cif.\"name\", cif.\"address\" as \"address\", cif.\"kelurahan\" as \"kelurahan\", cif.\"kecamatan\" as kecamatan, cif.\"idCardNo\" as \"idCardNo\" ,borrower.\"borrowerNo\", \"group\".\"name\" as \"group\", branch.\"name\" as \"branch\" "
 	queryGetBorrower += "FROM loan "
 	queryGetBorrower += "JOIN r_loan_borrower on r_loan_borrower.\"loanId\" = loan.id "
 	queryGetBorrower += "JOIN borrower ON borrower.id = r_loan_borrower.\"borrowerId\" "
@@ -358,6 +364,10 @@ func GetAkadData(ctx *iris.Context) {
 	queryGetBorrower += "JOIN cif ON cif.id = r_cif_borrower.\"cifId\" "
 	queryGetBorrower += "JOIN r_loan_group on r_loan_group.\"loanId\" = loan.id "
 	queryGetBorrower += "JOIN \"group\" on \"group\".id = r_loan_group.\"groupId\" "
+
+	queryGetBorrower += "JOIN r_group_branch ON r_group_branch.\"groupId\" = \"group\".\"id\" "
+	queryGetBorrower += "JOIN branch on branch.\"id\" = r_group_branch.\"branchId\" "
+
 	queryGetBorrower += "WHERE loan.id = ? AND loan.\"deletedAt\" IS NULL LIMIT 1 "
 
 	borrowerData := BorrowerObj{}
@@ -428,6 +438,8 @@ func GetAkadData(ctx *iris.Context) {
 			"plafond":           data.Plafond,
 			"tenor":             data.Tenor,
 			"installment":       data.Installment,
+			"rate": data.Rate,
+			"returnOfInvestment": data.ReturnOfInvestment,
 			"weeklyBase":        weeklyBase,
 			"weeklyMargin":      weeklyMargin,
 			"weeklyFeeBorrower": weeklyFeeBorrower,
