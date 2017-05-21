@@ -21,24 +21,23 @@ func Init() {
 
 func FetchAll(ctx *iris.Context) {
 
-	query := "select lo.id , c.name, c.username, a.\"totalBalance\",\"orderNo\",sum(l.plafond) as \"totalPlafond\", "
-	query += "case when rlov.id is not null then TRUE else FALSE end \"usingVoucher\", "
-	query += "case when rlov.id is not null then v.amount else 0 end \"voucherAmount\" "
-	query += "from loan l join r_loan_order rlo on l.id = rlo.\"loanId\" "
-	query += "join loan_order lo on lo.id = rlo.\"loanOrderId\" "
-	query += "join r_investor_product_pricing_loan rippl on rippl.\"loanId\" = l.id "
-	query += "join investor i on i.id = rippl.\"investorId\" "
-	query += "join r_cif_investor rci on rci.\"investorId\" = i.id "
-	query += "join cif c on c.id = rci.\"cifId\" "
-	query += "join r_account_investor rai on rai.\"investorId\" = i.id "
-	query += "join account a on a.id = rai.\"accountId\" "
-	query += "left join r_loan_order_voucher rlov on rlov.\"loanOrderId\" = lo.id "
-	query += "left join voucher v on v.id = rlov.\"voucherId\" "
-	query += "where lo.remark = 'PENDING' "
-	query += "and a.\"deletedAt\" isnull and l.\"deletedAt\" isnull "
-	query += "and lo.\"deletedAt\" isnull and c.\"deletedAt\" isnull "
-	query += "and i.\"deletedAt\" isnull "
-	query += "group by c.name, c.username,a.\"totalBalance\",\"orderNo\",lo.id, rlov.id, v.amount order by lo.id desc"
+	query := `select lo."createdAt", lo.id , c.name, c.username, a."totalBalance","orderNo",sum(l.plafond) as "totalPlafond",
+	case when rlov.id is not null then TRUE else FALSE end "usingVoucher", 
+	case when rlov.id is not null then v.amount else 0 end "voucherAmount",
+	case when rloc.id is not null then TRUE else FALSE end "participateCampaign",
+	case when rloc.id is not null then rloc.quantity else 0 end "quantityOfCampaignItem"
+	from loan l 
+	join r_loan_order rlo on l.id = rlo."loanId" 
+	join loan_order lo on lo.id = rlo."loanOrderId" 
+	join r_investor_product_pricing_loan rippl on rippl."loanId" = l.id 
+	join investor i on i.id = rippl."investorId" join r_cif_investor rci on rci."investorId" = i.id 
+	join cif c on c.id = rci."cifId" join r_account_investor rai on rai."investorId" = i.id 
+	join account a on a.id = rai."accountId"
+	left join r_loan_order_voucher rlov on rlov."loanOrderId" = lo.id
+	left join voucher v on v.id = rlov."voucherId"
+	left join r_loan_order_campaign rloc on rloc."loanOrderId" = lo.id
+	where lo.remark = 'PENDING' and a."deletedAt" isnull and l."deletedAt" isnull and lo."deletedAt" isnull and c."deletedAt" isnull and i."deletedAt" isnull
+	group by c.name, c.username,a."totalBalance","orderNo",lo.id, rlov.id, rloc.id, rloc.quantity, v.amount order by lo.id desc`
 
 	loanOrderSchema := []LoanOrderList{}
 	e := services.DBCPsql.Raw(query).Scan(&loanOrderSchema).Error
@@ -56,11 +55,11 @@ func FetchSingle(ctx *iris.Context) {
 	id, _ := strconv.Atoi(ctx.Param("id"))
 
 	query := `select i.id, c.username, c.name, lo."orderNo", l.id "loanId", acc."totalBalance", l.plafond, lo.remark
-from investor i join r_account_investor rai on i.id = rai."investorId" join account acc on acc.id = rai."accountId"
-join r_cif_investor rci on i.id=rci."investorId" join cif c on c.id=rci."cifId"
-join r_investor_product_pricing_loan rippl on i.id = rippl."investorId" join loan l on l.id=rippl."loanId"
-join r_loan_order rlo on l.id = rlo."loanId" join loan_order lo on lo.id = rlo."loanOrderId"
-where lo.remark = 'PENDING' and lo.id = ?`
+	from investor i join r_account_investor rai on i.id = rai."investorId" join account acc on acc.id = rai."accountId"
+	join r_cif_investor rci on i.id=rci."investorId" join cif c on c.id=rci."cifId"
+	join r_investor_product_pricing_loan rippl on i.id = rippl."investorId" join loan l on l.id=rippl."loanId"
+	join r_loan_order rlo on l.id = rlo."loanId" join loan_order lo on lo.id = rlo."loanOrderId"
+	where lo.remark = 'PENDING' and lo.id = ?`
 
 	loanOrderSchema := []LoanOrderDetail{}
 	e := services.DBCPsql.Raw(query, id).Scan(&loanOrderSchema).Error
