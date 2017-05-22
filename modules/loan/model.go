@@ -34,6 +34,7 @@ type LoanDatatable struct {
 	LoanID            uint64  `gorm:"column:loanId" json:"loanId"`
 	BorrowerNo        string  `gorm:"column:borrowerNo" json:"borrowerNo"`
 	Borrower          string  `gorm:"column:borrower" json:"borrower"`
+	InvestorId       	uint64  `gorm:"column:investorId" json:"investorId"`
 	Group             string  `gorm:"column:group" json:"group"`
 	SubmittedLoanDate string  `gorm:"column:submittedLoanDate" json:"submittedLoanDate"`
 	DisbursementDate  string  `gorm:"column:disbursementDate" json:"disbursementDate"`
