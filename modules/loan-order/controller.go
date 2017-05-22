@@ -7,6 +7,7 @@ import (
 
 	accountTransactionCredit "bitbucket.org/go-mis/modules/account-transaction-credit"
 	accountTransactionDebit "bitbucket.org/go-mis/modules/account-transaction-debit"
+	"bitbucket.org/go-mis/modules/campaign"
 	"bitbucket.org/go-mis/modules/r"
 	"bitbucket.org/go-mis/modules/voucher"
 	"bitbucket.org/go-mis/services"
@@ -127,6 +128,11 @@ func AcceptLoanOrder(ctx *iris.Context) {
 		return
 	}
 
+	if err := CheckingCampaignAndProgressIntoAccountTransaction(accountId, orderNo, db); err != nil {
+		processErrorAndRollback(ctx, orderNo, db, err, "Check Campaign and Insert into Credit")
+		return
+	}
+
 	if err := UpdateCredit(loans, accountId, db); err != nil {
 		processErrorAndRollback(ctx, orderNo, db, err, "Update Credit")
 		return
@@ -216,9 +222,9 @@ func GetAccountId(orderNo string) uint64 {
 
 func UpdateAccountCredit(orderNo string, accountId uint64, db *gorm.DB) error {
 	query := `select SUM(plafond) "total"
-from loan l join r_loan_order rlo on l.id = rlo."loanId"
-join loan_order lo on lo.id = rlo."loanOrderId"
-where lo."orderNo"=?`
+	from loan l join r_loan_order rlo on l.id = rlo."loanId"
+	join loan_order lo on lo.id = rlo."loanOrderId"
+	where lo."orderNo"=?`
 
 	r := struct{ Total int64 }{}
 	if err := db.Raw(query, orderNo).Scan(&r).Error; err != nil {
@@ -299,6 +305,9 @@ func RejectLoanOrder(ctx *iris.Context) {
 	queryUpdateRLoanOrderVouher := "update r_loan_order_voucher set \"deletedAt\" = current_timestamp where id in( select rlov.id from r_loan_order_voucher rlov join loan_order lo on lo.id = rlov.\"loanOrderId\" where \"orderNo\" = '" + orderNo + "');"
 	services.DBCPsql.Exec(queryUpdateRLoanOrderVouher)
 
+	queryUpdateRLoanOrderCampaign := "update r_loan_order_campaign set \"deletedAt\" = current_timestamp where id in( select rloc.id from r_loan_order_campaign rloc join loan_order lo on lo.id = rloc.\"loanOrderId\" where \"orderNo\" = '" + orderNo + "');"
+	services.DBCPsql.Exec(queryUpdateRLoanOrderCampaign)
+
 	queryUpdateLoanOrderRemark := "update loan_order set remark = 'FAILED' where \"orderNo\" = '" + orderNo + "'"
 	services.DBCPsql.Exec(queryUpdateLoanOrderRemark)
 
@@ -335,5 +344,28 @@ func CheckVoucherAndInsertToDebit(accountID uint64, orderNo string, db *gorm.DB)
 
 	query := `update account set "totalDebit" = "totalDebit"+?, "totalBalance" = "totalBalance"+? where account.id = ?`
 	return db.Exec(query, voucher_data.Amount, voucher_data.Amount, accountID).Error
+
+}
+
+func CheckingCampaignAndProgressIntoAccountTransaction(accountID uint64, orderNo string, db *gorm.DB) error {
+
+	quantityOfCampaignItem, campaignData := campaign.GetActiveCampaignByOrderNo(orderNo)
+	if campaignData == (campaign.Campaign{}) {
+		return nil
+	}
+	var campaignAmount float64 = float64(campaignData.Amount * quantityOfCampaignItem)
+
+	atc := accountTransactionCredit.AccountTransactionCredit{Type: "CAMPAIGN", Amount: campaignAmount, TransactionDate: time.Now(), Remark: "1KMSAJADAH"}
+	if err := db.Table("account_transaction_credit").Create(&atc).Error; err != nil {
+		return err
+	}
+
+	rAccountTransactionCredit := r.RAccountTransactionCredit{AccountId: accountID, AccountTransactionCreditId: atc.ID}
+	if err := db.Table("r_account_transaction_credit").Create(&rAccountTransactionCredit).Error; err != nil {
+		return err
+	}
+
+	query := `update account set "totalCredit" = "totalCredit"+?, "totalBalance" = "totalBalance"-? where account.id = ?`
+	return db.Exec(query, campaignAmount, campaignAmount, accountID).Error
 
 }
