@@ -21,7 +21,7 @@ func Init() {
 
 func FetchAll(ctx *iris.Context) {
 
-	query := `select lo."createdAt", lo.id , c.name, c.username, a."totalBalance","orderNo",sum(l.plafond) as "totalPlafond",
+	query := `select lo."createdAt", camp.amount as "campaignAmount", lo.id , c.name, c.username, a."totalBalance","orderNo",sum(l.plafond) as "totalPlafond",
 	case when rlov.id is not null then TRUE else FALSE end "usingVoucher", 
 	case when rlov.id is not null then v.amount else 0 end "voucherAmount",
 	case when rloc.id is not null then TRUE else FALSE end "participateCampaign",
@@ -36,8 +36,9 @@ func FetchAll(ctx *iris.Context) {
 	left join r_loan_order_voucher rlov on rlov."loanOrderId" = lo.id
 	left join voucher v on v.id = rlov."voucherId"
 	left join r_loan_order_campaign rloc on rloc."loanOrderId" = lo.id
+	left join campaign camp on rloc."campaignId" = camp.id
 	where lo.remark = 'PENDING' and a."deletedAt" isnull and l."deletedAt" isnull and lo."deletedAt" isnull and c."deletedAt" isnull and i."deletedAt" isnull
-	group by c.name, c.username,a."totalBalance","orderNo",lo.id, rlov.id, rloc.id, rloc.quantity, v.amount order by lo.id desc`
+	group by  camp.amount, c.name, c.username, a."totalBalance","orderNo",lo.id, rlov.id, rloc.id, rloc.quantity, v.amount order by lo.id desc`
 
 	loanOrderSchema := []LoanOrderList{}
 	e := services.DBCPsql.Raw(query).Scan(&loanOrderSchema).Error
@@ -54,11 +55,24 @@ func FetchAll(ctx *iris.Context) {
 func FetchSingle(ctx *iris.Context) {
 	id, _ := strconv.Atoi(ctx.Param("id"))
 
-	query := `select i.id, c.username, c.name, lo."orderNo", l.id "loanId", acc."totalBalance", l.plafond, lo.remark
-	from investor i join r_account_investor rai on i.id = rai."investorId" join account acc on acc.id = rai."accountId"
-	join r_cif_investor rci on i.id=rci."investorId" join cif c on c.id=rci."cifId"
-	join r_investor_product_pricing_loan rippl on i.id = rippl."investorId" join loan l on l.id=rippl."loanId"
-	join r_loan_order rlo on l.id = rlo."loanId" join loan_order lo on lo.id = rlo."loanOrderId"
+	query := `select i.id, camp.amount as "campaignAmount", c.username, c.name, lo."orderNo", l.id "loanId", l.purpose, acc."totalBalance", l.plafond, lo.remark,
+	case when rlov.id is not null then TRUE else FALSE end "usingVoucher", 
+	case when rlov.id is not null then v.amount else 0 end "voucherAmount",
+	case when rloc.id is not null then TRUE else FALSE end "participateCampaign",
+	case when rloc.id is not null then rloc.quantity else 0 end "quantityOfCampaignItem"
+	from investor i
+	join r_account_investor rai on i.id = rai."investorId"
+	join account acc on acc.id = rai."accountId"
+	join r_cif_investor rci on i.id=rci."investorId"
+	join cif c on c.id=rci."cifId"
+	join r_investor_product_pricing_loan rippl on i.id = rippl."investorId"
+	join loan l on l.id=rippl."loanId"
+	join r_loan_order rlo on l.id = rlo."loanId"
+	join loan_order lo on lo.id = rlo."loanOrderId"
+	left join r_loan_order_campaign rloc on rloc."loanOrderId" = lo.id
+	left join campaign camp on rloc."campaignId" = camp.id
+	left join r_loan_order_voucher rlov on rlov."loanOrderId" = lo.id
+	left join voucher v on v.id = rlov."voucherId"
 	where lo.remark = 'PENDING' and lo.id = ?`
 
 	loanOrderSchema := []LoanOrderDetail{}
