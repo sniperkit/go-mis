@@ -564,6 +564,7 @@ func GetLoanStageHistory(ctx *iris.Context) {
 func AssignInvestorToLoan(ctx *iris.Context) {
 	cifID := ctx.URLParam("cifId")
 	loanID := ctx.URLParam("loanId")
+	investorId := ctx.URLParam("investorId")
 
 	rCifInvestorSchema := r.RCifInvestor{}
 	services.DBCPsql.Table("r_cif_investor").Where("\"cifId\" = ?", cifID).Scan(&rCifInvestorSchema)
@@ -579,7 +580,16 @@ func AssignInvestorToLoan(ctx *iris.Context) {
 
 	services.DBCPsql.Table("loan").Where("id = ?", loanID).Update("stage", "INVESTOR")
 
-	services.DBCPsql.Table("r_investor_product_pricing_loan").Where("\"loanId\" = ?", loanSchema.ID).UpdateColumn("investorId", rCifInvestorSchema.InvestorId)
+	// Checking Function if investorId has a product pricing.
+	rInvestorProductPricing := r.RInvestorProductPricing{}
+	services.DBCPsql.Table("r_investor_product_pricing").Where("\"investorId\" = ?", investorId).Scan(&rInvestorProductPricing)
+
+	if rInvestorProductPricing.ID == 0{
+		services.DBCPsql.Table("r_investor_product_pricing_loan").Where("\"loanId\" = ?", loanSchema.ID).UpdateColumn("investorId", rCifInvestorSchema.InvestorId)
+	}else{
+		services.DBCPsql.Table("r_investor_product_pricing_loan").Where("\"loanId\" = ?", loanSchema.ID).UpdateColumn("investorId", rCifInvestorSchema.InvestorId)
+		services.DBCPsql.Table("r_investor_product_pricing_loan").Where("\"loanId\" = ?", loanSchema.ID).UpdateColumn("productPricingId", rInvestorProductPricing.productPricingId)
+	}
 
 	rAccountInvestorSchema := r.RAccountInvestor{}
 	services.DBCPsql.Table("r_account_investor").Where("\"investorId\" = ?", rCifInvestorSchema.InvestorId).Scan(&rAccountInvestorSchema)
