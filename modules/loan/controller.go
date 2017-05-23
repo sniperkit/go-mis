@@ -588,7 +588,7 @@ func AssignInvestorToLoan(ctx *iris.Context) {
 		services.DBCPsql.Table("r_investor_product_pricing_loan").Where("\"loanId\" = ?", loanSchema.ID).UpdateColumn("investorId", rCifInvestorSchema.InvestorId)
 	}else{
 		services.DBCPsql.Table("r_investor_product_pricing_loan").Where("\"loanId\" = ?", loanSchema.ID).UpdateColumn("investorId", rCifInvestorSchema.InvestorId)
-		services.DBCPsql.Table("r_investor_product_pricing_loan").Where("\"loanId\" = ?", loanSchema.ID).UpdateColumn("productPricingId", rInvestorProductPricing.productPricingId)
+		services.DBCPsql.Table("r_investor_product_pricing_loan").Where("\"loanId\" = ?", loanSchema.ID).UpdateColumn("productPricingId", rInvestorProductPricing.ProductPricingId)
 	}
 
 	rAccountInvestorSchema := r.RAccountInvestor{}
