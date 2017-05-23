@@ -82,6 +82,7 @@ func GetCifSummary(ctx *iris.Context) {
 
 type CifInvestorAccount struct {
 	CifID        uint64  `gorm:"column:cifId" json:"cifId"`
+	InvestorID   uint64  `gorm:"column:investorId" json:"investorId"`
 	Name         string  `gorm:"column:name" json:"name"`
 	TotalBalance float64 `gorm:"column:totalBalance" json:"totalBalance"`
 }
@@ -90,7 +91,7 @@ type CifInvestorAccount struct {
 func GetCifInvestorAccount(ctx *iris.Context) {
 	email := ctx.URLParam("email")
 
-	query := "SELECT cif.id AS \"cifId\", cif.name, account.\"totalBalance\" "
+	query := "SELECT cif.id AS \"cifId\", r_cif_investor.\"investorId\" AS \"investorId\", cif.name, account.\"totalBalance\" "
 	query += "FROM cif "
 	query += "JOIN r_cif_investor ON r_cif_investor.\"cifId\" = cif.id "
 	query += "JOIN r_account_investor ON r_account_investor.\"investorId\" = r_cif_investor.\"investorId\" "
