@@ -106,4 +106,28 @@ func TestUpdateLoanStage(t *testing.T) {
 	if count != 1 {
 		t.Error("loan History loanId 2 not exists")
 	}
+
+
+
+
+	// create installment
+	if err := db.Table("installment").Where("id = 99").Scan(&installment).Error; err != nil {
+		t.Error(err)
+	}
+
+	if err := UpdateLoanStage(installment, 3, db); err == nil {
+		t.Error("It should be error")
+	}
+
+	if err := db.Table("loan").Where("id = 3").Scan(&loan).Error; err != nil {
+		t.Error(err)
+	}
+
+	if loan.Stage != "END-PENDING" {
+		t.Error("Loan is not change to END-PENDING");
+	}
+
+	if err := db.Table("loan_history").Where("remark = 'Automatic update stage END loanId = 3'").Count(&count).Error; err != nil {
+		t.Error(err)
+	}
 }

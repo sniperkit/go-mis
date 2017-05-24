@@ -1,6 +1,7 @@
 package installment
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -13,8 +14,8 @@ import (
 	loanHistory "bitbucket.org/go-mis/modules/loan-history"
 	"bitbucket.org/go-mis/modules/r"
 	"bitbucket.org/go-mis/services"
-	iris "gopkg.in/kataras/iris.v4"
 	"github.com/jinzhu/gorm"
+	iris "gopkg.in/kataras/iris.v4"
 )
 
 func Init() {
@@ -208,7 +209,6 @@ func StoreInstallment(installmentId uint64, status string) {
 	/*
 	*		START CALCULATION PROCESS
 	 */
-
 	fmt.Println("Start calculation process. installmentId=" + convertedInstallmentId)
 
 	queryGetAccountInvestor := `SELECT r_loan_installment."loanId", r_investor_product_pricing_loan."investorId", r_account_investor."accountId", product_pricing."returnOfInvestment" as "pplROI" 
@@ -228,6 +228,12 @@ func StoreInstallment(installmentId uint64, status string) {
 
 	loanSchema := LoanSchema{}
 	services.DBCPsql.Table("loan").Where("id = ?", loanInvestorAccountIDSchema.LoanID).Scan(&loanSchema)
+
+	// Recheck paidInstallment and update to END/END EARLY if true
+	if err := UpdateLoanStage(installmentSchema, loanSchema.ID, services.DBCPsql); err != nil {
+		fmt.Printf("Error on Update Loan Stage. Error = %s\n", loanSchema.ID, err.Error())
+		return
+	}
 
 	// accountTransactionDebitAmount := frequency * (plafond / tenor) + ((paidInstallment - (frequency * (plafond/tenor))) * pplROI);
 	freq := float64(installmentSchema.Frequency)
@@ -257,11 +263,7 @@ func StoreInstallment(installmentId uint64, status string) {
 
 	/*
 	*		CALCULATION IS DONE, UPDATE INSTALLMENT STATUS FROM `PROCESSING` TO `SUCCESS`
-	*/
-
-	if err := UpdateLoanStage(installmentSchema, loanSchema.ID, services.DBCPsql); err != nil {
-		fmt.Printf("Skip Update loan %d to END is failed. Error = %s\n", loanSchema.ID, err.Error())
-	}
+	 */
 
 	UpdateStageInstallmentApproveOrReject(installmentId, "PROCESSING", status)
 }
@@ -523,34 +525,37 @@ func UpdateInstallmentByInstallmentID(ctx *iris.Context) {
 
 }
 
-func UpdateLoanStage(installment Installment, loanId uint64, db *gorm.DB) error {
-	var loan = struct {
-		ID        string `gorm:"column:id"`
-		Frequency int32 `gorm:"column:frequency"`
-		Tenor     int32 `gorm:"column:tenor"`
-		Stage	string `gorm:"column:stage"`
-	}{}
+type SimpleLoan struct {
+	ID          string  `gorm:"column:id"`
+	Plafond     int32   `gorm:"column:plafond"`
+	Installment int32   `gorm:"column:installment"`
+	Frequency   int32   `gorm:"column:frequency"`
+	Tenor       int32   `gorm:"column:tenor"`
+	Rate        float32 `gorm:"column:rate"`
+	Stage       string  `gorm:"column:stage"`
+}
 
-	query := ` SELECT loan.id as id, SUM(frequency) as frequency, tenor, loan.stage as stage FROM loan JOIN r_loan_installment on loan.id = "loanId" JOIN installment on installment.id = "installmentId" WHERE loan.id = ? AND installment.stage = 'SUCCESS' AND installment."deletedAt" isnull AND r_loan_installment."deletedAt" isnull GROUP BY loan.id`
+/**
+ * sorry there are some calculation
+ * in here not only Update LoanStage
+ *
+ *
+ *
+ */
+func UpdateLoanStage(installment Installment, loanId uint64, db *gorm.DB) error {
+	var loan = SimpleLoan{}
+	query := ` SELECT loan.id as id, loan.plafond as plafond, loan.installment as installment, SUM(frequency) as frequency, tenor, rate, loan.stage as stage FROM loan JOIN r_loan_installment on loan.id = "loanId" JOIN installment on installment.id = "installmentId" WHERE loan.id = ? AND installment.stage = 'SUCCESS' AND installment."deletedAt" isnull AND r_loan_installment."deletedAt" isnull GROUP BY loan.id`
 
 	if err := db.Raw(query, loanId).Scan(&loan).Error; err != nil {
 		return err
 	}
 
-	if loan.Frequency + installment.Frequency < loan.Tenor {
+	if loan.Frequency+installment.Frequency < loan.Tenor {
 		// frequency is below tenor so dont go on
 		return nil
 	}
 
-	var stageTo string
-
-	if installment.Frequency < 3 {
-		stageTo = "END"
-
-	} else {
-		stageTo = "END-EARLY"
-	}
-
+	stageTo, calculationError := GetStageTo(installment, loan)
 
 	if err := db.Table("loan").Where("id = ?", loanId).UpdateColumn("stage", stageTo).Error; err != nil {
 		return err
@@ -568,7 +573,26 @@ func UpdateLoanStage(installment Installment, loanId uint64, db *gorm.DB) error 
 
 	// supposed not to go here
 	//return error.New("Somethings is wrong")
-	return nil
+	return calculationError
 }
 
+func GetStageTo(installment Installment, loan SimpleLoan) (string, error) {
 
+	if installment.Frequency == 1 {
+		return "END", nil
+	}
+
+	installmentProfit := int32(installment.PaidInstallment) - (loan.Plafond / loan.Tenor * installment.Frequency)
+
+	profit1x := int32(float32(loan.Plafond)*loan.Rate) / loan.Tenor
+
+	if installmentProfit == profit1x {
+		return "END-EARLY", nil
+	}
+
+	if installmentProfit == profit1x*installment.Frequency {
+		return "END", nil
+	}
+
+	return "END-PENDING", errors.New("Calculation End or End Early not match")
+}
