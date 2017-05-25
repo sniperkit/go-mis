@@ -475,12 +475,12 @@ func RefundAndChangeStageTo(ctx *iris.Context) {
 	queryTotalDebit := "SELECT SUM(account_transaction_debit.amount) "
 	queryTotalDebit += "FROM account_transaction_debit "
 	queryTotalDebit += "JOIN r_account_transaction_debit ON 	r_account_transaction_debit.\"accountTransactionDebitId\" = 					account_transaction_debit.id "
-	queryTotalDebit += "WHERE r_account_transaction_debit.\"accountId\" = ? "
+	queryTotalDebit += "WHERE r_account_transaction_debit.\"accountId\" = ? and account_transaction_debit.\"deletedAt\" is null"
 
 	queryTotalCredit := "SELECT SUM(account_transaction_credit.amount) "
 	queryTotalCredit += "FROM account_transaction_credit "
 	queryTotalCredit += "JOIN r_account_transaction_credit ON 	r_account_transaction_credit.\"accountTransactionCreditId\" = 					account_transaction_credit.id "
-	queryTotalCredit += "WHERE r_account_transaction_credit.\"accountId\" = ? "
+	queryTotalCredit += "WHERE r_account_transaction_credit.\"accountId\" = ? and account_transaction_credit.\"deletedAt\" is null "
 
 	debit := AccountSum{}
 	credit := AccountSum{}
