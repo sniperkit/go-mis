@@ -232,8 +232,8 @@ func GetOrCreateBorrowerId(payload map[string]interface{}, db *gorm.DB) (uint64,
 // UseProductPricing - select product pricing based on current date
 func UseProductPricing(investorId uint64, loanId uint64, db *gorm.DB) error {
 	pPricing := productPricing.ProductPricing{}
-	currentDate := time.Now().Local()
-	if err := db.Table("product_pricing").Where("? between \"startDate\" and \"endDate\"", currentDate).Scan(&pPricing).Error; err != nil {
+	if err := db.Table("product_pricing").Where(" current_date::date between \"startDate\"::date and \"endDate\"::date").Scan(&pPricing).Error; err != nil {
+		print(err)
 		return err
 	}
 
@@ -242,7 +242,9 @@ func UseProductPricing(investorId uint64, loanId uint64, db *gorm.DB) error {
 		ProductPricingId: pPricing.ID,
 		LoanId:           loanId,
 	}
+
 	if err := db.Table("r_investor_product_pricing_loan").Create(&rInvProdPriceLoan).Error; err != nil {
+		print(err)
 		return err
 	}
 	return nil
@@ -260,6 +262,10 @@ func CreateCIF(payload map[string]interface{}) cif.Cif {
 	// map each payload field to it's respective cif field
 	newCif := cif.Cif{}
 
+	wifeIncome, _ := strconv.ParseFloat(cpl["data_pendapatan_istri"], 64)
+	husbandIncome, _ := strconv.ParseFloat(cpl["data_pendapatan_suami"], 64)
+	otherIncome, _ := strconv.ParseFloat(cpl["data_pendapatan_lain"], 64)
+
 	// here the only payload that match the cif fields
 	newCif.Username = cpl["client_simplename"]
 	newCif.Name = cpl["client_fullname"]
@@ -276,7 +282,7 @@ func CreateCIF(payload map[string]interface{}) cif.Cif {
 	newCif.Kecamatan = cpl["client_kecamatan"]
 	newCif.RT = cpl["client_rt"]
 	newCif.RW = cpl["client_rw"]
-	newCif.Income, _ = strconv.ParseFloat(cpl["data_pendapatan_istri"], 64)
+	newCif.Income = wifeIncome + husbandIncome + otherIncome
 	newCif.Occupation = cpl["client_job"]
 
 	return newCif

@@ -37,6 +37,15 @@ type BranchManagerArea struct {
 	Role     string `gorm:"column:role" json:"role"`
 }
 
+type BranchAreaManager struct {
+	ID       uint64 `gorm:"primary_key" gorm:"column:_id" json:"_id"`
+	Name     string `gorm:"column:name" json:"name"`
+	Manager  string `gorm:"column:manager" json:"manager"`
+	Area     string `gorm:"column:area" json:"area"`
+	Role     string `gorm:"column:role" json:"role"`
+}
+
+
 type BranchManager struct {
 	BranchId uint64 `gorm:"column:branchId"`
 	Fullname string `gorm:"column:fullname"`
