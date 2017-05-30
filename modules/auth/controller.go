@@ -77,14 +77,15 @@ func UserMisLogin(ctx *iris.Context) {
 		return
 	}
 
+	// get the area of this user
+	rAreaUserMis := r.RAreaUserMis{}
+	query := `select "areaId" from r_area_user_mis where "userMisId" = ?`
+	services.DBCPsql.Raw(query, userMisObj.ID).Scan(&rAreaUserMis)
+
 	// for dashboard
 	re := regexp.MustCompile("(?i)area\\s*manager") // area manager, Area Manager, ArEaManager are valid
 	if re.FindString(roleObj.Name) != "" {          // area manager
-		// get the area of this user
-		rAreaUserMis := r.RAreaUserMis{}
-		query := `select "areaId" from r_area_user_mis where "userMisId" = ?`
-		services.DBCPsql.Raw(query, userMisObj.ID).Scan(&rAreaUserMis)
-
+		
 		// get all branches in this area
 		type branchType struct {
 			Id   uint64 `json:"id"`
