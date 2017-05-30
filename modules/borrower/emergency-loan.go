@@ -1,24 +1,35 @@
 package borrower
 
 import (
-	"fmt"	
+	//"fmt"	
 	
 	iris "gopkg.in/kataras/iris.v4"
-//	"bitbucket.org/go-mis/modules/loan"
+  "bitbucket.org/go-mis/modules/loan"
 	"bitbucket.org/go-mis/services"
+	//loanRaw "bitbucket.org/go-mis/modules/loan-raw"
+	"bitbucket.org/go-mis/modules/r"
 
 )
 
 func CreateEmergencyLoan (ctx *iris.Context) {
+	
+	type EmergencyLoanBorrower struct {
+    ID           uint64     `gorm:"primary_key" gorm:"column:id" json:"id"`
+    BorrowerId   uint64     `gorm:"column:borrowerId" json:"borrowerId"`
+    BorrowerName string     `gorm:"column:borrowerName" json:"borrowerName"`
+    BranchId     uint64     `gorm:"column:branchId" json:"branchId"`
+    OldLoanId    uint64     `gorm:"column:oldLoanId" json:"oldLoanId"`
+    NewLoanId    uint64     `gorm:"column:newLoanId" json:"newLoanId"`
+    Status       bool     	`gorm:"column:status" json:"status"`
+	}	
 
 	type Payload struct {
-		BorrowerId uint64 `json:borrowerId`
-		GroupId		 uint64 `json:groupId`
-		BranchId 	 uint64 `json:branchId`
-		OldLoanId	 uint64 `json:loanId`
-		Date			 string `json:date`
-		SectorId   uint64 `json:sectorId`
-		Purpose 	 string `json:loan_purpose`
+		*EmergencyLoanBorrower
+		GroupId		 uint64 `json:"groupId"`
+		Date			 string `json:"date"`
+		SectorId   uint64 `json:"sectorIdi"`
+		Purpose 	 string `json:"loan_purposei"`
+		DisbusrsementDate string `json:"disbursement_date"`
 	}
 	
 	el := []Payload{}
@@ -32,26 +43,28 @@ func CreateEmergencyLoan (ctx *iris.Context) {
 
 	// process each data
 
-	db := services.DBCPsql.Begin()
 	for idx, _ := range el {
+		
+		db := services.DBCPsql.Begin()
 
 		borrowerID := el[idx].BorrowerId
 		groupID 	 := el[idx].GroupId
-		branchID	 := el[idx].BranchId
+		//branchID	 := el[idx].BranchId
 		oldLoanID  := el[idx].OldLoanId
 		SubmittedDate := el[idx].Date
 		sectorID := el[idx].SectorId
 		purpose := el[idx].Purpose
+		disbusementDate := el[idx].DisbusrsementDate
 
 		// get requiredData from oldLoad
 		oldLoan := loan.Loan{}
 		query := `select * from loan where id = ?`
 		services.DBCPsql.Raw(query, oldLoanID).Scan(&oldLoan)
 		
-		newLoan = loan.Loan{}
+		newLoan := loan.Loan{}
 		newLoan.URLPic1 = oldLoan.URLPic1 
 		newLoan.URLPic2 = oldLoan.URLPic2 
-		newLoan.Purpose = oldLoan.Purpose 
+		newLoan.Purpose = purpose 
 		newLoan.LoanPeriod = 2
 		newLoan.Tenor = 25 
 		newLoan.Rate = 0.3 // hc 
@@ -59,7 +72,7 @@ func CreateEmergencyLoan (ctx *iris.Context) {
 		newLoan.Plafond = 1000000 
 	
 		newLoan.CreditScoreGrade = oldLoan.CreditScoreGrade; 
-		newLoan.CreditScoreValue, _ = oldLoan.CreditScoreValue 
+		newLoan.CreditScoreValue  = oldLoan.CreditScoreValue 
 
 		newLoan.Stage = "PRIVATE"
 		newLoan.IsLWK = true
@@ -67,56 +80,56 @@ func CreateEmergencyLoan (ctx *iris.Context) {
 
 		if db.Table("loan").Create(&newLoan).Error != nil {
 			processErrorAndRollback(ctx, db, "Error Create Loan")
-			return 0
+			break
 		}
 
+		/*
 		if db.Table("loan_raw").Create(&loanRaw.LoanRaw{Raw: dataRaw, LoanID: newLoan.ID}).Error != nil {
 			processErrorAndRollback(ctx, db, "Error Create Loan Raw")
-			return 0
+			break
 		}
+		*/
 
 		if db.Table("r_loan_sector").Create(&r.RLoanSector{LoanId: newLoan.ID, SectorId: sectorID}).Error != nil {
 			processErrorAndRollback(ctx, db, "Error Create Loan Sector Relation")
-			return 0
+			break
 		}
 
 		rLoanBorrower := r.RLoanBorrower{
-			LoanId:     loan.ID,
-			BorrowerId: borrowerId,
+			LoanId:     newLoan.ID,
+			BorrowerId: borrowerID,
 		}
 
 		if db.Table("r_loan_borrower").Create(&rLoanBorrower).Error != nil {
 			processErrorAndRollback(ctx, db, "Error Create Loan Borrower Relation")
-			return 0
+			break
 		}
 
 		if UseProductPricing(0, newLoan.ID, db) != nil {
 			processErrorAndRollback(ctx, db, "Error Use Product Pricing")
-			return 0
+			break
 		}
 
 		if CreateRelationLoanToGroup(newLoan.ID, groupID, db) != nil {
 			processErrorAndRollback(ctx, db, "Error Create Relation to Group")
-			return 0
+			break
 		}
 
 		if CreateRelationLoanToBranch(newLoan.ID, groupID, db) != nil {
 			processErrorAndRollback(ctx, db, "Error Create Relation to Branch")
-			return 0
+			break
 		}
 		
-		// define disbursement date
-		// --- --
-		
-		if CreateDisbursementRecord(loan.ID, payload["disbursementDate"].(string), db) != nil {
+		if CreateDisbursementRecord(newLoan.ID, disbusementDate, db) != nil {
 			processErrorAndRollback(ctx, db, "Error Create Disbusrement")
-			return 0
+			break
 		}
-		
+				
+	  db.Commit()
 	}
 	
-	db.Commit()
+
+	// update table emergency loan set newLoanId = newLoanId
+	
 }
-
-
 
