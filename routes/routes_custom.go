@@ -31,6 +31,7 @@ import (
 	"bitbucket.org/go-mis/modules/voucher"
 	"gopkg.in/iris-contrib/middleware.v4/cors"
 	"gopkg.in/kataras/iris.v4"
+	"bitbucket.org/go-mis/modules/emergency-loan"
 )
 
 var baseURL = "/api/v2"
@@ -141,6 +142,7 @@ func InitCustomApi() {
 		v2.Any("/installment-review/set/:installment_id", installment.UpdateInstallmentByInstallmentID)
 
 		v2.Any("/reports/agent", reports.AgentRekap)
+		v2.Any("/emergency-loan/borrower/by-branch/:branch_id/available", emergency_loan.FetchAllAvailableBorrower)
 	}
 
 	iris.Get(baseURL+"/investor-without-va", investor.InvestorWithoutVA)
