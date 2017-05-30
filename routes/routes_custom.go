@@ -143,6 +143,7 @@ func InitCustomApi() {
 
 		v2.Any("/reports/agent", reports.AgentRekap)
 		v2.Any("/emergency-loan/borrower/by-branch/:branch_id/available", emergency_loan.FetchAllAvailableBorrower)
+		v2.Any("/emergency-loan/submit", emergency_loan.SubmitEmergencyLoan)
 	}
 
 	iris.Get(baseURL+"/investor-without-va", investor.InvestorWithoutVA)

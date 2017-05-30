@@ -6,7 +6,7 @@ import (
 )
 
 func FetchAllAvailableBorrower(ctx *iris.Context) {
-	emergencyLoanBorrowers := []emergencyLoanBorrower{}
+	emergencyLoanBorrowers := []EmergencyLoanBorrower{}
 	branchID := ctx.Param("branch_id")
 	query := "SELECT * "
 	query += "FROM emergency_loan_borrower "
