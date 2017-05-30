@@ -558,8 +558,6 @@ func UpdateLoanStage(installment Installment, loanId uint64, db *gorm.DB) error 
 		return err
 	}
 
-	println(installment.Type)
-
 	if installment.Type == "MENINGGAL" {
 
 		stageTo := "MENINGGAL"
