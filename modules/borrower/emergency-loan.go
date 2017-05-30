@@ -71,7 +71,7 @@ func CreateEmergencyLoan (ctx *iris.Context) {
 		newLoan.Plafond = 1000000 
 		newLoan.SubmittedLoanDate = submittedLoanDate 
 	
-		newLoan.CreditScoreGrade = oldLoan.CreditScoreGrade; 
+		newLoan.CreditScoreGrade = oldLoan.CreditScoreGrade 
 		newLoan.CreditScoreValue  = oldLoan.CreditScoreValue 
 
 		newLoan.Stage = "PRIVATE"
