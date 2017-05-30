@@ -550,11 +550,6 @@ func UpdateLoanStage(installment Installment, loanId uint64, db *gorm.DB) error 
 		return err
 	}
 
-	if loan.Frequency+installment.Frequency < loan.Tenor {
-		// frequency is below tenor so dont go on
-		return nil
-	}
-
 	if installment.Type == "MENINGGAL" {
 
 		stageTo := "MENINGGAL"
@@ -569,6 +564,12 @@ func UpdateLoanStage(installment Installment, loanId uint64, db *gorm.DB) error 
 		}
 		return nil
 	}
+
+	if loan.Frequency+installment.Frequency < loan.Tenor {
+		// frequency is below tenor so dont go on
+		return nil
+	}
+
 
 	stageTo, calculationError := GetStageTo(installment, loan)
 
