@@ -130,4 +130,26 @@ func TestUpdateLoanStage(t *testing.T) {
 	if err := db.Table("loan_history").Where("remark = 'Automatic update stage END loanId = 3'").Count(&count).Error; err != nil {
 		t.Error(err)
 	}
+
+	// Update Loan Stage Meninggal
+	if err := db.Table("installment").Where("id = 100").Scan(&installment).Error; err != nil {
+		t.Error(err)
+	}
+
+	if err := UpdateLoanStage(installment, 4, db); err != nil {
+		t.Error(err)
+		t.Error("Update Loan Stage 4 error")
+	}
+
+	if err := db.Table("loan").Where("id = 4").Scan(&loan).Error; err != nil {
+		t.Error(err)
+	}
+
+	if loan.Stage != "MENINGGAL" {
+		t.Error("Loan 4 is not change to MENINGGAL");
+	}
+
+	if err := db.Table("loan_history").Where("remark = 'Automatic update stage MENINGGAL loanId = 4'").Count(&count).Error; err != nil {
+		t.Error(err)
+	}
 }

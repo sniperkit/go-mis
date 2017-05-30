@@ -37,7 +37,8 @@ func FetchAll(ctx *iris.Context) {
 	query += "JOIN branch ON branch.\"id\" = r_loan_branch.\"branchId\"  "
 	query += "JOIN r_loan_group ON r_loan_group.\"loanId\" = loan.\"id\" "
 	query += "JOIN \"group\" ON \"group\".\"id\" = r_loan_group.\"groupId\" "
-	query += "WHERE installment.stage = 'PENDING' AND branch.id = ?"
+	query += "WHERE installment.stage = 'PENDING' AND branch.id = ? "
+	query += "AND installment.\"deletedAt\" IS NULL "
 	query += "GROUP BY installment.\"createdAt\"::date, branch.\"name\", \"group\".\"id\", \"group\".\"name\" "
 	query += "ORDER BY installment.\"createdAt\"::date DESC, branch.\"name\" ASC"
 
@@ -66,7 +67,7 @@ func FetchByType(ctx *iris.Context) {
 		JOIN branch ON branch."id" = r_loan_branch."branchId" 
 		JOIN r_loan_group ON r_loan_group."loanId" = loan."id"
 		JOIN "group" ON "group"."id" = r_loan_group."groupId"
-		WHERE installment.stage = ? AND branch.id = ?
+		WHERE installment.stage = ? AND branch.id = ? AND installment."deletedAt" IS NULL
 		GROUP BY installment."createdAt"::date, branch."name", "group"."id", "group"."name"
 		ORDER BY installment."createdAt"::date DESC, branch."name" ASC
 	`
@@ -117,6 +118,7 @@ func GetInstallmentByGroupIDAndTransactionDate(ctx *iris.Context) {
 		installment."createdAt"::date = ? 
 		AND r_loan_group."groupId" = ? 
 		AND r_loan_branch."branchId" = ?
+		AND installment."deletedAt" IS NULL
 	`
 
 	installmentDetailSchema := []InstallmentDetail{}
@@ -544,10 +546,38 @@ type SimpleLoan struct {
  */
 func UpdateLoanStage(installment Installment, loanId uint64, db *gorm.DB) error {
 	var loan = SimpleLoan{}
-	query := ` SELECT loan.id as id, loan.plafond as plafond, loan.installment as installment, SUM(frequency) as frequency, tenor, rate, loan.stage as stage FROM loan JOIN r_loan_installment on loan.id = "loanId" JOIN installment on installment.id = "installmentId" WHERE loan.id = ? AND installment.stage = 'SUCCESS' AND installment."deletedAt" isnull AND r_loan_installment."deletedAt" isnull GROUP BY loan.id`
+	query := `
+	SELECT 
+	loan.id as id, loan.plafond as plafond, loan.installment as installment, SUM(frequency) as frequency, tenor, rate, loan.stage as stage 
+	FROM loan 
+	LEFT JOIN r_loan_installment on loan.id = "loanId" AND r_loan_installment."deletedAt" isnull 
+	LEFT JOIN installment on installment.id = "installmentId" AND installment.stage = 'SUCCESS' AND installment."deletedAt" isnull
+	WHERE loan.id = ?
+	GROUP BY loan.id
+	`
 
 	if err := db.Raw(query, loanId).Scan(&loan).Error; err != nil {
 		return err
+	}
+
+	if installment.Type == "MENINGGAL" {
+
+		stageTo := "MENINGGAL"
+
+		if err := db.Table("loan").Where("id = ?", loanId).UpdateColumn("stage", stageTo).Error; err != nil {
+			return err
+		}
+
+		loanHistoryData := loanHistory.LoanHistory{StageFrom: loan.Stage, StageTo: stageTo, Remark: fmt.Sprintf("Automatic update stage %s loanId = %d", stageTo, loanId)}
+		if err := db.Table("loan_history").Create(&loanHistoryData).Error; err != nil {
+			return err
+		}
+
+		rLoanHistory := r.RLoanHistory{LoanId: loanId, LoanHistoryId: loanHistoryData.ID}
+		if err := db.Table("r_loan_history").Create(&rLoanHistory).Error; err != nil {
+			return err
+		}
+		return nil
 	}
 
 	if loan.Frequency+installment.Frequency < loan.Tenor {
