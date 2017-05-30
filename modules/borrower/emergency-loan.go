@@ -1,7 +1,7 @@
 package borrower
 
 import (
-	"fmt"	
+	//"fmt"	
 	
 	iris "gopkg.in/kataras/iris.v4"
 	"bitbucket.org/go-mis/modules/loan"
@@ -50,22 +50,68 @@ func CreateEmergencyLoan (ctx *iris.Context) {
 		return 0
 	}
 
-	// loan raw
+	if db.Table("loan_raw").Create(&loanRaw.LoanRaw{Raw: dataRaw, LoanID: newLoan.ID}).Error != nil {
+		processErrorAndRollback(ctx, db, "Error Create Loan Raw")
+		return 0
+	}
 
-	// loan sector
+	if db.Table("r_loan_sector").Create(&r.RLoanSector{LoanId: newLoan.ID, SectorId: sectorID}).Error != nil {
+		processErrorAndRollback(ctx, db, "Error Create Loan Sector Relation")
+		return 0
+	}
 
-	// r loan borrower	
+	rLoanBorrower := r.RLoanBorrower{
+		LoanId:     loan.ID,
+		BorrowerId: borrowerId,
+	}
 
-	// product pricing
+	if db.Table("r_loan_borrower").Create(&rLoanBorrower).Error != nil {
+		processErrorAndRollback(ctx, db, "Error Create Loan Borrower Relation")
+		return 0
+	}
 
-	// loan to group 
+	if UseProductPricing(0, newLoan.ID, db) != nil {
+		processErrorAndRollback(ctx, db, "Error Use Product Pricing")
+		return 0
+	}
 
-	// loan to branch
+	if CreateRelationLoanToGroup(newLoan.ID, groupID, db) != nil {
+		processErrorAndRollback(ctx, db, "Error Create Relation to Group")
+		return 0
+	}
 
-	// disbursment
+	if CreateRelationLoanToBranch(newLoan.ID, groupID, db) != nil {
+		processErrorAndRollback(ctx, db, "Error Create Relation to Branch")
+		return 0
+	}
+
+	// define disbursement date
+	// --- --
+	if CreateDisbursementRecord(loan.ID, payload["disbursementDate"].(string), db) != nil {
+		processErrorAndRollback(ctx, db, "Error Create Disbusrement")
+		return 0
+	}
+
+	
+	//if sourceType == "OLD" {
+	//	dbSurvey := services.DBCPsqlSurvey.Begin()
+
+	//	idCardNo := payload["client_ktp"].(string)
+	//	if setOldSurveyStatus(idCardNo, "APPROVE", dbSurvey) != nil {
+	//		processErrorAndRollback(ctx, db, "Error Setting Data in DB Survey")
+	//		return 0
+	//	}
+
+	//	dbSurvey.Commit()
+	//} else {
+	//	uuid := payload["uuid"].(string)
+	//	if setNewSurveyStatus(uuid, "APPROVE", db) != nil {
+	//		processErrorAndRollback(ctx, db, "Error Setting Data in DB Survey")
+	//		return 0
+	//	}
+	//}
 
 	db.Commit()
-
 }
 
 
