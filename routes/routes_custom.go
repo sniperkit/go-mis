@@ -100,7 +100,6 @@ func InitCustomApi() {
 		v2.Any("/survey/archived", survey.GetProspectiveBorrowerArchived)
 		v2.Any("/survey/get/:id", survey.GetProspectiveBorrowerDetail)
 		v2.Any("/borrower/approve-survey/:source-type", borrower.Approve)
-		v2.Any("/borrower/approve-emergency-loan", borrower.CreateEmergencyLoan)
 		v2.Any("/borrower/approve/update-status/:id", borrower.ProspectiveBorrowerUpdateStatus)
 		v2.Any("/borrower/reject/update-status/:id", borrower.ProspectiveBorrowerUpdateStatusToReject)
 		v2.Get("/borrower/total-by-branch/:branch_id", borrower.GetTotalBorrowerByBranchID)
@@ -144,6 +143,7 @@ func InitCustomApi() {
 
 		v2.Any("/reports/agent", reports.AgentRekap)
 		v2.Any("/emergency-loan/borrower/by-branch/:branch_id/available", emergency_loan.FetchAllAvailableBorrower)
+		v2.Any("/emergency-loan/submit", emergency_loan.SubmitEmergencyLoan)
 	}
 
 	iris.Get(baseURL+"/investor-without-va", investor.InvestorWithoutVA)

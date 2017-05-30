@@ -1,6 +1,6 @@
 package emergency_loan
 
-type emergencyLoanBorrower struct {
+type EmergencyLoanBorrower struct {
 	ID           uint64     `gorm:"primary_key" gorm:"column:id" json:"id"`
 	BorrowerId   uint64     `gorm:"column:borrowerId" json:"borrowerId"`
 	BorrowerName string     `gorm:"column:borrowerName" json:"borrowerName"`

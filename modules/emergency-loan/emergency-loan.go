@@ -1,26 +1,17 @@
-package borrower
+package emergency_loan
 
 import (
 	
 	iris "gopkg.in/kataras/iris.v4"
   "bitbucket.org/go-mis/modules/loan"
+  "bitbucket.org/go-mis/modules/borrower"
 	"bitbucket.org/go-mis/services"
 	//loanRaw "bitbucket.org/go-mis/modules/loan-raw"
 	"bitbucket.org/go-mis/modules/r"
 
 )
 
-func CreateEmergencyLoan (ctx *iris.Context) {
-	
-	type EmergencyLoanBorrower struct {
-    ID           uint64     `gorm:"primary_key" gorm:"column:id" json:"id"`
-    BorrowerId   uint64     `gorm:"column:borrowerId" json:"borrowerId"`
-    BorrowerName string     `gorm:"column:borrowerName" json:"borrowerName"`
-    BranchId     uint64     `gorm:"column:branchId" json:"branchId"`
-    OldLoanId    uint64     `gorm:"column:oldLoanId" json:"oldLoanId"`
-    NewLoanId    uint64     `gorm:"column:newLoanId" json:"newLoanId"`
-    Status       bool     	`gorm:"column:status" json:"status"`
-	}	
+func SubmitEmergencyLoan (ctx *iris.Context) {
 
 	type Payload struct {
 		EmergencyLoanBorrower
@@ -79,14 +70,14 @@ func CreateEmergencyLoan (ctx *iris.Context) {
 		newLoan.IsUPK = true
 
 		if db.Table("loan").Create(&newLoan).Error != nil {
-			processErrorAndRollback(ctx, db, "Error Create Loan")
+			borrower.ProcessErrorAndRollback(ctx, db, "Error Create Loan")
 			break
 		}
 
 		// TODO: insert loan raw	
 
 		if db.Table("r_loan_sector").Create(&r.RLoanSector{LoanId: newLoan.ID, SectorId: sectorID}).Error != nil {
-			processErrorAndRollback(ctx, db, "Error Create Loan Sector Relation")
+			borrower.ProcessErrorAndRollback(ctx, db, "Error Create Loan Sector Relation")
 			break
 		}
 
@@ -96,27 +87,27 @@ func CreateEmergencyLoan (ctx *iris.Context) {
 		}
 
 		if db.Table("r_loan_borrower").Create(&rLoanBorrower).Error != nil {
-			processErrorAndRollback(ctx, db, "Error Create Loan Borrower Relation")
+			borrower.ProcessErrorAndRollback(ctx, db, "Error Create Loan Borrower Relation")
 			break
 		}
 
-		if UseProductPricing(0, newLoan.ID, db) != nil {
-			processErrorAndRollback(ctx, db, "Error Use Product Pricing")
+		if borrower.UseProductPricing(0, newLoan.ID, db) != nil {
+			borrower.ProcessErrorAndRollback(ctx, db, "Error Use Product Pricing")
 			break
 		}
 
-		if CreateRelationLoanToGroup(newLoan.ID, groupID, db) != nil {
-			processErrorAndRollback(ctx, db, "Error Create Relation to Group")
+		if borrower.CreateRelationLoanToGroup(newLoan.ID, groupID, db) != nil {
+			borrower.ProcessErrorAndRollback(ctx, db, "Error Create Relation to Group")
 			break
 		}
 
-		if CreateRelationLoanToBranch(newLoan.ID, groupID, db) != nil {
-			processErrorAndRollback(ctx, db, "Error Create Relation to Branch")
+		if borrower.CreateRelationLoanToBranch(newLoan.ID, groupID, db) != nil {
+			borrower.ProcessErrorAndRollback(ctx, db, "Error Create Relation to Branch")
 			break
 		}
 		
-		if CreateDisbursementRecord(newLoan.ID, disbusementDate, db) != nil {
-			processErrorAndRollback(ctx, db, "Error Create Disbusrement")
+		if borrower.CreateDisbursementRecord(newLoan.ID, disbusementDate, db) != nil {
+			borrower.ProcessErrorAndRollback(ctx, db, "Error Create Disbusrement")
 			break
 		}
 				
