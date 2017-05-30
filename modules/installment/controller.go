@@ -555,6 +555,21 @@ func UpdateLoanStage(installment Installment, loanId uint64, db *gorm.DB) error 
 		return nil
 	}
 
+	if installment.Type == "MENINGGAL" {
+
+		stageTo := "MENINGGAL"
+		loanHistoryData := loanHistory.LoanHistory{StageFrom: loan.Stage, StageTo: stageTo, Remark: fmt.Sprintf("Automatic update stage %s loanId = %d", stageTo, loanId)}
+		if err := db.Table("loan_history").Create(&loanHistoryData).Error; err != nil {
+			return err
+		}
+
+		rLoanHistory := r.RLoanHistory{LoanId: loanId, LoanHistoryId: loanHistoryData.ID}
+		if err := db.Table("r_loan_history").Create(&rLoanHistory).Error; err != nil {
+			return err
+		}
+		return nil
+	}
+
 	stageTo, calculationError := GetStageTo(installment, loan)
 
 	if err := db.Table("loan").Where("id = ?", loanId).UpdateColumn("stage", stageTo).Error; err != nil {
