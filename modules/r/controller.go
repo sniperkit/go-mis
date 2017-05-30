@@ -129,8 +129,8 @@ func Init() {
 	services.DBCPsql.AutoMigrate(&RInvestorProductPricingLoan{})
 	services.BaseCrudInitWithDomain("r-investor-product-pricing-loan", RInvestorProductPricingLoan{}, []RInvestorProductPricingLoan{})
 
-	//services.DBCPsql.AutoMigrate(&RInvestorProductPricing{})
-	//services.BaseCrudInitWithDomain("r-investor-product-pricing", RInvestorProductPricing{}, []RInvestorProductPricing{})
+	services.DBCPsql.AutoMigrate(&RInvestorProductPricing{})
+	services.BaseCrudInitWithDomain("r-investor-product-pricing", RInvestorProductPricing{}, []RInvestorProductPricing{})
 
 	services.DBCPsql.AutoMigrate(&RLoanOrder{})
 	services.BaseCrudInitWithDomain("r-loan-order", RLoanOrder{}, []RLoanOrder{})
@@ -146,4 +146,7 @@ func Init() {
 
 	services.DBCPsql.AutoMigrate(&loanRaw.LoanRaw{})
 	services.BaseCrudInitWithDomain("r-loan-raw", loanRaw.LoanRaw{}, []loanRaw.LoanRaw{})
+
+	services.DBCPsql.AutoMigrate(&RLoanOrderCampaign{})
+	services.BaseCrudInitWithDomain("r-loan-order-campaign", RLoanOrderCampaign{}, []RLoanOrderCampaign{})
 }

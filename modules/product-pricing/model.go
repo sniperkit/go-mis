@@ -13,9 +13,21 @@ type ProductPricing struct {
 	CreatedAt          time.Time  `gorm:"column:createdAt" json:"createdAt"`
 	UpdatedAt          time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
 	DeletedAt          *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
+	Investors 			 	 []InvestorPost `json:"InvestorList"`
 }
 
 type InvestorSearch struct {
 	ID                uint64  `gorm:"column:id" json:"id"`
 	Investor					string  `gorm:"column:name" json:"name"`
+}
+
+type InvestorSearchByProductPricing struct {
+	ID                uint64  `gorm:"column:id" json:"id"`
+	Investor					string  `gorm:"column:name" json:"name"`
+	RippId						uint64  `gorm:"column:rippId" json:"rippId"`
+}
+
+type InvestorPost struct{
+	ID 								uint64 `json:"id"`
+	Name 							string `json:"name"`
 }

@@ -25,8 +25,8 @@ func Get(model interface{}) func(ctx *iris.Context) {
 func GetById(model interface{}) func(ctx *iris.Context) {
 	return func(ctx *iris.Context) {
 		m := reflect.New(reflect.TypeOf((model.(*Container)).SingleObj)).Interface()
-		if dbc:= DBCPsql.Where("\"deletedAt\" IS NULL AND id = ?", ctx.Param("id")).Find(m); dbc.Error != nil {
-			ctx.JSON(iris.StatusInternalServerError, iris.Map{"error": dbc.Error})
+		if err := DBCPsql.Where("\"deletedAt\" IS NULL AND id = ?", ctx.Param("id")).Find(m).Error; err != nil {
+			ctx.JSON(iris.StatusInternalServerError, iris.Map{"error": err})
 			return
 		}
 		ctx.JSON(iris.StatusOK, iris.Map{"data": m})
@@ -49,7 +49,6 @@ func GetByQuery(model interface{}) func(ctx *iris.Context) {
 		}
 
 		con.Where("\"deletedAt\" IS NULL").Order("id asc").Find(m)
-
 		ctx.JSON(iris.StatusOK, iris.Map{"data": m})
 	}
 }

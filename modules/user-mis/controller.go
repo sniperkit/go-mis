@@ -1,19 +1,21 @@
 package userMis
 
 import (
+	"time"
+
+	"bitbucket.org/go-mis/modules/r"
 	"bitbucket.org/go-mis/services"
 	"gopkg.in/kataras/iris.v4"
-	"bitbucket.org/go-mis/modules/r"
 )
 
 func Init() {
 	services.DBCPsql.AutoMigrate(&UserMis{})
 	services.BaseCrudInit(UserMis{}, []UserMis{})
 }
-	
-func UpdateUserBranch(ctx *iris.Context){
-	userObj := ctx.Get("USER_MIS").(UserMis);
-	branchId := ctx.Get("branch_id");
+
+func UpdateUserBranch(ctx *iris.Context) {
+	userObj := ctx.Get("USER_MIS").(UserMis)
+	branchId := ctx.Get("branch_id")
 
 	userMisBranch := r.RBranchUserMis{}
 	query := "update r_branch_user_mis set \"branchId\" = ? where \"userMisId\" = ?"
@@ -38,4 +40,20 @@ func FetchUserMisAreaBranchRole(ctx *iris.Context) {
 		"status": "success",
 		"data":   arrUserMisAreaBranchRole,
 	})
+}
+
+func DeleteUserMis(ctx *iris.Context) {
+	// delete user
+	m := UserMis{}
+	services.DBCPsql.Model(m).Where("\"deletedAt\" IS NULL AND id = ?", ctx.Param("id")).UpdateColumn("deletedAt", time.Now())
+
+	// delete relation to role, area, and branch
+	var mRel []interface{}
+	mRel = append(mRel, r.RUserMisRole{}, r.RBranchUserMis{}, r.RAreaUserMis{})
+	for _, val := range mRel {
+		services.DBCPsql.Model(val).Where("\"deletedAt\" IS NULL AND \"userMisId\" = ?", ctx.Param("id")).UpdateColumn("deletedAt", time.Now())
+	}
+
+	ctx.JSON(iris.StatusOK, iris.Map{"data": m})
+
 }

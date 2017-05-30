@@ -14,13 +14,17 @@ func Init() {
 func FetchAll(ctx *iris.Context) {
 	areaManager := []AreaManager{}
 
-	query := "SELECT area.\"id\", area.\"name\", area.\"city\", area.\"province\", user_mis.\"fullname\" as \"manager\", \"role\".\"name\" as \"role\" "
-	query += "FROM area "
-	query += "LEFT JOIN r_area_user_mis ON r_area_user_mis.\"areaId\" = area.\"id\" "
-	query += "LEFT JOIN user_mis ON user_mis.\"id\" = r_area_user_mis.\"userMisId\" "
-	query += "LEFT JOIN r_user_mis_role ON r_user_mis_role.\"userMisId\" = user_mis.\"id\" "
-	query += "LEFT JOIN \"role\" ON \"role\".\"id\" = r_user_mis_role.\"roleId\" "
-	query += "WHERE area.\"deletedAt\" IS NULL AND (\"role\".\"name\" LIKE '%Area Manager%' or \"role\".\"name\" is NULL)"
+	query := `
+	SELECT area."id", area."name", area."city", area."province", 
+	"role"."name" as "role",
+	coalesce(user_mis."fullname",'') as "manager",r_area_user_mis.*
+	FROM area 
+	LEFT JOIN r_area_user_mis ON r_area_user_mis."areaId" = area."id" and r_area_user_mis."deletedAt" is null
+	LEFT JOIN user_mis ON user_mis."id" = r_area_user_mis."userMisId"
+	LEFT JOIN r_user_mis_role ON r_user_mis_role."userMisId" = user_mis."id"
+	LEFT JOIN "role" ON "role"."id" = r_user_mis_role."roleId"
+	WHERE area."deletedAt" IS NULL AND ("role"."name" LIKE '%Area Manager%' or "role"."name" is NULL) and user_mis."deletedAt" is null
+	`
 
 	if e := services.DBCPsql.Raw(query).Find(&areaManager).Error; e != nil {
 		ctx.JSON(iris.StatusOK, iris.Map{

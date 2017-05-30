@@ -22,6 +22,8 @@ import (
 	"bitbucket.org/go-mis/modules/notification"
 	"bitbucket.org/go-mis/modules/product-pricing"
 	prospectiveBorrower "bitbucket.org/go-mis/modules/prospective-borrower"
+	"bitbucket.org/go-mis/modules/reports"
+	"bitbucket.org/go-mis/modules/sector"
 	"bitbucket.org/go-mis/modules/survey"
 	"bitbucket.org/go-mis/modules/transaction"
 	"bitbucket.org/go-mis/modules/user-mis"
@@ -56,15 +58,20 @@ func InitCustomApi() {
 	v2 := iris.Party(baseURL, auth.EnsureAuth)
 	{
 		v2.Any("/me-user-mis", auth.CurrentUserMis)
+		v2.Any("/me-notif", auth.Nofif)
 		v2.Any("/update-user-branch/:branch_id", userMis.UpdateUserBranch)
 		// v2.Any("/me-agent", auth.CurrentAgent)
 		v2.Any("/branch", branch.FetchAll)
+		v2.Any("/branch-area/:id", branch.IristGetByAreaId)
 		v2.Any("/branch/delete/:id", branch.DeleteSingle)
+		v2.Any("/branch/detail/:id", branch.GetBranchById)
 		v2.Any("/branch/:id", branch.GetByID)
 		v2.Any("/branch/area/:id", branch.IrisGetByAreaId)
 		v2.Any("/area", area.FetchAll)
 		v2.Any("/area/:id", area.GetByIdAreaManager)
 		v2.Any("/cif", cif.FetchAll)
+		v2.Any("/cif/borrower/:id", cif.GetCifBorrower)
+		v2.Any("/cif/investor/:id", cif.GetCifInvestor)
 		v2.Any("/cif/get/summary", cif.GetCifSummary)
 		v2.Any("/group", group.FetchAll)
 		v2.Any("/loan", loan.FetchAll)
@@ -84,6 +91,7 @@ func InitCustomApi() {
 		v2.Any("/disbursement/set/:loan_id/stage/:stage", disbursement.UpdateDisbursementStage)
 		v2.Any("/disbursement/get/branch/:branch_id/group/:group_id/disbursement-date/:disbursement_date", disbursement.GetDisbursementDetailByGroup)
 		v2.Any("/user-mis", userMis.FetchUserMisAreaBranchRole)
+		v2.Any("/user-mis/delete/:id", userMis.DeleteUserMis)
 		v2.Any("/notification", notification.SendPush)
 		v2.Any("/cashout", cashout.FetchAll)
 		v2.Any("/cashout/set/:cashout_id/stage/:stage", cashout.UpdateStage)
@@ -96,6 +104,7 @@ func InitCustomApi() {
 		v2.Get("/borrower/total-by-branch/:branch_id", borrower.GetTotalBorrowerByBranchID)
 		v2.Any("/virtual-account-statement", virtualAccountStatement.GetVAStatement)
 		v2.Any("/agent", agent.GetAllAgentByBranchID)
+		v2.Any("/agent/detail/:id", agent.GetAgentById)
 		v2.Any("/investor-check/datatables", investorCheck.FetchDatatables)
 		v2.Any("/investor-check/verify/:id/status/:status", investorCheck.Verify)
 		//v2.Any("/investor-check/verified/:id", investorCheck.Verified)
@@ -118,12 +127,20 @@ func InitCustomApi() {
 		v2.Any("/cif-investor-account", cif.GetCifInvestorAccount)
 		v2.Any("/assign-investor-to-loan", loan.AssignInvestorToLoan)
 		v2.Any("/product-pricing/s/investor/:searchStr", productPricing.SearchInvestor)
+		v2.Any("/product-pricing", productPricing.Create)
+		v2.Any("/product-pricing/get/:id", productPricing.GetInvestorsByProductPricing)
+		v2.Any("/product-pricing/delete/:id", productPricing.DeleteProductPricing)
+		v2.Any("/product-pricing/investor/:invId/productPricing/:ppId/delete", productPricing.DeleteProductPricingInvestor)
 		v2.Any("/prospective-borrower", prospectiveBorrower.GetProspectiveBorrower)
+		v2.Any("/prospective-borrower/archived", prospectiveBorrower.GetArchivedProspectiveBorrower)
 		v2.Any("/prospective-borrower/get/:id", prospectiveBorrower.GetProspectiveBorrowerDetail)
 		v2.Any("/prospective-borrower/set/:id/status/:status", prospectiveBorrower.UpdateStatusProspectiveBorrower)
+		v2.Any("/sector/detail/:id", sector.GetSectorById)
 		v2.Any("/installment-review/get/:branch_id/day/:schedule_day", installment.GetPendingInstallment)
 		v2.Any("/installment-review/by-group/:group_id", installment.GetPendingInstallmentDetail)
 		v2.Any("/installment-review/set/:installment_id", installment.UpdateInstallmentByInstallmentID)
+
+		v2.Any("/reports/agent", reports.AgentRekap)
 	}
 
 	iris.Get(baseURL+"/investor-without-va", investor.InvestorWithoutVA)
