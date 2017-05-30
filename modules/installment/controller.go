@@ -553,6 +553,11 @@ func UpdateLoanStage(installment Installment, loanId uint64, db *gorm.DB) error 
 	if installment.Type == "MENINGGAL" {
 
 		stageTo := "MENINGGAL"
+
+		if err := db.Table("loan").Where("id = ?", loanId).UpdateColumn("stage", stageTo).Error; err != nil {
+			return err
+		}
+
 		loanHistoryData := loanHistory.LoanHistory{StageFrom: loan.Stage, StageTo: stageTo, Remark: fmt.Sprintf("Automatic update stage %s loanId = %d", stageTo, loanId)}
 		if err := db.Table("loan_history").Create(&loanHistoryData).Error; err != nil {
 			return err
@@ -569,7 +574,6 @@ func UpdateLoanStage(installment Installment, loanId uint64, db *gorm.DB) error 
 		// frequency is below tenor so dont go on
 		return nil
 	}
-
 
 	stageTo, calculationError := GetStageTo(installment, loan)
 
