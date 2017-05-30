@@ -1,7 +1,6 @@
 package borrower
 
 import (
-	//"fmt"	
 	
 	iris "gopkg.in/kataras/iris.v4"
   "bitbucket.org/go-mis/modules/loan"
@@ -24,7 +23,7 @@ func CreateEmergencyLoan (ctx *iris.Context) {
 	}	
 
 	type Payload struct {
-		*EmergencyLoanBorrower
+		EmergencyLoanBorrower
 		GroupId		 uint64 `json:"groupId"`
 		Date			 string `json:"date"`
 		SectorId   uint64 `json:"sectorIdi"`
@@ -51,7 +50,7 @@ func CreateEmergencyLoan (ctx *iris.Context) {
 		groupID 	 := el[idx].GroupId
 		//branchID	 := el[idx].BranchId
 		oldLoanID  := el[idx].OldLoanId
-		SubmittedDate := el[idx].Date
+		submittedLoanDate := el[idx].Date
 		sectorID := el[idx].SectorId
 		purpose := el[idx].Purpose
 		disbusementDate := el[idx].DisbusrsementDate
@@ -70,6 +69,7 @@ func CreateEmergencyLoan (ctx *iris.Context) {
 		newLoan.Rate = 0.3 // hc 
 		newLoan.Installment = 40000 // hc 
 		newLoan.Plafond = 1000000 
+		newLoan.SubmittedLoanDate = submittedLoanDate 
 	
 		newLoan.CreditScoreGrade = oldLoan.CreditScoreGrade; 
 		newLoan.CreditScoreValue  = oldLoan.CreditScoreValue 
@@ -83,12 +83,7 @@ func CreateEmergencyLoan (ctx *iris.Context) {
 			break
 		}
 
-		/*
-		if db.Table("loan_raw").Create(&loanRaw.LoanRaw{Raw: dataRaw, LoanID: newLoan.ID}).Error != nil {
-			processErrorAndRollback(ctx, db, "Error Create Loan Raw")
-			break
-		}
-		*/
+		// TODO: insert loan raw	
 
 		if db.Table("r_loan_sector").Create(&r.RLoanSector{LoanId: newLoan.ID, SectorId: sectorID}).Error != nil {
 			processErrorAndRollback(ctx, db, "Error Create Loan Sector Relation")
@@ -126,10 +121,10 @@ func CreateEmergencyLoan (ctx *iris.Context) {
 		}
 				
 	  db.Commit()
-	}
-	
+		// update table emergency loan set newLoanId = newLoanId
+		elb := EmergencyLoanBorrower{}
+		services.DBCPsql.Model(elb).Where("\"deletedAt\" IS NULL AND id = ?", el[idx].EmergencyLoanBorrower.ID).UpdateColumn("newLoanId", newLoan.ID)
 
-	// update table emergency loan set newLoanId = newLoanId
-	
+	}
 }
 
