@@ -146,4 +146,7 @@ func Init() {
 
 	services.DBCPsql.AutoMigrate(&loanRaw.LoanRaw{})
 	services.BaseCrudInitWithDomain("r-loan-raw", loanRaw.LoanRaw{}, []loanRaw.LoanRaw{})
+
+	services.DBCPsql.AutoMigrate(&RLoanOrderCampaign{})
+	services.BaseCrudInitWithDomain("r-loan-order-campaign", RLoanOrderCampaign{}, []RLoanOrderCampaign{})
 }

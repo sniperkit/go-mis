@@ -317,8 +317,8 @@ func GetLoanDetail(ctx *iris.Context) {
 }
 
 type BorrowerObj struct {
-	Fullname   	string `gorm:"column:name" json:"name"`
-	BorrowerNo 	string `gorm:"column:borrowerNo" json:"borrowerNo"`
+	Fullname   string `gorm:"column:name" json:"name"`
+	BorrowerNo string `gorm:"column:borrowerNo" json:"borrowerNo"`
 	Branch 			string `gorm:"column:branch" json:"branch"`
 	IdCardNo		string `gorm:"column:idCardNo" json:"idCardNo"`
 	Address		 	string `gorm:"column:address" json:"address"`
@@ -364,10 +364,8 @@ func GetAkadData(ctx *iris.Context) {
 	queryGetBorrower += "JOIN cif ON cif.id = r_cif_borrower.\"cifId\" "
 	queryGetBorrower += "JOIN r_loan_group on r_loan_group.\"loanId\" = loan.id "
 	queryGetBorrower += "JOIN \"group\" on \"group\".id = r_loan_group.\"groupId\" "
-
 	queryGetBorrower += "JOIN r_group_branch ON r_group_branch.\"groupId\" = \"group\".\"id\" "
 	queryGetBorrower += "JOIN branch on branch.\"id\" = r_group_branch.\"branchId\" "
-
 	queryGetBorrower += "WHERE loan.id = ? AND loan.\"deletedAt\" IS NULL LIMIT 1 "
 
 	borrowerData := BorrowerObj{}
