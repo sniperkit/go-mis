@@ -13,6 +13,7 @@ import (
 
 	"bitbucket.org/go-mis/config"
 	"bitbucket.org/go-mis/routes"
+	"regexp"
 )
 
 func main() {
@@ -79,16 +80,13 @@ func (l *customHTTPLoggerMiddleware) logCustom(path string) iris.HandlerFunc {
 		responseBody := string(ctx.Response.Body())
 		latency := endTime.Sub(startTime)
 
-		logString := "----------------------------------------------------------------------------\n"
-		logString += fmt.Sprintf("REQUEST %s %4v %s %s \n%s\n", startDate, latency, method, requestURI, requestBody)
-		logString += fmt.Sprintf("RESPONSE %s %v %s\n\n", endDate, status, responseBody)
-		// logString += "REQUEST "
-		// fmt.Printf("\n============== LOGGER ==============\n")
-		// fmt.Printf("Date : %s \n", date)
-		// fmt.Printf("Latency  %4v \n", latency)
-		// fmt.Printf("\nRequest  :\n%s\n", request)
-		// fmt.Printf("\nResponse :\n%s\n", response)
-		//fmt.Printf(logString)
+		requestLogString := fmt.Sprintf("#REQUEST %s %4v %s %s \n%s\n", startDate, latency, method, requestURI, requestBody)
+		responseLogString := fmt.Sprintf("#RESPONSE %s %v %s\n\n", endDate, status, responseBody)
+		logString := requestLogString+", "+responseLogString
+
+		//remove newline
+		regex := regexp.MustCompile(`\r?\n`)
+		logString=regex.ReplaceAllString(logString,"")+"\n"
 		l.createAndWrite(path+"/"+logName, logString)
 	}
 }
