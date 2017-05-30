@@ -544,11 +544,21 @@ type SimpleLoan struct {
  */
 func UpdateLoanStage(installment Installment, loanId uint64, db *gorm.DB) error {
 	var loan = SimpleLoan{}
-	query := ` SELECT loan.id as id, loan.plafond as plafond, loan.installment as installment, SUM(frequency) as frequency, tenor, rate, loan.stage as stage FROM loan JOIN r_loan_installment on loan.id = "loanId" JOIN installment on installment.id = "installmentId" WHERE loan.id = ? AND installment.stage = 'SUCCESS' AND installment."deletedAt" isnull AND r_loan_installment."deletedAt" isnull GROUP BY loan.id`
+	query := `
+	SELECT 
+	loan.id as id, loan.plafond as plafond, loan.installment as installment, SUM(frequency) as frequency, tenor, rate, loan.stage as stage 
+	FROM loan 
+	LEFT JOIN r_loan_installment on loan.id = "loanId" AND r_loan_installment."deletedAt" isnull 
+	LEFT JOIN installment on installment.id = "installmentId" AND installment.stage = 'SUCCESS' AND installment."deletedAt" isnull
+	WHERE loan.id = ?
+	GROUP BY loan.id
+	`
 
 	if err := db.Raw(query, loanId).Scan(&loan).Error; err != nil {
 		return err
 	}
+
+	println(installment.Type)
 
 	if installment.Type == "MENINGGAL" {
 
