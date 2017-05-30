@@ -37,7 +37,8 @@ func FetchAll(ctx *iris.Context) {
 	query += "JOIN branch ON branch.\"id\" = r_loan_branch.\"branchId\"  "
 	query += "JOIN r_loan_group ON r_loan_group.\"loanId\" = loan.\"id\" "
 	query += "JOIN \"group\" ON \"group\".\"id\" = r_loan_group.\"groupId\" "
-	query += "WHERE installment.stage = 'PENDING' AND branch.id = ?"
+	query += "WHERE installment.stage = 'PENDING' AND branch.id = ? "
+	query += "AND installment.\"deletedAt\" IS NULL "
 	query += "GROUP BY installment.\"createdAt\"::date, branch.\"name\", \"group\".\"id\", \"group\".\"name\" "
 	query += "ORDER BY installment.\"createdAt\"::date DESC, branch.\"name\" ASC"
 
@@ -66,7 +67,7 @@ func FetchByType(ctx *iris.Context) {
 		JOIN branch ON branch."id" = r_loan_branch."branchId" 
 		JOIN r_loan_group ON r_loan_group."loanId" = loan."id"
 		JOIN "group" ON "group"."id" = r_loan_group."groupId"
-		WHERE installment.stage = ? AND branch.id = ?
+		WHERE installment.stage = ? AND branch.id = ? AND installment."deletedAt" IS NULL
 		GROUP BY installment."createdAt"::date, branch."name", "group"."id", "group"."name"
 		ORDER BY installment."createdAt"::date DESC, branch."name" ASC
 	`
@@ -117,6 +118,7 @@ func GetInstallmentByGroupIDAndTransactionDate(ctx *iris.Context) {
 		installment."createdAt"::date = ? 
 		AND r_loan_group."groupId" = ? 
 		AND r_loan_branch."branchId" = ?
+		AND installment."deletedAt" IS NULL
 	`
 
 	installmentDetailSchema := []InstallmentDetail{}
