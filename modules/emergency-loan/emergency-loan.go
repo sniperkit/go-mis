@@ -2,13 +2,11 @@ package emergency_loan
 
 import (
 	
-	//"fmt"
 	"time"
 	iris "gopkg.in/kataras/iris.v4"
   "bitbucket.org/go-mis/modules/loan"
   "bitbucket.org/go-mis/modules/borrower"
 	"bitbucket.org/go-mis/services"
-	//loanRaw "bitbucket.org/go-mis/modules/loan-raw"
 	"bitbucket.org/go-mis/modules/r"
 
 )
@@ -141,7 +139,7 @@ func SubmitEmergencyLoan (ctx *iris.Context) {
 		// update table emergency loan set newLoanId = newLoanId
 		// only do this after all process above has completed
 		elb := EmergencyLoanBorrower{}
-	  err = services.DBCPsql.Model(elb).Where("\"deletedAt\" IS NULL AND id = ?", el[idx].EmergencyLoanBorrower.ID).UpdateColumn("newLoanId", newLoan.ID).Error		
+	  err = services.DBCPsql.Model(elb).Where("\"deletedAt\" IS NULL AND id = ?", el[idx].EmergencyLoanBorrower.ID).UpdateColumns(EmergencyLoanBorrower{NewLoanId:newLoan.ID, Status:true}).Error		
 		if err != nil {
 			borrower.ProcessErrorAndRollback(ctx, db, "Error Create Emergency Loan")
 			break	
