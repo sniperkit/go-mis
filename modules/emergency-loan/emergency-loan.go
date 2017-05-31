@@ -100,7 +100,7 @@ func SubmitEmergencyLoan (ctx *iris.Context) {
 			break
 		}
 
-		if borrower.CreateRelationLoanToBranch(newLoan.ID, branchId, db) != nil {
+		if borrower.CreateRelationLoanToBranch(newLoan.ID, branchID, db) != nil {
 			borrower.ProcessErrorAndRollback(ctx, db, "Error Create Relation to Branch")
 			break
 		}
