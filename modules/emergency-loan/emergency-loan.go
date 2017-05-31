@@ -15,10 +15,9 @@ func SubmitEmergencyLoan (ctx *iris.Context) {
 
 	type Payload struct {
 		EmergencyLoanBorrower
-		GroupId		 uint64 `json:"groupId"`
 		Date			 string `json:"date"`
-		SectorId   uint64 `json:"sectorIdi"`
-		Purpose 	 string `json:"loan_purposei"`
+		SectorId   uint64 `json:"sectorId"`
+		Purpose 	 string `json:"loan_purpose"`
 		DisbusrsementDate string `json:"disbursement_date"`
 	}
 	
@@ -39,7 +38,7 @@ func SubmitEmergencyLoan (ctx *iris.Context) {
 
 		borrowerID := el[idx].BorrowerId
 		groupID 	 := el[idx].GroupId
-		//branchID	 := el[idx].BranchId
+		branchID	 := el[idx].BranchId
 		oldLoanID  := el[idx].OldLoanId
 		submittedLoanDate := el[idx].Date
 		sectorID := el[idx].SectorId
@@ -101,7 +100,7 @@ func SubmitEmergencyLoan (ctx *iris.Context) {
 			break
 		}
 
-		if borrower.CreateRelationLoanToBranch(newLoan.ID, groupID, db) != nil {
+		if borrower.CreateRelationLoanToBranch(newLoan.ID, branchId, db) != nil {
 			borrower.ProcessErrorAndRollback(ctx, db, "Error Create Relation to Branch")
 			break
 		}
