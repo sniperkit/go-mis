@@ -2,19 +2,13 @@ package emergency_loan
 
 import (
 	
-	"time"
+	//"time"
 	iris "gopkg.in/kataras/iris.v4"
   "bitbucket.org/go-mis/modules/loan"
   "bitbucket.org/go-mis/modules/borrower"
 	"bitbucket.org/go-mis/services"
 	"bitbucket.org/go-mis/modules/r"
 
-)
-
-// dealing with date
-const (
-		DATE_LAYOUT string = "2006-01-02T15:04:05.000Z"
-		DATE_TAIL string = "T00:00:00.000Z"
 )
 
 
@@ -50,6 +44,7 @@ func SubmitEmergencyLoan (ctx *iris.Context) {
 		sectorID := el[idx].SectorId
 		purpose := el[idx].Purpose
 
+		/*
 		disbursementDate, err := time.Parse(DATE_LAYOUT, el[idx].DisbursementDate + DATE_TAIL)
 		if err != nil {
 			ctx.JSON(iris.StatusInternalServerError, iris.Map{
@@ -71,6 +66,7 @@ func SubmitEmergencyLoan (ctx *iris.Context) {
 		}
 		sld := submittedLoanDate.String()
 		sld = sld[:len(sld)-10] // get rid of "0000 UTC" thingy -_-"
+		*/
 
 		// get requiredData from oldLoad
 		oldLoan := loan.Loan{}
@@ -88,7 +84,7 @@ func SubmitEmergencyLoan (ctx *iris.Context) {
 		newLoan.Plafond = 1000000 
 		
 	
-		newLoan.SubmittedLoanDate = sld 
+		newLoan.SubmittedLoanDate = el[idx].Date 
 	
 		newLoan.CreditScoreGrade = oldLoan.CreditScoreGrade 
 		newLoan.CreditScoreValue  = oldLoan.CreditScoreValue 
@@ -131,7 +127,7 @@ func SubmitEmergencyLoan (ctx *iris.Context) {
 			break
 		}
 		
-		if borrower.CreateDisbursementRecord(newLoan.ID, dd, db) != nil {
+		if borrower.CreateDisbursementRecord(newLoan.ID, el[idx].DisbursementDate, db) != nil {
 			borrower.ProcessErrorAndRollback(ctx, db, "Error Create Disbusrement")
 			break
 		}
@@ -139,7 +135,7 @@ func SubmitEmergencyLoan (ctx *iris.Context) {
 		// update table emergency loan set newLoanId = newLoanId
 		// only do this after all process above has completed
 		elb := EmergencyLoanBorrower{}
-	  err = services.DBCPsql.Model(elb).Where("\"deletedAt\" IS NULL AND id = ?", el[idx].EmergencyLoanBorrower.ID).UpdateColumns(EmergencyLoanBorrower{NewLoanId:newLoan.ID, Status:true}).Error		
+	  err := services.DBCPsql.Model(elb).Where("\"deletedAt\" IS NULL AND id = ?", el[idx].EmergencyLoanBorrower.ID).UpdateColumns(EmergencyLoanBorrower{NewLoanId:newLoan.ID, Status:true}).Error		
 		if err != nil {
 			borrower.ProcessErrorAndRollback(ctx, db, "Error Create Emergency Loan")
 			break	
