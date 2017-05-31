@@ -2,13 +2,13 @@ package emergency_loan
 
 import (
 	
-	"fmt"
+	//"fmt"
 	"time"
 	iris "gopkg.in/kataras/iris.v4"
   "bitbucket.org/go-mis/modules/loan"
   "bitbucket.org/go-mis/modules/borrower"
 	"bitbucket.org/go-mis/services"
-	loanRaw "bitbucket.org/go-mis/modules/loan-raw"
+	//loanRaw "bitbucket.org/go-mis/modules/loan-raw"
 	"bitbucket.org/go-mis/modules/r"
 
 )
@@ -18,6 +18,7 @@ const (
 		DATE_LAYOUT string = "2006-01-02T15:04:05.000Z"
 		DATE_TAIL string = "T00:00:00.000Z"
 )
+
 
 func SubmitEmergencyLoan (ctx *iris.Context) {
 
@@ -59,6 +60,8 @@ func SubmitEmergencyLoan (ctx *iris.Context) {
 			})
 			return
 		}
+		dd := disbursementDate.String()
+		dd = dd[:len(dd)-10] // -_-"
 		
 		submittedLoanDate, err := time.Parse(DATE_LAYOUT, el[idx].Date + DATE_TAIL)
 		if err != nil {
@@ -68,6 +71,8 @@ func SubmitEmergencyLoan (ctx *iris.Context) {
 			})
 			return
 		}
+		sld := submittedLoanDate.String()
+		sld = sld[:len(sld)-10] // get rid of "0000 UTC" thingy -_-"
 
 		// get requiredData from oldLoad
 		oldLoan := loan.Loan{}
@@ -83,7 +88,9 @@ func SubmitEmergencyLoan (ctx *iris.Context) {
 		newLoan.Rate = 0.3 // hc 
 		newLoan.Installment = 40000 // hc 
 		newLoan.Plafond = 1000000 
-		newLoan.SubmittedLoanDate = submittedLoanDate 
+		
+	
+		newLoan.SubmittedLoanDate = sld 
 	
 		newLoan.CreditScoreGrade = oldLoan.CreditScoreGrade 
 		newLoan.CreditScoreValue  = oldLoan.CreditScoreValue 
@@ -114,10 +121,7 @@ func SubmitEmergencyLoan (ctx *iris.Context) {
 			break
 		}
 
-		if borrower.UseProductPricing(0, newLoan.ID, db) != nil {
-			borrower.ProcessErrorAndRollback(ctx, db, "Error Use Product Pricing")
-			break
-		}
+		// TODO: something about product pricing?
 
 		if borrower.CreateRelationLoanToGroup(newLoan.ID, groupID, db) != nil {
 			borrower.ProcessErrorAndRollback(ctx, db, "Error Create Relation to Group")
@@ -129,17 +133,21 @@ func SubmitEmergencyLoan (ctx *iris.Context) {
 			break
 		}
 		
-		if borrower.CreateDisbursementRecord(newLoan.ID, disbursementDate, db) != nil {
+		if borrower.CreateDisbursementRecord(newLoan.ID, dd, db) != nil {
 			borrower.ProcessErrorAndRollback(ctx, db, "Error Create Disbusrement")
 			break
 		}
-				
-	  db.Commit()
 
 		// update table emergency loan set newLoanId = newLoanId
 		// only do this after all process above has completed
 		elb := EmergencyLoanBorrower{}
-		services.DBCPsql.Model(elb).Where("\"deletedAt\" IS NULL AND id = ?", el[idx].EmergencyLoanBorrower.ID).UpdateColumn("newLoanId", newLoan.ID)
+	  err = services.DBCPsql.Model(elb).Where("\"deletedAt\" IS NULL AND id = ?", el[idx].EmergencyLoanBorrower.ID).UpdateColumn("newLoanId", newLoan.ID).Error		
+		if err != nil {
+			borrower.ProcessErrorAndRollback(ctx, db, "Error Create Disbusrement")
+			break	
+		}
+
+	  db.Commit()
 	}
 }
 
