@@ -143,7 +143,7 @@ func SubmitEmergencyLoan (ctx *iris.Context) {
 		elb := EmergencyLoanBorrower{}
 	  err = services.DBCPsql.Model(elb).Where("\"deletedAt\" IS NULL AND id = ?", el[idx].EmergencyLoanBorrower.ID).UpdateColumn("newLoanId", newLoan.ID).Error		
 		if err != nil {
-			borrower.ProcessErrorAndRollback(ctx, db, "Error Create Disbusrement")
+			borrower.ProcessErrorAndRollback(ctx, db, "Error Create Emergency Loan")
 			break	
 		}
 
