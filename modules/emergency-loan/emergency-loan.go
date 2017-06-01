@@ -39,7 +39,6 @@ func SubmitEmergencyLoan (ctx *iris.Context) {
 
 		borrowerID := el[idx].BorrowerId
 		groupID 	 := el[idx].GroupId
-		branchID	 := el[idx].BranchId
 		oldLoanID  := el[idx].OldLoanId
 		sectorID := el[idx].SectorId
 		purpose := el[idx].Purpose
@@ -116,13 +115,16 @@ func SubmitEmergencyLoan (ctx *iris.Context) {
 		}
 
 		// TODO: something about product pricing?
-
+		if assignProductPricing(oldLoanID,newLoan.ID)!=nil {
+			borrower.ProcessErrorAndRollback(ctx, db, "Error Create Relation to Product pricing")
+			break
+		}
 		if borrower.CreateRelationLoanToGroup(newLoan.ID, groupID, db) != nil {
 			borrower.ProcessErrorAndRollback(ctx, db, "Error Create Relation to Group")
 			break
 		}
 
-		if borrower.CreateRelationLoanToBranch(newLoan.ID, branchID, db) != nil {
+		if borrower.CreateRelationLoanToBranch(newLoan.ID, groupID, db) != nil {
 			borrower.ProcessErrorAndRollback(ctx, db, "Error Create Relation to Branch")
 			break
 		}
@@ -135,7 +137,7 @@ func SubmitEmergencyLoan (ctx *iris.Context) {
 		// update table emergency loan set newLoanId = newLoanId
 		// only do this after all process above has completed
 		elb := EmergencyLoanBorrower{}
-	  err := services.DBCPsql.Model(elb).Where("\"deletedAt\" IS NULL AND id = ?", el[idx].EmergencyLoanBorrower.ID).UpdateColumns(EmergencyLoanBorrower{NewLoanId:newLoan.ID, Status:true}).Error		
+	  err := services.DBCPsql.Model(elb).Where("\"deletedAt\" IS NULL AND id = ?", el[idx].EmergencyLoanBorrower.ID).UpdateColumns(EmergencyLoanBorrower{NewLoanId:newLoan.ID, Status:true}).Error
 		if err != nil {
 			borrower.ProcessErrorAndRollback(ctx, db, "Error Create Emergency Loan")
 			break	
@@ -143,5 +145,27 @@ func SubmitEmergencyLoan (ctx *iris.Context) {
 
 	  db.Commit()
 	}
+}
+
+func assignProductPricing(oldLoanId uint64,newLoanId uint64) error{
+	query := "select * from r_investor_product_pricing_loan where r_investor_product_pricing_loan.\"loanId\"=?"
+
+	rippl := rippl{}
+	services.DBCPsql.Raw(query, oldLoanId).Scan(&rippl)
+	rInvProdPriceLoan := r.RInvestorProductPricingLoan{
+		InvestorId:       0,
+		ProductPricingId: rippl.ProductPricingId,
+		LoanId: newLoanId,
+	}
+
+	if err := services.DBCPsql.Table("r_investor_product_pricing_loan").Create(&rInvProdPriceLoan).Error; err != nil {
+		print(err)
+		return err
+	}
+	return nil
+}
+
+type rippl struct {
+	ProductPricingId uint64 `gorm:"column:ProductPricingId"`
 }
 
