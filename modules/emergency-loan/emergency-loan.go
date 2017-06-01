@@ -2,14 +2,15 @@ package emergency_loan
 
 import (
 	
+	//"time"
 	iris "gopkg.in/kataras/iris.v4"
   "bitbucket.org/go-mis/modules/loan"
   "bitbucket.org/go-mis/modules/borrower"
 	"bitbucket.org/go-mis/services"
-	//loanRaw "bitbucket.org/go-mis/modules/loan-raw"
 	"bitbucket.org/go-mis/modules/r"
 
 )
+
 
 func SubmitEmergencyLoan (ctx *iris.Context) {
 
@@ -18,7 +19,7 @@ func SubmitEmergencyLoan (ctx *iris.Context) {
 		Date			 string `json:"date"`
 		SectorId   uint64 `json:"sectorId"`
 		Purpose 	 string `json:"loan_purpose"`
-		DisbusrsementDate string `json:"disbursement_date"`
+		DisbursementDate string `json:"disbursement_date"`
 	}
 	
 	el := []Payload{}
@@ -38,12 +39,33 @@ func SubmitEmergencyLoan (ctx *iris.Context) {
 
 		borrowerID := el[idx].BorrowerId
 		groupID 	 := el[idx].GroupId
-		branchID	 := el[idx].BranchId
 		oldLoanID  := el[idx].OldLoanId
-		submittedLoanDate := el[idx].Date
 		sectorID := el[idx].SectorId
 		purpose := el[idx].Purpose
-		disbusementDate := el[idx].DisbusrsementDate
+
+		/*
+		disbursementDate, err := time.Parse(DATE_LAYOUT, el[idx].DisbursementDate + DATE_TAIL)
+		if err != nil {
+			ctx.JSON(iris.StatusInternalServerError, iris.Map{
+				"status":  "error",
+				"message": err.Error(),
+			})
+			return
+		}
+		dd := disbursementDate.String()
+		dd = dd[:len(dd)-10] // -_-"
+		
+		submittedLoanDate, err := time.Parse(DATE_LAYOUT, el[idx].Date + DATE_TAIL)
+		if err != nil {
+			ctx.JSON(iris.StatusInternalServerError, iris.Map{
+				"status":  "error",
+				"message": err.Error(),
+			})
+			return
+		}
+		sld := submittedLoanDate.String()
+		sld = sld[:len(sld)-10] // get rid of "0000 UTC" thingy -_-"
+		*/
 
 		// get requiredData from oldLoad
 		oldLoan := loan.Loan{}
@@ -59,7 +81,9 @@ func SubmitEmergencyLoan (ctx *iris.Context) {
 		newLoan.Rate = 0.3 // hc 
 		newLoan.Installment = 40000 // hc 
 		newLoan.Plafond = 1000000 
-		newLoan.SubmittedLoanDate = submittedLoanDate 
+		
+	
+		newLoan.SubmittedLoanDate = el[idx].Date 
 	
 		newLoan.CreditScoreGrade = oldLoan.CreditScoreGrade 
 		newLoan.CreditScoreValue  = oldLoan.CreditScoreValue 
@@ -90,31 +114,58 @@ func SubmitEmergencyLoan (ctx *iris.Context) {
 			break
 		}
 
-		if borrower.UseProductPricing(0, newLoan.ID, db) != nil {
-			borrower.ProcessErrorAndRollback(ctx, db, "Error Use Product Pricing")
+		// TODO: something about product pricing?
+		if assignProductPricing(oldLoanID,newLoan.ID)!=nil {
+			borrower.ProcessErrorAndRollback(ctx, db, "Error Create Relation to Product pricing")
 			break
 		}
-
 		if borrower.CreateRelationLoanToGroup(newLoan.ID, groupID, db) != nil {
 			borrower.ProcessErrorAndRollback(ctx, db, "Error Create Relation to Group")
 			break
 		}
 
-		if borrower.CreateRelationLoanToBranch(newLoan.ID, branchID, db) != nil {
+		if borrower.CreateRelationLoanToBranch(newLoan.ID, groupID, db) != nil {
 			borrower.ProcessErrorAndRollback(ctx, db, "Error Create Relation to Branch")
 			break
 		}
 		
-		if borrower.CreateDisbursementRecord(newLoan.ID, disbusementDate, db) != nil {
+		if borrower.CreateDisbursementRecord(newLoan.ID, el[idx].DisbursementDate, db) != nil {
 			borrower.ProcessErrorAndRollback(ctx, db, "Error Create Disbusrement")
 			break
 		}
-				
-	  db.Commit()
-		// update table emergency loan set newLoanId = newLoanId
-		elb := EmergencyLoanBorrower{}
-		services.DBCPsql.Model(elb).Where("\"deletedAt\" IS NULL AND id = ?", el[idx].EmergencyLoanBorrower.ID).UpdateColumn("newLoanId", newLoan.ID)
 
+		// update table emergency loan set newLoanId = newLoanId
+		// only do this after all process above has completed
+		elb := EmergencyLoanBorrower{}
+	  err := services.DBCPsql.Model(elb).Where("\"deletedAt\" IS NULL AND id = ?", el[idx].EmergencyLoanBorrower.ID).UpdateColumns(EmergencyLoanBorrower{NewLoanId:newLoan.ID, Status:true}).Error
+		if err != nil {
+			borrower.ProcessErrorAndRollback(ctx, db, "Error Create Emergency Loan")
+			break	
+		}
+
+	  db.Commit()
 	}
+}
+
+func assignProductPricing(oldLoanId uint64,newLoanId uint64) error{
+	query := "select * from r_investor_product_pricing_loan where r_investor_product_pricing_loan.\"loanId\"=?"
+
+	rippl := rippl{}
+	services.DBCPsql.Raw(query, oldLoanId).Scan(&rippl)
+	rInvProdPriceLoan := r.RInvestorProductPricingLoan{
+		InvestorId:       0,
+		ProductPricingId: rippl.ProductPricingId,
+		LoanId: newLoanId,
+	}
+
+	if err := services.DBCPsql.Table("r_investor_product_pricing_loan").Create(&rInvProdPriceLoan).Error; err != nil {
+		print(err)
+		return err
+	}
+	return nil
+}
+
+type rippl struct {
+	ProductPricingId uint64 `gorm:"column:ProductPricingId"`
 }
 
