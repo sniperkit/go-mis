@@ -114,7 +114,6 @@ func SubmitEmergencyLoan (ctx *iris.Context) {
 			break
 		}
 
-		// TODO: something about product pricing?
 		if assignProductPricing(oldLoanID,newLoan.ID)!=nil {
 			borrower.ProcessErrorAndRollback(ctx, db, "Error Create Relation to Product pricing")
 			break
