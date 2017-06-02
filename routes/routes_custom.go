@@ -74,6 +74,7 @@ func InitCustomApi() {
 		v2.Any("/cif/investor/:id", cif.GetCifInvestor)
 		v2.Any("/cif/get/summary", cif.GetCifSummary)
 		v2.Any("/group", group.FetchAll)
+		v2.Any("/group/get/:id", group.GroupDetail)
 		v2.Any("/loan", loan.FetchAll)
 		v2.Any("/loan/get/:id", loan.GetLoanDetail)
 		v2.Any("/loan/set/:id/stage/:stage", loan.UpdateStage)

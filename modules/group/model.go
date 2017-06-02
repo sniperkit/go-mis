@@ -19,6 +19,16 @@ type Group struct {
 	DeletedAt    *time.Time       `gorm:"column:deletedAt" json:"deletedAt"`
 }
 
+type GroupBorrower struct{
+	ID           uint64           `gorm:"primary_key" gorm:"column:_id" json:"_id"`
+	Name         string           `gorm:"column:name" json:"name"`
+	Lat          float64          `gorm:"column:lat" json:"lat"`
+	Lng          float64          `gorm:"column:lng" json:"lng"`
+	ScheduleDay  string           `gorm:"column:scheduleDay" json:"scheduleDay"`
+	ScheduleTime string           `gorm:"column:scheduleTime" json:"scheduleTime"`
+	BorrowerName string 					`gorm:"column:borrowerName" json:"borrowerName"`
+}
+
 type GroupBranchAreaAgent struct {
 	ID        uint64    `gorm:"primary_key" gorm:"column:_id" json:"_id"`
 	Name      string    `gorm:"column:name" json:"name"`

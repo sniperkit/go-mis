@@ -74,3 +74,29 @@ func FetchAll(ctx *iris.Context) {
 		"data":   groupBranchAreaAgent,
 	})
 }
+
+func GroupDetail(ctx *iris.Context){
+
+	id := ctx.Get("id");
+	groupBorrower := []GroupBorrower{}
+
+	query := "SELECT \"group\".\"id\", \"group\".\"name\" as \"name\", \"group\".\"lat\" as \"lat\",\"group\".\"lng\" as \"lng\", \"group\".\"scheduleDay\" as \"scheduleDay\", \"group\".\"scheduleTime\" as \"scheduleTime\", \"group\".\"name\", cif.\"name\" as \"borrowerName\" "
+	query += "FROM \"group\" "
+	query += "LEFT JOIN r_group_borrower rgb ON rgb.\"groupId\" = \"group\".\"id\" "
+	query += "LEFT JOIN borrower ON borrower.\"id\" = rgb.\"borrowerId\" "
+	query += "LEFT JOIN r_cif_borrower rcb ON rcb.\"borrowerId\" = borrower.\"id\" "
+	query += "LEFT JOIN cif ON cif.\"id\" = rcb.\"cifId\" WHERE \"group\".\"id\" = ? "
+
+	if e := services.DBCPsql.Raw(query, id).Scan(&groupBorrower).Error; e != nil {
+		ctx.JSON(iris.StatusOK, iris.Map{
+			"status": "failed",
+			"data":   e,
+		})
+		return
+	}
+	ctx.JSON(iris.StatusOK, iris.Map{
+		"status": "success",
+		"data":   groupBorrower,
+	})
+}
+
