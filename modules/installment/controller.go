@@ -83,6 +83,7 @@ func FetchByType(ctx *iris.Context) {
 func GetInstallmentByGroupIDAndTransactionDate(ctx *iris.Context) {
 	branchID := ctx.Get("BRANCH_ID")
 	groupID := ctx.Param("group_id")
+	stage := ctx.Param("stage")
 	transactionDate := ctx.Param("transaction_date")
 
 	query := `
@@ -119,11 +120,11 @@ func GetInstallmentByGroupIDAndTransactionDate(ctx *iris.Context) {
 		AND r_loan_group."groupId" = ? 
 		AND r_loan_branch."branchId" = ?
 		AND installment."deletedAt" IS NULL
-		AND installment.stage='PENDING'
+		AND installment.stage=?
 	`
 
 	installmentDetailSchema := []InstallmentDetail{}
-	err := services.DBCPsql.Raw(query, transactionDate, groupID, branchID).Scan(&installmentDetailSchema).Error
+	err := services.DBCPsql.Raw(query, transactionDate, groupID, branchID,stage).Scan(&installmentDetailSchema).Error
 	if err != nil {
 		ctx.JSON(iris.StatusInternalServerError, iris.Map{"data": err})
 		return
@@ -474,7 +475,7 @@ func GetPendingInstallmentDetail(ctx *iris.Context) {
 		JOIN borrower ON borrower.id = r_loan_borrower."borrowerId"
 		JOIN r_cif_borrower ON r_cif_borrower."borrowerId" = borrower.id
 		JOIN cif ON cif.id = r_cif_borrower."cifId"
-		WHERE r_loan_group."groupId" = ? AND installment.stage = 'PENDING' AND 
+		WHERE r_loan_group."groupId" = ? AND installment.stage = 'PENDING' AND
 		installment."deletedAt" IS NULL AND loan."deletedAt" IS NULL AND borrower."deletedAt" IS NULL AND cif."deletedAt" IS null
 	`
 
