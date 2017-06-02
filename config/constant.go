@@ -23,6 +23,7 @@ var (
 type Config struct {
 	Psql  []DbConfig `json:"psql"`
 	Mysql DbConfig   `json:"mysql"`
+	UploaderPath string `json:"uploaderPath"`
 }
 
 type DbConfig struct {
@@ -44,8 +45,6 @@ func init() {
 	configPath := flag.String("config", "./config.json", "Config file path")
 	logMode := flag.Bool("log-mode", false, "Log mode")
 	env := flag.String("env", "production", "Default environment")
-
-	UploaderApiPath = "https://upload.amartha.id/"
 
 	// Parse all command flags
 	flag.Parse()
@@ -71,6 +70,8 @@ func init() {
 
 	var c Config
 	json.Unmarshal(configFile, &c)
+
+	UploaderApiPath = c.UploaderPath
 
 	// Postgresql Host Address
 	PsqlHostAddressMisAmartha = "host=" + c.Psql[0].Host + " port=" + c.Psql[0].Port + " user=" + c.Psql[0].Username + " dbname=" + c.Psql[0].Db + " sslmode=" + c.Psql[0].SslMode

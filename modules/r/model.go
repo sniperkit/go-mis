@@ -462,3 +462,14 @@ type RInstallmentAdjustment struct {
 	UpdatedAt     time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
 	DeletedAt     *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
 }
+
+// Relation `loan_order` to `campaign`
+type RLoanOrderCampaign struct {
+	ID          uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
+	LoanOrderID uint64     `gorm:"column:loanOrderId" json:"loanOrderId"`
+	CampaignID  uint64     `gorm:"column:campaignId" json:"campaignId"`
+	Quantity    uint64     `gorm:"column:quantity" json:"quantity"`
+	CreatedAt   time.Time  `gorm:"column:createdAt" json:"createdAt"`
+	UpdatedAt   time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
+	DeletedAt   *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
+}
