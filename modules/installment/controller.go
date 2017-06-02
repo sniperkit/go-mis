@@ -119,6 +119,7 @@ func GetInstallmentByGroupIDAndTransactionDate(ctx *iris.Context) {
 		AND r_loan_group."groupId" = ? 
 		AND r_loan_branch."branchId" = ?
 		AND installment."deletedAt" IS NULL
+		AND installment.stage='PENDING'
 	`
 
 	installmentDetailSchema := []InstallmentDetail{}
