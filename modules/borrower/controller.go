@@ -329,7 +329,7 @@ func CreateLoan(payload map[string]interface{}) loan.Loan {
 
 	services.DBCPsql.Raw(query, borrowerId).Scan(&oldLoan)
 
-	if (oldLoan == nil || oldLoan == loan.Loan{}){
+	if (oldLoan == loan.Loan{}){
 		newLoan.IsLWK = false
 		newLoan.IsUPK = false
 	}else{
