@@ -5,6 +5,7 @@ import (
 	"bitbucket.org/go-mis/modules/role"
 	"bitbucket.org/go-mis/modules/user-mis"
 	"bitbucket.org/go-mis/services"
+	"bitbucket.org/go-mis/modules/r"
 	iris "gopkg.in/kataras/iris.v4"
 )
 
@@ -78,7 +79,7 @@ func FetchAll(ctx *iris.Context) {
 func GroupDetail(ctx *iris.Context){
 
 	id := ctx.Get("id");
-	groupBorrower := []GroupBorrower{}
+	groupBorrower := []GroupAgentBorrower{}
 
 	query := "SELECT \"group\".\"id\", \"group\".\"name\" as \"name\", \"group\".\"lat\" as \"lat\",\"group\".\"lng\" as \"lng\", \"group\".\"scheduleDay\" as \"scheduleDay\", \"group\".\"scheduleTime\" as \"scheduleTime\", \"group\".\"name\", cif.\"name\" as \"borrowerName\" "
 	query += "FROM \"group\" "
@@ -100,3 +101,45 @@ func GroupDetail(ctx *iris.Context){
 	})
 }
 
+func Create(ctx *iris.Context){
+
+	type Payload struct {
+		ID 				uint64 		`json:"_id"`
+		Name 			string 		`json:"name"`
+		Lat 			float64 	`json:"lat"`
+		Lng 			float64 	`json:"lng"`
+		Agent 		uint64 		`json:"agentId"`
+		Branch 		uint64 		`json:"branchId"`
+	}
+
+	m := Payload{}
+	err := ctx.ReadJSON(&m)
+
+	g := Group{}
+	g.Name = m.Name;
+	g.Lat = m.Lat;
+	g.Lng = m.Lng;
+
+	if err != nil { 
+		panic(err) 
+	}else{
+		services.DBCPsql.Create(&g);
+
+		rga := r.RGroupAgent{}
+		rga.GroupId = g.ID;
+		rga.AgentId = m.Agent;
+
+		if err := services.DBCPsql.Create(&rga).Error; err != nil {
+			panic(err)
+		}
+
+		rgb := r.RGroupBranch{}
+		rgb.GroupId = g.ID;
+		rgb.BranchId = m.Branch;
+
+		services.DBCPsql.Create(&rgb);
+
+	}
+	ctx.JSON(iris.StatusOK, iris.Map{"status": "success", "data": m})
+
+}
