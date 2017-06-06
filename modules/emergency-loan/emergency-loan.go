@@ -9,6 +9,7 @@ import (
 	"bitbucket.org/go-mis/services"
 	"bitbucket.org/go-mis/modules/r"
 
+	"bitbucket.org/go-mis/modules/product-pricing"
 )
 
 
@@ -114,7 +115,7 @@ func SubmitEmergencyLoan (ctx *iris.Context) {
 			break
 		}
 
-		if assignProductPricing(oldLoanID,newLoan.ID)!=nil {
+		if borrower.UseProductPricing(0,newLoan.ID,services.DBCPsql)!=nil {
 			borrower.ProcessErrorAndRollback(ctx, db, "Error Create Relation to Product pricing")
 			break
 		}
@@ -144,27 +145,5 @@ func SubmitEmergencyLoan (ctx *iris.Context) {
 
 	  db.Commit()
 	}
-}
-
-func assignProductPricing(oldLoanId uint64,newLoanId uint64) error{
-	query := "select * from r_investor_product_pricing_loan where r_investor_product_pricing_loan.\"loanId\"=?"
-
-	rippl := rippl{}
-	services.DBCPsql.Raw(query, oldLoanId).Scan(&rippl)
-	rInvProdPriceLoan := r.RInvestorProductPricingLoan{
-		InvestorId:       0,
-		ProductPricingId: rippl.ProductPricingId,
-		LoanId: newLoanId,
-	}
-
-	if err := services.DBCPsql.Table("r_investor_product_pricing_loan").Create(&rInvProdPriceLoan).Error; err != nil {
-		print(err)
-		return err
-	}
-	return nil
-}
-
-type rippl struct {
-	ProductPricingId uint64 `gorm:"column:ProductPricingId"`
 }
 
