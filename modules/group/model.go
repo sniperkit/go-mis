@@ -26,6 +26,8 @@ type GroupAgentBorrower struct{
 	Name         string           `gorm:"column:name" json:"name"`
 	Lat          float64          `gorm:"column:lat" json:"lat"`
 	Lng          float64          `gorm:"column:lng" json:"lng"`
+	ScheduleDay  string           `gorm:"column:scheduleDay" json:"scheduleDay"`
+	ScheduleTime string           `gorm:"column:scheduleTime" json:"scheduleTime"`
 	BorrowerName string 					`gorm:"column:borrowerName" json:"borrowerName"`
 	Agent 				string           `gorm:"column:agentName" json:"agentName"`
 }
