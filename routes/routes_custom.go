@@ -31,6 +31,7 @@ import (
 	"bitbucket.org/go-mis/modules/voucher"
 	"gopkg.in/iris-contrib/middleware.v4/cors"
 	"gopkg.in/kataras/iris.v4"
+	"bitbucket.org/go-mis/modules/emergency-loan"
 )
 
 var baseURL = "/api/v2"
@@ -88,7 +89,7 @@ func InitCustomApi() {
 		//v2.Any("/loan-order/:orderNo/reject", loanOrder.Reject)
 		v2.Any("/installment", installment.FetchAll)
 		v2.Any("/installment-by-type/:type", installment.FetchByType)
-		v2.Any("/installment/group/:group_id/by-transaction-date/:transaction_date", installment.GetInstallmentByGroupIDAndTransactionDate)
+		v2.Any("/installment/group/:group_id/by-transaction-date/:transaction_date/stage/:stage", installment.GetInstallmentByGroupIDAndTransactionDate)
 		v2.Any("/installment/group/:group_id/by-transaction-date/:transaction_date/submit/:status", installment.SubmitInstallmentByGroupIDAndTransactionDateWithStatus)
 		v2.Any("/installment/submit/:installment_id/status/:status", installment.SubmitInstallmentByInstallmentIDWithStatus)
 		v2.Any("/disbursement", disbursement.FetchAll)
@@ -146,6 +147,8 @@ func InitCustomApi() {
 		v2.Any("/installment-review/set/:installment_id", installment.UpdateInstallmentByInstallmentID)
 
 		v2.Any("/reports/agent", reports.AgentRekap)
+		v2.Any("/emergency-loan/borrower/by-branch/:branch_id/available", emergency_loan.FetchAllAvailableBorrower)
+		v2.Any("/emergency-loan/submit", emergency_loan.SubmitEmergencyLoan)
 	}
 
 	iris.Get(baseURL+"/investor-without-va", investor.InvestorWithoutVA)
