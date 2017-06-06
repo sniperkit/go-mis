@@ -81,11 +81,16 @@ func GroupDetail(ctx *iris.Context){
 	id := ctx.Get("id");
 	groupBorrower := []GroupAgentBorrower{}
 
-	query := "SELECT \"group\".\"id\", \"group\".\"name\" as \"name\", \"group\".\"lat\" as \"lat\",\"group\".\"lng\" as \"lng\", \"group\".\"scheduleDay\" as \"scheduleDay\", \"group\".\"scheduleTime\" as \"scheduleTime\", \"group\".\"name\", cif.\"name\" as \"borrowerName\" "
+	query := "SELECT \"group\".\"id\", \"group\".\"name\" as \"name\", \"group\".\"lat\" as \"lat\"," +
+		"\"group\".\"lng\" as \"lng\", \"group\".\"scheduleDay\" as \"scheduleDay\", " +
+		"\"group\".\"scheduleTime\" as \"scheduleTime\", \"group\".\"name\", cif.\"name\" as \"borrowerName\"," +
+		"agent.fullname as \"agentName\",agent.id as \"agentId\",cif.id as \"borrowerId\" "
 	query += "FROM \"group\" "
 	query += "LEFT JOIN r_group_borrower rgb ON rgb.\"groupId\" = \"group\".\"id\" "
 	query += "LEFT JOIN borrower ON borrower.\"id\" = rgb.\"borrowerId\" "
 	query += "LEFT JOIN r_cif_borrower rcb ON rcb.\"borrowerId\" = borrower.\"id\" "
+	query += "lEFT join r_group_agent on r_group_agent.\"groupId\"=\"group\".id "
+	query += "lEFT join agent on agent.id =  r_group_agent.\"agentId\" "
 	query += "LEFT JOIN cif ON cif.\"id\" = rcb.\"cifId\" WHERE \"group\".\"id\" = ? "
 
 	if e := services.DBCPsql.Raw(query, id).Scan(&groupBorrower).Error; e != nil {

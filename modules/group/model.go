@@ -30,6 +30,7 @@ type GroupAgentBorrower struct{
 	ScheduleTime string           `gorm:"column:scheduleTime" json:"scheduleTime"`
 	BorrowerName string 					`gorm:"column:borrowerName" json:"borrowerName"`
 	Agent 				string           `gorm:"column:agentName" json:"agentName"`
+	AgentId 				string           `gorm:"column:agentId" json:"agentId"`
 }
 
 type GroupBranchAreaAgent struct {
