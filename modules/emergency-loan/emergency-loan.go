@@ -90,6 +90,7 @@ func SubmitEmergencyLoan (ctx *iris.Context) {
 		newLoan.Stage = "PRIVATE"
 		newLoan.IsLWK = true
 		newLoan.IsUPK = true
+		newLoan.Subgroup= oldLoan.Subgroup
 
 		if db.Table("loan").Create(&newLoan).Error != nil {
 			borrower.ProcessErrorAndRollback(ctx, db, "Error Create Loan")
