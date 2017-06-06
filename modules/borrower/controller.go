@@ -42,7 +42,7 @@ func Approve(ctx *iris.Context) {
 	if loanID < 1 {
 		return
 	}
-	
+
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"status": "success",
 		"data": iris.Map{
@@ -236,8 +236,7 @@ func GetOrCreateBorrowerId(payload map[string]interface{}, db *gorm.DB) (uint64,
 // UseProductPricing - select product pricing based on current date
 func UseProductPricing(investorId uint64, loanId uint64, db *gorm.DB) error {
 	pPricing := productPricing.ProductPricing{}
-	if err := db.Table("product_pricing").Where(" current_date::date between \"startDate\"::date and \"endDate\"::date").Scan(&pPricing).Error; err != nil {
-		print(err)
+	if err := db.Table("product_pricing").Where("current_date::date between \"startDate\"::date and \"endDate\"::date and \"isInstitutional\"=false and \"deletedAt\" IS NULL").Scan(&pPricing).Error; err != nil {
 		return err
 	}
 
@@ -320,8 +319,23 @@ func CreateLoan(payload map[string]interface{}) loan.Loan {
 	newLoan.CreditScoreGrade = cpl["creditScoreGrade"]
 	newLoan.CreditScoreValue, _ = strconv.ParseFloat(cpl["creditScoreValue"], 64)
 	newLoan.Stage = "PRIVATE"
-	newLoan.IsLWK = false
-	newLoan.IsUPK = false
+
+	borrowerId:=payload["borrowerId"];
+
+	query := `SELECT loan.* FROM borrower JOIN r_loan_borrower ON r_loan_borrower."borrowerId" = borrower."id" JOIN loan ON loan."id" = r_loan_borrower."loanId" WHERE borrower."id" = ?`
+
+	oldLoan:=loan.Loan{};
+
+	services.DBCPsql.Raw(query, borrowerId).Scan(&oldLoan)
+
+	if (oldLoan == loan.Loan{}){
+		newLoan.IsLWK = false
+		newLoan.IsUPK = false
+	}else{
+		newLoan.IsLWK = true
+		newLoan.IsUPK = true
+		newLoan.Subgroup = oldLoan.Subgroup
+	}
 
 	return newLoan
 }
