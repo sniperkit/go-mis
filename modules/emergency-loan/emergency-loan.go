@@ -8,8 +8,6 @@ import (
   "bitbucket.org/go-mis/modules/borrower"
 	"bitbucket.org/go-mis/services"
 	"bitbucket.org/go-mis/modules/r"
-
-	"bitbucket.org/go-mis/modules/product-pricing"
 )
 
 
