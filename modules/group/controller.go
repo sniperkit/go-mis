@@ -129,8 +129,8 @@ func Create(ctx *iris.Context){
 	g.Lat = m.Lat;
 	g.Lng = m.Lng;
 
-	if err != nil { 
-		panic(err) 
+	if err != nil {
+		panic(err)
 	}else{
 		services.DBCPsql.Create(&g);
 
@@ -180,8 +180,8 @@ func Update(ctx *iris.Context){
 	g.Lng = m.Lng;
 
 	query := `update "group" set "name" = ?, "scheduleDay" = ?, "scheduleTime" = ?, "lat" = ?, "lng" = ? where "group"."id" = ?`
-	if err != nil { 
-		panic(err) 
+	if err != nil {
+		panic(err)
 	}else{
 		services.DBCPsql.Raw(query, g.Name, g.ScheduleTime, g.ScheduleDay, g.Lat, g.Lng, groupId).Scan(&g)
 
@@ -203,8 +203,8 @@ func UpdateGroupBorrower(ctx *iris.Context){
 	m := Payload{}
 	err := ctx.ReadJSON(&m)
 
-	if err != nil { 
-		panic(err) 
+	if err != nil {
+		panic(err)
 	}else{
 		r := r.RGroupBorrower{}
 		r.BorrowerId = m.BorrowerId;
@@ -216,3 +216,19 @@ func UpdateGroupBorrower(ctx *iris.Context){
 
 
 
+
+// GetGroupByBranchID is a method to get group by branch ID
+func GetGroupByBranchID(ctx *iris.Context) {
+	query := `SELECT "group".* FROM "group"
+	JOIN r_group_branch ON r_group_branch."groupId" = "group".id
+	WHERE "r_group_branch"."branchId" = ?`
+
+	groupSchema := []Group{}
+
+	services.DBCPsql.Raw(query, ctx.Param("branch_id")).Scan(&groupSchema)
+
+	ctx.JSON(iris.StatusOK, iris.Map{
+		"status": "success",
+		"data":   groupSchema,
+	})
+}

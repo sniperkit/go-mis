@@ -25,6 +25,7 @@ import (
 	"bitbucket.org/go-mis/modules/reports"
 	"bitbucket.org/go-mis/modules/sector"
 	"bitbucket.org/go-mis/modules/survey"
+	"bitbucket.org/go-mis/modules/topsheet"
 	"bitbucket.org/go-mis/modules/transaction"
 	"bitbucket.org/go-mis/modules/user-mis"
 	"bitbucket.org/go-mis/modules/virtual-account-statement"
@@ -75,6 +76,7 @@ func InitCustomApi() {
 		v2.Any("/cif/investor/:id", cif.GetCifInvestor)
 		v2.Any("/cif/get/summary", cif.GetCifSummary)
 		v2.Any("/group", group.FetchAll)
+		v2.Any("/group-by-branch/:branch_id", group.GetGroupByBranchID)
 		v2.Any("/group/get/:id", group.GroupDetail)
 		v2.Any("/group/create", group.Create)
 		v2.Any("/group/set/:id", group.Update)
@@ -151,6 +153,9 @@ func InitCustomApi() {
 		v2.Any("/emergency-loan/submit", emergency_loan.SubmitEmergencyLoan)
 	}
 
+	iris.Get(baseURL+"/generate-topsheet/:group_id", topsheet.GenerateTopsheet)
+	iris.Any(baseURL+"/submit-topsheet", topsheet.SubmitTopsheet)
+	iris.Any(baseURL+"/submit-topsheet-1", topsheet.SubmitTopsheet)
 	iris.Get(baseURL+"/investor-without-va", investor.InvestorWithoutVA)
 	iris.Post(baseURL+"/investor-register-va", investor.InvestorRegisterVA)
 	iris.Get(baseURL+"/location", location.GetLocation)
