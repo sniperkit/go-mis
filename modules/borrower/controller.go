@@ -431,3 +431,38 @@ func ProcessErrorAndRollback(ctx *iris.Context, db *gorm.DB, message string) {
 		"message": message,
 	})
 }
+
+
+
+func GetBorrowerByGroup(ctx *iris.Context){
+
+	type BorrowerGroup struct{
+		ID 		uint64 `json:_id`
+		Name 	string `json:name`
+	}
+	m := []BorrowerGroup{}
+
+	groupId := ctx.Get("groupId");
+
+	query := `SELECT DISTINCT (cif."name") AS "name", borrower."id" as "id" FROM "group"
+	LEFT JOIN r_loan_group rlg ON rlg."groupId" = "group"."id"
+	LEFT JOIN loan ON loan."id" = rlg."loanId"
+	LEFT JOIN r_loan_borrower rlb ON rlb."loanId" = "loan"."id"
+	LEFT JOIN borrower ON borrower."id" = rlb."borrowerId"
+	LEFT JOIN r_cif_borrower rcb ON rcb."borrowerId" = "borrower"."id"
+	LEFT JOIN cif ON cif."id" = rcb."cifId"
+	WHERE "group"."id" = ?`
+
+	if e := services.DBCPsql.Raw(query, groupId).Find(&m).Error; e != nil {
+		ctx.JSON(iris.StatusOK, iris.Map{
+			"status": "failed",
+			"data":   e,
+		})
+		return
+	}
+	ctx.JSON(iris.StatusOK, iris.Map{
+		"status": "success",
+		"data":   m,
+	})
+
+}
