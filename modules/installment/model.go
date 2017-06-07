@@ -14,6 +14,7 @@ type Installment struct {
 	CreatedAt       time.Time  `gorm:"column:createdAt" json:"createdAt"`
 	UpdatedAt       time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
 	DeletedAt       *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
+	TransactionDate *time.Time `gorm:"column:transactionDate" json:"transactionDate"`
 }
 
 type InstallmentFetch struct {
