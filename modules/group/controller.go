@@ -84,7 +84,7 @@ func GroupDetail(ctx *iris.Context){
 	query := "SELECT \"group\".\"id\", \"group\".\"name\" as \"name\", \"group\".\"lat\" as \"lat\"," +
 		"\"group\".\"lng\" as \"lng\", \"group\".\"scheduleDay\" as \"scheduleDay\", " +
 		"\"group\".\"scheduleTime\" as \"scheduleTime\", \"group\".\"name\", cif.\"name\" as \"borrowerName\"," +
-		"agent.fullname as \"agentName\",agent.id as \"agentId\",cif.id as \"borrowerId\" "
+		"agent.fullname as \"agentName\",agent.id as \"agentId\",borrower.id as \"borrowerId\" "
 	query += "FROM \"group\" "
 	query += "LEFT JOIN r_group_borrower rgb ON rgb.\"groupId\" = \"group\".\"id\" "
 	query += "LEFT JOIN borrower ON borrower.\"id\" = rgb.\"borrowerId\" "
