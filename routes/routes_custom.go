@@ -25,6 +25,7 @@ import (
 	"bitbucket.org/go-mis/modules/reports"
 	"bitbucket.org/go-mis/modules/sector"
 	"bitbucket.org/go-mis/modules/survey"
+	"bitbucket.org/go-mis/modules/topsheet"
 	"bitbucket.org/go-mis/modules/transaction"
 	"bitbucket.org/go-mis/modules/user-mis"
 	"bitbucket.org/go-mis/modules/virtual-account-statement"
@@ -74,6 +75,7 @@ func InitCustomApi() {
 		v2.Any("/cif/investor/:id", cif.GetCifInvestor)
 		v2.Any("/cif/get/summary", cif.GetCifSummary)
 		v2.Any("/group", group.FetchAll)
+		v2.Any("/group-by-branch/:branch_id", group.GetGroupByBranchID)
 		v2.Any("/loan", loan.FetchAll)
 		v2.Any("/loan/get/:id", loan.GetLoanDetail)
 		v2.Any("/loan/set/:id/stage/:stage", loan.UpdateStage)
@@ -84,7 +86,7 @@ func InitCustomApi() {
 		//v2.Any("/loan-order/:orderNo/reject", loanOrder.Reject)
 		v2.Any("/installment", installment.FetchAll)
 		v2.Any("/installment-by-type/:type", installment.FetchByType)
-		v2.Any("/installment/group/:group_id/by-transaction-date/:transaction_date", installment.GetInstallmentByGroupIDAndTransactionDate)
+		v2.Any("/installment/group/:group_id/by-transaction-date/:transaction_date/stage/:stage", installment.GetInstallmentByGroupIDAndTransactionDate)
 		v2.Any("/installment/group/:group_id/by-transaction-date/:transaction_date/submit/:status", installment.SubmitInstallmentByGroupIDAndTransactionDateWithStatus)
 		v2.Any("/installment/submit/:installment_id/status/:status", installment.SubmitInstallmentByInstallmentIDWithStatus)
 		v2.Any("/disbursement", disbursement.FetchAll)
@@ -143,6 +145,9 @@ func InitCustomApi() {
 		v2.Any("/reports/agent", reports.AgentRekap)
 	}
 
+	iris.Get(baseURL+"/generate-topsheet/:group_id", topsheet.GenerateTopsheet)
+	iris.Any(baseURL+"/submit-topsheet", topsheet.SubmitTopsheet)
+	iris.Any(baseURL+"/submit-topsheet-1", topsheet.SubmitTopsheet)
 	iris.Get(baseURL+"/investor-without-va", investor.InvestorWithoutVA)
 	iris.Post(baseURL+"/investor-register-va", investor.InvestorRegisterVA)
 	iris.Get(baseURL+"/location", location.GetLocation)
