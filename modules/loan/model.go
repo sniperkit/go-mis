@@ -66,6 +66,7 @@ type LoanFetch struct {
 }
 
 type LoanBorrowerProfile struct {
+	BorrowerID	uint64    `gorm:"column:borrowerId" json:"borrowerId"`
 	CifNumber uint64 `gorm:"column:cifNumber" json:"cifNumber"`
 	Name      string `gorm:"name" json:"borrower"`
 	Area      string `gorm:"area" json:"area"`
