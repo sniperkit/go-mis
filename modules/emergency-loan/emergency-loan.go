@@ -77,8 +77,8 @@ func SubmitEmergencyLoan (ctx *iris.Context) {
 		newLoan.Purpose = purpose 
 		newLoan.LoanPeriod = 2
 		newLoan.Tenor = 25 
-		newLoan.Rate = 0.3 // hc 
-		newLoan.Installment = 43000 // hc
+		newLoan.Rate = 0.15 // hc
+		newLoan.Installment = 46000 // hc
 		newLoan.Plafond = 1000000 
 		
 	
