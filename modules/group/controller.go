@@ -74,3 +74,19 @@ func FetchAll(ctx *iris.Context) {
 		"data":   groupBranchAreaAgent,
 	})
 }
+
+// GetGroupByBranchID is a method to get group by branch ID
+func GetGroupByBranchID(ctx *iris.Context) {
+	query := `SELECT "group".* FROM "group"
+	JOIN r_group_branch ON r_group_branch."groupId" = "group".id 
+	WHERE "r_group_branch"."branchId" = ?`
+
+	groupSchema := []Group{}
+
+	services.DBCPsql.Raw(query, ctx.Param("branch_id")).Scan(&groupSchema)
+
+	ctx.JSON(iris.StatusOK, iris.Map{
+		"status": "success",
+		"data":   groupSchema,
+	})
+}
