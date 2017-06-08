@@ -107,8 +107,6 @@ func SubmitTopsheet(ctx *iris.Context) {
 		return
 	}
 
-	fmt.Println("masuk sini")
-
 	topsheetForm := jsonTopsheet.Topsheet
 
 	for _, item := range topsheetForm {
