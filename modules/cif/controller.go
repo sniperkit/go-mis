@@ -4,6 +4,7 @@ import (
 	"strconv"
 	"bitbucket.org/go-mis/services"
 	iris "gopkg.in/kataras/iris.v4"
+	"fmt"
 )
 
 func Init() {
@@ -224,7 +225,19 @@ func GetCifInvestor (ctx *iris.Context){
 }
 
 func UpdateInvestorCif (ctx *iris.Context){
-	// investorId := ctx.Get("id")
+	investorId := ctx.Get("investorId")
+	cifId := ctx.Get("cifId")
+
+	loanData := Loan{}
+
+	fmt.Println(investorId)
+	fmt.Println(cifId)
+
+	// services.DBCPsql.Table("investor").Where(" \"investorId\" = ?", investorId).Update("investorId", nil)
+
+
 
 
 }
+
+
