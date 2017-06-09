@@ -93,12 +93,13 @@ type CifInvestor struct{
 	InvestorID          string     `gorm:"column:investorId" json:"investorId"`
 	IsCheckedTerm       *bool      `gorm:"column:isCheckedTerm" json:"isCheckedTerm"`
 	IsCheckedPrivacy		*bool      `gorm:"column:IsCheckedPrivacy" json:"isCheckedPrivacy"`
-	InvestorNo					string      `gorm:"column:investorNo" json:"investorNo"`
+	InvestorNo					string     `gorm:"column:investorNo" json:"investorNo"`
 	isInstituional			*bool      `gorm:"column:isInstituional" json:"isInstituional"`
-	BankName						string      `gorm:"column:bankName" json:"bankName"`
-	BankBranch					string      `gorm:"column:bankName" json:"bankName"`
+	BankName						string     `gorm:"column:bankName" json:"bankName"`
+	BankBranch					string     `gorm:"column:bankBranch" json:"bankBranch"`
 	BankAccountName			string      `gorm:"column:bankAccountName" json:"bankAccountName"`
-	bankName						string      `gorm:"column:bankName" json:"bankName"`
+	BankAccountNo				string      `gorm:"column:bankAccountNo" json:"bankAccountNo"`
+	CifID								uint64     `gorm:"column:cifId" json:"cifId"`
 	CifNumber           uint64     `gorm:"column:cifNumber" json:"cifNumber"`
 	Username            string     `gorm:"column:username" json:"username"`
 	Password            string     `gorm:"column:password" json:"password"`

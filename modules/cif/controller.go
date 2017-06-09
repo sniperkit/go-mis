@@ -2,7 +2,6 @@ package cif
 
 import (
 	"strconv"
-
 	"bitbucket.org/go-mis/services"
 	iris "gopkg.in/kataras/iris.v4"
 )
@@ -176,6 +175,7 @@ func GetCifInvestor (ctx *iris.Context){
 	query += " investor.\"bankBranch\" as \"bankBranch\", "
 	query += " investor.\"bankAccountName\" as \"bankAccountName\", "
 	query += " investor.\"bankAccountNo\" as \"bankAccountNo\", "
+	query += " cif.\"id\" as \"cifId\", "
 	query += " cif.\"cifNumber\" as \"cifNumber\", "
 	query += " cif.\"username\" as \"username\", "
 	query += " cif.\"password\" as \"password\", "
@@ -221,4 +221,10 @@ func GetCifInvestor (ctx *iris.Context){
 		"status": "success",
 		"data":   investorAll,
 	})
+}
+
+func UpdateInvestorCif (ctx *iris.Context){
+	// investorId := ctx.Get("id")
+
+
 }
