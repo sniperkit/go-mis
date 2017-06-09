@@ -92,9 +92,9 @@ type CifBorrower struct{
 type CifInvestor struct{
 	InvestorID          string     `gorm:"column:investorId" json:"investorId"`
 	IsCheckedTerm       *bool      `gorm:"column:isCheckedTerm" json:"isCheckedTerm"`
-	IsCheckedPrivacy		*bool      `gorm:"column:IsCheckedPrivacy" json:"isCheckedPrivacy"`
+	IsCheckedPrivacy		*bool      `gorm:"column:isCheckedPrivacy" json:"isCheckedPrivacy"`
 	InvestorNo					string     `gorm:"column:investorNo" json:"investorNo"`
-	isInstituional			*bool      `gorm:"column:isInstituional" json:"isInstituional"`
+	IsInstitutional			*bool      `gorm:"column:isInstitutional" json:"isInstitutional"`
 	BankName						string     `gorm:"column:bankName" json:"bankName"`
 	BankBranch					string     `gorm:"column:bankBranch" json:"bankBranch"`
 	BankAccountName			string      `gorm:"column:bankAccountName" json:"bankAccountName"`

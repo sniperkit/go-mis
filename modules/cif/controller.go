@@ -228,8 +228,6 @@ func UpdateInvestorCif (ctx *iris.Context){
 	investorId := ctx.Get("investorId")
 	cifId := ctx.Get("cifId")
 
-	loanData := Loan{}
-
 	fmt.Println(investorId)
 	fmt.Println(cifId)
 
