@@ -232,6 +232,7 @@ func UpdateInvestorCif (ctx *iris.Context){
 	fmt.Println(cifId)
 
 	// services.DBCPsql.Table("investor").Where(" \"investorId\" = ?", investorId).Update("investorId", nil)
+	// services.DBCPsql.Table("cif").Where(" \"cifId\" = ?", cif).Update("cifId", nil)
 
 
 
