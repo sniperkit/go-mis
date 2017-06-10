@@ -4,7 +4,13 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"time"
+	"bitbucket.org/go-mis/modules/investor"
 )
+
+type UpdateInvestor struct{
+	Cif Cif `json:"cif"`
+	Investor investor.Investor `json:"investor"`
+}
 
 type Cif struct {
 	ID                  uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`

@@ -228,15 +228,19 @@ func UpdateInvestorCif (ctx *iris.Context){
 	investorId := ctx.Get("investorId")
 	cifId := ctx.Get("cifId")
 
-	fmt.Println(investorId)
-	fmt.Println(cifId)
+	data:=UpdateInvestor{}
+	err := ctx.ReadJSON(&data)
 
-	// services.DBCPsql.Table("investor").Where(" \"investorId\" = ?", investorId).Update("investorId", nil)
-	// services.DBCPsql.Table("cif").Where(" \"cifId\" = ?", cif).Update("cifId", nil)
+	if(err!=nil){
+		fmt.Println("Error parsing json update investor")
+		fmt.Println(err.Error())
+		ctx.JSON(iris.StatusBadRequest, iris.Map{"status": "error", "message": err.Error()})
+		return
+	}
 
-
-
-
+	services.DBCPsql.Table("investor").Where(" \"id\" = ?", investorId).Update(&data.Investor)
+	services.DBCPsql.Table("cif").Where(" \"id\" = ?", cifId).Update(&data.Cif)
+	ctx.JSON(iris.StatusOK, iris.Map{"status": "success", "data": data})
 }
 
 
