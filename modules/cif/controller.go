@@ -2,9 +2,9 @@ package cif
 
 import (
 	"strconv"
-
 	"bitbucket.org/go-mis/services"
 	iris "gopkg.in/kataras/iris.v4"
+	"fmt"
 )
 
 func Init() {
@@ -176,6 +176,7 @@ func GetCifInvestor (ctx *iris.Context){
 	query += " investor.\"bankBranch\" as \"bankBranch\", "
 	query += " investor.\"bankAccountName\" as \"bankAccountName\", "
 	query += " investor.\"bankAccountNo\" as \"bankAccountNo\", "
+	query += " cif.\"id\" as \"cifId\", "
 	query += " cif.\"cifNumber\" as \"cifNumber\", "
 	query += " cif.\"username\" as \"username\", "
 	query += " cif.\"password\" as \"password\", "
@@ -222,3 +223,24 @@ func GetCifInvestor (ctx *iris.Context){
 		"data":   investorAll,
 	})
 }
+
+func UpdateInvestorCif (ctx *iris.Context){
+	investorId := ctx.Get("investorId")
+	cifId := ctx.Get("cifId")
+
+	data:=UpdateInvestor{}
+	err := ctx.ReadJSON(&data)
+
+	if(err!=nil){
+		fmt.Println("Error parsing json update investor")
+		fmt.Println(err.Error())
+		ctx.JSON(iris.StatusBadRequest, iris.Map{"status": "error", "message": err.Error()})
+		return
+	}
+
+	services.DBCPsql.Table("investor").Where(" \"id\" = ?", investorId).Update(&data.Investor)
+	services.DBCPsql.Table("cif").Where(" \"id\" = ?", cifId).Update(&data.Cif)
+	ctx.JSON(iris.StatusOK, iris.Map{"status": "success", "data": data})
+}
+
+
