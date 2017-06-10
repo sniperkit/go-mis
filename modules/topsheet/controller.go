@@ -3,9 +3,10 @@ package topsheet
 import (
 	"fmt"
 
+	"bitbucket.org/go-mis/modules/installment"
 	"bitbucket.org/go-mis/services"
 	"bitbucket.org/go-worker-topsheet/model"
-	"gopkg.in/kataras/iris.v4"
+	iris "gopkg.in/kataras/iris.v4"
 )
 
 type Reserve struct {
@@ -106,24 +107,24 @@ func SubmitTopsheet(ctx *iris.Context) {
 		return
 	}
 
-	fmt.Println("masuk sini")
-
 	topsheetForm := jsonTopsheet.Topsheet
 
 	for _, item := range topsheetForm {
-		installmentSchema := &model.InstallmentSchema{
+		installmentSchema := &installment.Installment{
 			Type:            item.Type,
 			Presence:        item.Presence,
-			PaidInstallment: &item.PaidInstallment,
-			Penalty:         &item.Penalty,
-			Reserve:         &item.Reserve,
-			Frequency:       &item.Frequency,
+			PaidInstallment: item.PaidInstallment,
+			Penalty:         item.Penalty,
+			Reserve:         item.Reserve,
+			Frequency:       item.Frequency,
 			Stage:           item.Stage,
 			CreatedAt:       item.CreatedAt,
-			UpdatedAt:       item.UpdatedAt,
+			UpdatedAt:       item.CreatedAt,
+			TransactionDate: &item.CreatedAt,
 		}
 
 		services.DBCPsql.Table("installment").Create(installmentSchema)
+		services.DBCPsql.Table("installment").Where("id = ?", installmentSchema.ID).UpdateColumns(map[string]interface{}{"createdAt": item.CreatedAt, "updatedAt": item.CreatedAt})
 
 		StoreRLoanInstallment(item.LoanID, installmentSchema.ID)
 		StoreToInstallmentHistory(installmentSchema.ID, "PENDING", "PENDING")
