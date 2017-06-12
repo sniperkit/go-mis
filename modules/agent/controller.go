@@ -3,6 +3,7 @@ package agent
 import (
 	"bitbucket.org/go-mis/services"
 	"gopkg.in/kataras/iris.v4"
+	"github.com/jinzhu/gorm"
 )
 
 func Init() {
@@ -106,7 +107,7 @@ func GetAgentById(ctx *iris.Context){
 func UpdateAgent(ctx *iris.Context){
 	agentId := ctx.Get("id")
 
-	m := UpdateAgent{}
+	m := Agent{}
 	
 	err := ctx.ReadJSON(&m)
 
@@ -115,7 +116,7 @@ func UpdateAgent(ctx *iris.Context){
 		return
 	}
 	db := services.DBCPsql.Begin()
-	if err:=db.Table("agent").Where(" \"id\" = ?", agentId).Update(&m.Agent).Error;err!=nil{
+	if err:=db.Table("agent").Where(" \"id\" = ?", agentId).Update(&m).Error;err!=nil{
 		processErrorAndRollback(ctx, db, err, "Update agent")
 		return
 	}

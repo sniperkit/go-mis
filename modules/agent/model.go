@@ -8,10 +8,6 @@ import (
 	"github.com/nferruzzi/gormGIS"
 )
 
-type UpdateAgent struct{
-	Agent Agent `json:"agent"`
-}
-
 type Agent struct {
 	ID              uint64           `gorm:"primary_key" gorm:"column:id" json:"_id"`
 	Username        string           `gorm:"column:username" json:"username"`
