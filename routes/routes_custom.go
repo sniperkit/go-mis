@@ -114,6 +114,7 @@ func InitCustomApi() {
 		v2.Any("/virtual-account-statement", virtualAccountStatement.GetVAStatement)
 		v2.Any("/agent", agent.GetAllAgentByBranchID)
 		v2.Any("/agent/detail/:id", agent.GetAgentById)
+		v2.Any("/agent/set/:id", agent.UpdateAgent)
 		v2.Any("/investor-check/datatables", investorCheck.FetchDatatables)
 		v2.Any("/investor-check/verify/:id/status/:status", investorCheck.Verify)
 		//v2.Any("/investor-check/verified/:id", investorCheck.Verified)

@@ -102,3 +102,29 @@ func GetAgentById(ctx *iris.Context){
 		})
 
 }
+
+func UpdateAgent(ctx *iris.Context){
+	agentId := ctx.Get("id")
+
+	m := UpdateAgent{}
+	
+	err := ctx.ReadJSON(&m)
+
+	if(err!=nil){
+		ctx.JSON(iris.StatusBadRequest, iris.Map{"status": "error", "message": err.Error()})
+		return
+	}
+	db := services.DBCPsql.Begin()
+	if err:=db.Table("agent").Where(" \"id\" = ?", agentId).Update(&m.Agent).Error;err!=nil{
+		processErrorAndRollback(ctx, db, err, "Update agent")
+		return
+	}
+	db.Commit()
+	ctx.JSON(iris.StatusOK, iris.Map{"status": "success", "data": m})
+
+}
+
+func processErrorAndRollback(ctx *iris.Context, db *gorm.DB, err error, process string) {
+	db.Rollback()
+	ctx.JSON(iris.StatusInternalServerError, iris.Map{"status": "error","error": "Error on " + process + " " + err.Error()})
+}
