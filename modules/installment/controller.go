@@ -532,7 +532,7 @@ func UpdateInstallmentByInstallmentID(ctx *iris.Context) {
 type SimpleLoan struct {
 	ID          string  `gorm:"column:id"`
 	Plafond     int32   `gorm:"column:plafond"`
-	Installment int32   `gorm:"column:installment"`
+	Installment float64   `gorm:"column:installment"`
 	Frequency   int32   `gorm:"column:frequency"`
 	Tenor       int32   `gorm:"column:tenor"`
 	Rate        float32 `gorm:"column:rate"`
