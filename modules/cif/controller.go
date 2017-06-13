@@ -2,9 +2,10 @@ package cif
 
 import (
 	"strconv"
-
 	"bitbucket.org/go-mis/services"
 	iris "gopkg.in/kataras/iris.v4"
+	"fmt"
+	"github.com/jinzhu/gorm"
 )
 
 func Init() {
@@ -176,6 +177,7 @@ func GetCifInvestor (ctx *iris.Context){
 	query += " investor.\"bankBranch\" as \"bankBranch\", "
 	query += " investor.\"bankAccountName\" as \"bankAccountName\", "
 	query += " investor.\"bankAccountNo\" as \"bankAccountNo\", "
+	query += " cif.\"id\" as \"cifId\", "
 	query += " cif.\"cifNumber\" as \"cifNumber\", "
 	query += " cif.\"username\" as \"username\", "
 	query += " cif.\"password\" as \"password\", "
@@ -222,3 +224,36 @@ func GetCifInvestor (ctx *iris.Context){
 		"data":   investorAll,
 	})
 }
+
+func UpdateInvestorCif (ctx *iris.Context){
+	investorId := ctx.Get("investorId")
+	cifId := ctx.Get("cifId")
+
+	data:=UpdateInvestor{}
+	err := ctx.ReadJSON(&data)
+
+	if(err!=nil){
+		fmt.Println("Error parsing json update investor")
+		fmt.Println(err.Error())
+		ctx.JSON(iris.StatusBadRequest, iris.Map{"status": "error", "message": err.Error()})
+		return
+	}
+	db := services.DBCPsql.Begin()
+	if err:=db.Table("investor").Where(" \"id\" = ?", investorId).Update(&data.Investor).Error;err!=nil{
+		processErrorAndRollback(ctx, db, err, "Update Investor")
+		return
+	}
+	if err:=db.Table("cif").Where(" \"id\" = ?", cifId).Update(&data.Cif).Error;err!=nil{
+		processErrorAndRollback(ctx, db, err, "Update Cif")
+		return
+	}
+	db.Commit()
+	ctx.JSON(iris.StatusOK, iris.Map{"status": "success", "data": data})
+}
+
+
+func processErrorAndRollback(ctx *iris.Context, db *gorm.DB, err error, process string) {
+	db.Rollback()
+	ctx.JSON(iris.StatusInternalServerError, iris.Map{"status": "error","error": "Error on " + process + " " + err.Error()})
+}
+

@@ -264,7 +264,7 @@ func GetLoanDetail(ctx *iris.Context) {
 
 	services.DBCPsql.Table("loan").Where("\"id\" = ?", loanId).First(&loanObj)
 
-	queryBorrowerObj := "SELECT cif.\"cifNumber\", cif.\"name\", \"group\".\"name\" AS \"group\", area.\"name\" AS \"area\", branch.\"name\" AS \"branch\" "
+	queryBorrowerObj := "SELECT borrower.\"id\" AS \"borrowerId\",cif.\"cifNumber\", cif.\"name\", \"group\".\"name\" AS \"group\", area.\"name\" AS \"area\", branch.\"name\" AS \"branch\" "
 	queryBorrowerObj += "FROM loan "
 	queryBorrowerObj += "LEFT JOIN r_loan_borrower ON r_loan_borrower.\"loanId\" = loan.\"id\" "
 	queryBorrowerObj += "LEFT JOIN borrower ON borrower.\"id\" = r_loan_borrower.\"borrowerId\" "

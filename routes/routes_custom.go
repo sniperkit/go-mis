@@ -32,6 +32,7 @@ import (
 	"bitbucket.org/go-mis/modules/voucher"
 	"gopkg.in/iris-contrib/middleware.v4/cors"
 	"gopkg.in/kataras/iris.v4"
+	"bitbucket.org/go-mis/modules/emergency-loan"
 )
 
 var baseURL = "/api/v2"
@@ -73,9 +74,14 @@ func InitCustomApi() {
 		v2.Any("/cif", cif.FetchAll)
 		v2.Any("/cif/borrower/:id", cif.GetCifBorrower)
 		v2.Any("/cif/investor/:id", cif.GetCifInvestor)
+		v2.Any("/investor/set/:investorId/cif/:cifId", cif.UpdateInvestorCif)
 		v2.Any("/cif/get/summary", cif.GetCifSummary)
 		v2.Any("/group", group.FetchAll)
 		v2.Any("/group-by-branch/:branch_id", group.GetGroupByBranchID)
+		v2.Any("/group/get/:id", group.GroupDetail)
+		v2.Any("/group/create", group.Create)
+		v2.Any("/group/set/:id", group.Update)
+		v2.Any("/group-borrower/set/:id", group.UpdateGroupBorrower)
 		v2.Any("/loan", loan.FetchAll)
 		v2.Any("/loan/get/:id", loan.GetLoanDetail)
 		v2.Any("/loan/set/:id/stage/:stage", loan.UpdateStage)
@@ -101,6 +107,7 @@ func InitCustomApi() {
 		v2.Any("/survey/archived", survey.GetProspectiveBorrowerArchived)
 		v2.Any("/survey/get/:id", survey.GetProspectiveBorrowerDetail)
 		v2.Any("/borrower/approve-survey/:source-type", borrower.Approve)
+		v2.Any("/borrower/group/:groupId", borrower.GetBorrowerByGroup)
 		v2.Any("/borrower/approve/update-status/:id", borrower.ProspectiveBorrowerUpdateStatus)
 		v2.Any("/borrower/reject/update-status/:id", borrower.ProspectiveBorrowerUpdateStatusToReject)
 		v2.Get("/borrower/total-by-branch/:branch_id", borrower.GetTotalBorrowerByBranchID)
@@ -143,6 +150,8 @@ func InitCustomApi() {
 		v2.Any("/installment-review/set/:installment_id", installment.UpdateInstallmentByInstallmentID)
 
 		v2.Any("/reports/agent", reports.AgentRekap)
+		v2.Any("/emergency-loan/borrower/by-branch/:branch_id/available", emergency_loan.FetchAllAvailableBorrower)
+		v2.Any("/emergency-loan/submit", emergency_loan.SubmitEmergencyLoan)
 	}
 
 	iris.Get(baseURL+"/generate-topsheet/:group_id", topsheet.GenerateTopsheet)

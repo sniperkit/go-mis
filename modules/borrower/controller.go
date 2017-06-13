@@ -65,24 +65,24 @@ func CreateBorrowerData(ctx *iris.Context, payload map[string]interface{}, sourc
 	db := services.DBCPsql.Begin()
 	borrowerId, err := GetOrCreateBorrowerId(payload, db)
 	if err != nil {
-		processErrorAndRollback(ctx, db, "Error Create Borrower "+err.Error())
+		ProcessErrorAndRollback(ctx, db, "Error Create Borrower "+err.Error())
 		return 0
 	}
 
 	// reserve one loan record for this new borrower
 	loan := CreateLoan(payload)
 	if db.Table("loan").Create(&loan).Error != nil {
-		processErrorAndRollback(ctx, db, "Error Create Loan")
+		ProcessErrorAndRollback(ctx, db, "Error Create Loan")
 		return 0
 	}
 
 	if db.Table("loan_raw").Create(&loanRaw.LoanRaw{Raw: dataRaw, LoanID: loan.ID}).Error != nil {
-		processErrorAndRollback(ctx, db, "Error Create Loan Raw")
+		ProcessErrorAndRollback(ctx, db, "Error Create Loan Raw")
 		return 0
 	}
 
 	if db.Table("r_loan_sector").Create(&r.RLoanSector{LoanId: loan.ID, SectorId: sectorID}).Error != nil {
-		processErrorAndRollback(ctx, db, "Error Create Loan Sector Relation")
+		ProcessErrorAndRollback(ctx, db, "Error Create Loan Sector Relation")
 		return 0
 	}
 
@@ -91,27 +91,27 @@ func CreateBorrowerData(ctx *iris.Context, payload map[string]interface{}, sourc
 		BorrowerId: borrowerId,
 	}
 	if db.Table("r_loan_borrower").Create(&rLoanBorrower).Error != nil {
-		processErrorAndRollback(ctx, db, "Error Create Loan Borrower Relation")
+		ProcessErrorAndRollback(ctx, db, "Error Create Loan Borrower Relation")
 		return 0
 	}
 
 	if UseProductPricing(0, loan.ID, db) != nil {
-		processErrorAndRollback(ctx, db, "Error Use Product Pricing")
+		ProcessErrorAndRollback(ctx, db, "Error Use Product Pricing")
 		return 0
 	}
 
 	if CreateRelationLoanToGroup(loan.ID, groupID, db) != nil {
-		processErrorAndRollback(ctx, db, "Error Create Relation to Group")
+		ProcessErrorAndRollback(ctx, db, "Error Create Relation to Group")
 		return 0
 	}
 
 	if CreateRelationLoanToBranch(loan.ID, groupID, db) != nil {
-		processErrorAndRollback(ctx, db, "Error Create Relation to Branch")
+		ProcessErrorAndRollback(ctx, db, "Error Create Relation to Branch")
 		return 0
 	}
 
 	if CreateDisbursementRecord(loan.ID, payload["disbursementDate"].(string), db) != nil {
-		processErrorAndRollback(ctx, db, "Error Create Disbusrement")
+		ProcessErrorAndRollback(ctx, db, "Error Create Disbusrement")
 		return 0
 	}
 
@@ -120,7 +120,7 @@ func CreateBorrowerData(ctx *iris.Context, payload map[string]interface{}, sourc
 
 		idCardNo := payload["client_ktp"].(string)
 		if setOldSurveyStatus(idCardNo, "APPROVE", dbSurvey) != nil {
-			processErrorAndRollback(ctx, db, "Error Setting Data in DB Survey")
+			ProcessErrorAndRollback(ctx, db, "Error Setting Data in DB Survey")
 			return 0
 		}
 
@@ -128,7 +128,7 @@ func CreateBorrowerData(ctx *iris.Context, payload map[string]interface{}, sourc
 	} else {
 		uuid := payload["uuid"].(string)
 		if setNewSurveyStatus(uuid, "APPROVE", db) != nil {
-			processErrorAndRollback(ctx, db, "Error Setting Data in DB Survey")
+			ProcessErrorAndRollback(ctx, db, "Error Setting Data in DB Survey")
 			return 0
 		}
 	}
@@ -319,8 +319,23 @@ func CreateLoan(payload map[string]interface{}) loan.Loan {
 	newLoan.CreditScoreGrade = cpl["creditScoreGrade"]
 	newLoan.CreditScoreValue, _ = strconv.ParseFloat(cpl["creditScoreValue"], 64)
 	newLoan.Stage = "PRIVATE"
-	newLoan.IsLWK = false
-	newLoan.IsUPK = false
+
+	borrowerId:=payload["borrowerId"];
+
+	query := `SELECT loan.* FROM borrower JOIN r_loan_borrower ON r_loan_borrower."borrowerId" = borrower."id" JOIN loan ON loan."id" = r_loan_borrower."loanId" WHERE borrower."id" = ?`
+
+	oldLoan:=loan.Loan{};
+
+	services.DBCPsql.Raw(query, borrowerId).Scan(&oldLoan)
+
+	if (oldLoan == loan.Loan{}){
+		newLoan.IsLWK = false
+		newLoan.IsUPK = false
+	}else{
+		newLoan.IsLWK = true
+		newLoan.IsUPK = true
+		newLoan.Subgroup = oldLoan.Subgroup
+	}
 
 	return newLoan
 }
@@ -409,10 +424,45 @@ func GetTotalBorrowerByBranchID(ctx *iris.Context) {
 	})
 }
 
-func processErrorAndRollback(ctx *iris.Context, db *gorm.DB, message string) {
+func ProcessErrorAndRollback(ctx *iris.Context, db *gorm.DB, message string) {
 	db.Rollback()
 	ctx.JSON(iris.StatusInternalServerError, iris.Map{
 		"status":  "error",
 		"message": message,
 	})
+}
+
+
+
+func GetBorrowerByGroup(ctx *iris.Context){
+
+	type BorrowerGroup struct{
+		ID 		uint64 `json:_id`
+		Name 	string `json:name`
+	}
+	m := []BorrowerGroup{}
+
+	groupId := ctx.Get("groupId");
+
+	query := `SELECT DISTINCT (cif."name") AS "name", borrower."id" as "id" FROM "group"
+	LEFT JOIN r_loan_group rlg ON rlg."groupId" = "group"."id"
+	LEFT JOIN loan ON loan."id" = rlg."loanId"
+	LEFT JOIN r_loan_borrower rlb ON rlb."loanId" = "loan"."id"
+	LEFT JOIN borrower ON borrower."id" = rlb."borrowerId"
+	LEFT JOIN r_cif_borrower rcb ON rcb."borrowerId" = "borrower"."id"
+	LEFT JOIN cif ON cif."id" = rcb."cifId"
+	WHERE "group"."id" = ?`
+
+	if e := services.DBCPsql.Raw(query, groupId).Find(&m).Error; e != nil {
+		ctx.JSON(iris.StatusOK, iris.Map{
+			"status": "failed",
+			"data":   e,
+		})
+		return
+	}
+	ctx.JSON(iris.StatusOK, iris.Map{
+		"status": "success",
+		"data":   m,
+	})
+
 }
