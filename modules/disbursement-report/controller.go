@@ -22,7 +22,8 @@ func FetchAllActive(ctx *iris.Context) {
 }
 
 func GetDetail(ctx *iris.Context) {
-	//TODO select from database where isActive and deletedAt is null
+	//TODO get json from node uploader
+	//TODO calculate data
 	disbursementReportDetail := DisbursementReportDetail{
 		Dates:[]string{"2017-06-07", "2017-06-08","2017-06-09","2017-06-10"},
 		Details:[]DisbursementArea{
