@@ -17,8 +17,9 @@ func GetLoanRawById(ctx *iris.Context){
 
 	m := LoanRaw{}
 	if e := services.DBCPsql.Raw(query, loanID).Scan(&m).Error; e != nil {
-		ctx.JSON(iris.StatusOK, iris.Map{
-			"status": "failed",
+		ctx.JSON(iris.StatusBadRequest, iris.Map{
+			"status": "Error",
+			"message":"Failed to get loan_raw"
 			"data":   e,
 		})
 		return
