@@ -11,12 +11,12 @@ func Init() {
 }
 
 func GetLoanRawById(ctx *iris.Context){
-	loanRawID := ctx.Param("id")
+	loanID := ctx.Param("id")
 
-	query := "select * from loan_raw where id = ?"
+	query := "select * from loan_raw where \"loanId\" = ?"
 
 	m := LoanRaw{}
-	if e := services.DBCPsql.Raw(query, loanRawID).Scan(&m).Error; e != nil {
+	if e := services.DBCPsql.Raw(query, loanID).Scan(&m).Error; e != nil {
 		ctx.JSON(iris.StatusOK, iris.Map{
 			"status": "failed",
 			"data":   e,
