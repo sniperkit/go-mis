@@ -21,9 +21,12 @@ type DisbursementReportDetail struct {
 type DisbursementArea struct {
 	Name 	string	`json:"name"`
 	Branchs []DisbursementBranch	`json:"branchs"`
+	Prices 		[]float64	`json:"prices"`
+	Total 		float64	`json:"total"`
 }
 
 type DisbursementBranch struct {
 	Name 		string	`json:"name"`
 	Prices 		[]float64	`json:"prices"`
+	Total 		float64	`json:"total"`
 }
