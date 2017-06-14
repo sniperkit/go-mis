@@ -3,6 +3,10 @@ package disbursementReport
 import (
 	"bitbucket.org/go-mis/services"
 	"gopkg.in/kataras/iris.v4"
+	"fmt"
+	"bitbucket.org/go-mis/config"
+	"github.com/parnurzeal/gorequest"
+	"encoding/json"
 )
 
 func Init() {
@@ -11,10 +15,12 @@ func Init() {
 }
 
 func FetchAllActive(ctx *iris.Context) {
-	//TODO select from database where isActive and deletedAt is null
-	disbursementReports := []DisbursementReport{
-		{ID:1,Filename:"A",IsActive:true,DisbursementDateFrom:"2017-06-07",DisbursementDateTo:"2017-06-10"},
-		{ID:2,Filename:"A",IsActive:true,DisbursementDateFrom:"2017-06-17",DisbursementDateTo:"2017-06-20"}}
+	query := "SELECT * "
+	query += "FROM disbursement_report "
+	query += "WHERE \"isActive\"=true and \"deletedAt\" IS NULL"
+	fmt.Println(query)
+	disbursementReports := []DisbursementReport{}
+	services.DBCPsql.Raw(query).Scan(&disbursementReports)
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"status": "success",
 		"data":   disbursementReports,
@@ -22,24 +28,33 @@ func FetchAllActive(ctx *iris.Context) {
 }
 
 func GetDetail(ctx *iris.Context) {
-	//TODO get json from node uploader
-	//TODO calculate data
-	disbursementReportDetail := DisbursementReportDetail{
-		Dates:[]string{"2017-06-07", "2017-06-08","2017-06-09","2017-06-10"},
-		Details:[]DisbursementArea{
-			DisbursementArea{
-				Name:"Bogor",
-				Branchs:[]DisbursementBranch{
-					DisbursementBranch{Name:"Baranang Siang",Prices:[]float64{10000,10000,10000,10000}},
-					DisbursementBranch{Name:"Padjajaran",Prices:[]float64{20000,20000,20000,20000}},
-				}},
-			DisbursementArea{
-				Name:"Bandung",
-				Branchs:[]DisbursementBranch{
-					DisbursementBranch{Name:"Cimahi",Prices:[]float64{10000,10000,10000,10000}},
-					DisbursementBranch{Name:"Ciampelas",Prices:[]float64{15000,15000,15000,15000}},
-				}},
-		},
+	// select report from DB
+	query := "SELECT * "
+	query += "FROM disbursement_report "
+	query += "WHERE \"id\"=?"
+	id := ctx.Param("id")
+	disbursementReport:=DisbursementReport{}
+	services.DBCPsql.Raw(query,id).Scan(&disbursementReport)
+	if (disbursementReport == DisbursementReport{}) {
+		ctx.JSON(iris.StatusBadRequest, iris.Map{
+			"status": "error",
+			"message":   "Report not found",
+		})
+		return
+	}
+	//get json from node uploader
+	urlStr := config.UploaderApiPath + "disbursement"+disbursementReport.Filename+"?secretKey=n0de-U>lo4d3r"
+	request := gorequest.New()
+	_, resReportStr, errs := request.Get(urlStr).End()
+	disbursementReportDetail := DisbursementReportDetail{}
+	json.Unmarshal([]byte(resReportStr), &disbursementReportDetail)
+	if len(errs) > 0 {
+		fmt.Println(errs)
+		ctx.JSON(iris.StatusInternalServerError, iris.Map{
+			"status": "error",
+			"message":   "Error integration to uploader",
+		})
+		return
 	}
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"status": "success",
