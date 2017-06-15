@@ -33,6 +33,7 @@ import (
 	"gopkg.in/iris-contrib/middleware.v4/cors"
 	"gopkg.in/kataras/iris.v4"
 	"bitbucket.org/go-mis/modules/emergency-loan"
+	"bitbucket.org/go-mis/modules/loan-raw"
 	"bitbucket.org/go-mis/modules/disbursement-report"
 )
 
@@ -149,11 +150,12 @@ func InitCustomApi() {
 		v2.Any("/installment-review/get/:branch_id/day/:schedule_day", installment.GetPendingInstallment)
 		v2.Any("/installment-review/by-group/:group_id", installment.GetPendingInstallmentDetail)
 		v2.Any("/installment-review/set/:installment_id", installment.UpdateInstallmentByInstallmentID)
-		v2.Any("/disbursement-report", installment.UpdateInstallmentByInstallmentID)
 
 		v2.Any("/reports/agent", reports.AgentRekap)
 		v2.Any("/emergency-loan/borrower/by-branch/:branch_id/available", emergency_loan.FetchAllAvailableBorrower)
 		v2.Any("/emergency-loan/submit", emergency_loan.SubmitEmergencyLoan)
+
+		v2.Any("/loan-raw/:id", loanRaw.GetLoanRawById)
 		v2.Any("/disbursement-weekly-report", disbursementReport.FetchAllActive)
 		v2.Any("/disbursement-weekly-report/:id/detail", disbursementReport.GetDetail)
 	}
