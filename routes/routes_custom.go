@@ -33,6 +33,7 @@ import (
 	"gopkg.in/iris-contrib/middleware.v4/cors"
 	"gopkg.in/kataras/iris.v4"
 	"bitbucket.org/go-mis/modules/emergency-loan"
+	"bitbucket.org/go-mis/modules/loan-raw"
 )
 
 var baseURL = "/api/v2"
@@ -152,6 +153,8 @@ func InitCustomApi() {
 		v2.Any("/reports/agent", reports.AgentRekap)
 		v2.Any("/emergency-loan/borrower/by-branch/:branch_id/available", emergency_loan.FetchAllAvailableBorrower)
 		v2.Any("/emergency-loan/submit", emergency_loan.SubmitEmergencyLoan)
+
+		v2.Any("/loan-raw/:id", loanRaw.GetLoanRawById)
 	}
 
 	iris.Get(baseURL+"/generate-topsheet/:group_id", topsheet.GenerateTopsheet)
