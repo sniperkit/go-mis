@@ -104,6 +104,62 @@ func GetAgentById(ctx *iris.Context){
 
 }
 
+func CreateAgent(ctx *iris.Context){
+	type Payload struct{
+		Username        string           `json:"username"`
+		Password        string           `json:"password"`
+		Fullname        string           `json:"fullname"`
+		BankName        string           `json:"bankName"`
+		BankAccountName string           `json:"bankAccountName"`
+		BankAccountNo   string           `json:"bankAccountNo"`
+		PicUrl          string           `json:"picUrl"`
+		PhoneNo         string           `json:"phoneNo"`
+		Address         string           `json:"address"`
+		Kelurahan       string           `json:"kelurahan"`
+		Kecamatan       string           `json:"kecamatan"`
+		City            string           `json:"city"`
+		Province        string           `json:"province"`
+		Nationality     string           `json:"nationality"`
+		Lat             float64          `json:"lat"`
+		Lng             float64          `json:"lng"`
+		Branch       		uint64         	 `json:"branchId"`
+	}
+
+	m:= Payload{}
+	err:= ctx.ReadJSON(&m)
+	a:= Agent{}
+
+	a.Username = m.Username;
+	a.Password = m.Password;
+	a.Fullname = m.Fullname;
+	a.BankName = m.BankName;
+	a.BankAccountName = m.BankAccountName;
+	a.BankAccountNo = m.bankAccountNo;
+	a.PicUrl = m.PicUrl;
+	a.PhoneNo = m.PhoneNo;
+	a.Address = m.Address;
+	a.Kelurahan = m.Kelurahan;
+	a.Kecamatan = m.Kecamatan;
+	a.City = m.City;
+	a.Province = m.Province;
+	a.Nationality = m.Nationality;
+	a.Lat = m.Lat;
+	a.Lng = m.Lng;
+
+	if err != nil{
+		panic(err)
+	}else{
+		services.DBCPsql.Create(&m);
+		rba := r.RBranchAgent{}
+		rba.AgentId = a.ID;
+		rba.BranchID = m.Branch;
+		services.DBCPsql.Create(&rba)
+
+	}
+	ctx.JSON(iris.StatusOK, iris.Map{"status": "success", "data": m})
+
+}
+
 func UpdateAgent(ctx *iris.Context){
 	agentId := ctx.Get("id")
 
