@@ -4,6 +4,7 @@ import (
 	"bitbucket.org/go-mis/services"
 	"gopkg.in/kataras/iris.v4"
 	"github.com/jinzhu/gorm"
+	"bitbucket.org/go-mis/modules/r"
 )
 
 func Init() {
@@ -134,7 +135,7 @@ func CreateAgent(ctx *iris.Context){
 	a.Fullname = m.Fullname;
 	a.BankName = m.BankName;
 	a.BankAccountName = m.BankAccountName;
-	a.BankAccountNo = m.bankAccountNo;
+	a.BankAccountNo = m.BankAccountNo;
 	a.PicUrl = m.PicUrl;
 	a.PhoneNo = m.PhoneNo;
 	a.Address = m.Address;
@@ -152,9 +153,8 @@ func CreateAgent(ctx *iris.Context){
 		services.DBCPsql.Create(&m);
 		rba := r.RBranchAgent{}
 		rba.AgentId = a.ID;
-		rba.BranchID = m.Branch;
-		services.DBCPsql.Create(&rba)
-
+		rba.BranchId = m.Branch;
+		services.DBCPsql.Create(&rba);
 	}
 	ctx.JSON(iris.StatusOK, iris.Map{"status": "success", "data": m})
 
