@@ -12,6 +12,7 @@ import (
 	"bitbucket.org/go-mis/modules/cashout"
 	"bitbucket.org/go-mis/modules/cif"
 	"bitbucket.org/go-mis/modules/disbursement"
+	"bitbucket.org/go-mis/modules/emergency-loan"
 	"bitbucket.org/go-mis/modules/group"
 	"bitbucket.org/go-mis/modules/installment"
 	"bitbucket.org/go-mis/modules/investor"
@@ -32,7 +33,6 @@ import (
 	"bitbucket.org/go-mis/modules/voucher"
 	"gopkg.in/iris-contrib/middleware.v4/cors"
 	"gopkg.in/kataras/iris.v4"
-	"bitbucket.org/go-mis/modules/emergency-loan"
 )
 
 var baseURL = "/api/v2"
@@ -70,6 +70,7 @@ func InitCustomApi() {
 		v2.Any("/branch/:id", branch.GetByID)
 		v2.Any("/branch/area/:id", branch.IrisGetByAreaId)
 		v2.Any("/area", area.FetchAll)
+		v2.Any("/area/detail/:id", area.GetByID)
 		v2.Any("/area/:id", area.GetByIdAreaManager)
 		v2.Any("/cif", cif.FetchAll)
 		v2.Any("/cif/borrower/:id", cif.GetCifBorrower)
