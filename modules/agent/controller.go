@@ -150,7 +150,7 @@ func CreateAgent(ctx *iris.Context){
 	if err != nil{
 		panic(err)
 	}else{
-		services.DBCPsql.Create(&m);
+		services.DBCPsql.Create(&a);
 		rba := r.RBranchAgent{}
 		rba.AgentId = a.ID;
 		rba.BranchId = m.Branch;
