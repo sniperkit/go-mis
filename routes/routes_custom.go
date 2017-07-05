@@ -72,6 +72,7 @@ func InitCustomApi() {
 		v2.Any("/branch/:id", branch.GetByID)
 		v2.Any("/branch/area/:id", branch.IrisGetByAreaId)
 		v2.Any("/area", area.FetchAll)
+		v2.Any("/area/detail/:id", area.GetByID)
 		v2.Any("/area/:id", area.GetByIdAreaManager)
 		v2.Any("/cif", cif.FetchAll)
 		v2.Any("/cif/borrower/:id", cif.GetCifBorrower)
