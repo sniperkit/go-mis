@@ -33,6 +33,7 @@ import (
 	"gopkg.in/iris-contrib/middleware.v4/cors"
 	"gopkg.in/kataras/iris.v4"
 	"bitbucket.org/go-mis/modules/emergency-loan"
+	"bitbucket.org/go-mis/modules/healthycheck"
 )
 
 var baseURL = "/api/v2"
@@ -161,4 +162,5 @@ func InitCustomApi() {
 	iris.Post(baseURL+"/investor-register-va", investor.InvestorRegisterVA)
 	iris.Get(baseURL+"/location", location.GetLocation)
 	iris.Get(baseURL+"/location/:location_code", location.GetLocationById)
+	iris.Get(baseURL+"/healthycheck", healthycheck.Checking)
 }
