@@ -40,3 +40,14 @@ func GetLocationById(ctx *iris.Context) {
 		"data":   locationSchema,
 	})
 }
+
+func ExtractLoc(ctx *iris.Context) {
+	locCode := ctx.Param("location_code")
+	se := SingleExtractor{}
+	se.extract(locCode)
+
+	ctx.JSON(iris.StatusOK, iris.Map{
+		"status": "success",
+		"data":   se,
+	})
+}
