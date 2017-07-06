@@ -43,7 +43,7 @@ func GetLocationById(ctx *iris.Context) {
 	})
 }
 
-func ExtractLoc(ctx *iris.Context) {
+func TranslateLoc(ctx *iris.Context) {
 	payload := struct {
 		LocCodes interface{}
 	}{}

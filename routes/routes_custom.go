@@ -168,6 +168,6 @@ func InitCustomApi() {
 	iris.Get(baseURL+"/investor-without-va", investor.InvestorWithoutVA)
 	iris.Post(baseURL+"/investor-register-va", investor.InvestorRegisterVA)
 	iris.Get(baseURL+"/location", location.GetLocation)
-	iris.Get(baseURL+"/location/extract/:location_code", location.ExtractLoc)
+	iris.Post(baseURL+"/location/translate", location.TranslateLoc)
 	iris.Get(baseURL+"/location/:location_code", location.GetLocationById)
 }
