@@ -1,6 +1,8 @@
 package location
 
 import (
+	"fmt"
+
 	"bitbucket.org/go-mis/services"
 	"gopkg.in/kataras/iris.v4"
 )
@@ -42,12 +44,26 @@ func GetLocationById(ctx *iris.Context) {
 }
 
 func ExtractLoc(ctx *iris.Context) {
-	locCode := ctx.Param("location_code")
-	se := SingleExtractor{}
-	se.extract(locCode)
+	payload := struct {
+		LocCodes interface{}
+	}{}
+
+	if err := ctx.ReadJSON(&payload); err != nil {
+		ctx.JSON(iris.StatusInternalServerError, iris.Map{
+			"status":  "error",
+			"message": err.Error(),
+		})
+		return
+	}
+
+	err, lt := TranslateLocation(payload.LocCodes)
+	if err != nil {
+		fmt.Println(err)
+	}
+	lt.GetLocation()
 
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"status": "success",
-		"data":   se,
+		"data":   lt,
 	})
 }
