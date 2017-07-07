@@ -2,7 +2,6 @@ package userMis
 
 import (
 	"time"
-
 	"bitbucket.org/go-mis/modules/r"
 	"bitbucket.org/go-mis/services"
 	"gopkg.in/kataras/iris.v4"
@@ -11,6 +10,56 @@ import (
 func Init() {
 	services.DBCPsql.AutoMigrate(&UserMis{})
 	services.BaseCrudInit(UserMis{}, []UserMis{})
+}
+
+func CreateUserMis(ctx *iris.Context){
+	type Payload struct {
+		ID          uint64     `json:"_id"`
+		Fullname    string     `json:"fullname"`
+		Username    string     `json:"username"`
+		Password    string     `json:"password"`
+		PhoneNo     string     `json:"phoneNo"`
+		PicUrl      string     `json:"picUrl"`
+		Role    	 	uint64     `json:"role"`
+		Area  	    uint64     `json:"area"`
+		Branch      uint64  `json:"branch"`
+	}
+	m := Payload{}
+	err := ctx.ReadJSON(&m)
+	userMis := UserMis{}
+
+
+	userMis.ID = m.ID
+	userMis.Fullname = m.Fullname;
+	userMis.Username = m.Username;
+	userMis.Password = m.Password;
+	userMis.PhoneNo = m.PhoneNo;
+	userMis.PicUrl = m.PicUrl;
+
+
+	if err != nil{
+		panic(err)
+	}else{
+		services.DBCPsql.Create(&userMis);
+
+		rur := r.RUserMisRole{}
+		rur.UserMisId = userMis.ID;
+		rur.RoleId = m.Role;
+		services.DBCPsql.Create(&rur);
+
+		rbu := r.RBranchUserMis{}
+		rbu.UserMisId = userMis.ID;
+		rbu.BranchId = m.Branch;
+		services.DBCPsql.Create(&rbu);
+
+		rau := r.RAreaUserMis{}
+		rau.UserMisId = userMis.ID;
+		rau.AreaId = m.Area;
+		services.DBCPsql.Create(&rau);
+
+	}
+	ctx.JSON(iris.StatusOK, iris.Map{"status": "success", "data": m})
+
 }
 
 func UpdateUserBranch(ctx *iris.Context) {
