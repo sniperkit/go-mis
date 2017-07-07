@@ -71,6 +71,29 @@ func UpdateUserBranch(ctx *iris.Context) {
 	services.DBCPsql.Raw(query, branchId, userObj.ID).Scan(&userMisBranch)
 }
 
+func GetUserMisById(ctx *iris.Context){
+	userMis := UserMisAreaBranchRole{}
+	id := ctx.Get("id")
+
+	query := `SELECT user_mis."id" AS "userMisId", user_mis."phoneNo", user_mis."_password", user_mis."_username", user_mis."picUrl", user_mis."fullname", user_mis."isSuspended", role."name" AS "role", branch."name" AS "branch", area."name" AS "area" FROM user_mis
+		LEFT JOIN r_branch_user_mis ON r_branch_user_mis."userMisId" = user_mis."id" 
+		LEFT JOIN branch ON branch."id" = r_branch_user_mis."branchId" 
+		LEFT JOIN r_area_branch ON r_area_branch."branchId" = branch."id" 
+		LEFT JOIN area ON area."id" = r_area_branch."areaId" 
+		LEFT JOIN r_user_mis_role ON r_user_mis_role."userMisId" = user_mis."id" 
+		LEFT JOIN role ON role."id" = r_user_mis_role."roleId" 
+		WHERE user_mis."deletedAt" IS NULL AND user_mis."id" = ?`
+	services.DBCPsql.Raw(query, id).Find(&userMis)
+
+	ctx.JSON(iris.StatusOK, iris.Map{
+		"status": "success",
+		"data":   userMis,
+	})
+
+
+}
+
+
 func FetchUserMisAreaBranchRole(ctx *iris.Context) {
 	arrUserMisAreaBranchRole := []UserMisAreaBranchRole{}
 
