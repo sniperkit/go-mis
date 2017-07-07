@@ -48,6 +48,9 @@ type UserMisAreaBranchRole struct {
 	PhoneNo    	string `gorm:"column:phoneNo" json:"phoneNo"`
 	IsSuspended *bool  `gorm:"column:isSuspended" json:"isSuspended"`
 	Area        string `gorm:"column:area" json:"area"`
+	AreaId      uint64 `gorm:"column:areaId" json:"areaId"`
 	Branch      string `gorm:"column:branch" json:"branch"`
+	BranchId    uint64 `gorm:"column:branchId" json:"branchId"`
 	Role        string `gorm:"column:role" json:"role"`
+	RoleId      uint64 `gorm:"column:roleId" json:"roleId"`
 }

@@ -75,7 +75,7 @@ func GetUserMisById(ctx *iris.Context){
 	userMis := UserMisAreaBranchRole{}
 	id := ctx.Get("id")
 
-	query := `SELECT user_mis."id" AS "userMisId", user_mis."phoneNo", user_mis."_password", user_mis."_username", user_mis."picUrl", user_mis."fullname", user_mis."isSuspended", role."name" AS "role", branch."name" AS "branch", area."name" AS "area" FROM user_mis
+	query := `SELECT user_mis."id" AS "userMisId", user_mis."phoneNo", user_mis."_password", user_mis."_username", user_mis."picUrl", user_mis."fullname", user_mis."isSuspended", role."name" AS role,"role"."id" as "roleId", branch."id" as "branchId", area."id" as "areaId" , branch."name" AS "branch", area."name" AS "area" FROM user_mis
 		LEFT JOIN r_branch_user_mis ON r_branch_user_mis."userMisId" = user_mis."id" 
 		LEFT JOIN branch ON branch."id" = r_branch_user_mis."branchId" 
 		LEFT JOIN r_area_branch ON r_area_branch."branchId" = branch."id" 
