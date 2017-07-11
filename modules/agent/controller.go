@@ -207,7 +207,6 @@ func UpdateAgent(ctx *iris.Context){
 	a.Lat = m.Lat;
 	a.Lng = m.Lng;
 
-	fmt.Println(a)
 	/*if(err!=nil){
 		ctx.JSON(iris.StatusBadRequest, iris.Map{"status": "error", "message": err.Error()})
 		return
@@ -222,14 +221,14 @@ func UpdateAgent(ctx *iris.Context){
 	if err != nil {
 		panic(err)
 	}else{
-		query := `update "agent" set "Username" = ?, "Password" = ?, "Fullname" = ?, "BankName" = ?, "BankAccountName" = ?, "BankAccountNo" = ?, "PicUrl" = ?, "PhoneNo" = ?, "Address" = ?, "Kelurahan" = ?, "Kecamatan" = ?, "City" = ?, "Province" = ?, "Nationality" = ?, "Lat" = ?, "Lng" = ? where "agent"."ID" = ?`
-		services.DBCPsql.Raw(query, a.Username, a.Password, a.Fullname, a.BankName, a.BankAccountName, a.BankAccountNo, a.PicUrl, a.PhoneNo, a.Address, a.Kelurahan, a.Kecamatan, a.City, a.Province, a.Nationality a.Lat, a.Lng, agentId).Scan(&a)
+		query := `update "agent" set "username" = ?, "password" = ?, "fullname" = ?, "bankName" = ?, "bankAccountName" = ?, "bankAccountNo" = ?, "picUrl" = ?, "phoneNo" = ?, "address" = ?, "kelurahan" = ?, "kecamatan" = ?, "city" = ?, "province" = ?, "nationality" = ?, "lat" = ?, "lng" = ? where "agent"."id" = ?`
+		services.DBCPsql.Raw(query, a.Username, a.Password, a.Fullname, a.BankName, a.BankAccountName, a.BankAccountNo, a.PicUrl, a.PhoneNo, a.Address, a.Kelurahan, a.Kecamatan, a.City, a.Province, a.Nationality, a.Lat, a.Lng, agentId).Scan(&a)
 
 		rba := r.RBranchAgent{}
 		query_r_branch_agent := `update "r_branch_agent" set "agentId" = ? where "r_branch_agent"."branchId" = ?`;
-		services.DBCPsql.Raw(query_r_branch_agent, m.ID, m.Branch).Scan(&rba)
+		services.DBCPsql.Raw(query_r_branch_agent, a.ID, m.Branch).Scan(&rba)
 	}
-	ctx.JSON(iris.StatusOK, iris.Map{"status": "success", "data": m})
+	ctx.JSON(iris.StatusOK, iris.Map{"status": "success", "data": a})
 
 }
 
