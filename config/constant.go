@@ -21,9 +21,10 @@ var (
 )
 
 type Config struct {
-	Psql  []DbConfig `json:"psql"`
-	Mysql DbConfig   `json:"mysql"`
-	UploaderPath string `json:"uploaderPath"`
+	Psql         []DbConfig `json:"psql"`
+	Mysql        DbConfig   `json:"mysql"`
+	UploaderPath string     `json:"uploaderPath"`
+	ApiVersion   string     `json:"apiVersion"`
 }
 
 type DbConfig struct {
@@ -70,6 +71,7 @@ func init() {
 
 	var c Config
 	json.Unmarshal(configFile, &c)
+	fmt.Println("Version:", c.ApiVersion)
 
 	UploaderApiPath = c.UploaderPath
 
