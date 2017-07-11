@@ -5,8 +5,8 @@ import (
 	"bitbucket.org/go-mis/modules/r"
 	"bitbucket.org/go-mis/services"
 	"gopkg.in/kataras/iris.v4"
-	"bitbucket.org/go-mis/modules/role"
-	"bitbucket.org/go-mis/modules/branch"
+	//"bitbucket.org/go-mis/modules/role"
+	//"bitbucket.org/go-mis/modules/branch"
 )
 
 func Init() {
@@ -24,7 +24,7 @@ func CreateUserMis(ctx *iris.Context){
 		PicUrl      string     `json:"picUrl"`
 		Role    	uint64     `json:"role"`
 		Area  	    uint64     `json:"area"`
-		Branch      uint64  `json:"branch"`
+		Branch      uint64     `json:"branch"`
 	}
 	m := Payload{}
 	err := ctx.ReadJSON(&m)
@@ -90,34 +90,31 @@ func UpdateUserMisById(ctx *iris.Context){
 		panic(err)
 	} else {
 		// Update User
-		userQuery := `UPDATE user_mis SET user.mis."fullname" = ?, user.mis."username" = ?,`
-		userQuery += `user.mis."PhoneNo" = ?, user.mis."PicUrl" = ?`
-		userQuery += `WHERE user_mis."id" = ?`
-		services.DBCPsql.Raw(userQuery,
-			userMis.Fullname,userMis.Username,userMis.PhoneNo,
-			userMis.PicUrl,userMis.ID).Scan(&userMis);
+		userQuery := `UPDATE user_mis SET "fullname" = ?, "_username" = ?,`
+		userQuery += `"phoneNo" = ?, "picUrl" = ?`
+		userQuery += `WHERE "id" = ?`
+		services.DBCPsql.Raw(userQuery, userMis.Fullname,userMis.Username,userMis.PhoneNo, userMis.PicUrl,userMis.ID).Scan(&userMis);
 
 		// Update Role
 		updateRole := r.RUserMisRole{}
 		updateRole.UserMisId = userMis.ID;
 		updateRole.RoleId = m.Role;
-		roleQuery := `UPDATE r_user_mis_role SET "roleID" = ? where "userMisId" = ?`
-		services.DBCPsql.Raw(roleQuery, updateRole.RoleId, updateRole.UserMisId)
+		roleQuery := `UPDATE r_user_mis_role SET "roleId" = ? where "userMisId" = ?`
+		services.DBCPsql.Raw(roleQuery, updateRole.RoleId, updateRole.UserMisId).Scan(&updateRole)
 
 		// Update Branch
 		updateBranch := r.RBranchUserMis{}
 		updateBranch.UserMisId = userMis.ID;
 		updateBranch.BranchId = m.Branch;
 		branchQuery := `UPDATE r_branch_area_mis SET "branchID" = ? where "userMisId" = ?`
-		services.DBCPsql.Raw(branchQuery, updateBranch.BranchId, updateBranch.UserMisId)
+		services.DBCPsql.Raw(branchQuery, updateBranch.BranchId, updateBranch.UserMisId).Scan(&updateBranch)
 
 		// Update Area
 		updateArea := r.RAreaUserMis{}
 		updateArea.UserMisId = userMis.ID;
 		updateArea.AreaId = m.Area;
 		areaQuery := `UPDATE r_area_user_mis SET "areaId" = ? where "userMisId" = ?`
-		services.DBCPsql.Raw(areaQuery, updateArea.AreaId, updateArea.UserMisId)
-
+		services.DBCPsql.Raw(areaQuery, updateArea.AreaId, updateArea.UserMisId).Scan(&updateArea)
 	}
 
 	ctx.JSON(iris.StatusOK, iris.Map {
