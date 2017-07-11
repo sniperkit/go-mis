@@ -3,6 +3,7 @@ package services
 import (
 	"reflect"
 	"time"
+
 	"bitbucket.org/go-mis/config"
 	"gopkg.in/kataras/iris.v4"
 )
@@ -33,7 +34,6 @@ func GetById(model interface{}) func(ctx *iris.Context) {
 	}
 }
 
-
 // GET /:domain/q
 func GetByQuery(model interface{}) func(ctx *iris.Context) {
 	return func(ctx *iris.Context) {
@@ -43,7 +43,7 @@ func GetByQuery(model interface{}) func(ctx *iris.Context) {
 		for key, val := range ctx.URLParams() {
 			if key != "apiKey" && key != "q" && ctx.URLParam("q") == "like" {
 				con = con.Where("\""+key+"\" LIKE ?", val)
-			} else if key != "apiKey" && key != "q" && ctx.URLParam("q") == "equal" {
+			} else if key != "apiKey" && key != "q" && key != "accessToken" && ctx.URLParam("q") == "equal" {
 				con = con.Where("\""+key+"\" = ?", val)
 			}
 		}
@@ -54,7 +54,7 @@ func GetByQuery(model interface{}) func(ctx *iris.Context) {
 }
 
 // count object
-func GetSingle(model interface{})  func(ctx *iris.Context) {
+func GetSingle(model interface{}) func(ctx *iris.Context) {
 	return func(ctx *iris.Context) {
 		m := reflect.New(reflect.TypeOf((model.(*Container)).ArrayObj)).Interface()
 		con := DBCPsql
