@@ -5,8 +5,6 @@ import (
 	"bitbucket.org/go-mis/modules/r"
 	"bitbucket.org/go-mis/services"
 	"gopkg.in/kataras/iris.v4"
-	//"bitbucket.org/go-mis/modules/role"
-	//"bitbucket.org/go-mis/modules/branch"
 )
 
 func Init() {
@@ -89,11 +87,12 @@ func UpdateUserMisById(ctx *iris.Context){
 	if err != nil {
 		panic(err)
 	} else {
-		// Update User
-		userQuery := `UPDATE user_mis SET "fullname" = ?, "_username" = ?,`
-		userQuery += `"phoneNo" = ?, "picUrl" = ?`
-		userQuery += `WHERE "id" = ?`
-		services.DBCPsql.Raw(userQuery, userMis.Fullname,userMis.Username,userMis.PhoneNo, userMis.PicUrl,userMis.ID).Scan(&userMis);
+
+		// Update User 
+		userQuery := `UPDATE user_mis SET user_mis."fullname" = ?, user_mis."_username" = ?user_mis."phoneNo" = ?, user_mis."picUrl" = ? WHERE user_mis."id" = ?`
+		services.DBCPsql.Raw(userQuery,
+			userMis.Fullname,userMis.Username,userMis.PhoneNo,
+			userMis.PicUrl, userMis.ID).Scan(&userMis);
 
 		// Update Role
 		updateRole := r.RUserMisRole{}
@@ -102,7 +101,7 @@ func UpdateUserMisById(ctx *iris.Context){
 		roleQuery := `UPDATE r_user_mis_role SET "roleId" = ? where "userMisId" = ?`
 		services.DBCPsql.Raw(roleQuery, updateRole.RoleId, updateRole.UserMisId).Scan(&updateRole)
 
-		// Update Branch
+		// Update BranchId
 		updateBranch := r.RBranchUserMis{}
 		updateBranch.UserMisId = userMis.ID;
 		updateBranch.BranchId = m.Branch;
