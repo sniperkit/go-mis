@@ -167,12 +167,48 @@ func CreateAgent(ctx *iris.Context){
 
 func UpdateAgent(ctx *iris.Context){
 	agentId := ctx.Get("id")
+	type Payload struct{
+		Username        string           `json:"username"`
+		Password        string           `json:"password"`
+		Fullname        string           `json:"fullname"`
+		BankName        string           `json:"bankName"`
+		BankAccountName string           `json:"bankAccountName"`
+		BankAccountNo   string           `json:"bankAccountNo"`
+		PicUrl          string           `json:"picUrl"`
+		PhoneNo         string           `json:"phoneNo"`
+		Address         string           `json:"address"`
+		Kelurahan       string           `json:"kelurahan"`
+		Kecamatan       string           `json:"kecamatan"`
+		City            string           `json:"city"`
+		Province        string           `json:"province"`
+		Nationality     string           `json:"nationality"`
+		Lat             float64          `json:"lat"`
+		Lng             float64          `json:"lng"`
+		Branch       		uint64         	 `json:"branchId"`
+	}
 
-	m := Agent{}
-	
-	err := ctx.ReadJSON(&m)
+	m:= Payload{}
+	err:= ctx.ReadJSON(&m)
+	a:= Agent{}
 
-	if(err!=nil){
+	a.Username = m.Username;
+	a.Fullname = m.Fullname;
+	a.BankName = m.BankName;
+	a.BankAccountName = m.BankAccountName;
+	a.BankAccountNo = m.BankAccountNo;
+	a.PicUrl = m.PicUrl;
+	a.PhoneNo = m.PhoneNo;
+	a.Address = m.Address;
+	a.Kelurahan = m.Kelurahan;
+	a.Kecamatan = m.Kecamatan;
+	a.City = m.City;
+	a.Province = m.Province;
+	a.Nationality = m.Nationality;
+	a.Lat = m.Lat;
+	a.Lng = m.Lng;
+
+	fmt.Println(a)
+	/*if(err!=nil){
 		ctx.JSON(iris.StatusBadRequest, iris.Map{"status": "error", "message": err.Error()})
 		return
 	}
@@ -181,7 +217,18 @@ func UpdateAgent(ctx *iris.Context){
 		processErrorAndRollback(ctx, db, err, "Update agent")
 		return
 	}
-	db.Commit()
+	db.Commit()*/
+	
+	if err != nil {
+		panic(err)
+	}else{
+		query := `update "agent" set "Username" = ?, "Password" = ?, "Fullname" = ?, "BankName" = ?, "BankAccountName" = ?, "BankAccountNo" = ?, "PicUrl" = ?, "PhoneNo" = ?, "Address" = ?, "Kelurahan" = ?, "Kecamatan" = ?, "City" = ?, "Province" = ?, "Nationality" = ?, "Lat" = ?, "Lng" = ? where "agent"."ID" = ?`
+		services.DBCPsql.Raw(query, a.Username, a.Password, a.Fullname, a.BankName, a.BankAccountName, a.BankAccountNo, a.PicUrl, a.PhoneNo, a.Address, a.Kelurahan, a.Kecamatan, a.City, a.Province, a.Nationality a.Lat, a.Lng, agentId).Scan(&a)
+
+		rba := r.RBranchAgent{}
+		query_r_branch_agent := `update "r_branch_agent" set "agentId" = ? where "r_branch_agent"."branchId" = ?`;
+		services.DBCPsql.Raw(query_r_branch_agent, m.ID, m.Branch).Scan(&rba)
+	}
 	ctx.JSON(iris.StatusOK, iris.Map{"status": "success", "data": m})
 
 }
