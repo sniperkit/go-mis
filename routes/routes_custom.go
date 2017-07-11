@@ -101,6 +101,7 @@ func InitCustomApi() {
 		v2.Any("/user-mis", userMis.FetchUserMisAreaBranchRole)
 		v2.Any("/user-mis/create", userMis.CreateUserMis)
 		v2.Any("/user-mis/get/:id", userMis.GetUserMisById)
+		v2.Any("/user-mis/update/:id", userMis.UpdateUserMisById)
 		v2.Any("/user-mis/delete/:id", userMis.DeleteUserMis)
 		v2.Any("/notification", notification.SendPush)
 		v2.Any("/cashout", cashout.FetchAll)
