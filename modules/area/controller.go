@@ -1,6 +1,7 @@
 package area
 
 import (
+	"bitbucket.org/go-mis/modules/r"
 	"bitbucket.org/go-mis/services"
 	iris "gopkg.in/kataras/iris.v4"
 )
@@ -72,5 +73,15 @@ func GetByID(ctx *iris.Context) {
 		ctx.JSON(iris.StatusOK, iris.Map{"data": iris.Map{}})
 	} else {
 		ctx.JSON(iris.StatusOK, iris.Map{"data": area})
+	}
+}
+
+func GetByBranch(ctx *iris.Context) {
+	ab := r.RAreaBranch{}
+	services.DBCPsql.Where("\"deletedAt\" IS NULL AND \"branchId\" = ?", ctx.Param("id")).First(&ab)
+	if ab == (r.RAreaBranch{}) {
+		ctx.JSON(iris.StatusOK, iris.Map{"data": iris.Map{}})
+	} else {
+		ctx.JSON(iris.StatusOK, iris.Map{"data": ab})
 	}
 }

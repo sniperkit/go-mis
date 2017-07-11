@@ -12,12 +12,15 @@ import (
 	"bitbucket.org/go-mis/modules/cashout"
 	"bitbucket.org/go-mis/modules/cif"
 	"bitbucket.org/go-mis/modules/disbursement"
+	"bitbucket.org/go-mis/modules/disbursement-report"
+	"bitbucket.org/go-mis/modules/emergency-loan"
 	"bitbucket.org/go-mis/modules/group"
 	"bitbucket.org/go-mis/modules/installment"
 	"bitbucket.org/go-mis/modules/investor"
 	"bitbucket.org/go-mis/modules/investor-check"
 	"bitbucket.org/go-mis/modules/loan"
 	"bitbucket.org/go-mis/modules/loan-order"
+	"bitbucket.org/go-mis/modules/loan-raw"
 	"bitbucket.org/go-mis/modules/location"
 	"bitbucket.org/go-mis/modules/notification"
 	"bitbucket.org/go-mis/modules/product-pricing"
@@ -32,9 +35,6 @@ import (
 	"bitbucket.org/go-mis/modules/voucher"
 	"gopkg.in/iris-contrib/middleware.v4/cors"
 	"gopkg.in/kataras/iris.v4"
-	"bitbucket.org/go-mis/modules/emergency-loan"
-	"bitbucket.org/go-mis/modules/loan-raw"
-	"bitbucket.org/go-mis/modules/disbursement-report"
 )
 
 var baseURL = "/api/v2"
@@ -73,6 +73,7 @@ func InitCustomApi() {
 		v2.Any("/branch/area/:id", branch.IrisGetByAreaId)
 		v2.Any("/area", area.FetchAll)
 		v2.Any("/area/detail/:id", area.GetByID)
+		v2.Any("/area/branch/:id", area.GetByBranch)
 		v2.Any("/area/:id", area.GetByIdAreaManager)
 		v2.Any("/cif", cif.FetchAll)
 		v2.Any("/cif/borrower/:id", cif.GetCifBorrower)
@@ -167,5 +168,6 @@ func InitCustomApi() {
 	iris.Get(baseURL+"/investor-without-va", investor.InvestorWithoutVA)
 	iris.Post(baseURL+"/investor-register-va", investor.InvestorRegisterVA)
 	iris.Get(baseURL+"/location", location.GetLocation)
+	iris.Post(baseURL+"/location/translate", location.TranslateLoc)
 	iris.Get(baseURL+"/location/:location_code", location.GetLocationById)
 }
