@@ -5,6 +5,8 @@ import (
 	"gopkg.in/kataras/iris.v4"
 	"github.com/jinzhu/gorm"
 	"bitbucket.org/go-mis/modules/r"
+	"crypto/sha256"
+	"encoding/hex"
 )
 
 func Init() {
@@ -131,7 +133,6 @@ func CreateAgent(ctx *iris.Context){
 	a:= Agent{}
 
 	a.Username = m.Username;
-	a.Password = m.Password;
 	a.Fullname = m.Fullname;
 	a.BankName = m.BankName;
 	a.BankAccountName = m.BankAccountName;
@@ -146,6 +147,10 @@ func CreateAgent(ctx *iris.Context){
 	a.Nationality = m.Nationality;
 	a.Lat = m.Lat;
 	a.Lng = m.Lng;
+
+	bytePassword := []byte(m.Password);
+	sha256Bytes := sha256.Sum256(bytePassword);
+	a.Password = hex.EncodeToString(sha256Bytes[:]);
 
 	if err != nil{
 		panic(err)
