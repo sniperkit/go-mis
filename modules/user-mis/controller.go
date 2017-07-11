@@ -89,10 +89,8 @@ func UpdateUserMisById(ctx *iris.Context){
 	} else {
 
 		// Update User 
-		userQuery := `UPDATE user_mis SET user_mis."fullname" = ?, user_mis."_username" = ?user_mis."phoneNo" = ?, user_mis."picUrl" = ? WHERE user_mis."id" = ?`
-		services.DBCPsql.Raw(userQuery,
-			userMis.Fullname,userMis.Username,userMis.PhoneNo,
-			userMis.PicUrl, userMis.ID).Scan(&userMis);
+		userQuery := `UPDATE user_mis SET "fullname" = ?, "_username" = ?, "phoneNo" = ?, "picUrl" = ? WHERE "id" = ?`
+		services.DBCPsql.Raw(userQuery, userMis.Fullname, userMis.Username,userMis.PhoneNo, userMis.PicUrl, userMis.ID).Scan(&userMis);
 
 		// Update Role
 		updateRole := r.RUserMisRole{}
@@ -105,7 +103,7 @@ func UpdateUserMisById(ctx *iris.Context){
 		updateBranch := r.RBranchUserMis{}
 		updateBranch.UserMisId = userMis.ID;
 		updateBranch.BranchId = m.Branch;
-		branchQuery := `UPDATE r_branch_area_mis SET "branchID" = ? where "userMisId" = ?`
+		branchQuery := `UPDATE r_branch_user_mis SET "branchId" = ? where "userMisId" = ?`
 		services.DBCPsql.Raw(branchQuery, updateBranch.BranchId, updateBranch.UserMisId).Scan(&updateBranch)
 
 		// Update Area
