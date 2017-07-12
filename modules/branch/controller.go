@@ -1,9 +1,10 @@
 package branch
 
 import (
-	"bitbucket.org/go-mis/services"
-	"bitbucket.org/go-mis/modules/r"
 	"time"
+
+	"bitbucket.org/go-mis/modules/r"
+	"bitbucket.org/go-mis/services"
 
 	iris "gopkg.in/kataras/iris.v4"
 )
@@ -50,8 +51,8 @@ func FetchAll(ctx *iris.Context) {
 	})
 }
 
-func GetBranchById(ctx *iris.Context){
-	
+func GetBranchById(ctx *iris.Context) {
+
 	query := "SELECT branch.\"id\", branch.\"name\" AS \"name\", branch.\"province\", branch.\"city\" ,user_mis.\"fullname\" AS \"manager\", role.\"name\" AS \"role\", area.\"name\" AS \"area\" "
 	query += "FROM branch "
 	query += "LEFT JOIN r_branch_user_mis ON r_branch_user_mis.\"branchId\" = branch.\"id\" "
@@ -71,8 +72,6 @@ func GetBranchById(ctx *iris.Context){
 		"data":   branch,
 	})
 }
-
-
 
 func getBranchWithoutManager() []BranchManagerArea {
 	query := "SELECT branch.\"id\", branch.\"name\", branch.\"city\", branch.\"province\", area.\"name\" as \"area\" "
@@ -98,28 +97,28 @@ func getBranchManager() []BranchManager {
 	return result
 }
 
-func GetBranchbyArea(ctx *iris.Context)(error, []BranchByArea){
+func GetBranchbyArea(ctx *iris.Context) (error, []BranchByArea) {
 	query := "SELECT branch.\"id\", area.name, branch.name FROM branch "
 	query += "LEFT JOIN r_area_branch ON r_area_branch.\"branchId\" = branch.id "
 	query += "LEFT JOIN area ON area.id = r_area_branch.\"areaId\" "
 	query += "WHERE r_area_branch.\"areaId\" = ? "
 
-	areaId := ctx.Get("id");
+	areaId := ctx.Get("id")
 	result := []BranchByArea{}
- 
-	if err := services.DBCPsql.Raw(query, areaId).Find(&result).Error; err != nil{
+
+	if err := services.DBCPsql.Raw(query, areaId).Find(&result).Error; err != nil {
 		return err, []BranchByArea{}
 	}
 	return nil, result
 }
 
-func IrisGetByAreaId(ctx *iris.Context){
+func IrisGetByAreaId(ctx *iris.Context) {
 	err, result := GetBranchbyArea(ctx)
-	if err != nil{
+	if err != nil {
 		ctx.JSON(iris.StatusInternalServerError, iris.Map{"data": err})
-		return;
+		return
 	}
-		ctx.JSON(iris.StatusOK, iris.Map{"data": result})
+	ctx.JSON(iris.StatusOK, iris.Map{"data": result})
 }
 
 func combineBranchManager(branch []BranchManagerArea, branchManager []BranchManager) []BranchManagerArea {
@@ -144,33 +143,33 @@ func GetByID(ctx *iris.Context) {
 	}
 }
 
-func GetByAreaId(ctx *iris.Context)(error, []BranchAreaManager){
+func GetByAreaId(ctx *iris.Context) (error, []BranchAreaManager) {
 	query := "SELECT branch.\"id\", branch.\"name\", user_mis.\"fullname\" AS Manager, role.\"name\" AS role, area.\"name\" AS area "
 	query += "FROM branch "
-  query += "LEFT JOIN r_area_branch ON r_area_branch.\"branchId\" = branch.\"id\" "
-  query += "LEFT JOIN area ON area.\"id\" = r_area_branch.\"areaId\" "
-  query += "LEFT JOIN r_branch_user_mis ON r_branch_user_mis.\"branchId\" = branch.\"id\" "
-  query += "LEFT JOIN user_mis ON user_mis.\"id\" = r_branch_user_mis.\"userMisId\" "
-  query += "LEFT JOIN r_user_mis_role ON r_user_mis_role.\"userMisId\" = user_mis.\"id\" "
-  query += "LEFT JOIN role ON role.\"id\" = r_user_mis_role.\"roleId\" "
-  query += "WHERE branch.\"deletedAt\" IS NULL AND (role.name LIKE 'Branch Manager' OR role.\"name\" IS null) AND area.\"id\" = ? "
+	query += "LEFT JOIN r_area_branch ON r_area_branch.\"branchId\" = branch.\"id\" "
+	query += "LEFT JOIN area ON area.\"id\" = r_area_branch.\"areaId\" "
+	query += "LEFT JOIN r_branch_user_mis ON r_branch_user_mis.\"branchId\" = branch.\"id\" "
+	query += "LEFT JOIN user_mis ON user_mis.\"id\" = r_branch_user_mis.\"userMisId\" "
+	query += "LEFT JOIN r_user_mis_role ON r_user_mis_role.\"userMisId\" = user_mis.\"id\" "
+	query += "LEFT JOIN role ON role.\"id\" = r_user_mis_role.\"roleId\" "
+	query += "WHERE branch.\"deletedAt\" IS NULL AND (role.name LIKE 'Branch Manager' OR role.\"name\" IS null) AND area.\"id\" = ? "
 
-  _id_ := ctx.Get("id")
+	_id_ := ctx.Get("id")
 
-  result := []BranchAreaManager{}
-	if err := services.DBCPsql.Raw(query, _id_).Find(&result).Error; err != nil{
+	result := []BranchAreaManager{}
+	if err := services.DBCPsql.Raw(query, _id_).Find(&result).Error; err != nil {
 		return err, []BranchAreaManager{}
 	}
-	return nil, result;
+	return nil, result
 }
 
-func IristGetByAreaId(ctx *iris.Context){
+func IristGetByAreaId(ctx *iris.Context) {
 	err, result := GetByAreaId(ctx)
-	if err != nil{
+	if err != nil {
 		ctx.JSON(iris.StatusInternalServerError, iris.Map{"data": err})
-		return;
+		return
 	}
-		ctx.JSON(iris.StatusOK, iris.Map{"data": result})
+	ctx.JSON(iris.StatusOK, iris.Map{"data": result})
 }
 
 func DeleteSingle(ctx *iris.Context) {
@@ -182,6 +181,9 @@ func DeleteSingle(ctx *iris.Context) {
 	rBranchUserMis := []r.RBranchUserMis{}
 	services.DBCPsql.Model(rBranchUserMis).Where("\"deletedAt\" IS NULL AND \"branchId\" = ?", ctx.Param("id")).UpdateColumn("deletedAt", time.Now())
 
+	// delete relation from branch to area
+	rAreaBranch := r.RAreaBranch{}
+	services.DBCPsql.Model(rAreaBranch).Where("\"deletedAt\" IS NULL AND \"branchId\" = ?", ctx.Param("id")).UpdateColumn("deletedAt", time.Now())
+
 	ctx.JSON(iris.StatusOK, iris.Map{"data": branch})
 }
-
