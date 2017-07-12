@@ -5,8 +5,7 @@ import (
 	"gopkg.in/kataras/iris.v4"
 	"github.com/jinzhu/gorm"
 	"bitbucket.org/go-mis/modules/r"
-	"crypto/sha256"
-	"encoding/hex"
+	"fmt"
 )
 
 func Init() {
@@ -38,7 +37,7 @@ func GetAllAgentByBranchID(ctx *iris.Context) {
 
 		services.DBCPsql.Raw(query, branchID).Scan(&agentSchema)
 	} else {
-			query += `SELECT agent.id, agent."picUrl", agent."username", agent.fullname, agent.address,
+		query += `SELECT agent.id, agent."picUrl", agent."username", agent.fullname, agent.address,
 			(SELECT "name" FROM inf_location 
 			WHERE province = agent.province 
 			AND city = '0' 
@@ -61,11 +60,10 @@ func GetAllAgentByBranchID(ctx *iris.Context) {
 			AND kelurahan = agent.kelurahan LIMIT 1) AS "kelurahan"
 			from agent
 			INNER JOIN r_branch_agent ON r_branch_agent."agentId" = agent.id
-			WHERE agent."deletedAt" IS NULL` 
+			WHERE agent."deletedAt" IS NULL`
 
 		services.DBCPsql.Raw(query).Scan(&agentSchema)
 	}
-
 
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"status": "success",
@@ -73,42 +71,42 @@ func GetAllAgentByBranchID(ctx *iris.Context) {
 	})
 }
 
-func GetAgentById(ctx *iris.Context){
-		result := AgentBranch{}
-		query := "SELECT agent.\"id\" AS id, "
-	  query += "agent.\"username\" AS \"username\", "
-	  query += "agent.\"fullname\" AS \"fullname\", "
-	  query += "agent.\"password\" AS \"password\", "
-	  query += "agent.\"bankName\" AS \"bankName\", "
-		query += "agent.\"bankAccountName\" AS \"bankAccountName\", "
-	  query += "agent.\"bankAccountNo\" AS \"bankAccountName\", "
-	  query += "agent.\"picUrl\" AS \"picUrl\", "
-	  query += "agent.\"phoneNo\" AS \"phoneNo\", "
-	  query += "agent.\"address\" AS \"address\", "
-	  query += "agent.\"kelurahan\" AS \"kelurahan\", "
-	  query += "agent.\"kecamatan\" AS \"kecamatan\", "
-	  query += "agent.\"city\" AS \"city\", "
-		query += "agent.\"province\" AS \"province\", "
-		query += "agent.\"nationality\" AS \"nationality\", "
-	  query += "agent.\"lat\" AS \"lat\", "
-	  query += "agent.\"lng\" AS \"lng\", "
-	  query += "branch.\"name\" AS \"branchName\" "
-		query += "FROM agent "
-		query += "LEFT JOIN r_branch_agent ON r_branch_agent.\"agentId\" = agent.\"id\" "
-		query += "LEFT JOIN branch ON branch.\"id\" = r_branch_agent.\"branchId\" "
-		query += "WHERE agent.\"id\" = ?"
+func GetAgentById(ctx *iris.Context) {
+	result := AgentBranch{}
+	query := "SELECT agent.\"id\" AS id, "
+	query += "agent.\"username\" AS \"username\", "
+	query += "agent.\"fullname\" AS \"fullname\", "
+	query += "agent.\"password\" AS \"password\", "
+	query += "agent.\"bankName\" AS \"bankName\", "
+	query += "agent.\"bankAccountName\" AS \"bankAccountName\", "
+	query += "agent.\"bankAccountNo\" AS \"bankAccountName\", "
+	query += "agent.\"picUrl\" AS \"picUrl\", "
+	query += "agent.\"phoneNo\" AS \"phoneNo\", "
+	query += "agent.\"address\" AS \"address\", "
+	query += "agent.\"kelurahan\" AS \"kelurahan\", "
+	query += "agent.\"kecamatan\" AS \"kecamatan\", "
+	query += "agent.\"city\" AS \"city\", "
+	query += "agent.\"province\" AS \"province\", "
+	query += "agent.\"nationality\" AS \"nationality\", "
+	query += "agent.\"lat\" AS \"lat\", "
+	query += "agent.\"lng\" AS \"lng\", "
+	query += "branch.\"name\" AS \"branchName\" "
+	query += "FROM agent "
+	query += "LEFT JOIN r_branch_agent ON r_branch_agent.\"agentId\" = agent.\"id\" "
+	query += "LEFT JOIN branch ON branch.\"id\" = r_branch_agent.\"branchId\" "
+	query += "WHERE agent.\"id\" = ?"
 
-		id := ctx.Get("id")
-		services.DBCPsql.Raw(query, id).Scan(&result)
-		ctx.JSON(iris.StatusOK, iris.Map{
-			"status": "success",
-			"data":   result,
-		})
+	id := ctx.Get("id")
+	services.DBCPsql.Raw(query, id).Scan(&result)
+	ctx.JSON(iris.StatusOK, iris.Map{
+		"status": "success",
+		"data":   result,
+	})
 
 }
 
-func CreateAgent(ctx *iris.Context){
-	type Payload struct{
+func CreateAgent(ctx *iris.Context) {
+	type Payload struct {
 		Username        string           `json:"username"`
 		Password        string           `json:"password"`
 		Fullname        string           `json:"fullname"`
@@ -125,12 +123,12 @@ func CreateAgent(ctx *iris.Context){
 		Nationality     string           `json:"nationality"`
 		Lat             float64          `json:"lat"`
 		Lng             float64          `json:"lng"`
-		Branch       		uint64         	 `json:"branchId"`
+		Branch          uint64             `json:"branchId"`
 	}
 
-	m:= Payload{}
-	err:= ctx.ReadJSON(&m)
-	a:= Agent{}
+	m := Payload{}
+	err := ctx.ReadJSON(&m)
+	a := Agent{}
 
 	a.Username = m.Username;
 	a.Fullname = m.Fullname;
@@ -147,27 +145,35 @@ func CreateAgent(ctx *iris.Context){
 	a.Nationality = m.Nationality;
 	a.Lat = m.Lat;
 	a.Lng = m.Lng;
+	a.Password = m.Password
+	fmt.Println("Password",m.Password)
 
-	bytePassword := []byte(m.Password);
-	sha256Bytes := sha256.Sum256(bytePassword);
-	a.Password = hex.EncodeToString(sha256Bytes[:]);
+	if err != nil {
+		ctx.JSON(iris.StatusBadRequest, iris.Map{"status": "error", "message": err.Error()})
+		return
+	} else {
+		db := services.DBCPsql.Begin()
+		if err := db.Create(&a).Error; err != nil {
+			processErrorAndRollback(ctx, db, err, "Create agent")
+			return
 
-	if err != nil{
-		panic(err)
-	}else{
-		services.DBCPsql.Create(&a);
+		}
 		rba := r.RBranchAgent{}
 		rba.AgentId = a.ID;
 		rba.BranchId = m.Branch;
-		services.DBCPsql.Create(&rba);
+		if err := db.Create(&rba).Error; err != nil {
+			processErrorAndRollback(ctx, db, err, "Create agent")
+			return
+		};
+		db.Commit()
 	}
 	ctx.JSON(iris.StatusOK, iris.Map{"status": "success", "data": m})
 
 }
 
-func UpdateAgent(ctx *iris.Context){
+func UpdateAgent(ctx *iris.Context) {
 	agentId := ctx.Get("id")
-	type Payload struct{
+	type Payload struct {
 		Username        string           `json:"username"`
 		Password        string           `json:"password"`
 		Fullname        string           `json:"fullname"`
@@ -184,14 +190,15 @@ func UpdateAgent(ctx *iris.Context){
 		Nationality     string           `json:"nationality"`
 		Lat             float64          `json:"lat"`
 		Lng             float64          `json:"lng"`
-		Branch       		uint64         	 `json:"branchId"`
+		Branch          uint64             `json:"branchId"`
 	}
 
-	m:= Payload{}
-	err:= ctx.ReadJSON(&m)
-	a:= Agent{}
+	m := Payload{}
+	err := ctx.ReadJSON(&m)
+	a := Agent{}
 
 	a.Username = m.Username;
+	a.Password = m.Password
 	a.Fullname = m.Fullname;
 	a.BankName = m.BankName;
 	a.BankAccountName = m.BankAccountName;
@@ -206,28 +213,16 @@ func UpdateAgent(ctx *iris.Context){
 	a.Nationality = m.Nationality;
 	a.Lat = m.Lat;
 	a.Lng = m.Lng;
-
-	/* old function
-	if(err!=nil){
+	if err != nil {
 		ctx.JSON(iris.StatusBadRequest, iris.Map{"status": "error", "message": err.Error()})
 		return
-	}
-	db := services.DBCPsql.Begin()
-	if err:=db.Table("agent").Where(" \"id\" = ?", agentId).Update(&m).Error;err!=nil{
-		processErrorAndRollback(ctx, db, err, "Update agent")
-		return
-	}
-	db.Commit()*/
-	
-	if err != nil {
-		panic(err)
-	}else{
-		query := `update "agent" set "username" = ?, "password" = ?, "fullname" = ?, "bankName" = ?, "bankAccountName" = ?, "bankAccountNo" = ?, "picUrl" = ?, "phoneNo" = ?, "address" = ?, "kelurahan" = ?, "kecamatan" = ?, "city" = ?, "province" = ?, "nationality" = ?, "lat" = ?, "lng" = ? where "agent"."id" = ?`
-		services.DBCPsql.Raw(query, a.Username, a.Password, a.Fullname, a.BankName, a.BankAccountName, a.BankAccountNo, a.PicUrl, a.PhoneNo, a.Address, a.Kelurahan, a.Kecamatan, a.City, a.Province, a.Nationality, a.Lat, a.Lng, agentId).Scan(&a)
-
-		rba := r.RBranchAgent{}
-		query_r_branch_agent := `update "r_branch_agent" set "agentId" = ? where "r_branch_agent"."branchId" = ?`;
-		services.DBCPsql.Raw(query_r_branch_agent, a.ID, m.Branch).Scan(&rba)
+	} else {
+		db := services.DBCPsql.Begin()
+		if err := db.Table("agent").Where(" \"id\" = ?", agentId).Update(&a).Error; err != nil {
+			processErrorAndRollback(ctx, db, err, "Update agent")
+			return
+		}
+		db.Commit()
 	}
 	ctx.JSON(iris.StatusOK, iris.Map{"status": "success", "data": a})
 
@@ -235,5 +230,5 @@ func UpdateAgent(ctx *iris.Context){
 
 func processErrorAndRollback(ctx *iris.Context, db *gorm.DB, err error, process string) {
 	db.Rollback()
-	ctx.JSON(iris.StatusInternalServerError, iris.Map{"status": "error","error": "Error on " + process + " " + err.Error()})
+	ctx.JSON(iris.StatusInternalServerError, iris.Map{"status": "error", "error": "Error on " + process + " " + err.Error()})
 }
