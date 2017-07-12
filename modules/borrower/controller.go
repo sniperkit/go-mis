@@ -1,8 +1,6 @@
 package borrower
 
 import (
-	"encoding/json"
-	"fmt"
 	"strconv"
 	"time"
 
@@ -57,10 +55,7 @@ func CreateBorrowerData(ctx *iris.Context, payload map[string]interface{}, sourc
 	groupID, _ := strconv.ParseUint(payload["groupId"].(string), 10, 64)
 	sectorID, _ := strconv.ParseUint(payload["data_sector"].(string), 10, 64)
 
-	dataRaw, err := json.Marshal(payload)
-	if err != nil {
-		fmt.Println(err)
-	}
+	dataRaw := payload
 
 	db := services.DBCPsql.Begin()
 	borrowerId, err := GetOrCreateBorrowerId(payload, db)
