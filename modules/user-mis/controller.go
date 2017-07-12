@@ -5,6 +5,8 @@ import (
 	"bitbucket.org/go-mis/modules/r"
 	"bitbucket.org/go-mis/services"
 	"gopkg.in/kataras/iris.v4"
+	"github.com/jinzhu/gorm"
+	"fmt"
 )
 
 func Init() {
@@ -26,36 +28,51 @@ func CreateUserMis(ctx *iris.Context){
 	}
 	m := Payload{}
 	err := ctx.ReadJSON(&m)
-	userMis := UserMis{}
-
-
-	userMis.ID = m.ID
-	userMis.Fullname = m.Fullname;
-	userMis.Username = m.Username;
-	userMis.Password = m.Password;
-	userMis.PhoneNo = m.PhoneNo;
-	userMis.PicUrl = m.PicUrl;
 
 
 	if err != nil{
-		panic(err)
+		ctx.JSON(iris.StatusBadRequest, iris.Map{"status": "error", "message": err.Error()})
+		return
 	}else{
-		services.DBCPsql.Create(&userMis);
+		userMis := UserMis{}
+
+		userMis.ID = m.ID
+		userMis.Fullname = m.Fullname;
+		userMis.Username = m.Username;
+		userMis.Password = m.Password;
+		userMis.PhoneNo = m.PhoneNo;
+		userMis.PicUrl = m.PicUrl;
+
+		db:=services.DBCPsql.Begin()
+		if err:=db.Create(&userMis).Error;err!=nil{
+			processErrorAndRollback(ctx, db, err, "Create User")
+			return
+		};
 
 		rur := r.RUserMisRole{}
 		rur.UserMisId = userMis.ID;
 		rur.RoleId = m.Role;
-		services.DBCPsql.Create(&rur);
+		if err:=db.Create(&rur).Error;err!=nil{
+			processErrorAndRollback(ctx, db, err, "Create User")
+			return
+		};
 
 		rbu := r.RBranchUserMis{}
 		rbu.UserMisId = userMis.ID;
 		rbu.BranchId = m.Branch;
-		services.DBCPsql.Create(&rbu);
+		if err:=db.Create(&rbu).Error;err!=nil{
+			processErrorAndRollback(ctx, db, err, "Create User")
+			return
+		};
 
 		rau := r.RAreaUserMis{}
 		rau.UserMisId = userMis.ID;
 		rau.AreaId = m.Area;
-		services.DBCPsql.Create(&rau);
+		if err:=db.Create(&rau).Error;err!=nil{
+			processErrorAndRollback(ctx, db, err, "Create User")
+			return
+		};
+		db.Commit()
 
 	}
 	ctx.JSON(iris.StatusOK, iris.Map{"status": "success", "data": m})
@@ -76,42 +93,61 @@ func UpdateUserMisById(ctx *iris.Context){
 
 	m := Payload{}
 	err := ctx.ReadJSON(&m)
-	userMis := UserMis{}
 
-	userMis.ID = m.ID
-	userMis.Fullname = m.Fullname;
-	userMis.Username = m.Username;
-	userMis.PhoneNo = m.PhoneNo;
-	userMis.PicUrl = m.PicUrl;
 
 	if err != nil {
-		panic(err)
+		ctx.JSON(iris.StatusBadRequest, iris.Map{"status": "error", "message": err.Error()})
+		return
 	} else {
+		userMis := UserMis{}
+		userMis.ID = m.ID
+		userMis.Fullname = m.Fullname;
+		userMis.Username = m.Username;
+		userMis.PhoneNo = m.PhoneNo;
+		userMis.PicUrl = m.PicUrl;
 
+		db:=services.DBCPsql.Begin()
 		// Update User 
 		userQuery := `UPDATE user_mis SET "fullname" = ?, "_username" = ?, "phoneNo" = ?, "picUrl" = ? WHERE "id" = ?`
-		services.DBCPsql.Raw(userQuery, userMis.Fullname, userMis.Username,userMis.PhoneNo, userMis.PicUrl, userMis.ID).Scan(&userMis);
+		if err:=db.Exec(userQuery, userMis.Fullname, userMis.Username,userMis.PhoneNo, userMis.PicUrl, userMis.ID).Error;err!=nil {
+			fmt.Println("Error",err)
+			processErrorAndRollback(ctx, db, err, "Update user")
+			return
+		};
 
 		// Update Role
 		updateRole := r.RUserMisRole{}
 		updateRole.UserMisId = userMis.ID;
 		updateRole.RoleId = m.Role;
 		roleQuery := `UPDATE r_user_mis_role SET "roleId" = ? where "userMisId" = ?`
-		services.DBCPsql.Raw(roleQuery, updateRole.RoleId, updateRole.UserMisId).Scan(&updateRole)
+		if err=db.Exec(roleQuery, updateRole.RoleId, updateRole.UserMisId).Error;err!=nil {
+			fmt.Println("Error",err)
+			processErrorAndRollback(ctx, db, err, "Update user")
+			return
+		}
 
 		// Update BranchId
 		updateBranch := r.RBranchUserMis{}
 		updateBranch.UserMisId = userMis.ID;
 		updateBranch.BranchId = m.Branch;
 		branchQuery := `UPDATE r_branch_user_mis SET "branchId" = ? where "userMisId" = ?`
-		services.DBCPsql.Raw(branchQuery, updateBranch.BranchId, updateBranch.UserMisId).Scan(&updateBranch)
+		if err:=db.Exec(branchQuery, updateBranch.BranchId, updateBranch.UserMisId).Error;err!=nil {
+			fmt.Println("Error",err)
+			processErrorAndRollback(ctx, db, err, "Update user")
+			return
+		}
 
 		// Update Area
 		updateArea := r.RAreaUserMis{}
 		updateArea.UserMisId = userMis.ID;
 		updateArea.AreaId = m.Area;
 		areaQuery := `UPDATE r_area_user_mis SET "areaId" = ? where "userMisId" = ?`
-		services.DBCPsql.Raw(areaQuery, updateArea.AreaId, updateArea.UserMisId).Scan(&updateArea)
+		if err:=db.Exec(areaQuery, updateArea.AreaId, updateArea.UserMisId).Error;err!=nil {
+			fmt.Println("Error",err)
+			processErrorAndRollback(ctx, db, err, "Update user")
+			return
+		}
+		db.Commit()
 	}
 
 	ctx.JSON(iris.StatusOK, iris.Map {
@@ -186,4 +222,9 @@ func DeleteUserMis(ctx *iris.Context) {
 
 	ctx.JSON(iris.StatusOK, iris.Map{"data": m})
 
+}
+
+func processErrorAndRollback(ctx *iris.Context, db *gorm.DB, err error, process string) {
+	db.Rollback()
+	ctx.JSON(iris.StatusInternalServerError, iris.Map{"status": "error", "error": "Error on " + process + " " + err.Error()})
 }
