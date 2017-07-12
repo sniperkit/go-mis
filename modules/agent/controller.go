@@ -207,7 +207,8 @@ func UpdateAgent(ctx *iris.Context){
 	a.Lat = m.Lat;
 	a.Lng = m.Lng;
 
-	/*if(err!=nil){
+	/* old function
+	if(err!=nil){
 		ctx.JSON(iris.StatusBadRequest, iris.Map{"status": "error", "message": err.Error()})
 		return
 	}
