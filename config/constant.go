@@ -36,6 +36,8 @@ type DbConfig struct {
 	SslMode  string `json:"ssl_mode"`
 }
 
+var Version string
+
 func init() {
 	ApiKey = "$2a$06$20EpVmcNvVg0heEijxLEP.Aw0hhoC7kJyuGltJnYZMStuhOLwPB7W"
 
@@ -74,6 +76,8 @@ func init() {
 	c.ApiVersion = "2.1.0"
 	fmt.Println("Version:", c.ApiVersion)
 	fmt.Println("------------------")
+
+	Version = c.ApiVersion
 
 	UploaderApiPath = c.UploaderPath
 

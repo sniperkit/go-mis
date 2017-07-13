@@ -2,10 +2,10 @@ package group
 
 import (
 	"bitbucket.org/go-mis/modules/branch"
+	"bitbucket.org/go-mis/modules/r"
 	"bitbucket.org/go-mis/modules/role"
 	"bitbucket.org/go-mis/modules/user-mis"
 	"bitbucket.org/go-mis/services"
-	"bitbucket.org/go-mis/modules/r"
 	iris "gopkg.in/kataras/iris.v4"
 )
 
@@ -76,9 +76,9 @@ func FetchAll(ctx *iris.Context) {
 	})
 }
 
-func GroupDetail(ctx *iris.Context){
+func GroupDetail(ctx *iris.Context) {
 
-	id := ctx.Get("id");
+	id := ctx.Get("id")
 	groupBorrower := []GroupAgentBorrower{}
 
 	query := "SELECT \"group\".\"id\", \"group\".\"name\" as \"name\", \"group\".\"lat\" as \"lat\"," +
@@ -106,87 +106,86 @@ func GroupDetail(ctx *iris.Context){
 	})
 }
 
-func Create(ctx *iris.Context){
+func Create(ctx *iris.Context) {
 
 	type Payload struct {
-		ID 						uint64 		`json:"_id"`
-		Name 					string 		`json:"name"`
-		ScheduleDay 	string 		`json:"scheduleDay"`
-		ScheduleTime 	string 		`json:"scheduleTime"`
-		Lat 					float64 	`json:"lat"`
-		Lng 					float64 	`json:"lng"`
-		Agent 				uint64 		`json:"agentId"`
-		Branch 				uint64 		`json:"branchId"`
+		ID           uint64  `json:"_id"`
+		Name         string  `json:"name"`
+		ScheduleDay  string  `json:"scheduleDay"`
+		ScheduleTime string  `json:"scheduleTime"`
+		Lat          float64 `json:"lat"`
+		Lng          float64 `json:"lng"`
+		Agent        uint64  `json:"agentId"`
+		Branch       uint64  `json:"branchId"`
 	}
 
 	m := Payload{}
 	err := ctx.ReadJSON(&m)
 
 	g := Group{}
-	g.Name = m.Name;
-	g.ScheduleDay = m.ScheduleDay;
-	g.ScheduleTime = m.ScheduleTime;
-	g.Lat = m.Lat;
-	g.Lng = m.Lng;
+	g.Name = m.Name
+	g.ScheduleDay = m.ScheduleDay
+	g.ScheduleTime = m.ScheduleTime
+	g.Lat = m.Lat
+	g.Lng = m.Lng
 
 	if err != nil {
 		panic(err)
-	}else{
-		services.DBCPsql.Create(&g);
+	} else {
+		services.DBCPsql.Create(&g)
 
 		rga := r.RGroupAgent{}
-		rga.GroupId = g.ID;
-		rga.AgentId = m.Agent;
+		rga.GroupId = g.ID
+		rga.AgentId = m.Agent
 
 		if err := services.DBCPsql.Create(&rga).Error; err != nil {
 			panic(err)
 		}
 
 		rgb := r.RGroupBranch{}
-		rgb.GroupId = g.ID;
-		rgb.BranchId = m.Branch;
+		rgb.GroupId = g.ID
+		rgb.BranchId = m.Branch
 
-		services.DBCPsql.Create(&rgb);
+		services.DBCPsql.Create(&rgb)
 
-		rgborrower := r.RGroupBorrower{GroupId : g.ID, BorrowerId : 0}
-		services.DBCPsql.Create(&rgborrower);
-
+		rgborrower := r.RGroupBorrower{GroupId: g.ID, BorrowerId: 0}
+		services.DBCPsql.Create(&rgborrower)
 
 	}
 	ctx.JSON(iris.StatusOK, iris.Map{"status": "success", "data": m})
 
 }
 
-func Update(ctx *iris.Context){
+func Update(ctx *iris.Context) {
 	groupId := ctx.Get("id")
 	type Payload struct {
-		ID 						uint64 			`json:"_id"`
-		Name 					string 			`json:"name"`
-		ScheduleDay 	string 			`json:"scheduleDay"`
-		ScheduleTime 	string 			`json:"scheduleTime"`
-		Lat 					float64 		`json:"lat"`
-		Lng 					float64 		`json:"lng"`
-		Agent 				uint64 			`json:"agentId"`
+		ID           uint64  `json:"_id"`
+		Name         string  `json:"name"`
+		ScheduleDay  string  `json:"scheduleDay"`
+		ScheduleTime string  `json:"scheduleTime"`
+		Lat          float64 `json:"lat"`
+		Lng          float64 `json:"lng"`
+		Agent        uint64  `json:"agentId"`
 	}
 
 	m := Payload{}
 	err := ctx.ReadJSON(&m)
 
 	g := Group{}
-	g.Name = m.Name;
-	g.ScheduleDay = m.ScheduleDay;
-	g.ScheduleTime = m.ScheduleTime;
-	g.Lat = m.Lat;
-	g.Lng = m.Lng;
+	g.Name = m.Name
+	g.ScheduleDay = m.ScheduleDay
+	g.ScheduleTime = m.ScheduleTime
+	g.Lat = m.Lat
+	g.Lng = m.Lng
 
 	query := `update "group" set "name" = ?, "scheduleDay" = ?, "scheduleTime" = ?, "lat" = ?, "lng" = ? where "group"."id" = ?`
 	if err != nil {
 		panic(err)
-	}else{
-		services.DBCPsql.Raw(query, g.Name, g.ScheduleTime, g.ScheduleDay, g.Lat, g.Lng, groupId).Scan(&g)
+	} else {
+		services.DBCPsql.Raw(query, g.Name, g.ScheduleDay, g.ScheduleTime, g.Lat, g.Lng, groupId).Scan(&g)
 
 		rga := r.RGroupAgent{}
-		rga.AgentId = m.Agent;
+		rga.AgentId = m.Agent
 
 		query_r_group_agent := `update "r_group_agent" set "agentId" = ? where "r_group_agent"."groupId" = ?`
 		services.DBCPsql.Raw(query_r_group_agent, m.Agent, groupId).Scan(&rga)
@@ -194,7 +193,7 @@ func Update(ctx *iris.Context){
 
 }
 
-func UpdateGroupBorrower(ctx *iris.Context){
+func UpdateGroupBorrower(ctx *iris.Context) {
 	groupId := ctx.Get("id")
 
 	type Payload struct {
@@ -205,17 +204,14 @@ func UpdateGroupBorrower(ctx *iris.Context){
 
 	if err != nil {
 		panic(err)
-	}else{
+	} else {
 		r := r.RGroupBorrower{}
-		r.BorrowerId = m.BorrowerId;
+		r.BorrowerId = m.BorrowerId
 
 		query := `update "r_group_borrower" set "borrowerId" = ? where "r_group_borrower"."groupId" = ?`
 		services.DBCPsql.Raw(query, r.BorrowerId, groupId).Scan(&r)
 	}
 }
-
-
-
 
 // GetGroupByBranchID is a method to get group by branch ID
 func GetGroupByBranchID(ctx *iris.Context) {
