@@ -14,6 +14,7 @@ import (
 	"bitbucket.org/go-mis/services"
 	"github.com/jinzhu/gorm"
 	iris "gopkg.in/kataras/iris.v4"
+	"fmt"
 )
 
 func Init() {
@@ -34,7 +35,7 @@ func Approve(ctx *iris.Context) {
 		})
 		return
 	}
-
+	fmt.Println("Request JSON Approve Borrower",payload)
 	loanID := CreateBorrowerData(ctx, payload, sourceType)
 
 	if loanID < 1 {
@@ -254,7 +255,11 @@ func CreateCIF(payload map[string]interface{}) cif.Cif {
 	var cpl map[string]string
 	cpl = make(map[string]string)
 	for k, v := range payload {
-		cpl[k] = v.(string)
+		if v==nil{
+			cpl[k]=""
+		}else{
+			cpl[k] = v.(string)
+		}
 	}
 
 	// map each payload field to it's respective cif field
