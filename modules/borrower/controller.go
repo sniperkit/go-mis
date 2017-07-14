@@ -297,7 +297,11 @@ func CreateLoan(payload map[string]interface{}) loan.Loan {
 	var cpl map[string]string
 	cpl = make(map[string]string)
 	for k, v := range payload {
-		cpl[k] = v.(string)
+		if v==nil{
+			cpl[k]=""
+		}else{
+			cpl[k] = v.(string)
+		}
 	}
 
 	// map each payload field to it's respective cif field
