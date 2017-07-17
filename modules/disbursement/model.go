@@ -37,6 +37,7 @@ func (disbursementStageInput *DisbursementStageInput) UpdateDateValue() {
 }
 
 type DisbursementDetailByGroup struct {
+	InvestorId       uint64    `gorm:"column:investorId" json:"investorId"`
 	GroupID          uint64    `gorm:"column:groupId" json:"groupId"`
 	GroupName        string    `gorm:"column:groupName" json:"groupName"`
 	BranchName       string    `gorm:"column:branchName" json:"branchName"`
