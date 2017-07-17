@@ -23,9 +23,24 @@ func Checking(ctx *iris.Context) {
 
 	v := config.Version
 
+	/*
+		ctx.JSON(iris.StatusOK, iris.Map{
+			"status":     "success",
+			"data":       "Database Up",
+			"APIVersion": v,
+		})
+	*/
+
+	db_stat := make(map[string]string)
+	db_stat["database"] = "up"
+
+	// add all required status here
+	data := []map[string]string{db_stat}
+
 	ctx.JSON(iris.StatusOK, iris.Map{
+
 		"status":     "success",
-		"data":       "Database Up",
+		"data":       data,
 		"APIVersion": v,
 	})
 }
