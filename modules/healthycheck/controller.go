@@ -13,32 +13,21 @@ func Checking(ctx *iris.Context) {
 
 	mRole := role.Role{}
 
+	// DB status
+	db_stat := make(map[string]string)
+	db_stat["dbms"] = "Postgresql"
 	if e := services.DBCPsql.Raw(query).Scan(&mRole).Error; e != nil {
-		ctx.JSON(iris.StatusOK, iris.Map{
-			"status": "failed",
-			"data":   e,
-		})
-		return
+		db_stat["status"] = "down"
 	}
+	db_stat["status"] = "up"
 
+	// API version
 	v := config.Version
 
-	/*
-		ctx.JSON(iris.StatusOK, iris.Map{
-			"status":     "success",
-			"data":       "Database Up",
-			"APIVersion": v,
-		})
-	*/
-
-	db_stat := make(map[string]string)
-	db_stat["database"] = "up"
-
-	// add all required status here
+	// add all required status here, for now it's only the DB
 	data := []map[string]string{db_stat}
 
 	ctx.JSON(iris.StatusOK, iris.Map{
-
 		"status":     "success",
 		"data":       data,
 		"APIVersion": v,
