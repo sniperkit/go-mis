@@ -15,6 +15,7 @@ import (
 	"bitbucket.org/go-mis/modules/disbursement-report"
 	"bitbucket.org/go-mis/modules/emergency-loan"
 	"bitbucket.org/go-mis/modules/group"
+	"bitbucket.org/go-mis/modules/healthycheck"
 	"bitbucket.org/go-mis/modules/installment"
 	"bitbucket.org/go-mis/modules/investor"
 	"bitbucket.org/go-mis/modules/investor-check"
@@ -175,4 +176,5 @@ func InitCustomApi() {
 	iris.Get(baseURL+"/location", location.GetLocation)
 	iris.Post(baseURL+"/location/translate", location.TranslateLoc)
 	iris.Get(baseURL+"/location/:location_code", location.GetLocationById)
+	iris.Get(baseURL+"/healthycheck", healthycheck.Checking)
 }

@@ -21,9 +21,10 @@ var (
 )
 
 type Config struct {
-	Psql  []DbConfig `json:"psql"`
-	Mysql DbConfig   `json:"mysql"`
-	UploaderPath string `json:"uploaderPath"`
+	Psql         []DbConfig `json:"psql"`
+	Mysql        DbConfig   `json:"mysql"`
+	UploaderPath string     `json:"uploaderPath"`
+	ApiVersion   string     `json:"apiVersion"`
 }
 
 type DbConfig struct {
@@ -34,6 +35,8 @@ type DbConfig struct {
 	Password string `json:"password"`
 	SslMode  string `json:"ssl_mode"`
 }
+
+var Version string
 
 func init() {
 	ApiKey = "$2a$06$20EpVmcNvVg0heEijxLEP.Aw0hhoC7kJyuGltJnYZMStuhOLwPB7W"
@@ -70,6 +73,11 @@ func init() {
 
 	var c Config
 	json.Unmarshal(configFile, &c)
+	c.ApiVersion = "2.1.0"
+	fmt.Println("Version:", c.ApiVersion)
+	fmt.Println("------------------")
+
+	Version = c.ApiVersion
 
 	UploaderApiPath = c.UploaderPath
 
