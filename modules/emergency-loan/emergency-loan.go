@@ -8,10 +8,20 @@ import (
   "bitbucket.org/go-mis/modules/borrower"
 	"bitbucket.org/go-mis/services"
 	"bitbucket.org/go-mis/modules/r"
+	"bitbucket.org/go-mis/config"
+	"fmt"
 )
 
 
 func SubmitEmergencyLoan (ctx *iris.Context) {
+
+	if !config.EnableEmergencyLoan {
+		ctx.JSON(iris.StatusBadRequest, iris.Map{
+			"status":  "error",
+			"message": "Emergency loan not enable",
+		})
+		return
+	}
 
 	type Payload struct {
 		EmergencyLoanBorrower
@@ -41,30 +51,6 @@ func SubmitEmergencyLoan (ctx *iris.Context) {
 		oldLoanID  := el[idx].OldLoanId
 		sectorID := el[idx].SectorId
 		purpose := el[idx].Purpose
-
-		/*
-		disbursementDate, err := time.Parse(DATE_LAYOUT, el[idx].DisbursementDate + DATE_TAIL)
-		if err != nil {
-			ctx.JSON(iris.StatusInternalServerError, iris.Map{
-				"status":  "error",
-				"message": err.Error(),
-			})
-			return
-		}
-		dd := disbursementDate.String()
-		dd = dd[:len(dd)-10] // -_-"
-		
-		submittedLoanDate, err := time.Parse(DATE_LAYOUT, el[idx].Date + DATE_TAIL)
-		if err != nil {
-			ctx.JSON(iris.StatusInternalServerError, iris.Map{
-				"status":  "error",
-				"message": err.Error(),
-			})
-			return
-		}
-		sld := submittedLoanDate.String()
-		sld = sld[:len(sld)-10] // get rid of "0000 UTC" thingy -_-"
-		*/
 
 		// get requiredData from oldLoad
 		oldLoan := loan.Loan{}
@@ -144,5 +130,9 @@ func SubmitEmergencyLoan (ctx *iris.Context) {
 
 	  db.Commit()
 	}
+	fmt.Println("Success created emergency loan")
+	ctx.JSON(iris.StatusOK, iris.Map{
+		"data": "success",
+	})
 }
 

@@ -18,6 +18,7 @@ var (
 	PsqlHostAddressSurvey     string
 	MysqlHostAddress          string
 	UploaderApiPath           string
+	EnableEmergencyLoan		  bool
 )
 
 type Config struct {
@@ -25,6 +26,7 @@ type Config struct {
 	Mysql        DbConfig   `json:"mysql"`
 	UploaderPath string     `json:"uploaderPath"`
 	ApiVersion   string     `json:"apiVersion"`
+	EnableEmergencyLoan bool `json:"enableEmergencyLoan"`
 }
 
 type DbConfig struct {
@@ -80,6 +82,7 @@ func init() {
 	Version = c.ApiVersion
 
 	UploaderApiPath = c.UploaderPath
+	EnableEmergencyLoan = c.EnableEmergencyLoan
 
 	// Postgresql Host Address
 	PsqlHostAddressMisAmartha = "host=" + c.Psql[0].Host + " port=" + c.Psql[0].Port + " user=" + c.Psql[0].Username + " dbname=" + c.Psql[0].Db + " sslmode=" + c.Psql[0].SslMode
