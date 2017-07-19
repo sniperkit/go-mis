@@ -57,11 +57,12 @@ func FetchAll(ctx *iris.Context) {
 func FetchSingle(ctx *iris.Context) {
 	id, _ := strconv.Atoi(ctx.Param("id"))
 
-	query := `select i.id, camp.amount as "campaignAmount", c.username, c.name, lo."orderNo", l.id "loanId", l.purpose, acc."totalBalance", l.plafond, lo.remark,
+	query := `select acc.threshold as "threshold",i.id, camp.amount as "campaignAmount", c.username, c.name, lo."orderNo", l.id "loanId", l.purpose, acc."totalBalance", l.plafond, lo.remark,
 	case when rlov.id is not null then TRUE else FALSE end "usingVoucher", 
 	case when rlov.id is not null then v.amount else 0 end "voucherAmount",
 	case when rloc.id is not null then TRUE else FALSE end "participateCampaign",
-	case when rloc.id is not null then rloc.quantity else 0 end "quantityOfCampaignItem"
+	case when rloc.id is not null then rloc.quantity else 0 end "quantityOfCampaignItem",
+	case when lo.remark = 'PENDING-REFERRAL' then TRUE else FALSE end "usingRefreal"
 	from investor i
 	join r_account_investor rai on i.id = rai."investorId"
 	join account acc on acc.id = rai."accountId"
@@ -75,7 +76,7 @@ func FetchSingle(ctx *iris.Context) {
 	left join campaign camp on rloc."campaignId" = camp.id
 	left join r_loan_order_voucher rlov on rlov."loanOrderId" = lo.id
 	left join voucher v on v.id = rlov."voucherId"
-	where lo.remark = 'PENDING' and lo.id = ?`
+	where (lo.remark = 'PENDING' or lo.remark = 'PENDING-REFERRAL') and lo.id = ?`
 
 	loanOrderSchema := []LoanOrderDetail{}
 	e := services.DBCPsql.Raw(query, id).Scan(&loanOrderSchema).Error

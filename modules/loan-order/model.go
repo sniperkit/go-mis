@@ -43,6 +43,7 @@ type LoanOrderList struct {
 type LoanOrderDetail struct {
 	ID                     uint64  `gorm:"column:id" json:"_id"`
 	Username               string  `gorm:"username" json:"username"`
+	Threshold               string    `gorm:"threshold" json:"threshold"`
 	Name                   string  `gorm:"name" json:"name"`
 	OrderNo                string  `gorm:"column:orderNo" json:"orderNo"`
 	LoanId                 uint64  `gorm:"column:loanId" json:"loanId"`
@@ -54,6 +55,7 @@ type LoanOrderDetail struct {
 	QuantityOfCampaignItem uint64  `gorm:"column:quantityOfCampaignItem" json:"quantityOfCampaignItem"`
 	CampaignAmount         float64 `gorm:"column:campaignAmount" json:"campaignAmount"`
 	Plafond                float64 `gorm:"column:plafond" json:"plafond"`
+	UsingRefreal    bool      `gorm:"column:usingRefreal" json:"usingRefreal"`
 	Remark                 string  `gorm:"column:remark" json:"remark"`
 }
 
