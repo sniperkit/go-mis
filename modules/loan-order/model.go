@@ -25,6 +25,7 @@ type LoanOrderInvestorPendingWaiting struct {
 
 type LoanOrderList struct {
 	ID                     uint64    `gorm:"column:id" json:"_id"`
+	Threshold               string    `gorm:"threshold" json:"threshold"`
 	Username               string    `gorm:"username" json:"username"`
 	Name                   string    `gorm:"name" json:"name"`
 	OrderNo                string    `gorm:"column:orderNo" json:"orderNo"`
@@ -35,6 +36,7 @@ type LoanOrderList struct {
 	ParticipateCampaign    bool      `gorm:"column:participateCampaign" json:"participateCampaign"`
 	QuantityOfCampaignItem uint64    `gorm:"column:quantityOfCampaignItem" json:"quantityOfCampaignItem"`
 	CampaignAmount         float64   `gorm:"column:campaignAmount" json:"campaignAmount"`
+	UsingRefreal    bool      `gorm:"column:usingRefreal" json:"usingRefreal"`
 	CreatedAt              time.Time `gorm:"column:createdAt" json:"createdAt"`
 }
 

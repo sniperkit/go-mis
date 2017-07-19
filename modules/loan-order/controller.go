@@ -22,24 +22,25 @@ func Init() {
 
 func FetchAll(ctx *iris.Context) {
 
-	query := `select lo."createdAt", camp.amount as "campaignAmount", lo.id , c.name, c.username, a."totalBalance","orderNo",sum(l.plafond) as "totalPlafond",
-	case when rlov.id is not null then TRUE else FALSE end "usingVoucher", 
+	query := `select a.threshold as "threshold", lo."createdAt", camp.amount as "campaignAmount", lo.id , c.name, c.username, a."totalBalance","orderNo",sum(l.plafond) as "totalPlafond",
+	case when rlov.id is not null then TRUE else FALSE end "usingVoucher",
 	case when rlov.id is not null then v.amount else 0 end "voucherAmount",
 	case when rloc.id is not null then TRUE else FALSE end "participateCampaign",
-	case when rloc.id is not null then rloc.quantity else 0 end "quantityOfCampaignItem"
-	from loan l 
-	join r_loan_order rlo on l.id = rlo."loanId" 
-	join loan_order lo on lo.id = rlo."loanOrderId" 
-	join r_investor_product_pricing_loan rippl on rippl."loanId" = l.id 
-	join investor i on i.id = rippl."investorId" join r_cif_investor rci on rci."investorId" = i.id 
-	join cif c on c.id = rci."cifId" join r_account_investor rai on rai."investorId" = i.id 
+	case when rloc.id is not null then rloc.quantity else 0 end "quantityOfCampaignItem",
+	case when lo.remark = 'PENDING-REFERRAL' then TRUE else FALSE end "usingRefreal"
+	from loan l
+	join r_loan_order rlo on l.id = rlo."loanId"
+	join loan_order lo on lo.id = rlo."loanOrderId"
+	join r_investor_product_pricing_loan rippl on rippl."loanId" = l.id
+	join investor i on i.id = rippl."investorId" join r_cif_investor rci on rci."investorId" = i.id
+	join cif c on c.id = rci."cifId" join r_account_investor rai on rai."investorId" = i.id
 	join account a on a.id = rai."accountId"
 	left join r_loan_order_voucher rlov on rlov."loanOrderId" = lo.id
 	left join voucher v on v.id = rlov."voucherId"
 	left join r_loan_order_campaign rloc on rloc."loanOrderId" = lo.id
 	left join campaign camp on rloc."campaignId" = camp.id
-	where lo.remark = 'PENDING' and a."deletedAt" isnull and l."deletedAt" isnull and lo."deletedAt" isnull and c."deletedAt" isnull and i."deletedAt" isnull
-	group by  camp.amount, c.name, c.username, a."totalBalance","orderNo",lo.id, rlov.id, rloc.id, rloc.quantity, v.amount order by lo.id desc`
+	where (lo.remark = 'PENDING' or lo.remark = 'PENDING-REFERRAL') and a."deletedAt" isnull and l."deletedAt" isnull and lo."deletedAt" isnull and c."deletedAt" isnull and i."deletedAt" isnull
+	group by  a.threshold,camp.amount, c.name, c.username, a."totalBalance","orderNo",lo.id, rlov.id, rloc.id, rloc.quantity, v.amount order by lo.id desc`
 
 	loanOrderSchema := []LoanOrderList{}
 	e := services.DBCPsql.Raw(query).Scan(&loanOrderSchema).Error
