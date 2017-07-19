@@ -5,8 +5,8 @@ import (
 	"strconv"
 	"time"
 
-	accountTransactionCredit "bitbucket.org/go-mis/modules/account-transaction-credit"
-	accountTransactionDebit "bitbucket.org/go-mis/modules/account-transaction-debit"
+	"bitbucket.org/go-mis/modules/account-transaction-credit"
+	"bitbucket.org/go-mis/modules/account-transaction-debit"
 	"bitbucket.org/go-mis/modules/campaign"
 	"bitbucket.org/go-mis/modules/r"
 	"bitbucket.org/go-mis/modules/voucher"
@@ -97,7 +97,7 @@ func AcceptLoanOrder(ctx *iris.Context) {
 	// get loanid
 	loans := GetLoans(orderNo)
 	// account
-	accountId := GetAccountId(orderNo)
+	accId := GetAccountId(orderNo)
 	// update success
 	var voucherAmount float64 = 0.0
 	voucherData := voucher.CheckVoucherByOrderNo(orderNo)
@@ -105,10 +105,13 @@ func AcceptLoanOrder(ctx *iris.Context) {
 		voucherAmount = voucherData.Amount
 	}
 
-	totalDebit := accountTransactionDebit.GetTotalAccountTransactionDebit(accountId)
-	totalCredit := accountTransactionCredit.GetTotalAccountTransactionCredit(accountId)
+	db := services.DBCPsql.Begin()
 
-	totalBalance := (totalDebit + voucherAmount) - totalCredit
+	totalDebit := accountTransactionDebit.GetTotalAccountTransactionDebit(accId.AccountId)
+	totalCredit := accountTransactionCredit.GetTotalAccountTransactionCredit(accId.AccountId)
+	totalOrder,_ := calculateTotalPayment(orderNo, db)
+	totalBalance := (totalDebit + voucherAmount) - totalCredit - totalOrder
+
 	if totalBalance < 0 {
 		ctx.JSON(iris.StatusOK, iris.Map{
 			"status":  "error",
@@ -118,31 +121,37 @@ func AcceptLoanOrder(ctx *iris.Context) {
 		return
 	}
 
-	db := services.DBCPsql.Begin()
-
 	if err := UpdateSuccess(orderNo, db); err != nil {
 		processErrorAndRollback(ctx, orderNo, db, err, "Update Success")
 		return
 	}
 
-	if err := CheckVoucherAndInsertToDebit(accountId, orderNo, db); err != nil {
+	if err := CheckVoucherAndInsertToDebit(accId.AccountId, orderNo, db); err != nil {
 		processErrorAndRollback(ctx, orderNo, db, err, "Check Voucher and Insert into Debit")
 		return
 	}
 
-	if err := CheckingCampaignAndProgressIntoAccountTransaction(accountId, orderNo, db); err != nil {
+	if err := CheckingCampaignAndProgressIntoAccountTransaction(accId.AccountId, orderNo, db); err != nil {
 		processErrorAndRollback(ctx, orderNo, db, err, "Check Campaign and Insert into Credit")
 		return
 	}
 
-	if err := UpdateCredit(loans, accountId, db); err != nil {
-		processErrorAndRollback(ctx, orderNo, db, err, "Update Credit")
+	accountTRCredit, errUpdateCredit := UpdateCredit(loans, totalOrder, accId.AccountId, db)
+	if errUpdateCredit != nil {
+		processErrorAndRollback(ctx, orderNo, db, errUpdateCredit, "Update Credit")
 		return
 	}
-	if err := UpdateAccountCredit(orderNo, accountId, db); err != nil {
+
+	if err := UpdateAccountCredit(totalOrder, accId.AccountId, db); err != nil {
 		processErrorAndRollback(ctx, orderNo, db, err, "Update Account")
 		return
 	}
+
+	if err:= CheckReferalAndEmptytreshold(accId.InvestorId,accountTRCredit.ID,orderNo,db);err!=nil{
+		processErrorAndRollback(ctx, orderNo, db, err, "Check Referal and Empty Treshold")
+		return
+	}
+
 	if err := insertLoanHistoryAndRLoanHistory(orderNo, db); err != nil {
 		processErrorAndRollback(ctx, orderNo, db, err, "Insert Loan History")
 		return
@@ -188,30 +197,30 @@ func GetLoans(orderNo string) []int64 {
 	return l
 }
 
-func UpdateCredit(loans []int64, accountId uint64, db *gorm.DB) error {
+func UpdateCredit(loans []int64, totalPayment float64, accountId uint64, db *gorm.DB) (*accountTransactionCredit.AccountTransactionCredit, error) {
+	accountTRCredit := &accountTransactionCredit.AccountTransactionCredit{Type: "INVEST", Amount: totalPayment, TransactionDate: time.Now()}
+	db.Table("account_transaction_credit").Create(accountTRCredit)
+
+	//Insert into r_account_transaction_credit
+	r_accountTRCredit := &r.RAccountTransactionCredit{AccountId: accountId, AccountTransactionCreditId: accountTRCredit.ID}
+	db.Table("r_account_transaction_credit").Create(r_accountTRCredit)
+
 	for _, loanId := range loans {
-
-		query := `with ins_1 as (insert into account_transaction_credit ("type","amount","transactionDate","createdAt")
-		select 'INVEST', plafond, current_timestamp + interval '1 second', current_timestamp + interval '1 second' from loan l where l.id = ? returning id),
-		ins_2 as (
-			insert into r_account_transaction_credit_loan ("loanId","accountTransactionCreditId","createdAt")
-			select ?, ins_1.id,current_timestamp from ins_1 returning "accountTransactionCreditId")
-			insert into r_account_transaction_credit ("accountTransactionCreditId","accountId","createdAt")
-			select ins_2."accountTransactionCreditId",?, current_timestamp + interval '1 second' from ins_2`
-
-		if err := db.Exec(query, loanId, loanId, accountId).Error; err != nil {
-			return err
+		insertRatclQuery := "INSERT INTO r_account_transaction_credit_loan(\"loanId\",\"accountTransactionCreditId\", \"createdAt\", \"updatedAt\") VALUES(?,?,current_timestamp,current_timestamp)"
+		if err := db.Exec(insertRatclQuery, loanId, accountTRCredit.ID).Error; err != nil {
+			return accountTRCredit, err
 		}
 	}
-	return nil
+	return accountTRCredit, nil
 }
 
 type AccId struct {
-	AccountId uint64 `gorm:"column:accountId"`
+	AccountId  uint64 `gorm:"column:accountId"`
+	InvestorId uint64 `gorm:"column:investorId"`
 }
 
-func GetAccountId(orderNo string) uint64 {
-	query := `select rai."accountId" from loan_order lo
+func GetAccountId(orderNo string) AccId {
+	query := `select rai."investorId",rai."accountId" from loan_order lo
 	join r_loan_order rlo on rlo."loanOrderId" = lo.id
 	join r_investor_product_pricing_loan rippl on rippl."loanId" = rlo."loanId"
 	join r_account_investor rai on rai."investorId" = rippl."investorId"
@@ -219,22 +228,12 @@ func GetAccountId(orderNo string) uint64 {
 
 	var accId AccId
 	services.DBCPsql.Raw(query, orderNo).Scan(&accId) // ntar
-	return accId.AccountId
+	return accId
 }
 
-func UpdateAccountCredit(orderNo string, accountId uint64, db *gorm.DB) error {
-	query := `select SUM(plafond) "total"
-	from loan l join r_loan_order rlo on l.id = rlo."loanId"
-	join loan_order lo on lo.id = rlo."loanOrderId"
-	where lo."orderNo"=?`
-
-	r := struct{ Total int64 }{}
-	if err := db.Raw(query, orderNo).Scan(&r).Error; err != nil {
-		return err
-	}
-
-	query = `update account set "totalCredit" = "totalCredit"+?, "totalBalance" = "totalBalance"-? where account.id = ?`
-	return db.Exec(query, r.Total, r.Total, accountId).Error
+func UpdateAccountCredit(totalOrder float64, accountId uint64, db *gorm.DB) error {
+	query := `update account set "totalCredit" = "totalCredit"+?, "totalBalance" = "totalBalance"-? where account.id = ?`
+	return db.Exec(query, totalOrder, totalOrder, accountId).Error
 }
 
 type InvestorStruct struct {
@@ -326,6 +325,85 @@ func RejectLoanOrder(ctx *iris.Context) {
 		"status": "success",
 		"data":   iris.Map{},
 	})
+}
+
+func calculateTotalPayment(orderNo string, db *gorm.DB) (float64,error) {
+	query := `select SUM(plafond) "total"
+	from loan l join r_loan_order rlo on l.id = rlo."loanId"
+	join loan_order lo on lo.id = rlo."loanOrderId"
+	where lo."orderNo"=?`
+
+	r := struct{ Total float64 }{}
+	if err := db.Raw(query, orderNo).Scan(&r).Error; err != nil {
+		return 100000000000,err
+	}
+	return r.Total,nil
+}
+
+func CheckReferalAndEmptytreshold(investorId uint64,atcId uint64, orderNo string, db *gorm.DB) error {
+	type LoanOrder struct {
+		Remark string `json:"remark" gorm:"column:remark"`
+	}
+	lo:=&LoanOrder{}
+	queryLo:=`select * from loan_order where "orderNo"=?`
+	db.Raw(queryLo, orderNo).Scan(lo)
+
+	if lo.Remark=="PENDING-REFERRAL" {
+		investorID := strconv.FormatUint(investorId, 10)
+		atcID := strconv.FormatUint(atcId, 10)
+
+		queryRefferal := `with A as (
+			select id, "inviterInvestorId" from referral where "inviteeInvestorId" = ` + investorID + ` and "inviterGetTimestamp" isnull and "deletedAt" isnull
+			),
+			B as (
+				update referral set "inviterGetTimestamp" = current_timestamp, "inviteeUseTimestamp" = current_timestamp
+				from A where A.id = referral.id
+				returning referral.id,concat('SUCCESSFUL REFERRAL INVITEE = ',"inviteeInvestorId",' INVITER = ',referral."inviterInvestorId",' REFERALL ID = ',referral.id) "remark",
+				referral."inviterInvestorId","inviteeInvestorId","inviterGetTimestamp","inviteeGetTimestamp","createdAt","updatedAt","deletedAt"
+			),
+			C as (
+				insert into account_transaction_debit ("type", amount, remark, "transactionDate","createdAt", "updatedAt")
+				select 'REFERRAL-INVITER',100000,"remark",current_timestamp,current_timestamp,current_timestamp from B
+				returning id, remark
+			),
+			D as (
+				insert into r_account_transaction_debit_referral ("accountTransactionDebitId","referralId","createdAt")
+				select C.id, split_part(remark,' ',12)::int, current_timestamp from C),
+			E as (
+				insert into r_account_transaction_credit_referral ("accountTransactionCreditId","referralId","createdAt")
+				select ` + atcID + `, A.id, current_timestamp from A
+			),
+			F as(
+				update referral set "inviterUseTimestamp" = current_timestamp
+				where "inviterInvestorId" = ` + investorID + ` and "inviterUseTimestamp" is null and "inviterGetTimestamp" is not null and "deletedAt" isnull
+				returning id
+			),
+			G as (
+				insert into r_account_transaction_credit_referral ("accountTransactionCreditId","referralId","createdAt")
+				select ` + atcID + `, F.id, current_timestamp from F
+			),
+			H as (
+				update account set threshold = coalesce(threshold,0) - (bar.amount+foobar.amount), "totalDebit" = "totalDebit" - (bar.amount+foobar.amount), "totalBalance" = "totalBalance" - (bar.amount+foobar.amount)
+				from (select id from r_account_investor where "investorId" = ` + investorID + `) foo ,
+				(select count(1)*100000 "amount" from B) bar,
+				(select count(1)*100000 "amount" from F) foobar
+				where account.id = foo.id
+				returning account.id),
+			I as (
+				insert into r_account_transaction_debit ("accountTransactionDebitId","accountId","createdAt")
+				select C.id, rai."accountId", current_timestamp from C
+				join r_account_investor rai on split_part(C.remark,' ',8)::int = rai."investorId"
+				),
+			J as(
+				update account set threshold = coalesce(threshold,0) + total * 100000, "totalDebit" = coalesce("totalDebit",0) + total * 100000, "totalBalance" = coalesce("totalBalance",0) + total * 100000
+				from (select rai."accountId" id, count(1) "total" from r_account_investor rai join B on rai."investorId" = B."inviterInvestorId" group by "accountId" ) foo where account.id = foo.id
+				returning account.id
+			)
+			select * from B`
+		return db.Exec(queryRefferal).Error
+	}
+	return nil
+
 }
 
 func CheckVoucherAndInsertToDebit(accountID uint64, orderNo string, db *gorm.DB) error {
