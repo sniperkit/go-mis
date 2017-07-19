@@ -19,7 +19,7 @@ func GetLoanRawById(ctx *iris.Context){
 	if e := services.DBCPsql.Raw(query, loanID).Scan(&m).Error; e != nil {
 		ctx.JSON(iris.StatusBadRequest, iris.Map{
 			"status": "Error",
-			"message":"Data not found",
+			"message":"Data not available",
 			"data":   e,
 		})
 		return
