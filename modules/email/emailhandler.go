@@ -1,13 +1,13 @@
 package email
 
-func SendEmailVerificationSuccess(email string, name string, va_bca string, va_bca_name string, va_bri string, va_bri_name string) {
+func SendEmailVerificationSuccess(email string, name string, va_bca string, va_bca_name string, va_mandiri string, va_mandiri_name string) {
 
 	var subs = map[string]interface{}{
 		"first_name":  name,
 		"va_bca":      va_bca,
 		"va_bca_name": va_bca_name,
-		"va_bri":      va_bri,
-		"va_bri_name": va_bri_name,
+		"va_mandiri":      va_mandiri,
+		"va_mandiri_name": va_mandiri_name,
 	}
 
 	mandrill := new(Mandrill)
