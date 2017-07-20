@@ -10,6 +10,7 @@ import (
 	va "bitbucket.org/go-mis/modules/virtual-account"
 	"bitbucket.org/go-mis/services"
 	iris "gopkg.in/kataras/iris.v4"
+	"strings"
 )
 
 type totalData struct {
@@ -111,18 +112,17 @@ func Verify(ctx *iris.Context) {
 
 			vaData := make(map[string]string)
 			for _, val := range userVa {
-				if val.BankName == "BRI" {
-					vaData["BRI"] = val.VirtualAccountNo
-					vaData["BRI_HOLDER"] = val.VirtualAccountName
-				} else if val.BankName == "BCA" {
+				if val.BankName == "BCA" {
 					vaData["BCA"] = val.VirtualAccountNo
 					vaData["BCA_HOLDER"] = val.VirtualAccountName
 				}
 			}
+			vaData["MANDIRI_HOLDER"] = vaData["BCA_HOLDER"]
+			vaData["MANDIRI"]= rightPad2Len("88000101000000", strconv.FormatUint(inv.InvestorId, 10), 14-len(strconv.FormatUint(inv.InvestorId, 10)))
 
 			if cifSchema.Username != "" {
 				fmt.Println("Sending email..")
-				go email.SendEmailVerificationSuccess(cifSchema.Username, cifSchema.Name, vaData["BCA"], vaData["BCA_HOLDER"], vaData["BRI"], vaData["BRI_HOLDER"])
+				go email.SendEmailVerificationSuccess(cifSchema.Username, cifSchema.Name, vaData["BCA"], vaData["BCA_HOLDER"], vaData["MANDIRI"], vaData["MANDIRI_HOLDER"])
 				// sendgrid := email.Sendgrid{}
 				// sendgrid.SetFrom("Amartha", "no-reply@amartha.com")
 				// sendgrid.SetTo(cifSchema.Name, cifSchema.Username)
@@ -159,6 +159,13 @@ func Verify(ctx *iris.Context) {
 		"status":             "success",
 		"verificationStatus": status,
 	})
+}
+
+func rightPad2Len(s string, padStr string, overallLen int) string {
+	var padCountInt int
+	padCountInt = 1 + ((overallLen - len(padStr)) / len(padStr))
+	var retStr = s + strings.Repeat(padStr, padCountInt)
+	return retStr[:overallLen] + padStr
 }
 
 // Verified - verify the selected investor
