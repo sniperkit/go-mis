@@ -121,11 +121,6 @@ func AcceptLoanOrder(ctx *iris.Context) {
 		return
 	}
 
-	if err := UpdateSuccess(orderNo, db); err != nil {
-		processErrorAndRollback(ctx, orderNo, db, err, "Update Success")
-		return
-	}
-
 	if err := CheckVoucherAndInsertToDebit(accId.AccountId, orderNo, db); err != nil {
 		processErrorAndRollback(ctx, orderNo, db, err, "Check Voucher and Insert into Debit")
 		return
@@ -149,6 +144,11 @@ func AcceptLoanOrder(ctx *iris.Context) {
 
 	if err:= CheckReferalAndEmptytreshold(accId.InvestorId,accountTRCredit.ID,orderNo,db);err!=nil{
 		processErrorAndRollback(ctx, orderNo, db, err, "Check Referal and Empty Treshold")
+		return
+	}
+
+	if err := UpdateSuccess(orderNo, db); err != nil {
+		processErrorAndRollback(ctx, orderNo, db, err, "Update Success")
 		return
 	}
 
@@ -349,6 +349,7 @@ func CheckReferalAndEmptytreshold(investorId uint64,atcId uint64, orderNo string
 	db.Raw(queryLo, orderNo).Scan(lo)
 
 	if lo.Remark=="PENDING-REFERRAL" {
+		fmt.Println("Pending REFERAL",lo)
 		investorID := strconv.FormatUint(investorId, 10)
 		atcID := strconv.FormatUint(atcId, 10)
 
@@ -402,6 +403,7 @@ func CheckReferalAndEmptytreshold(investorId uint64,atcId uint64, orderNo string
 			select * from B`
 		return db.Exec(queryRefferal).Error
 	}
+	fmt.Println("Not Pending REFERAL",lo)
 	return nil
 
 }
