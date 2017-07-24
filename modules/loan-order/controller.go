@@ -39,7 +39,7 @@ func FetchAll(ctx *iris.Context) {
 	left join voucher v on v.id = rlov."voucherId"
 	left join r_loan_order_campaign rloc on rloc."loanOrderId" = lo.id
 	left join campaign camp on rloc."campaignId" = camp.id
-	where (lo.remark = 'PENDING' or lo.remark = 'PENDING-REFERRAL') and a."deletedAt" isnull and l."deletedAt" isnull and lo."deletedAt" isnull and c."deletedAt" isnull and i."deletedAt" isnull
+	where (lo.remark = 'PENDING' or lo.remark = 'PENDING-REFERRAL' or lo.remark = 'PENDING-FIRST') and a."deletedAt" isnull and l."deletedAt" isnull and lo."deletedAt" isnull and c."deletedAt" isnull and i."deletedAt" isnull
 	group by  a.threshold,camp.amount, c.name, c.username, a."totalBalance","orderNo",lo.id, rlov.id, rloc.id, rloc.quantity, v.amount order by lo.id desc`
 
 	loanOrderSchema := []LoanOrderList{}
@@ -76,7 +76,7 @@ func FetchSingle(ctx *iris.Context) {
 	left join campaign camp on rloc."campaignId" = camp.id
 	left join r_loan_order_voucher rlov on rlov."loanOrderId" = lo.id
 	left join voucher v on v.id = rlov."voucherId"
-	where (lo.remark = 'PENDING' or lo.remark = 'PENDING-REFERRAL') and lo.id = ?`
+	where (lo.remark = 'PENDING' or lo.remark = 'PENDING-REFERRAL' or lo.remark = 'PENDING-FIRST') and lo.id = ?`
 
 	loanOrderSchema := []LoanOrderDetail{}
 	e := services.DBCPsql.Raw(query, id).Scan(&loanOrderSchema).Error
@@ -109,7 +109,7 @@ func AcceptLoanOrder(ctx *iris.Context) {
 
 	totalDebit := accountTransactionDebit.GetTotalAccountTransactionDebit(accId.AccountId)
 	totalCredit := accountTransactionCredit.GetTotalAccountTransactionCredit(accId.AccountId)
-	totalOrder,_ := calculateTotalPayment(orderNo, db)
+	totalOrder, _ := calculateTotalPayment(orderNo, db)
 	totalBalance := (totalDebit + voucherAmount) - totalCredit - totalOrder
 
 	if totalBalance < 0 {
@@ -142,7 +142,7 @@ func AcceptLoanOrder(ctx *iris.Context) {
 		return
 	}
 
-	if err:= CheckReferalAndEmptytreshold(accId.InvestorId,accountTRCredit.ID,orderNo,db);err!=nil{
+	if err := CheckReferalAndEmptytreshold(accId.InvestorId, accountTRCredit.ID, orderNo, db); err != nil {
 		processErrorAndRollback(ctx, orderNo, db, err, "Check Referal and Empty Treshold")
 		return
 	}
@@ -327,7 +327,7 @@ func RejectLoanOrder(ctx *iris.Context) {
 	})
 }
 
-func calculateTotalPayment(orderNo string, db *gorm.DB) (float64,error) {
+func calculateTotalPayment(orderNo string, db *gorm.DB) (float64, error) {
 	query := `select SUM(plafond) "total"
 	from loan l join r_loan_order rlo on l.id = rlo."loanId"
 	join loan_order lo on lo.id = rlo."loanOrderId"
@@ -335,21 +335,21 @@ func calculateTotalPayment(orderNo string, db *gorm.DB) (float64,error) {
 
 	r := struct{ Total float64 }{}
 	if err := db.Raw(query, orderNo).Scan(&r).Error; err != nil {
-		return 100000000000,err
+		return 100000000000, err
 	}
-	return r.Total,nil
+	return r.Total, nil
 }
 
-func CheckReferalAndEmptytreshold(investorId uint64,atcId uint64, orderNo string, db *gorm.DB) error {
+func CheckReferalAndEmptytreshold(investorId uint64, atcId uint64, orderNo string, db *gorm.DB) error {
 	type LoanOrder struct {
 		Remark string `json:"remark" gorm:"column:remark"`
 	}
-	lo:=&LoanOrder{}
-	queryLo:=`select * from loan_order where "orderNo"=?`
+	lo := &LoanOrder{}
+	queryLo := `select * from loan_order where "orderNo"=?`
 	db.Raw(queryLo, orderNo).Scan(lo)
 
-	if lo.Remark=="PENDING-REFERRAL" {
-		fmt.Println("Pending REFERAL",lo)
+	if lo.Remark == "PENDING-REFERRAL" {
+		fmt.Println("Pending REFERAL", lo)
 		investorID := strconv.FormatUint(investorId, 10)
 		atcID := strconv.FormatUint(atcId, 10)
 
@@ -403,7 +403,41 @@ func CheckReferalAndEmptytreshold(investorId uint64,atcId uint64, orderNo string
 			select * from B`
 		return db.Exec(queryRefferal).Error
 	}
-	fmt.Println("Not Pending REFERAL",lo)
+	if lo.Remark == "PENDING-FIRST" {
+		fmt.Println("Pending First", lo)
+		investorID := strconv.FormatUint(investorId, 10)
+
+		queryRefferal := `with A as (
+        select id, "inviterInvestorId" from referral where "inviteeInvestorId" = ` + investorID + ` and "inviterGetTimestamp" isnull and "deletedAt" isnull
+    ),
+    B as (
+        update referral set "inviterGetTimestamp" = current_timestamp
+        from A where A.id = referral.id
+        returning referral.id,concat('SUCCESSFUL REFERRAL INVITEE = ',"inviteeInvestorId",' INVITER = ',referral."inviterInvestorId",' REFERALL ID = ',referral.id) "remark",
+        referral."inviterInvestorId","inviteeInvestorId","inviterGetTimestamp","inviteeGetTimestamp","createdAt","updatedAt","deletedAt"
+    ),
+    C as (
+        insert into account_transaction_debit ("type", amount, remark, "transactionDate","createdAt", "updatedAt")
+        select 'REFERRAL-INVITER',100000,"remark",current_timestamp,current_timestamp,current_timestamp from B
+        returning id, remark
+    ),
+    D as (
+        insert into r_account_transaction_debit_referral ("accountTransactionDebitId","referralId","createdAt")
+        select C.id, split_part(remark,' ',12)::int, current_timestamp from C)
+    E as (
+        insert into r_account_transaction_debit ("accountTransactionDebitId","accountId","createdAt")
+        select C.id, rai."accountId", current_timestamp from C
+        join r_account_investor rai on split_part(C.remark,' ',8)::int = rai."investorId"
+        ),
+    F as(
+        update account set threshold = coalesce(threshold,0) + total * 100000, "totalDebit" = coalesce("totalDebit",0) + total * 100000, "totalBalance" = coalesce("totalBalance",0) + total * 100000
+        from (select rai."accountId" id, count(1) "total" from r_account_investor rai join B on rai."investorId" = B."inviterInvestorId" group by "accountId" ) foo where account.id = foo.id
+        returning account.id
+    )
+    select * from B`
+		return db.Exec(queryRefferal).Error
+	}
+	fmt.Println("Not Pending REFERAL", lo)
 	return nil
 
 }
