@@ -15,6 +15,7 @@ import (
 	"github.com/jinzhu/gorm"
 	iris "gopkg.in/kataras/iris.v4"
 	"fmt"
+	"github.com/kataras/go-errors"
 )
 
 func Init() {
@@ -66,7 +67,11 @@ func CreateBorrowerData(ctx *iris.Context, payload map[string]interface{}, sourc
 	}
 
 	// reserve one loan record for this new borrower
-	loan := CreateLoan(payload)
+	errLoan,loan := CreateLoan(payload)
+	if errLoan!=nil{
+		ProcessErrorAndRollback(ctx, db, "Error Create object loan "+errLoan.Error())
+		return 0
+	}
 	if db.Table("loan").Create(&loan).Error != nil {
 		ProcessErrorAndRollback(ctx, db, "Error Create Loan")
 		return 0
@@ -292,7 +297,7 @@ func CreateCIF(payload map[string]interface{}) cif.Cif {
 }
 
 // CreateLoan - create loan object
-func CreateLoan(payload map[string]interface{}) loan.Loan {
+func CreateLoan(payload map[string]interface{}) (error,loan.Loan) {
 	// convert each payload  field into empty string
 	var cpl map[string]string
 	cpl = make(map[string]string)
@@ -303,7 +308,9 @@ func CreateLoan(payload map[string]interface{}) loan.Loan {
 			cpl[k] = v.(string)
 		}
 	}
-
+	if cpl["tenor"]==""||cpl["plafond"]==""||cpl["rate"]==""||cpl["creditScoreGrade"]==""||cpl["creditScoreValue"]==""{
+		return errors.New("CSTrip is required"),loan.Loan{}
+	}
 	// map each payload field to it's respective cif field
 	newLoan := loan.Loan{}
 	newLoan.URLPic1 = cpl["photo_client"]
@@ -341,7 +348,7 @@ func CreateLoan(payload map[string]interface{}) loan.Loan {
 		newLoan.Subgroup = oldLoan.Subgroup
 	}
 
-	return newLoan
+	return nil,newLoan
 }
 
 // CreateRelationLoanToGroup - Create relation loan to group
