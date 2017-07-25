@@ -95,8 +95,11 @@ func CreateUserMis(ctx *iris.Context){
 			};
 			db.Commit()
 		}else{
-			db:=services.DBCPsql.Begin()
-			db.Commit()
+			ctx.JSON(iris.StatusUnauthorized, iris.Map{
+				"status":  "error",
+				"message": "Error Create User in Go-CAS",
+			})
+			return
 		}
 	}
 	ctx.JSON(iris.StatusOK, iris.Map{"status": "success", "data": m})
