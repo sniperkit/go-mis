@@ -196,14 +196,14 @@ func EnsureAuth(ctx *iris.Context) {
 		return signString, nil
 	})
 	if claim.Id=="" || time.Now().UnixNano()>claim.NotBefore{
-		ctx.JSON(iris.StatusForbidden, iris.Map{
+		ctx.JSON(iris.StatusUnauthorized, iris.Map{
 			"status":  "error",
 			"message": "Unauthorized access.",
 		})
 		return
 	}
 	userObj := userMis.UserMis{}
-	queryAccessToken := "SELECT * FROM user_mis WHERE \"username\" = ? "
+	queryAccessToken := "SELECT * FROM user_mis WHERE \"_username\" = ? "
 	queryAccessToken += "AND \"deletedAt\" IS NULL"
 	services.DBCPsql.Raw(queryAccessToken, claim.Id).Scan(&userObj)
 
