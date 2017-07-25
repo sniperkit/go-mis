@@ -13,6 +13,8 @@ import (
 	"bitbucket.org/go-mis/modules/user-mis"
 	"bitbucket.org/go-mis/services"
 	"gopkg.in/kataras/iris.v4"
+	"bitbucket.org/go-mis/modules/role"
+	"regexp"
 )
 
 func generateAccessToken() string {
@@ -30,11 +32,6 @@ func UserMisLogin(ctx *iris.Context) {
     Username string `json:"username"`
     Password string `json:"password"`
 		UserType string `json:"userType"`
-	}
-
-	type CasResp struct{
-		Status 	string `json:"status"`
-		Data 		string `json:"data"`
 	}
 
 	loginForm := new(LoginForm)
@@ -64,125 +61,120 @@ func UserMisLogin(ctx *iris.Context) {
 	b := new(bytes.Buffer)
 	json.NewEncoder(b).Encode(u)
 	res, _ := http.Post("http://localhost:4500/api/v1/auth", "application/json; charset=utf-8", b)
-	casResp := &CasResp{}
-	json.NewDecoder(res.Body).Decode(casResp)
-	fmt.Println(res.Status)
-	fmt.Println(casResp)
-	// body, err := ioutil.ReadAll(res.Body)
-	// fmt.Println(body)
-	// fmt.Println(err)
+
+	var casResp struct{
+		Status 	uint64 `json:"status"`
+		Data 		string `json:"data"`
+	}
+
+	json.NewDecoder(res.Body).Decode(&casResp)
+
+	fmt.Println(casResp.Data)
+
+	arrUserMisObj := []userMis.UserMis{}
+	services.DBCPsql.Table("user_mis").Where("\"_username\" = ? AND \"deletedAt\" IS NULL AND (\"isSuspended\" = FALSE OR \"isSuspended\" IS NULL)", loginForm.Username).Find(&arrUserMisObj)
+
+	if casResp.Data == "" {
+		ctx.JSON(iris.StatusUnauthorized, iris.Map{
+			"status":  "error",
+			"message": "Invalid username/password. Please try again.",
+		})
+		return
+	}
+
+	accessTokenHash := casResp.Data;
 
 
+	userMisObj := arrUserMisObj[0]
 
+	roleObj := role.Role{}
+	queryRole := "SELECT role.* FROM \"role\" JOIN r_user_mis_role ON r_user_mis_role.\"roleId\" = \"role\".\"id\" JOIN user_mis ON user_mis.\"id\" = r_user_mis_role.\"userMisId\" WHERE user_mis.\"id\" = ?"
 
+	services.DBCPsql.Raw(queryRole, userMisObj.ID).Scan(&roleObj)
 
-	// arrUserMisObj := []userMis.UserMis{}
-	// services.DBCPsql.Table("user_mis").Where("\"_username\" = ? AND \"_password\" = ? AND \"deletedAt\" IS NULL AND (\"isSuspended\" = FALSE OR \"isSuspended\" IS NULL)", loginForm.Username, loginForm.Password).Find(&arrUserMisObj)
-	//
-	// if len(arrUserMisObj) == 0 {
-	// 	ctx.JSON(iris.StatusUnauthorized, iris.Map{
-	// 		"status":  "error",
-	// 		"message": "Invalid username/password. Please try again.",
-	// 	})
-	// 	return
-	// }
-	//
-	// accessTokenHash := generateAccessToken()
-	// accessTokenObj := accessToken.AccessToken{Type: loginForm.Type, AccessToken: accessTokenHash}
-	// services.DBCPsql.Table("access_token").Create(&accessTokenObj)
-	//
-	// userMisObj := arrUserMisObj[0]
-	// rUserMisAccessToken := r.RUserMisAccessToken{UserMisId: userMisObj.ID, AccessTokenId: accessTokenObj.ID}
-	// services.DBCPsql.Table("r_user_mis_access_token").Create(&rUserMisAccessToken)
-	//
-	// roleObj := role.Role{}
-	// queryRole := "SELECT role.* FROM \"role\" JOIN r_user_mis_role ON r_user_mis_role.\"roleId\" = \"role\".\"id\" JOIN user_mis ON user_mis.\"id\" = r_user_mis_role.\"userMisId\" WHERE user_mis.\"id\" = ?"
-	//
-	// services.DBCPsql.Raw(queryRole, userMisObj.ID).Scan(&roleObj)
+	if roleObj.ID == 0 {
+		ctx.JSON(iris.StatusUnauthorized, iris.Map{
+			"status":  "error",
+			"message": "Your account doesn't have any role. Please ask your superadmin to assign a role.",
+		})
+		return
+	}
 
-	// if roleObj.ID == 0 {
-	// 	ctx.JSON(iris.StatusUnauthorized, iris.Map{
-	// 		"status":  "error",
-	// 		"message": "Your account doesn't have any role. Please ask your superadmin to assign a role.",
-	// 	})
-	// 	return
-	// }
-	//
-	// // get the area of this user
-	// rAreaUserMis := r.RAreaUserMis{}
-	// query := `select "areaId" from r_area_user_mis where "userMisId" = ?`
-	// services.DBCPsql.Raw(query, userMisObj.ID).Scan(&rAreaUserMis)
-	//
-	// // for dashboard
-	// re := regexp.MustCompile("(?i)area\\s*manager") // area manager, Area Manager, ArEaManager are valid
-	// if re.FindString(roleObj.Name) != "" {          // area manager
-	//
-	// 	// get all branches in this area
-	// 	type branchType struct {
-	// 		Id   uint64 `json:"id"`
-	// 		Name string `json:"name"`
-	// 	}
-	//
-	// 	branches := []branchType{}
-	// 	query = `select branch.id, branch."name" from r_area_branch
-	// 					join branch on branch.Id = r_area_branch.id
-	// 					where "areaId" = ?`
-	// 	services.DBCPsql.Raw(query, rAreaUserMis.AreaId).Scan(&branches)
-	//
-	// 	rUserMisBranch := r.RBranchUserMis{}
-	// 	services.DBCPsql.Table("r_branch_user_mis").Where(" \"userMisId\" = ? ", userMisObj.ID).First(&rUserMisBranch)
-	//
-	// 	ctx.JSON(iris.StatusOK, iris.Map{
-	// 		"status": "success",
-	// 		"data": iris.Map{
-	// 			"name":        userMisObj.Fullname,
-	// 			"accessToken": accessTokenHash,
-	// 			"branchId":    rUserMisBranch.BranchId,
-	// 			"role": iris.Map{
-	// 				"assignedRole": roleObj.Name,
-	// 				"config":       roleObj.Config,
-	// 			},
-	// 			"branches": branches,
-	// 			"roleId":   roleObj.ID,
-	// 			"areaId":   rAreaUserMis.AreaId,
-	// 			// =======
-	// 			// rUserMisBranch := r.RBranchUserMis{}
-	// 			// services.DBCPsql.Table("r_branch_user_mis").Where(" \"userMisId\" = ? ", userMisObj.ID).First(&rUserMisBranch)
-	//
-	// 			// rAreaUserMis := r.RAreaUserMis{}
-	// 			// services.DBCPsql.Table("r_area_user_mis").Where(" \"userMisId\" = ? ", userMisObj.ID).First(&rAreaUserMis)
-	//
-	// 			// ctx.JSON(iris.StatusOK, iris.Map{
-	// 			// 	"status": "success",
-	// 			// 	"data": iris.Map{
-	// 			// 		"name":        userMisObj.Fullname,
-	// 			// 		"accessToken": accessTokenHash,
-	// 			// 		"branchId":    rUserMisBranch.BranchId,
-	// 			// 		"areaId":    rAreaUserMis.AreaId,
-	// 			// 		"role": iris.Map{
-	// 			// 			"assignedRole": roleObj.Name,
-	// 			// 			"config":       roleObj.Config,
-	// 			// >>>>>>> master
-	// 		},
-	// 	})
-	// } else {
-	// 	rUserMisBranch := r.RBranchUserMis{}
-	// 	services.DBCPsql.Table("r_branch_user_mis").Where(" \"userMisId\" = ? ", userMisObj.ID).First(&rUserMisBranch)
-	//
-	// 	ctx.JSON(iris.StatusOK, iris.Map{
-	// 		"status": "success",
-	// 		"data": iris.Map{
-	// 			"name":        userMisObj.Fullname,
-	// 			"accessToken": accessTokenHash,
-	// 			"branchId":    rUserMisBranch.BranchId,
-	// 			"areaId":   rAreaUserMis.AreaId,
-	// 			"role": iris.Map{
-	// 				"assignedRole": roleObj.Name,
-	// 				"config":       roleObj.Config,
-	// 			},
-	// 		},
-	// 	})
-	// }
+	// get the area of this user
+	rAreaUserMis := r.RAreaUserMis{}
+	query := `select "areaId" from r_area_user_mis where "userMisId" = ?`
+	services.DBCPsql.Raw(query, userMisObj.ID).Scan(&rAreaUserMis)
+
+	// for dashboard
+	re := regexp.MustCompile("(?i)area\\s*manager") // area manager, Area Manager, ArEaManager are valid
+	if re.FindString(roleObj.Name) != "" {          // area manager
+
+		// get all branches in this area
+		type branchType struct {
+			Id   uint64 `json:"id"`
+			Name string `json:"name"`
+		}
+
+		branches := []branchType{}
+		query = `select branch.id, branch."name" from r_area_branch
+						join branch on branch.Id = r_area_branch.id
+						where "areaId" = ?`
+		services.DBCPsql.Raw(query, rAreaUserMis.AreaId).Scan(&branches)
+
+		rUserMisBranch := r.RBranchUserMis{}
+		services.DBCPsql.Table("r_branch_user_mis").Where(" \"userMisId\" = ? ", userMisObj.ID).First(&rUserMisBranch)
+
+		ctx.JSON(iris.StatusOK, iris.Map{
+			"status": "success",
+			"data": iris.Map{
+				"name":        userMisObj.Fullname,
+				"accessToken": accessTokenHash,
+				"branchId":    rUserMisBranch.BranchId,
+				"role": iris.Map{
+					"assignedRole": roleObj.Name,
+					"config":       roleObj.Config,
+				},
+				"branches": branches,
+				"roleId":   roleObj.ID,
+				"areaId":   rAreaUserMis.AreaId,
+				// =======
+				// rUserMisBranch := r.RBranchUserMis{}
+				// services.DBCPsql.Table("r_branch_user_mis").Where(" \"userMisId\" = ? ", userMisObj.ID).First(&rUserMisBranch)
+
+				// rAreaUserMis := r.RAreaUserMis{}
+				// services.DBCPsql.Table("r_area_user_mis").Where(" \"userMisId\" = ? ", userMisObj.ID).First(&rAreaUserMis)
+
+				// ctx.JSON(iris.StatusOK, iris.Map{
+				// 	"status": "success",
+				// 	"data": iris.Map{
+				// 		"name":        userMisObj.Fullname,
+				// 		"accessToken": accessTokenHash,
+				// 		"branchId":    rUserMisBranch.BranchId,
+				// 		"areaId":    rAreaUserMis.AreaId,
+				// 		"role": iris.Map{
+				// 			"assignedRole": roleObj.Name,
+				// 			"config":       roleObj.Config,
+				// >>>>>>> master
+			},
+		})
+	} else {
+		rUserMisBranch := r.RBranchUserMis{}
+		services.DBCPsql.Table("r_branch_user_mis").Where(" \"userMisId\" = ? ", userMisObj.ID).First(&rUserMisBranch)
+
+		ctx.JSON(iris.StatusOK, iris.Map{
+			"status": "success",
+			"data": iris.Map{
+				"name":        userMisObj.Fullname,
+				"accessToken": accessTokenHash,
+				"branchId":    rUserMisBranch.BranchId,
+				"areaId":   rAreaUserMis.AreaId,
+				"role": iris.Map{
+					"assignedRole": roleObj.Name,
+					"config":       roleObj.Config,
+				},
+			},
+		})
+	}
 
 }
 
