@@ -14,6 +14,10 @@ import (
 	"bitbucket.org/go-mis/modules/user-mis"
 	"bitbucket.org/go-mis/services"
 	"gopkg.in/kataras/iris.v4"
+	"github.com/dgrijalva/jwt-go"
+	"net/http"
+	"io/ioutil"
+	"encoding/json"
 )
 
 func generateAccessToken() string {
@@ -155,14 +159,33 @@ func UserMisLogin(ctx *iris.Context) {
 
 }
 
+type CasResponse struct{
+	Status string `json:"username"`
+	Data string `json:"username"`
+}
+
 // EnsureAuth - validate access token
 func EnsureAuth(ctx *iris.Context) {
 	accessToken := ctx.URLParam("accessToken")
-
+	if accessToken==""{
+		accessToken = ctx.RequestHeader("accessToken")
+	}
+	signString := []byte("supersecret")
+	claim :=&jwt.StandardClaims{}
+	jwt.ParseWithClaims(accessToken,claim, func(token *jwt.Token) (interface{}, error) {
+		return signString, nil
+	})
+	if claim.Id=="" || time.Now().UnixNano()>claim.NotBefore{
+		ctx.JSON(iris.StatusForbidden, iris.Map{
+			"status":  "error",
+			"message": "Unauthorized access.",
+		})
+		return
+	}
 	userObj := userMis.UserMis{}
-	queryAccessToken := "SELECT user_mis.* FROM access_token JOIN r_user_mis_access_token ON r_user_mis_access_token.\"accessTokenId\" = access_token.\"id\" JOIN user_mis ON user_mis.\"id\" = r_user_mis_access_token.\"userMisId\" WHERE access_token.\"accessToken\" = ? "
-	queryAccessToken += "AND access_token.\"deletedAt\" IS NULL"
-	services.DBCPsql.Raw(queryAccessToken, accessToken).Scan(&userObj)
+	queryAccessToken := "SELECT * FROM user_mis WHERE \"username\" = ? "
+	queryAccessToken += "AND \"deletedAt\" IS NULL"
+	services.DBCPsql.Raw(queryAccessToken, claim.Id).Scan(&userObj)
 
 	if userObj == (userMis.UserMis{}) {
 		ctx.JSON(iris.StatusForbidden, iris.Map{

@@ -61,7 +61,7 @@ func CreateUserMis(ctx *iris.Context){
 		u := Cas{Username: userMis.Username, Password: userMis.Password, UserType: "MIS"}
 		b := new(bytes.Buffer)
 		json.NewEncoder(b).Encode(u)
-    res, _ := http.Post("http://localhost:4500/api/v1/register", "application/json; charset=utf-8", b)
+    	res, _ := http.Post("http://localhost:4500/api/v1/register", "application/json; charset=utf-8", b)
 
 		if res.Status == "200 OK"{
 			db:=services.DBCPsql.Begin()
