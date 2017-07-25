@@ -16,9 +16,6 @@ import (
 	"bitbucket.org/go-mis/modules/role"
 	"regexp"
 	"github.com/dgrijalva/jwt-go"
-	"net/http"
-	"io/ioutil"
-	"encoding/json"
 )
 
 func generateAccessToken() string {
