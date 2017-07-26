@@ -138,6 +138,7 @@ func UpdateUserMisPasswordById(ctx *iris.Context){
 		userMis := UserMis{}
 		userMis.Username = m.Username
 		userMis.Password = m.Password;
+		userMis.BeforeUpdate()
 
 		u := Cas{Username: userMis.Username, Password: userMis.Password, UserType: "MIS"}
 		b := new(bytes.Buffer)
