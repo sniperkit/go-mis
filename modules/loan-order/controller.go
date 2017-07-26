@@ -423,7 +423,7 @@ func CheckReferalAndEmptytreshold(investorId uint64, atcId uint64, orderNo strin
     ),
     D as (
         insert into r_account_transaction_debit_referral ("accountTransactionDebitId","referralId","createdAt")
-        select C.id, split_part(remark,' ',12)::int, current_timestamp from C)
+        select C.id, split_part(remark,' ',12)::int, current_timestamp from C),
     E as (
         insert into r_account_transaction_debit ("accountTransactionDebitId","accountId","createdAt")
         select C.id, rai."accountId", current_timestamp from C
