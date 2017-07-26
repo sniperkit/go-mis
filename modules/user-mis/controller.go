@@ -106,6 +106,68 @@ func CreateUserMis(ctx *iris.Context){
 
 }
 
+func UpdateUserMisPasswordById(ctx *iris.Context){
+	userMisId := ctx.Get("id")
+	fmt.Println(userMisId)
+
+	type Payload struct {
+		Username	string		`json:"username"`
+		Password	string		`json:"password"`
+	}
+
+	type Cas struct{
+    Username string `json:"username"`
+    Password string `json:"password"`
+		UserType string `json:"userType"`
+	}
+
+	m := Payload{}
+	err := ctx.ReadJSON(&m)
+
+	if err != nil {
+		ctx.JSON(iris.StatusBadRequest, iris.Map{"status": "error", "message": err.Error()})
+		return
+	} else {
+
+		/***
+		Function Update Password to Go-Cas
+		author 	: @primayudantra
+		date		: 26 July 2017
+		***/
+
+		userMis := UserMis{}
+		userMis.Username = m.Username
+		userMis.Password = m.Password;
+
+		u := Cas{Username: userMis.Username, Password: userMis.Password, UserType: "MIS"}
+		b := new(bytes.Buffer)
+		json.NewEncoder(b).Encode(u)
+		res, _ := http.Post("http://localhost:4500/api/v1/update-password", "application/json; charset=utf-8", b)
+		if res.Status == "200 OK"{
+			db:=services.DBCPsql.Begin()
+			// Update User in PSQL
+			userQuery := `UPDATE user_mis SET "_password" = ? WHERE "id" = ?`
+
+			// userMisPassword := sha256.Sum256([]byte(userMis.Password))
+
+			services.DBCPsql.Raw(userQuery, userMis.Password, userMisId).Scan(&userMis)
+			// if err:=db.Exec(userQuery, userMisPassword, userMisId).Error;err!=nil {
+			// 	fmt.Println("Error",err)
+			// 	processErrorAndRollback(ctx, db, err, "Update user password")
+			// 	return
+			// };
+			db.Commit();
+
+		}else{
+			ctx.JSON(iris.StatusUnauthorized, iris.Map{
+				"status":  "error",
+				"message": "Error Update Password in Go-CAS",
+			})
+			return
+		}
+	}
+}
+
 func UpdateUserMisById(ctx *iris.Context){
 	type Payload struct {
 		ID			uint64		`json:"id"`
