@@ -18,6 +18,7 @@ var (
 	PsqlHostAddressSurvey     string
 	MysqlHostAddress          string
 	UploaderApiPath           string
+	GoCasPath			           string
 	EnableEmergencyLoan		  bool
 )
 
@@ -25,6 +26,7 @@ type Config struct {
 	Psql         []DbConfig `json:"psql"`
 	Mysql        DbConfig   `json:"mysql"`
 	UploaderPath string     `json:"uploaderPath"`
+	GoCasPath		 string     `json:"goCasPath"`
 	ApiVersion   string     `json:"apiVersion"`
 	EnableEmergencyLoan bool `json:"enableEmergencyLoan"`
 }
@@ -39,6 +41,7 @@ type DbConfig struct {
 }
 
 var Version string
+var GoCasApiPath string
 
 func init() {
 	ApiKey = "$2a$06$20EpVmcNvVg0heEijxLEP.Aw0hhoC7kJyuGltJnYZMStuhOLwPB7W"
@@ -82,6 +85,7 @@ func init() {
 	Version = c.ApiVersion
 
 	UploaderApiPath = c.UploaderPath
+	GoCasApiPath = c.GoCasPath
 	EnableEmergencyLoan = c.EnableEmergencyLoan
 
 	// Postgresql Host Address
