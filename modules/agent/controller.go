@@ -6,6 +6,7 @@ import (
 	"github.com/jinzhu/gorm"
 	"bitbucket.org/go-mis/modules/r"
 	"fmt"
+	"strconv"
 )
 
 func Init() {
@@ -15,18 +16,26 @@ func Init() {
 
 func GetAllAgentByBranchID(ctx *iris.Context) {
 	branchID := ctx.Get("BRANCH_ID")
-	agentSchema := []Agent{}
+	val, ok := branchID.(string)
+	if ok {
+		GetAgent(ctx, val)
+	} else {
+		i := strconv.Itoa(branchID.(int))
+		GetAgent(ctx, i)
+	}
+
+	//agentSchema := []Agent{}
 
 	// query := "SELECT agent.* "
 	// query += "FROM agent "
 	// query += "INNER JOIN r_branch_agent ON r_branch_agent.\"agentId\" = agent.id "
 	// query += "WHERE r_branch_agent.\"branchId\" = ? AND agent.\"deletedAt\" IS NULL"
 
-	query := ""
+	//query := ""
 	// if not superadmin
 	// TODO: use role instead of branchID
 	//if branchID.(uint64) > 0 {
-		query += "SELECT agent.id, agent.\"picUrl\", agent.\"username\", agent.fullname, agent.address,  "
+	/*	query += "SELECT agent.id, agent.\"picUrl\", agent.\"username\", agent.fullname, agent.address,  "
 		query += "(SELECT \"name\" FROM inf_location WHERE province = agent.province AND city = '0' AND kecamatan = '0' AND kelurahan = '0' LIMIT 1) AS \"province\", "
 		query += "(SELECT \"name\" FROM inf_location WHERE province = agent.province AND city = agent.city AND kecamatan = '0' AND kelurahan = '0' LIMIT 1) AS \"city\", "
 		query += "(SELECT \"name\" FROM inf_location WHERE province = agent.province AND city = agent.city AND kecamatan = agent.kecamatan AND kelurahan = '0' LIMIT 1) AS \"kecamatan\", "
@@ -36,30 +45,8 @@ func GetAllAgentByBranchID(ctx *iris.Context) {
 		query += "WHERE r_branch_agent.\"branchId\" = ? AND agent.\"deletedAt\" IS NULL"
 
 		services.DBCPsql.Raw(query, branchID).Scan(&agentSchema)
-
-	ctx.JSON(iris.StatusOK, iris.Map{
-		"status": "success",
-		"data":   agentSchema,
-	})
-}
-
-func GetAllAgent(ctx *iris.Context) {
-	agentSchema := []Agent{}
-	query := ""
-
-	query += "SELECT agent.id, agent.\"picUrl\", agent.\"username\", agent.fullname, agent.address,  "
-	query += "(SELECT \"name\" FROM inf_location WHERE province = agent.province AND city = '0' AND kecamatan = '0' AND kelurahan = '0' LIMIT 1) AS \"province\", "
-	query += "(SELECT \"name\" FROM inf_location WHERE province = agent.province AND city = agent.city AND kecamatan = '0' AND kelurahan = '0' LIMIT 1) AS \"city\", "
-	query += "(SELECT \"name\" FROM inf_location WHERE province = agent.province AND city = agent.city AND kecamatan = agent.kecamatan AND kelurahan = '0' LIMIT 1) AS \"kecamatan\", "
-	query += "(SELECT \"name\" FROM inf_location WHERE province = agent.province AND city = agent.city AND kecamatan = agent.kecamatan AND kelurahan = agent.kelurahan LIMIT 1) AS \"kelurahan\" "
-	query += "FROM agent "
-	query += "INNER JOIN r_branch_agent ON r_branch_agent.\"agentId\" = agent.id "
-	query += "WHERE r_branch_agent.\"branchId\" = ? AND agent.\"deletedAt\" IS NULL"
-
-	branchID := ctx.Get("id")
-	services.DBCPsql.Raw(query, branchID).Scan(&agentSchema)
-
-	/*query += `SELECT agent.id, agent."picUrl", agent."username", agent.fullname, agent.address,
+	} else {
+	query += `SELECT agent.id, agent."picUrl", agent."username", agent.fullname, agent.address,
 			 (SELECT "name" FROM inf_location
 			  WHERE province = agent.province
 			  AND city = '0'
@@ -82,14 +69,48 @@ func GetAllAgent(ctx *iris.Context) {
 			  AND kelurahan = agent.kelurahan LIMIT 1) AS "kelurahan"
 			  from agent
 			  INNER JOIN r_branch_agent ON r_branch_agent."agentId" = agent.id
-			  WHERE agent."deletedAt" IS NULL`*/
+			  WHERE agent."deletedAt" IS NULL`
 
 	//services.DBCPsql.Raw(query).Scan(&agentSchema)
+	}
+	ctx.JSON(iris.StatusOK, iris.Map{
+		"status": "success",
+		"data":   agentSchema,
+	})*/
+}
+
+func GetAgent(ctx *iris.Context, branchID string){
+	agentSchema := []Agent{}
+	query := ""
+
+	query += "SELECT agent.id, agent.\"picUrl\", agent.\"username\", agent.fullname, agent.address,  "
+	query += "(SELECT \"name\" FROM inf_location WHERE province = agent.province AND city = '0' AND kecamatan = '0' AND kelurahan = '0' LIMIT 1) AS \"province\", "
+	query += "(SELECT \"name\" FROM inf_location WHERE province = agent.province AND city = agent.city AND kecamatan = '0' AND kelurahan = '0' LIMIT 1) AS \"city\", "
+	query += "(SELECT \"name\" FROM inf_location WHERE province = agent.province AND city = agent.city AND kecamatan = agent.kecamatan AND kelurahan = '0' LIMIT 1) AS \"kecamatan\", "
+	query += "(SELECT \"name\" FROM inf_location WHERE province = agent.province AND city = agent.city AND kecamatan = agent.kecamatan AND kelurahan = agent.kelurahan LIMIT 1) AS \"kelurahan\" "
+	query += "FROM agent "
+	query += "INNER JOIN r_branch_agent ON r_branch_agent.\"agentId\" = agent.id "
+	query += "WHERE r_branch_agent.\"branchId\" = ? AND agent.\"deletedAt\" IS NULL"
+
+	services.DBCPsql.Raw(query, branchID).Scan(&agentSchema)
 
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"status": "success",
 		"data":   agentSchema,
 	})
+}
+
+func GetAllAgent(ctx *iris.Context) {
+
+	branchID := ctx.Get("id")
+
+	val, ok := branchID.(string)
+	if ok {
+		GetAgent(ctx, val)
+	} else {
+		i := strconv.Itoa(branchID.(int))
+		GetAgent(ctx, i)
+	}
 
 }
 
