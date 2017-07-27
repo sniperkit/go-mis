@@ -10,6 +10,7 @@ import (
 	"gopkg.in/kataras/iris.v4"
 	"github.com/jinzhu/gorm"
 	"fmt"
+	"bitbucket.org/go-mis/config"
 )
 
 func Init() {
@@ -61,7 +62,7 @@ func CreateUserMis(ctx *iris.Context){
 		u := Cas{Username: userMis.Username, Password: userMis.Password, UserType: "MIS"}
 		b := new(bytes.Buffer)
 		json.NewEncoder(b).Encode(u)
-    	res, _ := http.Post("http://localhost:4500/api/v1/register", "application/json; charset=utf-8", b)
+    	res, _ := http.Post(config.GoCasPath + "/api/v1/register", "application/json; charset=utf-8", b)
 
 		if res.Status == "200 OK"{
 			db:=services.DBCPsql.Begin()
@@ -143,20 +144,12 @@ func UpdateUserMisPasswordById(ctx *iris.Context){
 		u := Cas{Username: userMis.Username, Password: userMis.Password, UserType: "MIS"}
 		b := new(bytes.Buffer)
 		json.NewEncoder(b).Encode(u)
-		res, _ := http.Post("http://localhost:4500/api/v1/update-password", "application/json; charset=utf-8", b)
+		res, _ := http.Post(config.GoCasApiPath + "/api/v1/update-password", "application/json; charset=utf-8", b)
 		if res.Status == "200 OK"{
 			db:=services.DBCPsql.Begin()
 			// Update User in PSQL
 			userQuery := `UPDATE user_mis SET "_password" = ? WHERE "id" = ?`
-
-			// userMisPassword := sha256.Sum256([]byte(userMis.Password))
-
 			services.DBCPsql.Raw(userQuery, userMis.Password, userMisId).Scan(&userMis)
-			// if err:=db.Exec(userQuery, userMisPassword, userMisId).Error;err!=nil {
-			// 	fmt.Println("Error",err)
-			// 	processErrorAndRollback(ctx, db, err, "Update user password")
-			// 	return
-			// };
 			db.Commit();
 
 		}else{
