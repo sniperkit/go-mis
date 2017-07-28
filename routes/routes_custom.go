@@ -122,6 +122,7 @@ func InitCustomApi() {
 		v2.Get("/borrower/total-by-branch/:branch_id", borrower.GetTotalBorrowerByBranchID)
 		v2.Any("/virtual-account-statement", virtualAccountStatement.GetVAStatement)
 		v2.Any("/agent", agent.GetAllAgentByBranchID)
+		v2.Any("/agent/branch/:id", agent.GetAllAgent)
 		v2.Any("/agent/detail/:id", agent.GetAgentById)
 		v2.Any("/agent/create", agent.CreateAgent)
 		v2.Any("/agent/set/:id", agent.UpdateAgent)
