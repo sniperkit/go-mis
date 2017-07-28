@@ -62,6 +62,7 @@ func UserMisLogin(ctx *iris.Context) {
 	b := new(bytes.Buffer)
 	json.NewEncoder(b).Encode(u)
 	fmt.Println(config.GoCasApiPath)
+	fmt.Println(config.SignStringKey)
 	res, _ := http.Post(config.GoCasApiPath + "/api/v1/auth", "application/json; charset=utf-8", b)
 
 	var casResp struct{
@@ -191,7 +192,8 @@ func EnsureAuth(ctx *iris.Context) {
 	if accessToken==""{
 		accessToken = ctx.RequestHeader("accessToken")
 	}
-	signString := []byte("supersecret")
+	signString := []byte(config.SignStringKey)
+
 	claim :=&jwt.StandardClaims{}
 	jwt.ParseWithClaims(accessToken,claim, func(token *jwt.Token) (interface{}, error) {
 		return signString, nil
