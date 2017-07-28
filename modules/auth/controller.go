@@ -130,6 +130,7 @@ func UserMisLogin(ctx *iris.Context) {
 		ctx.JSON(iris.StatusOK, iris.Map{
 			"status": "success",
 			"data": iris.Map{
+				"idUserMis":        userMisObj.ID,
 				"name":        userMisObj.Fullname,
 				"accessToken": accessTokenHash,
 				"branchId":    rUserMisBranch.BranchId,
@@ -167,6 +168,7 @@ func UserMisLogin(ctx *iris.Context) {
 		ctx.JSON(iris.StatusOK, iris.Map{
 			"status": "success",
 			"data": iris.Map{
+				"idUserMis":        userMisObj.ID,
 				"name":        userMisObj.Fullname,
 				"accessToken": accessTokenHash,
 				"branchId":    rUserMisBranch.BranchId,
