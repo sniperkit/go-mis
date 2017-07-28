@@ -61,7 +61,8 @@ func UserMisLogin(ctx *iris.Context) {
 	fmt.Println(u)
 	b := new(bytes.Buffer)
 	json.NewEncoder(b).Encode(u)
-	res, _ := http.Post("http://localhost:4500/api/v1/auth", "application/json; charset=utf-8", b)
+	fmt.Println(config.GoCasApiPath)
+	res, _ := http.Post(config.GoCasApiPath + "/api/v1/auth", "application/json; charset=utf-8", b)
 
 	var casResp struct{
 		Status 	uint64 `json:"status"`
