@@ -169,6 +169,7 @@ func UserMisLogin(ctx *iris.Context) {
 			"status": "success",
 			"data": iris.Map{
 				"idUserMis":        userMisObj.ID,
+				"username":        userMisObj.Username,
 				"name":        userMisObj.Fullname,
 				"accessToken": accessTokenHash,
 				"branchId":    rUserMisBranch.BranchId,

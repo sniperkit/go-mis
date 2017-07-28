@@ -141,9 +141,12 @@ func UpdateUserMisPasswordById(ctx *iris.Context){
 		userMis.Password = m.Password;
 
 		u := Cas{Username: userMis.Username, Password: userMis.Password, UserType: "MIS"}
+		fmt.Println(u)
 		b := new(bytes.Buffer)
 		json.NewEncoder(b).Encode(u)
 		res, _ := http.Post(config.GoCasApiPath + "/api/v1/update-password", "application/json; charset=utf-8", b)
+		fmt.Println(res.StatusCode)
+		fmt.Println(res.Status)
 		if res.Status == "200 OK"{
 			userMis.BeforeUpdate()
 			db:=services.DBCPsql.Begin()
@@ -153,9 +156,9 @@ func UpdateUserMisPasswordById(ctx *iris.Context){
 			db.Commit();
 
 		}else{
-			ctx.JSON(iris.StatusUnauthorized, iris.Map{
+			ctx.JSON(iris.StatusInternalServerError, iris.Map{
 				"status":  "error",
-				"message": "Error Update Password in Go-CAS",
+				"message": err.Error(),
 			})
 			return
 		}
