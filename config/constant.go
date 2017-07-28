@@ -18,6 +18,7 @@ var (
 	PsqlHostAddressSurvey     string
 	MysqlHostAddress          string
 	UploaderApiPath           string
+	WhiteList		 		string
 	GoCasPath			           string
 	EnableEmergencyLoan		  bool
 )
@@ -27,6 +28,7 @@ type Config struct {
 	Mysql        DbConfig   `json:"mysql"`
 	UploaderPath string     `json:"uploaderPath"`
 	GoCasPath		 string     `json:"goCasPath"`
+	WhiteList		 string     `json:"whiteList"`
 	ApiVersion   string     `json:"apiVersion"`
 	EnableEmergencyLoan bool `json:"enableEmergencyLoan"`
 }
@@ -87,6 +89,7 @@ func init() {
 	UploaderApiPath = c.UploaderPath
 	GoCasApiPath = c.GoCasPath
 	EnableEmergencyLoan = c.EnableEmergencyLoan
+	WhiteList = c.WhiteList
 
 	// Postgresql Host Address
 	PsqlHostAddressMisAmartha = "host=" + c.Psql[0].Host + " port=" + c.Psql[0].Port + " user=" + c.Psql[0].Username + " dbname=" + c.Psql[0].Db + " sslmode=" + c.Psql[0].SslMode
