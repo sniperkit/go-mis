@@ -139,13 +139,13 @@ func UpdateUserMisPasswordById(ctx *iris.Context){
 		userMis := UserMis{}
 		userMis.Username = m.Username
 		userMis.Password = m.Password;
-		userMis.BeforeUpdate()
 
 		u := Cas{Username: userMis.Username, Password: userMis.Password, UserType: "MIS"}
 		b := new(bytes.Buffer)
 		json.NewEncoder(b).Encode(u)
 		res, _ := http.Post(config.GoCasApiPath + "/api/v1/update-password", "application/json; charset=utf-8", b)
 		if res.Status == "200 OK"{
+			userMis.BeforeUpdate()
 			db:=services.DBCPsql.Begin()
 			// Update User in PSQL
 			userQuery := `UPDATE user_mis SET "_password" = ? WHERE "id" = ?`
