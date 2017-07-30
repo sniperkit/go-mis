@@ -6,6 +6,7 @@ import (
 	"github.com/jinzhu/gorm"
 	"bitbucket.org/go-mis/modules/r"
 	"fmt"
+	"strconv"
 )
 
 func Init() {
@@ -41,8 +42,9 @@ func GetAgent(ctx *iris.Context, branchID uint64){
 
 func GetAllAgent(ctx *iris.Context) {
 
-	branchID := ctx.Get("id")
-	GetAgent(ctx, branchID.(uint64))
+	id := ctx.Get("id")
+	branchId,_ :=strconv.ParseUint(id.(string),0,64)
+	GetAgent(ctx,branchId)
 
 }
 
