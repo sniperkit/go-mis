@@ -80,7 +80,7 @@ func init() {
 
 	var c Config
 	json.Unmarshal(configFile, &c)
-	c.ApiVersion = "2.1.0"
+	c.ApiVersion = "2.2.0"
 	fmt.Println("Version:", c.ApiVersion)
 	fmt.Println("------------------")
 
