@@ -194,8 +194,8 @@ func UpdateUserMisById(ctx *iris.Context){
 
 		db:=services.DBCPsql.Begin()
 		// Update User
-		userQuery := `UPDATE user_mis SET "fullname" = ?, "_username" = ?, "phoneNo" = ?, "picUrl" = ? WHERE "id" = ?`
-		if err:=db.Exec(userQuery, userMis.Fullname, userMis.Username,userMis.PhoneNo, userMis.PicUrl, userMis.ID).Error;err!=nil {
+		userQuery := `UPDATE user_mis SET "fullname" = ?, "phoneNo" = ?, "picUrl" = ? WHERE "id" = ?`
+		if err:=db.Exec(userQuery, userMis.Fullname,userMis.PhoneNo, userMis.PicUrl, userMis.ID).Error;err!=nil {
 			fmt.Println("Error",err)
 			processErrorAndRollback(ctx, db, err, "Update user")
 			return
