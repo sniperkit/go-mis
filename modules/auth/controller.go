@@ -4,16 +4,18 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
-	"regexp"
+	"net/http"
+	"encoding/json"
+	"bytes"
 	"time"
-
 	"bitbucket.org/go-mis/config"
-	"bitbucket.org/go-mis/modules/access-token"
 	"bitbucket.org/go-mis/modules/r"
-	"bitbucket.org/go-mis/modules/role"
 	"bitbucket.org/go-mis/modules/user-mis"
 	"bitbucket.org/go-mis/services"
 	"gopkg.in/kataras/iris.v4"
+	"bitbucket.org/go-mis/modules/role"
+	"regexp"
+	"github.com/dgrijalva/jwt-go"
 )
 
 func generateAccessToken() string {
@@ -26,8 +28,17 @@ func generateAccessToken() string {
 
 // UserMisLogin - login for UserMis and generate accessToken
 func UserMisLogin(ctx *iris.Context) {
+
+	type Cas struct{
+    Username string `json:"username"`
+    Password string `json:"password"`
+		UserType string `json:"userType"`
+	}
+
 	loginForm := new(LoginForm)
 
+	// login := ctx.ReadJSON(&loginForm)
+	// fmt.Println(login)
 	if err := ctx.ReadJSON(&loginForm); err != nil {
 		ctx.JSON(iris.StatusBadRequest, iris.Map{
 			"status":  "error",
@@ -43,12 +54,30 @@ func UserMisLogin(ctx *iris.Context) {
 		})
 		return
 	}
+	//
+	// loginForm.HashPassword()
 
-	loginForm.HashPassword()
+	u := Cas{Username: loginForm.Username, Password: loginForm.Password, UserType: "MIS"}
+	fmt.Println(u)
+	b := new(bytes.Buffer)
+	json.NewEncoder(b).Encode(u)
+	fmt.Println(config.GoCasApiPath)
+	fmt.Println(config.SignStringKey)
+	res, _ := http.Post(config.GoCasApiPath + "/api/v1/auth", "application/json; charset=utf-8", b)
+
+	var casResp struct{
+		Status 	uint64 `json:"status"`
+		Data 		string `json:"data"`
+	}
+
+	json.NewDecoder(res.Body).Decode(&casResp)
+
+	fmt.Println(casResp.Data)
+
 	arrUserMisObj := []userMis.UserMis{}
-	services.DBCPsql.Table("user_mis").Where("\"_username\" = ? AND \"_password\" = ? AND \"deletedAt\" IS NULL AND (\"isSuspended\" = FALSE OR \"isSuspended\" IS NULL)", loginForm.Username, loginForm.Password).Find(&arrUserMisObj)
+	services.DBCPsql.Table("user_mis").Where("\"_username\" = ? AND \"deletedAt\" IS NULL AND (\"isSuspended\" = FALSE OR \"isSuspended\" IS NULL)", loginForm.Username).Find(&arrUserMisObj)
 
-	if len(arrUserMisObj) == 0 {
+	if casResp.Data == "" {
 		ctx.JSON(iris.StatusUnauthorized, iris.Map{
 			"status":  "error",
 			"message": "Invalid username/password. Please try again.",
@@ -56,13 +85,10 @@ func UserMisLogin(ctx *iris.Context) {
 		return
 	}
 
-	accessTokenHash := generateAccessToken()
-	accessTokenObj := accessToken.AccessToken{Type: loginForm.Type, AccessToken: accessTokenHash}
-	services.DBCPsql.Table("access_token").Create(&accessTokenObj)
+	accessTokenHash := casResp.Data;
+
 
 	userMisObj := arrUserMisObj[0]
-	rUserMisAccessToken := r.RUserMisAccessToken{UserMisId: userMisObj.ID, AccessTokenId: accessTokenObj.ID}
-	services.DBCPsql.Table("r_user_mis_access_token").Create(&rUserMisAccessToken)
 
 	roleObj := role.Role{}
 	queryRole := "SELECT role.* FROM \"role\" JOIN r_user_mis_role ON r_user_mis_role.\"roleId\" = \"role\".\"id\" JOIN user_mis ON user_mis.\"id\" = r_user_mis_role.\"userMisId\" WHERE user_mis.\"id\" = ?"
@@ -85,7 +111,7 @@ func UserMisLogin(ctx *iris.Context) {
 	// for dashboard
 	re := regexp.MustCompile("(?i)area\\s*manager") // area manager, Area Manager, ArEaManager are valid
 	if re.FindString(roleObj.Name) != "" {          // area manager
-		
+
 		// get all branches in this area
 		type branchType struct {
 			Id   uint64 `json:"id"`
@@ -104,6 +130,7 @@ func UserMisLogin(ctx *iris.Context) {
 		ctx.JSON(iris.StatusOK, iris.Map{
 			"status": "success",
 			"data": iris.Map{
+				"idUserMis":        userMisObj.ID,
 				"name":        userMisObj.Fullname,
 				"accessToken": accessTokenHash,
 				"branchId":    rUserMisBranch.BranchId,
@@ -141,6 +168,8 @@ func UserMisLogin(ctx *iris.Context) {
 		ctx.JSON(iris.StatusOK, iris.Map{
 			"status": "success",
 			"data": iris.Map{
+				"idUserMis":        userMisObj.ID,
+				"username":        userMisObj.Username,
 				"name":        userMisObj.Fullname,
 				"accessToken": accessTokenHash,
 				"branchId":    rUserMisBranch.BranchId,
@@ -155,14 +184,34 @@ func UserMisLogin(ctx *iris.Context) {
 
 }
 
+type CasResponse struct{
+	Status string `json:"username"`
+	Data string `json:"username"`
+}
+
 // EnsureAuth - validate access token
 func EnsureAuth(ctx *iris.Context) {
 	accessToken := ctx.URLParam("accessToken")
+	if accessToken==""{
+		accessToken = ctx.RequestHeader("accessToken")
+	}
+	signString := []byte(config.SignStringKey)
 
+	claim :=&jwt.StandardClaims{}
+	jwt.ParseWithClaims(accessToken,claim, func(token *jwt.Token) (interface{}, error) {
+		return signString, nil
+	})
+	if claim.Id=="" || time.Now().UnixNano()>claim.NotBefore{
+		ctx.JSON(iris.StatusUnauthorized, iris.Map{
+			"status":  "error",
+			"message": "Unauthorized access.",
+		})
+		return
+	}
 	userObj := userMis.UserMis{}
-	queryAccessToken := "SELECT user_mis.* FROM access_token JOIN r_user_mis_access_token ON r_user_mis_access_token.\"accessTokenId\" = access_token.\"id\" JOIN user_mis ON user_mis.\"id\" = r_user_mis_access_token.\"userMisId\" WHERE access_token.\"accessToken\" = ? "
-	queryAccessToken += "AND access_token.\"deletedAt\" IS NULL"
-	services.DBCPsql.Raw(queryAccessToken, accessToken).Scan(&userObj)
+	queryAccessToken := "SELECT * FROM user_mis WHERE \"_username\" = ? "
+	queryAccessToken += "AND \"deletedAt\" IS NULL"
+	services.DBCPsql.Raw(queryAccessToken, claim.Id).Scan(&userObj)
 
 	if userObj == (userMis.UserMis{}) {
 		ctx.JSON(iris.StatusForbidden, iris.Map{

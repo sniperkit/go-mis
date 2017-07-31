@@ -2,11 +2,15 @@ package userMis
 
 import (
 	"time"
+	"net/http"
+	"encoding/json"
+	"bytes"
 	"bitbucket.org/go-mis/modules/r"
 	"bitbucket.org/go-mis/services"
 	"gopkg.in/kataras/iris.v4"
 	"github.com/jinzhu/gorm"
 	"fmt"
+	"bitbucket.org/go-mis/config"
 )
 
 func Init() {
@@ -22,13 +26,19 @@ func CreateUserMis(ctx *iris.Context){
 		Password    string     `json:"password"`
 		PhoneNo     string     `json:"phoneNo"`
 		PicUrl      string     `json:"picUrl"`
-		Role    	uint64     `json:"role"`
+		Role    		uint64     `json:"role"`
 		Area  	    uint64     `json:"area"`
 		Branch      uint64     `json:"branch"`
 	}
+
+	type Cas struct{
+    Username string `json:"username"`
+    Password string `json:"password"`
+		UserType string `json:"userType"`
+	}
+
 	m := Payload{}
 	err := ctx.ReadJSON(&m)
-
 
 	if err != nil{
 		ctx.JSON(iris.StatusBadRequest, iris.Map{"status": "error", "message": err.Error()})
@@ -43,40 +53,116 @@ func CreateUserMis(ctx *iris.Context){
 		userMis.PhoneNo = m.PhoneNo;
 		userMis.PicUrl = m.PicUrl;
 
-		db:=services.DBCPsql.Begin()
-		if err:=db.Create(&userMis).Error;err!=nil{
-			processErrorAndRollback(ctx, db, err, "Create User")
-			return
-		};
+		/***
+		Function Register to Go-Cas
+		author 	: @primayudantra
+		date		: 24 July 2017
+		***/
 
-		rur := r.RUserMisRole{}
-		rur.UserMisId = userMis.ID;
-		rur.RoleId = m.Role;
-		if err:=db.Create(&rur).Error;err!=nil{
-			processErrorAndRollback(ctx, db, err, "Create User")
-			return
-		};
+		u := Cas{Username: userMis.Username, Password: userMis.Password, UserType: "MIS"}
+		b := new(bytes.Buffer)
+		json.NewEncoder(b).Encode(u)
+		res, _ := http.Post(config.GoCasApiPath + "/api/v1/register", "application/json; charset=utf-8", b)
 
-		rbu := r.RBranchUserMis{}
-		rbu.UserMisId = userMis.ID;
-		rbu.BranchId = m.Branch;
-		if err:=db.Create(&rbu).Error;err!=nil{
-			processErrorAndRollback(ctx, db, err, "Create User")
-			return
-		};
+		if res.Status == "200 OK"{
+			db:=services.DBCPsql.Begin()
+			if err:=db.Create(&userMis).Error;err!=nil{
+				processErrorAndRollback(ctx, db, err, "Create User")
+				return
+			};
 
-		rau := r.RAreaUserMis{}
-		rau.UserMisId = userMis.ID;
-		rau.AreaId = m.Area;
-		if err:=db.Create(&rau).Error;err!=nil{
-			processErrorAndRollback(ctx, db, err, "Create User")
-			return
-		};
-		db.Commit()
+			rur := r.RUserMisRole{}
+			rur.UserMisId = userMis.ID;
+			rur.RoleId = m.Role;
+			if err:=db.Create(&rur).Error;err!=nil{
+				processErrorAndRollback(ctx, db, err, "Create User")
+				return
+			};
 
+			rbu := r.RBranchUserMis{}
+			rbu.UserMisId = userMis.ID;
+			rbu.BranchId = m.Branch;
+			if err:=db.Create(&rbu).Error;err!=nil{
+				processErrorAndRollback(ctx, db, err, "Create User")
+				return
+			};
+
+			rau := r.RAreaUserMis{}
+			rau.UserMisId = userMis.ID;
+			rau.AreaId = m.Area;
+			if err:=db.Create(&rau).Error;err!=nil{
+				processErrorAndRollback(ctx, db, err, "Create User")
+				return
+			};
+			db.Commit()
+		}else{
+			ctx.JSON(iris.StatusUnauthorized, iris.Map{
+				"status":  "error",
+				"message": "Error Create User in Go-CAS",
+			})
+			return
+		}
 	}
 	ctx.JSON(iris.StatusOK, iris.Map{"status": "success", "data": m})
 
+}
+
+func UpdateUserMisPasswordById(ctx *iris.Context){
+	userMisId := ctx.Get("id")
+	fmt.Println(userMisId)
+
+	type Payload struct {
+		Username	string		`json:"username"`
+		Password	string		`json:"password"`
+	}
+
+	type Cas struct{
+    Username string `json:"username"`
+    Password string `json:"password"`
+		UserType string `json:"userType"`
+	}
+
+	m := Payload{}
+	err := ctx.ReadJSON(&m)
+
+	if err != nil {
+		ctx.JSON(iris.StatusBadRequest, iris.Map{"status": "error", "message": err.Error()})
+		return
+	} else {
+
+		/***
+		Function Update Password to Go-Cas
+		author 	: @primayudantra
+		date		: 26 July 2017
+		***/
+
+		userMis := UserMis{}
+		userMis.Username = m.Username
+		userMis.Password = m.Password;
+
+		u := Cas{Username: userMis.Username, Password: userMis.Password, UserType: "MIS"}
+		fmt.Println(u)
+		b := new(bytes.Buffer)
+		json.NewEncoder(b).Encode(u)
+		res, _ := http.Post(config.GoCasApiPath + "/api/v1/update-password", "application/json; charset=utf-8", b)
+		fmt.Println(res.StatusCode)
+		fmt.Println(res.Status)
+		if res.Status == "200 OK"{
+			userMis.BeforeUpdate()
+			db:=services.DBCPsql.Begin()
+			// Update User in PSQL
+			userQuery := `UPDATE user_mis SET "_password" = ? WHERE "id" = ?`
+			services.DBCPsql.Raw(userQuery, userMis.Password, userMisId).Scan(&userMis)
+			db.Commit();
+
+		}else{
+			ctx.JSON(iris.StatusInternalServerError, iris.Map{
+				"status":  "error",
+				"message": err.Error(),
+			})
+			return
+		}
+	}
 }
 
 func UpdateUserMisById(ctx *iris.Context){
@@ -107,9 +193,9 @@ func UpdateUserMisById(ctx *iris.Context){
 		userMis.PicUrl = m.PicUrl;
 
 		db:=services.DBCPsql.Begin()
-		// Update User 
-		userQuery := `UPDATE user_mis SET "fullname" = ?, "_username" = ?, "phoneNo" = ?, "picUrl" = ? WHERE "id" = ?`
-		if err:=db.Exec(userQuery, userMis.Fullname, userMis.Username,userMis.PhoneNo, userMis.PicUrl, userMis.ID).Error;err!=nil {
+		// Update User
+		userQuery := `UPDATE user_mis SET "fullname" = ?, "phoneNo" = ?, "picUrl" = ? WHERE "id" = ?`
+		if err:=db.Exec(userQuery, userMis.Fullname,userMis.PhoneNo, userMis.PicUrl, userMis.ID).Error;err!=nil {
 			fmt.Println("Error",err)
 			processErrorAndRollback(ctx, db, err, "Update user")
 			return
@@ -170,12 +256,12 @@ func GetUserMisById(ctx *iris.Context){
 	id := ctx.Get("id")
 
 	query := `SELECT user_mis."id" AS "userMisId", user_mis."phoneNo", user_mis."_password", user_mis."_username", user_mis."picUrl", user_mis."fullname", user_mis."isSuspended", role."name" AS role,"role"."id" as "roleId", branch."id" as "branchId", area."id" as "areaId" , branch."name" AS "branch", area."name" AS "area" FROM user_mis
-		LEFT JOIN r_branch_user_mis ON r_branch_user_mis."userMisId" = user_mis."id" 
-		LEFT JOIN branch ON branch."id" = r_branch_user_mis."branchId" 
-		LEFT JOIN r_area_branch ON r_area_branch."branchId" = branch."id" 
-		LEFT JOIN area ON area."id" = r_area_branch."areaId" 
-		LEFT JOIN r_user_mis_role ON r_user_mis_role."userMisId" = user_mis."id" 
-		LEFT JOIN role ON role."id" = r_user_mis_role."roleId" 
+		LEFT JOIN r_branch_user_mis ON r_branch_user_mis."userMisId" = user_mis."id"
+		LEFT JOIN branch ON branch."id" = r_branch_user_mis."branchId"
+		LEFT JOIN r_area_branch ON r_area_branch."branchId" = branch."id"
+		LEFT JOIN area ON area."id" = r_area_branch."areaId"
+		LEFT JOIN r_user_mis_role ON r_user_mis_role."userMisId" = user_mis."id"
+		LEFT JOIN role ON role."id" = r_user_mis_role."roleId"
 		WHERE user_mis."deletedAt" IS NULL AND user_mis."id" = ?`
 	services.DBCPsql.Raw(query, id).Find(&userMis)
 
