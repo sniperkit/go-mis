@@ -21,6 +21,7 @@ type Group struct {
 
 type GroupAgentBorrower struct {
 	ID           uint64           `gorm:"primary_key" gorm:"column:_id" json:"_id"`
+	BranchId     uint64           `gorm:"column:branchId" json:"branchId"`
 	Name         string           `gorm:"column:name" json:"name"`
 	Lat          float64          `gorm:"column:lat" json:"lat"`
 	Lng          float64          `gorm:"column:lng" json:"lng"`
