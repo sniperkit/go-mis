@@ -7,7 +7,7 @@ import (
 	"gopkg.in/kataras/iris.v4"
 )
 
-var STAGE map[uint64]string = map[uint64]string{
+var STAGE map[int]string = map[int]string{
 	1: "AGENT",
 	2: "TELLER",
 	3: "PENDING",
@@ -58,8 +58,8 @@ func GetData(ctx *iris.Context) {
 
 func UpdateInstallmentStage(ctx *iris.Context) {
 	params := struct {
-		InstallmentID uint64 `json:"installmentId"`
-		Stage         uint64 `json:"stage"`
+		InstallmentID int `json:"installmentId"`
+		Stage         int `json:"stage"`
 	}{}
 
 	err := ctx.ReadJSON(&params)
@@ -68,8 +68,9 @@ func UpdateInstallmentStage(ctx *iris.Context) {
 		return
 	}
 
-	if err := db.Table("installment").Where("id = ?", params.InstallmentID).UpdateColumn("stage", STAGE[stage]).Error; err != nil {
-		return err
+	if err := services.DBCPsql.Table("installment").Where("id = ?", params.InstallmentID).UpdateColumn("stage", STAGE[params.Stage]).Error; err != nil {
+		ctx.JSON(iris.StatusBadRequest, iris.Map{"status": "error", "message": err.Error()})
+		return
 	}
 
 	ctx.JSON(iris.StatusOK, iris.Map{
