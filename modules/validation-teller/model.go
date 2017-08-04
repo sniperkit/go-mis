@@ -22,6 +22,7 @@ type Majelis struct {
 }
 
 type InstallmentData struct {
-	Agent   string `gorm:"column:fullname" json:"fullname"`
-	Majelis []Majelis
+	Agent                string `gorm:"column:fullname" json:"fullname"`
+	Majelis              []Majelis
+	TotalActualRepayment float64 `gorm:"column:totalActualRepayment" json:"totalActualRepayment"`
 }

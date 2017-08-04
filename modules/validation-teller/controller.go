@@ -62,6 +62,7 @@ func GetData(ctx *iris.Context) {
 
 	for idx, rval := range res {
 		m := []Majelis{}
+		var totalRepayment float64
 		for _, qrval := range queryResult {
 			if rval.Agent == qrval.Fullname {
 				m = append(m, Majelis{
@@ -73,9 +74,11 @@ func GetData(ctx *iris.Context) {
 					TotalCair:          qrval.TotalCair,
 					TotalGagalDropping: qrval.TotalGagalDropping,
 				})
+				totalRepayment += qrval.Repayment
 			}
 		}
 		res[idx].Majelis = m
+		res[idx].TotalActualRepayment = totalRepayment
 	}
 
 	ctx.JSON(iris.StatusOK, iris.Map{
