@@ -1,7 +1,6 @@
 package validationTeller
 
 import (
-	"fmt"
 	"strconv"
 
 	"bitbucket.org/go-mis/services"
@@ -28,7 +27,7 @@ func GetData(ctx *iris.Context) {
 		ctx.JSON(iris.StatusBadRequest, iris.Map{"status": "error", "message": err.Error()})
 		return
 	}
-	query := `select i.id as "installmentId", a.fullname,g.name, sum(i."paidInstallment") "repayment",sum(i.reserve) "tabungan",sum(i."paidInstallment"+i.reserve) "total", 
+	query := `select g.id as "groupId", a.fullname,g.name, sum(i."paidInstallment") "repayment",sum(i.reserve) "tabungan",sum(i."paidInstallment"+i.reserve) "total", 
 				coalesce(sum(case
 				when d.stage = 'SUCCESS' then plafond end
 				),0) "totalCair",
@@ -46,17 +45,42 @@ func GetData(ctx *iris.Context) {
 				join r_loan_disbursement rld on rld."loanId" = l.id
 				join disbursement d on d.id = rld."disbursementId"
 				where l."deletedAt" isnull and b.id= ? and coalesce(i."transactionDate",i."createdAt")::date = ? and l.stage = 'INSTALLMENT'
-				group by g.name, a.fullname, i.id
+				group by g.name, a.fullname, g.id
 				order by a.fullname`
 
-	result := []ValidationTellerData{}
-	services.DBCPsql.Raw(query, params.BranchId, params.Date).Scan(&result)
+	queryResult := []RawInstallmentData{}
+	services.DBCPsql.Raw(query, params.BranchId, params.Date).Scan(&queryResult)
 
-	fmt.Println(result)
+	res := []InstallmentData{}
+	agents := map[string]bool{"": false}
+	for _, val := range queryResult {
+		if agents[val.Fullname] == false {
+			agents[val.Fullname] = true
+			res = append(res, InstallmentData{Agent: val.Fullname})
+		}
+	}
+
+	for idx, rval := range res {
+		m := []Majelis{}
+		for _, qrval := range queryResult {
+			if rval.Agent == qrval.Fullname {
+				m = append(m, Majelis{
+					GroupId:            qrval.GroupId,
+					Name:               qrval.Name,
+					Repayment:          qrval.Repayment,
+					Tabungan:           qrval.Tabungan,
+					Total:              qrval.Total,
+					TotalCair:          qrval.TotalCair,
+					TotalGagalDropping: qrval.TotalGagalDropping,
+				})
+			}
+		}
+		res[idx].Majelis = m
+	}
 
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"status": "success",
-		"data":   result,
+		"data":   res,
 	})
 }
 
