@@ -7,6 +7,7 @@ import (
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"os/exec"
+	"bitbucket.org/go-mis/services"
 )
 
 
@@ -21,7 +22,9 @@ func TestSubmitInstallmentByInstallmentIDWithStatus(t *testing.T) {
 }
 
 func TestStoreInstallment(t *testing.T) {
-	StoreInstallment(978626, "success")
+	db := services.DBCPsql.Begin()
+	StoreInstallment(db, 978626, "success")
+	db.Commit()
 }
 
 func TestUpdateLoanStage(t *testing.T) {
