@@ -1,6 +1,7 @@
 package validationTeller
 
 import (
+	"fmt"
 	"strconv"
 
 	"bitbucket.org/go-mis/services"
@@ -45,11 +46,14 @@ func GetData(ctx *iris.Context) {
 				join r_loan_disbursement rld on rld."loanId" = l.id
 				join disbursement d on d.id = rld."disbursementId"
 				where l."deletedAt" isnull and b.id= ? and coalesce(i."transactionDate",i."createdAt")::date = ? and l.stage = 'INSTALLMENT'
-				group by g.name, a.fullname
+				group by g.name, a.fullname, i.id
 				order by a.fullname`
 
 	result := []ValidationTellerData{}
 	services.DBCPsql.Raw(query, params.BranchId, params.Date).Scan(&result)
+
+	fmt.Println(result)
+
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"status": "success",
 		"data":   result,
