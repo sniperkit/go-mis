@@ -63,6 +63,7 @@ func UserMisLogin(ctx *iris.Context) {
 	b := new(bytes.Buffer)
 	json.NewEncoder(b).Encode(u)
 	fmt.Println(config.GoCasApiPath)
+	fmt.Println(config.SignStringKey)
 	res, _ := http.Post(config.GoCasApiPath + "/api/v1/auth", "application/json; charset=utf-8", b)
 
 	var casResp struct{
@@ -130,6 +131,7 @@ func UserMisLogin(ctx *iris.Context) {
 		ctx.JSON(iris.StatusOK, iris.Map{
 			"status": "success",
 			"data": iris.Map{
+				"idUserMis":        userMisObj.ID,
 				"name":        userMisObj.Fullname,
 				"accessToken": accessTokenHash,
 				"branchId":    rUserMisBranch.BranchId,
@@ -167,6 +169,8 @@ func UserMisLogin(ctx *iris.Context) {
 		ctx.JSON(iris.StatusOK, iris.Map{
 			"status": "success",
 			"data": iris.Map{
+				"idUserMis":        userMisObj.ID,
+				"username":        userMisObj.Username,
 				"name":        userMisObj.Fullname,
 				"accessToken": accessTokenHash,
 				"branchId":    rUserMisBranch.BranchId,
@@ -192,7 +196,8 @@ func EnsureAuth(ctx *iris.Context) {
 	if accessToken==""{
 		accessToken = ctx.RequestHeader("accessToken")
 	}
-	signString := []byte("supersecret")
+	signString := []byte(config.SignStringKey)
+
 	claim :=&jwt.StandardClaims{}
 	jwt.ParseWithClaims(accessToken,claim, func(token *jwt.Token) (interface{}, error) {
 		return signString, nil

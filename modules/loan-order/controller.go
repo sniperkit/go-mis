@@ -88,6 +88,19 @@ func FetchSingle(ctx *iris.Context) {
 	})
 }
 
+func calculateTotalPayment(orderNo string, db *gorm.DB) (float64, error) {
+	query := `select SUM(plafond) "total"
+	from loan l join r_loan_order rlo on l.id = rlo."loanId"
+	join loan_order lo on lo.id = rlo."loanOrderId"
+	where lo."orderNo"=?`
+
+	r := struct{ Total float64 }{}
+	if err := db.Raw(query, orderNo).Scan(&r).Error; err != nil {
+		return 100000000000, err
+	}
+	return r.Total, nil
+}
+
 // fungsi-fungsi dewa
 func AcceptLoanOrder(ctx *iris.Context) {
 	// seting order no
@@ -103,10 +116,13 @@ func AcceptLoanOrder(ctx *iris.Context) {
 		voucherAmount = voucherData.Amount
 	}
 
+	db := services.DBCPsql.Begin()
+
 	totalDebit := accountTransactionDebit.GetTotalAccountTransactionDebit(accountId)
 	totalCredit := accountTransactionCredit.GetTotalAccountTransactionCredit(accountId)
+	totalOrder,_ := calculateTotalPayment(orderNo,db)
 
-	totalBalance := (totalDebit + voucherAmount) - totalCredit
+	totalBalance := (totalDebit + voucherAmount) - totalCredit - totalOrder
 	if totalBalance < 0 {
 		ctx.JSON(iris.StatusOK, iris.Map{
 			"status":  "error",
@@ -116,7 +132,6 @@ func AcceptLoanOrder(ctx *iris.Context) {
 		return
 	}
 
-	db := services.DBCPsql.Begin()
 
 	if err := UpdateSuccess(orderNo, db); err != nil {
 		processErrorAndRollback(ctx, orderNo, db, err, "Update Success")

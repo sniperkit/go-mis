@@ -29,6 +29,7 @@ type Config struct {
 	UploaderPath string     `json:"uploaderPath"`
 	GoCasPath		 string     `json:"goCasPath"`
 	WhiteList		 string     `json:"whiteList"`
+	SignString		 string     `json:"signString"`
 	ApiVersion   string     `json:"apiVersion"`
 	EnableEmergencyLoan bool `json:"enableEmergencyLoan"`
 }
@@ -44,6 +45,7 @@ type DbConfig struct {
 
 var Version string
 var GoCasApiPath string
+var SignStringKey string
 
 func init() {
 	ApiKey = "$2a$06$20EpVmcNvVg0heEijxLEP.Aw0hhoC7kJyuGltJnYZMStuhOLwPB7W"
@@ -80,7 +82,7 @@ func init() {
 
 	var c Config
 	json.Unmarshal(configFile, &c)
-	c.ApiVersion = "2.1.0"
+	c.ApiVersion = "2.2.0"
 	fmt.Println("Version:", c.ApiVersion)
 	fmt.Println("------------------")
 
@@ -88,6 +90,10 @@ func init() {
 
 	UploaderApiPath = c.UploaderPath
 	GoCasApiPath = c.GoCasPath
+	SignStringKey = c.SignString
+
+
+
 	EnableEmergencyLoan = c.EnableEmergencyLoan
 	WhiteList = c.WhiteList
 

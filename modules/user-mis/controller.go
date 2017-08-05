@@ -62,7 +62,7 @@ func CreateUserMis(ctx *iris.Context){
 		u := Cas{Username: userMis.Username, Password: userMis.Password, UserType: "MIS"}
 		b := new(bytes.Buffer)
 		json.NewEncoder(b).Encode(u)
-    	res, _ := http.Post(config.GoCasPath + "/api/v1/register", "application/json; charset=utf-8", b)
+		res, _ := http.Post(config.GoCasApiPath + "/api/v1/register", "application/json; charset=utf-8", b)
 
 		if res.Status == "200 OK"{
 			db:=services.DBCPsql.Begin()
@@ -141,9 +141,12 @@ func UpdateUserMisPasswordById(ctx *iris.Context){
 		userMis.Password = m.Password;
 
 		u := Cas{Username: userMis.Username, Password: userMis.Password, UserType: "MIS"}
+		fmt.Println(u)
 		b := new(bytes.Buffer)
 		json.NewEncoder(b).Encode(u)
 		res, _ := http.Post(config.GoCasApiPath + "/api/v1/update-password", "application/json; charset=utf-8", b)
+		fmt.Println(res.StatusCode)
+		fmt.Println(res.Status)
 		if res.Status == "200 OK"{
 			userMis.BeforeUpdate()
 			db:=services.DBCPsql.Begin()
@@ -153,9 +156,9 @@ func UpdateUserMisPasswordById(ctx *iris.Context){
 			db.Commit();
 
 		}else{
-			ctx.JSON(iris.StatusUnauthorized, iris.Map{
+			ctx.JSON(iris.StatusInternalServerError, iris.Map{
 				"status":  "error",
-				"message": "Error Update Password in Go-CAS",
+				"message": err.Error(),
 			})
 			return
 		}
@@ -191,8 +194,8 @@ func UpdateUserMisById(ctx *iris.Context){
 
 		db:=services.DBCPsql.Begin()
 		// Update User
-		userQuery := `UPDATE user_mis SET "fullname" = ?, "_username" = ?, "phoneNo" = ?, "picUrl" = ? WHERE "id" = ?`
-		if err:=db.Exec(userQuery, userMis.Fullname, userMis.Username,userMis.PhoneNo, userMis.PicUrl, userMis.ID).Error;err!=nil {
+		userQuery := `UPDATE user_mis SET "fullname" = ?, "phoneNo" = ?, "picUrl" = ? WHERE "id" = ?`
+		if err:=db.Exec(userQuery, userMis.Fullname,userMis.PhoneNo, userMis.PicUrl, userMis.ID).Error;err!=nil {
 			fmt.Println("Error",err)
 			processErrorAndRollback(ctx, db, err, "Update user")
 			return
