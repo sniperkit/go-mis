@@ -25,6 +25,7 @@ func GetData(ctx *iris.Context) {
 
 	query := `select g.id as "groupId", a.fullname,g.name, sum(i."paidInstallment") "repayment",sum(i.reserve) "tabungan",sum(i."paidInstallment"+i.reserve) "total", 
 				sum(i.cash_on_hand) "cashOnHand",
+				sum(i.cash_on_reserve) "cashOnReserve",
 				coalesce(sum(case
 				when d.stage = 'SUCCESS' then plafond end
 				),0) "totalCair",
@@ -72,7 +73,8 @@ func GetData(ctx *iris.Context) {
 					TotalCair:          qrval.TotalCair,
 					TotalGagalDropping: qrval.TotalGagalDropping,
 					Status: qrval.Status,
-					CashOnhand:qrval.CashOnhand,
+					CashOnHand:qrval.CashOnHand,
+					CashOnReserve:qrval.CashOnReserve,
 				})
 				totalRepayment += qrval.Repayment
 			}
