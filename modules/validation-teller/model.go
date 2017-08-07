@@ -9,6 +9,8 @@ type RawInstallmentData struct {
 	Total              float64 `gorm:"column:total" json:"total"`
 	TotalCair          float64 `gorm:"column:totalCair" json:"totalCair"`
 	TotalGagalDropping float64 `gorm:"column:totalGagalDropping" json:"totalGagalDropping"`
+	Status			   string `gorm:"column:status" json:"status"`
+	CashOnhand		   string `gorm:"column:cashOnHand" json:"cashOnhand"`
 }
 
 type Majelis struct {
@@ -19,6 +21,8 @@ type Majelis struct {
 	Total              float64 `gorm:"column:total" json:"total"`
 	TotalCair          float64 `gorm:"column:totalCair" json:"totalCair"`
 	TotalGagalDropping float64 `gorm:"column:totalGagalDropping" json:"totalGagalDropping"`
+	Status			   string `gorm:"column:status" json:"status"`
+	CashOnhand		   string `gorm:"column:cashOnHand" json:"cashOnhand"`
 }
 
 type InstallmentData struct {

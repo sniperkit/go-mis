@@ -17,23 +17,21 @@ var STAGE map[int]string = map[int]string{
 
 func GetData(ctx *iris.Context) {
 	params := struct {
-		BranchId uint64 `json:"branchId"`
+		BranchId int64 `json:"branchId"`
 		Date     string `json:"date"`
 	}{}
+	params.BranchId,_=ctx.URLParamInt64("branchId")
+	params.Date=ctx.URLParam("date")
 
-	err := ctx.ReadJSON(&params)
-
-	if err != nil {
-		ctx.JSON(iris.StatusBadRequest, iris.Map{"status": "error", "message": err.Error()})
-		return
-	}
 	query := `select g.id as "groupId", a.fullname,g.name, sum(i."paidInstallment") "repayment",sum(i.reserve) "tabungan",sum(i."paidInstallment"+i.reserve) "total", 
+				sum(i.cash_on_hand) "cashOnHand",
 				coalesce(sum(case
 				when d.stage = 'SUCCESS' then plafond end
 				),0) "totalCair",
 				coalesce(sum(case
 				when d.stage = 'FAILED' then plafond end
-				),0) "totalGagalDropping"
+				),0) "totalGagalDropping",
+				split_part(string_agg(i.stage,'| '),'|',1) "status"
 				from loan l join r_loan_group rlg on l.id = rlg."loanId"
 				join "group" g on g.id = rlg."groupId"
 				join r_group_agent rga on g.id = rga."groupId"
@@ -73,6 +71,8 @@ func GetData(ctx *iris.Context) {
 					Total:              qrval.Total,
 					TotalCair:          qrval.TotalCair,
 					TotalGagalDropping: qrval.TotalGagalDropping,
+					Status: qrval.Status,
+					CashOnhand:qrval.CashOnhand,
 				})
 				totalRepayment += qrval.Repayment
 			}
