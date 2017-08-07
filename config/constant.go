@@ -18,18 +18,20 @@ var (
 	PsqlHostAddressSurvey     string
 	MysqlHostAddress          string
 	UploaderApiPath           string
-	GoCasPath			           string
-	EnableEmergencyLoan		  bool
+	GoCasPath                 string
+	GoLogPath                 string
+	EnableEmergencyLoan       bool
 )
 
 type Config struct {
-	Psql         []DbConfig `json:"psql"`
-	Mysql        DbConfig   `json:"mysql"`
-	UploaderPath string     `json:"uploaderPath"`
-	GoCasPath		 string     `json:"goCasPath"`
-	SignString		 string     `json:"signString"`
-	ApiVersion   string     `json:"apiVersion"`
-	EnableEmergencyLoan bool `json:"enableEmergencyLoan"`
+	Psql                []DbConfig `json:"psql"`
+	Mysql               DbConfig   `json:"mysql"`
+	UploaderPath        string     `json:"uploaderPath"`
+	GoCasPath           string     `json:"goCasPath"`
+	GoLogPath           string     `json:"goLogPath"`
+	SignString          string     `json:"signString"`
+	ApiVersion          string     `json:"apiVersion"`
+	EnableEmergencyLoan bool       `json:"enableEmergencyLoan"`
 }
 
 type DbConfig struct {
@@ -88,9 +90,8 @@ func init() {
 
 	UploaderApiPath = c.UploaderPath
 	GoCasApiPath = c.GoCasPath
+	GoLogPath = c.GoLogPath
 	SignStringKey = c.SignString
-
-
 
 	EnableEmergencyLoan = c.EnableEmergencyLoan
 

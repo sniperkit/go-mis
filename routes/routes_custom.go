@@ -99,6 +99,7 @@ func InitCustomApi() {
 		v2.Any("/installment-by-type/:type", installment.FetchByType)
 		v2.Any("/installment/group/:group_id/by-transaction-date/:transaction_date/stage/:stage", installment.GetInstallmentByGroupIDAndTransactionDate)
 		v2.Any("/installment/group/:group_id/by-transaction-date/:transaction_date/submit/:status", installment.SubmitInstallmentByGroupIDAndTransactionDateWithStatus)
+		v2.Any("/validation-teller", installment.ValidationTeller)
 		v2.Any("/installment/submit/:installment_id/status/:status", installment.SubmitInstallmentByInstallmentIDWithStatus)
 		v2.Any("/disbursement", disbursement.FetchAll)
 		v2.Any("/disbursement/set/:loan_id/stage/:stage", disbursement.UpdateDisbursementStage)

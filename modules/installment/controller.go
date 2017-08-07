@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"log"
+
 	"bitbucket.org/go-mis/modules/account"
 	accountTransactionCredit "bitbucket.org/go-mis/modules/account-transaction-credit"
 	accountTransactionDebit "bitbucket.org/go-mis/modules/account-transaction-debit"
@@ -16,7 +18,6 @@ import (
 	"bitbucket.org/go-mis/services"
 	"github.com/jinzhu/gorm"
 	iris "gopkg.in/kataras/iris.v4"
-	"log"
 )
 
 func Init() {
@@ -125,7 +126,7 @@ func GetInstallmentByGroupIDAndTransactionDate(ctx *iris.Context) {
 	`
 
 	installmentDetailSchema := []InstallmentDetail{}
-	err := services.DBCPsql.Raw(query, transactionDate, groupID, branchID,stage).Scan(&installmentDetailSchema).Error
+	err := services.DBCPsql.Raw(query, transactionDate, groupID, branchID, stage).Scan(&installmentDetailSchema).Error
 	if err != nil {
 		ctx.JSON(iris.StatusInternalServerError, iris.Map{"data": err})
 		return
@@ -277,14 +278,47 @@ func UpdateStageInstallmentApproveOrReject(db *gorm.DB, installmentId uint64, st
 	fmt.Println("Done. Updated status to " + status + ". installmentId=" + convertedInstallmentID)
 }
 
+func UpdateStageAndCashOnHand(db *gorm.DB, installmentId uint64, stageFrom string, status string, coh float64) error {
+	var err error
+	convertedInstallmentID := strconv.FormatUint(installmentId, 10)
+	fmt.Println("Updating status to " + status + ". installmentId=" + convertedInstallmentID)
+
+	installmentHistorySchema := &installmentHistory.InstallmentHistory{StageFrom: stageFrom, StageTo: status}
+	if err = db.Table("installment_history").Create(installmentHistorySchema).Error; err != nil {
+		return err
+	}
+
+	installmentHistoryID := installmentHistorySchema.ID
+
+	rInstallmentHistorySchema := &r.RInstallmentHistory{InstallmentId: installmentId, InstallmentHistoryId: installmentHistoryID}
+	if err = db.Table("r_installment_history").Create(rInstallmentHistorySchema).Error; err != nil {
+		return err
+	}
+
+	if err = db.Table("installment").Where("\"id\" = ?", installmentId).UpdateColumn("stage", status).Error; err != nil {
+		return err
+	}
+
+	fmt.Println("Done. Updated status to " + status + ". installmentId=" + convertedInstallmentID)
+
+	// Check cash on hand
+	// -1 means we are not updating cash on hand
+	if coh != -1 {
+		if err = db.Table("installment").Where("\"id\" = ?", installmentId).UpdateColumn("cash_on_hand", coh).Error; err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // SubmitInstallmentByInstallmentIDWithStatus - approve or reject installment by installment_id
 func SubmitInstallmentByInstallmentIDWithStatus(ctx *iris.Context) {
 	installmentID, _ := strconv.ParseUint(ctx.Param("installment_id"), 10, 64)
 	status := strings.ToUpper(ctx.Param("status"))
 
-	go func(){
+	go func() {
 		db := services.DBCPsql.Begin()
-		err:=StoreInstallment(db, installmentID, status)
+		err := StoreInstallment(db, installmentID, status)
 		if err != nil {
 			ProcessErrorAndRollback(ctx, db, err.Error())
 			return
@@ -536,7 +570,7 @@ func UpdateInstallmentByInstallmentID(ctx *iris.Context) {
 type SimpleLoan struct {
 	ID          string  `gorm:"column:id"`
 	Plafond     int32   `gorm:"column:plafond"`
-	Installment float64   `gorm:"column:installment"`
+	Installment float64 `gorm:"column:installment"`
 	Frequency   int32   `gorm:"column:frequency"`
 	Tenor       int32   `gorm:"column:tenor"`
 	Rate        float32 `gorm:"column:rate"`
@@ -633,9 +667,8 @@ func GetStageTo(installment Installment, loan SimpleLoan) (string, error) {
 	return "END-PENDING", errors.New("Calculation End or End Early not match")
 }
 
-
 func ProcessErrorAndRollback(ctx *iris.Context, db *gorm.DB, message string) {
-	log.Println("#Error",message)
+	log.Println("#Error", message)
 	db.Rollback()
 	ctx.JSON(iris.StatusInternalServerError, iris.Map{
 		"status":  "error",
