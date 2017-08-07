@@ -89,6 +89,47 @@ func GetData(ctx *iris.Context) {
 	})
 }
 
+func SaveDetail(ctx *iris.Context) {
+	params := [] struct {
+		CashOnReserve  float64 `json:"cashOnReserve"`
+		CashOnHand     float64 `json:"cashOnHand"`
+		InstallmentId  uint64 `json:"installmentId"`
+		GroupId  	   uint64 `json:"groupId"`
+		Note           string `json:"note"`
+	}{}
+	err := ctx.ReadJSON(&params)
+	if err != nil {
+		ctx.JSON(iris.StatusBadRequest, iris.Map{"status": "error", "message": err.Error()})
+		return
+	}
+	db :=services.DBCPsql.Begin()
+	for _,param := range params {
+		if err:=db.Table("installment").Where("\"id\" = ?", param.InstallmentId).UpdateColumn("cash_on_hand", param.CashOnHand).Error;err!=nil{
+			db.Rollback()
+			ctx.JSON(iris.StatusInternalServerError, iris.Map{
+				"status":  "error",
+				"message": "Error Update cashOnHand",
+			})
+			return
+		}
+		if err:=db.Table("installment").Where("\"id\" = ?", param.InstallmentId).UpdateColumn("cash_on_reserve", param.CashOnReserve).Error;err!=nil{
+			db.Rollback()
+			ctx.JSON(iris.StatusInternalServerError, iris.Map{
+				"status":  "error",
+				"message": "Error Update cashOnReserve",
+			})
+			return
+		}
+	}
+	db.Commit()
+
+	ctx.JSON(iris.StatusOK, iris.Map{
+		"status": "success",
+		"data":   params,
+	})
+}
+
+
 func GetDetail(ctx *iris.Context) {
 	params := struct {
 		Date     string `json:"date"`
@@ -97,7 +138,7 @@ func GetDetail(ctx *iris.Context) {
 	params.GroupId,_=ctx.URLParamInt64("groupId")
 	params.Date=ctx.URLParam("date")
 
-	query := `select rlbo."borrowerId" as "borrowerId",cif."name", i."paidInstallment" as "repayment",i.reserve as "tabungan",(i."paidInstallment"+i.reserve) as "total",
+	query := `select i.id,rlbo."borrowerId" as "borrowerId",cif."name", i."paidInstallment" as "repayment",i.reserve as "tabungan",(i."paidInstallment"+i.reserve) as "total",
 				i.cash_on_hand as "cashOnHand",
 				i.cash_on_reserve as "cashOnReserve"
 				from loan l join r_loan_group rlg on l.id = rlg."loanId"
