@@ -1,5 +1,16 @@
 package validationTeller
 
+type RawInstallmentDetail struct {
+	BorrowerId            string  `gorm:"column:borrowerId" json:"borrowerId"`
+	Name               string  `gorm:"column:name" json:"name"`
+	Repayment          float64 `gorm:"column:repayment" json:"repayment"`
+	Tabungan           float64 `gorm:"column:tabungan" json:"tabungan"`
+	Total              float64 `gorm:"column:total" json:"total"`
+	Status			   string `gorm:"column:status" json:"status"`
+	CashOnHand		   string `gorm:"column:cashOnHand" json:"cashOnHand"`
+	CashOnReserve		   string `gorm:"column:cashOnReserve" json:"cashOnReserve"`
+}
+
 type RawInstallmentData struct {
 	Fullname           string  `gorm:"column:fullname" json:"fullname"`
 	GroupId            string  `gorm:"column:groupId" json:"groupId"`
