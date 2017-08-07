@@ -93,7 +93,7 @@ func SaveDetail(ctx *iris.Context) {
 	params := [] struct {
 		CashOnReserve  float64 `json:"cashOnReserve"`
 		CashOnHand     float64 `json:"cashOnHand"`
-		InstallmentId  uint64 `json:"installmentId"`
+		Id  uint64 `json:"id"`
 		GroupId  	   uint64 `json:"groupId"`
 		Note           string `json:"note"`
 	}{}
@@ -104,7 +104,7 @@ func SaveDetail(ctx *iris.Context) {
 	}
 	db :=services.DBCPsql.Begin()
 	for _,param := range params {
-		if err:=db.Table("installment").Where("\"id\" = ?", param.InstallmentId).UpdateColumn("cash_on_hand", param.CashOnHand).Error;err!=nil{
+		if err:=db.Table("installment").Where("\"id\" = ?", param.Id).UpdateColumn("cash_on_hand", param.CashOnHand).Error;err!=nil{
 			db.Rollback()
 			ctx.JSON(iris.StatusInternalServerError, iris.Map{
 				"status":  "error",
@@ -112,7 +112,7 @@ func SaveDetail(ctx *iris.Context) {
 			})
 			return
 		}
-		if err:=db.Table("installment").Where("\"id\" = ?", param.InstallmentId).UpdateColumn("cash_on_reserve", param.CashOnReserve).Error;err!=nil{
+		if err:=db.Table("installment").Where("\"id\" = ?", param.Id).UpdateColumn("cash_on_reserve", param.CashOnReserve).Error;err!=nil{
 			db.Rollback()
 			ctx.JSON(iris.StatusInternalServerError, iris.Map{
 				"status":  "error",
