@@ -3,10 +3,11 @@ package installment
 import (
 	"errors"
 	"fmt"
+	"log"
 	"strconv"
 	"strings"
 	"time"
-	"log"
+
 	"bitbucket.org/go-mis/modules/account"
 	accountTransactionCredit "bitbucket.org/go-mis/modules/account-transaction-credit"
 	accountTransactionDebit "bitbucket.org/go-mis/modules/account-transaction-debit"
@@ -181,11 +182,11 @@ func StoreInstallment(db *gorm.DB, installmentId uint64, status string) error {
 	installmentSchema := Installment{}
 	db.Table("installment").Where("\"id\" = ?", installmentId).First(&installmentSchema)
 
-	if installmentSchema.Stage != "PENDING" && installmentSchema.Stage != "IN-REVIEW" && installmentSchema.Stage != "APPROVE" {
+	if installmentSchema.Stage != "TELLER" && installmentSchema.Stage != "AGENT" && installmentSchema.Stage != "PENDING" && installmentSchema.Stage != "IN-REVIEW" && installmentSchema.Stage != "APPROVE" {
 		return errors.New("Current installment stage is NEITHER 'PENDING' NOR 'IN-REVIEW' nor 'APPROVE'. System cannot continue to process your request. installmentId=" + convertedInstallmentId)
 	}
 
-	if strings.ToUpper(status) == "REJECT" || strings.ToUpper(status) == "IN-REVIEW" || strings.ToUpper(status) == "APPROVE" {
+	if strings.ToUpper(status) == "REJECT" || strings.ToUpper(status) == "IN-REVIEW" || strings.ToUpper(status) == "APPROVE" || strings.ToUpper(status) == "AGENT" || strings.ToUpper(status) == "TELLER" {
 		log.Println("Installment data has been", status, ". Waiting worker. installmentId=", convertedInstallmentId)
 		UpdateStageInstallmentApproveOrReject(db, installmentId, installmentSchema.Stage, status)
 		return nil
@@ -259,7 +260,7 @@ func StoreInstallment(db *gorm.DB, installmentId uint64, status string) error {
 }
 
 // UpdateStageInstallmentApproveOrReject - Update installment stage
-func UpdateStageInstallmentApproveOrReject(db *gorm.DB, installmentId uint64, stageFrom string, status string) error{
+func UpdateStageInstallmentApproveOrReject(db *gorm.DB, installmentId uint64, stageFrom string, status string) error {
 	var err error
 	convertedInstallmentID := strconv.FormatUint(installmentId, 10)
 	fmt.Println("Updating status to " + status + ". installmentId=" + convertedInstallmentID)
