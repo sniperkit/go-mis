@@ -100,7 +100,6 @@ func InitCustomApi() {
 		v2.Any("/installment-by-type/:type", installment.FetchByType)
 		v2.Any("/installment/group/:group_id/by-transaction-date/:transaction_date/stage/:stage", installment.GetInstallmentByGroupIDAndTransactionDate)
 		v2.Any("/installment/group/:group_id/by-transaction-date/:transaction_date/submit/:status", installment.SubmitInstallmentByGroupIDAndTransactionDateWithStatus)
-		v2.Any("/validation-teller", installment.ValidationTeller)
 		v2.Any("/installment/submit/:installment_id/status/:status", installment.SubmitInstallmentByInstallmentIDWithStatus)
 		v2.Any("/disbursement", disbursement.FetchAll)
 		v2.Any("/disbursement/set/:loan_id/stage/:stage", disbursement.UpdateDisbursementStage)
@@ -170,6 +169,8 @@ func InitCustomApi() {
 		v2.Any("/loan-raw/:id", loanRaw.GetLoanRawById)
 		v2.Any("/disbursement-weekly-report", disbursementReport.FetchAllActive)
 		v2.Any("/disbursement-weekly-report/:id/detail", disbursementReport.GetDetail)
+		// Validation Teller
+		v2.Any("/validation-teller/save", installment.ValidationTeller)
 		v2.Any("/validation-teller/getdata", validationTeller.GetData)
 		v2.Any("/validation-teller/detail", validationTeller.GetDetail)
 		v2.Any("/validation-teller/detail/save", validationTeller.SaveDetail)

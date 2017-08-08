@@ -712,9 +712,8 @@ func ValidationTeller(ctx *iris.Context) {
 	}
 	// db.begin
 	for _, installment = range installments {
-		coh := getCOH(installment.ID, validationTellerModel.CashOnHand)
-		if coh != -1 {
-			err = UpdateStageAndCashOnHand(db, installment.ID, installment.Stage, "PENDING", coh)
+		
+		err:=UpdateStageAndCashOnHand(db, installment.ID, installment.Stage, "PENDING", coh)
 			if err != nil {
 				log.Println("#ERROR: ", err)
 				db.Rollback()
