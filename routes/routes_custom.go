@@ -32,6 +32,7 @@ import (
 	"bitbucket.org/go-mis/modules/topsheet"
 	"bitbucket.org/go-mis/modules/transaction"
 	"bitbucket.org/go-mis/modules/user-mis"
+	"bitbucket.org/go-mis/modules/validation-teller"
 	"bitbucket.org/go-mis/modules/virtual-account-statement"
 	"bitbucket.org/go-mis/modules/voucher"
 	"gopkg.in/iris-contrib/middleware.v4/cors"
@@ -169,6 +170,10 @@ func InitCustomApi() {
 		v2.Any("/loan-raw/:id", loanRaw.GetLoanRawById)
 		v2.Any("/disbursement-weekly-report", disbursementReport.FetchAllActive)
 		v2.Any("/disbursement-weekly-report/:id/detail", disbursementReport.GetDetail)
+		v2.Any("/validation-teller/getdata", validationTeller.GetData)
+		v2.Any("/validation-teller/detail", validationTeller.GetDetail)
+		v2.Any("/validation-teller/detail/save", validationTeller.SaveDetail)
+		v2.Any("/validation-teller/installment-stage/update", validationTeller.UpdateInstallmentStage)
 	}
 
 	iris.Get(baseURL+"/generate-topsheet/:group_id", topsheet.GenerateTopsheet)
