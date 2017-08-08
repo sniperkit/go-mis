@@ -3,10 +3,11 @@ package installment
 import (
 	"errors"
 	"fmt"
+	"log"
 	"strconv"
 	"strings"
 	"time"
-	"log"
+
 	"bitbucket.org/go-mis/modules/account"
 	accountTransactionCredit "bitbucket.org/go-mis/modules/account-transaction-credit"
 	accountTransactionDebit "bitbucket.org/go-mis/modules/account-transaction-debit"
@@ -259,7 +260,7 @@ func StoreInstallment(db *gorm.DB, installmentId uint64, status string) error {
 }
 
 // UpdateStageInstallmentApproveOrReject - Update installment stage
-func UpdateStageInstallmentApproveOrReject(db *gorm.DB, installmentId uint64, stageFrom string, status string) error{
+func UpdateStageInstallmentApproveOrReject(db *gorm.DB, installmentId uint64, stageFrom string, status string) error {
 	var err error
 	convertedInstallmentID := strconv.FormatUint(installmentId, 10)
 	fmt.Println("Updating status to " + status + ". installmentId=" + convertedInstallmentID)
@@ -641,9 +642,9 @@ func GetStageTo(installment Installment, loan SimpleLoan) (string, error) {
 }
 
 // FindByBranchAndDate - Filter Installment by branch and date
-func FindByBranchAndDate(branchID, transactionDate string) ([]Installment, error) {
-	if len(strings.Trim(branchID, " ")) == 0 {
-		return nil, errors.New("Branch ID can not be empty")
+func FindByBranchAndDate(branchID int64, transactionDate string) ([]Installment, error) {
+	if branchID == 0 {
+		return nil, errors.New("Branch ID can not be 0")
 	}
 	if len(strings.Trim(transactionDate, " ")) == 0 {
 		return nil, errors.New("Transaction date can not be empty")
