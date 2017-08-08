@@ -179,36 +179,17 @@ func GetDetail(ctx *iris.Context) {
 	})
 }
 
-func UpdateInstallmentStage(ctx *iris.Context) {
-	params := struct {
-		InstallmentID int `json:"installmentId"`
-		Stage         int `json:"stage"`
-	}{}
-
-	err := ctx.ReadJSON(&params)
-	if err != nil {
-		ctx.JSON(iris.StatusBadRequest, iris.Map{"status": "error", "message": err.Error()})
-		return
-	}
-
-	if err := services.DBCPsql.Table("installment").Where("id = ?", params.InstallmentID).UpdateColumn("stage", STAGE[params.Stage]).Error; err != nil {
-		ctx.JSON(iris.StatusBadRequest, iris.Map{"status": "error", "message": err.Error()})
-		return
-	}
-
-	ctx.JSON(iris.StatusOK, iris.Map{
-		"status": "success",
-		"data":   "Installment id:" + strconv.Itoa(params.InstallmentID) + " updated. Stage:" + STAGE[params.Stage],
-	})
-}
-
 // ValidationTeller - Controller
 func SubmitValidationTeller(ctx *iris.Context) {
 	var err error
 	var installment ins.Installment
 
-	validationTellerModel := TellerValidation{}
-	err = ctx.ReadJSON(&validationTellerModel)
+	params := struct {
+		BranchId string `json:"branchId"`
+		Date     string `json:"date"`
+	}{}
+
+	err = ctx.ReadJSON(&params)
 	if err != nil {
 		ctx.JSON(iris.StatusBadRequest, iris.Map{
 			"errorMessage": "Bad Request",
@@ -216,10 +197,7 @@ func SubmitValidationTeller(ctx *iris.Context) {
 		})
 		return
 	}
-
-	date := ctx.Param("date")
-	branchID := ctx.Param("branchID")
-	installments, err := ins.FindByBranchAndDate(branchID, date)
+	installments, err := ins.FindByBranchAndDate(params.BranchId, params.Date)
 	if err != nil {
 		log.Println("#ERROR: ", err)
 		ctx.JSON(iris.StatusInternalServerError, iris.Map{
@@ -245,7 +223,7 @@ func SubmitValidationTeller(ctx *iris.Context) {
 	}
 
 	db.Commit()
-	go postToLog(getLog(branchID, validationTellerModel))
+	go postToLog(getLog(params.BranchId, params))
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"message": "Success",
 	})
