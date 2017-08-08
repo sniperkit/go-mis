@@ -643,8 +643,8 @@ func GetStageTo(installment Installment, loan SimpleLoan) (string, error) {
 
 // FindByBranchAndDate - Filter Installment by branch and date
 func FindByBranchAndDate(branchID int64, transactionDate string) ([]Installment, error) {
-	if branchID == 0 {
-		return nil, errors.New("Branch ID can not be 0")
+	if branchID < 0 {
+		return nil, errors.New("Branch ID can not be empty")
 	}
 	if len(strings.Trim(transactionDate, " ")) == 0 {
 		return nil, errors.New("Transaction date can not be empty")
@@ -673,7 +673,7 @@ func FindByBranchAndDate(branchID int64, transactionDate string) ([]Installment,
 			installment."deletedAt" is null AND
 			UPPER(installment.stage) = 'TELLER'
 			branch.id = ? AND
-			installment."transactionDate" = ?`
+			installment."createdAt"::date = ?`
 	db.Raw(query, branchID, transactionDate).Scan(&installemnts)
 	if db.Error != nil {
 		log.Println("#ERROR: ", db.Error)

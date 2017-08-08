@@ -10,10 +10,11 @@ import (
 	"net/http"
 	"time"
 
-	misConfig "bitbucket.org/go-mis/config"
-	ins "bitbucket.org/go-mis/modules/installment"
 	"bitbucket.org/go-mis/services"
 	"gopkg.in/kataras/iris.v4"
+
+	misConfig "bitbucket.org/go-mis/config"
+	ins "bitbucket.org/go-mis/modules/installment"
 )
 
 var (
@@ -153,8 +154,13 @@ func UpdateInstallmentStage(ctx *iris.Context) {
 func SubmitValidationTeller(ctx *iris.Context) {
 	var err error
 	var installment ins.Installment
-	var submitBody SubmitBody
-	err = ctx.ReadJSON(&submitBody)
+
+	params := struct {
+		BranchId int64  `json:"branchId"`
+		Date     string `json:"date"`
+	}{}
+
+	err = ctx.ReadJSON(&params)
 	if err != nil {
 		ctx.JSON(iris.StatusBadRequest, iris.Map{
 			"errorMessage": "Bad Request",
@@ -162,10 +168,7 @@ func SubmitValidationTeller(ctx *iris.Context) {
 		})
 		return
 	}
-
-	date := submitBody.Date
-	branchID := submitBody.BranchID
-	installments, err := ins.FindByBranchAndDate(branchID, date)
+	installments, err := ins.FindByBranchAndDate(params.BranchId, params.Date)
 	if err != nil {
 		log.Println("#ERROR: ", err)
 		ctx.JSON(iris.StatusInternalServerError, iris.Map{
@@ -190,14 +193,14 @@ func SubmitValidationTeller(ctx *iris.Context) {
 	}
 
 	db.Commit()
-	instalmentData, err := FindInstallmentData(branchID, date)
+	instalmentData, err := FindInstallmentData(params.BranchId, params.Date)
 	if err != nil {
 		ctx.JSON(iris.StatusInternalServerError, iris.Map{
 			"errorMessage": "System Error",
 			"message":      err.Error(),
 		})
 	}
-	go postToLog(getLog(branchID, instalmentData))
+	go postToLog(getLog(params.BranchId, instalmentData))
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"message": "Success",
 	})
