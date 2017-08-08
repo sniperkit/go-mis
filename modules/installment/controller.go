@@ -649,33 +649,32 @@ func FindByBranchAndDate(branchID int64, transactionDate string) ([]Installment,
 		return nil, errors.New("Transaction date can not be empty")
 	}
 	installemnts := make([]Installment, 0)
-	db := services.DBCPsql.Begin()
-	defer db.Close()
 	query = `select installment.id,
-				installment.type,
-				installment.presence,
-				installment."paidInstallment",
-				installment.penalty,
-				installment.reserve,
-				installment.frequency,
-				installment.stage,
-				installment."transactionDate"
-			FROM installment,
-				r_loan_installment,
-				loan,
-				branch,
-				r_loan_branch
-			WHERE installment.id = r_loan_installment."installmentId" AND
-			loan.id = r_loan_installment."loanId" AND
-			loan.id = r_loan_branch."loanId" AND
-			branch.id = r_loan_branch."branchId" AND
-			installment."deletedAt" is null AND
-			UPPER(installment.stage) = 'TELLER'
-			branch.id = ? AND
-			installment."transactionDate" = ?`
-	db.Raw(query, branchID, transactionDate).Scan(&installemnts)
-	if db.Error != nil {
-		log.Println("#ERROR: ", db.Error)
+                                installment.type,
+                                installment.presence,
+                                installment."paidInstallment",
+                                installment.penalty,
+                                installment.reserve,
+                                installment.frequency,
+                                installment.stage,
+                                installment."transactionDate",
+                                installment."createdAt"
+                        FROM installment,
+                                r_loan_installment,
+                                loan,
+                                branch,
+                                r_loan_branch
+                        WHERE installment.id = r_loan_installment."installmentId" AND
+                        loan.id = r_loan_installment."loanId" AND
+                        loan.id = r_loan_branch."loanId" AND
+                        branch.id = r_loan_branch."branchId" AND
+                        installment."deletedAt" is null AND
+                        UPPER(installment.stage) = 'TELLER' AND
+                         branch.id = ? AND
+                         installment."createdAt"::date = ?`
+
+	if err:=services.DBCPsql.Raw(query, branchID, transactionDate).Scan(&installemnts).Error;err != nil {
+		log.Println("#ERROR: ", err.Error)
 		return nil, errors.New("Unable to retrieve installments")
 	}
 	return installemnts, nil

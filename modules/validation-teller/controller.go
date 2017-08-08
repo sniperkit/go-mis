@@ -220,7 +220,7 @@ func SubmitValidationTeller(ctx *iris.Context) {
 	}
 
 	db.Commit()
-	go postToLog(getLog(params.BranchId, params))
+//	go postToLog(getLog(params.BranchId, params))
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"message": "Success",
 	})
