@@ -4,7 +4,6 @@ import (
 	"bitbucket.org/go-mis/services"
 	"gopkg.in/kataras/iris.v4"
 	"bytes"
-	"strings"
 	"net/http"
 	"time"
 	"log"
@@ -183,7 +182,7 @@ func SubmitValidationTeller(ctx *iris.Context) {
 	var installment ins.Installment
 
 	params := struct {
-		BranchId string `json:"branchId"`
+		BranchId int64 `json:"branchId"`
 		Date     string `json:"date"`
 	}{}
 
@@ -228,11 +227,8 @@ func SubmitValidationTeller(ctx *iris.Context) {
 
 }
 
-func getLog(branchID string, data interface{}) Log {
+func getLog(branchID int64, data interface{}) Log {
 	var logger Log
-	if len(strings.Trim(branchID, " ")) == 0 || len(strings.Trim(branchID, " ")) == 0 {
-		return logger
-	}
 	logger = Log{
 		GroupID:   "Validasi Teller",
 		ArchiveID: generateArchiveID(branchID),
@@ -258,9 +254,6 @@ func postToLog(l Log) error {
 	return nil
 }
 
-func generateArchiveID(branchID string) string {
-	if len(strings.Trim(branchID, " ")) == 0 {
-		return ""
-	}
-	return branchID + "-" + time.Now().Local().Format("2006-01-02")
+func generateArchiveID(branchID int64) string {
+	return string(branchID) + "-" + time.Now().Local().Format("2006-01-02")
 }
