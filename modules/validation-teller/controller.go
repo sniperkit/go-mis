@@ -15,10 +15,11 @@ import (
 
 	misConfig "bitbucket.org/go-mis/config"
 	ins "bitbucket.org/go-mis/modules/installment"
+	misUtility "bitbucket.org/go-mis/modules/utility"
 )
 
 var (
-	logAPIPath = misConfig.GoLogPath + "archive"
+	logAPIPath = misConfig.GoLogPath
 )
 
 var STAGE map[int]string = map[int]string{
@@ -29,18 +30,46 @@ var STAGE map[int]string = map[int]string{
 	5: "APPROVE",
 }
 
+// GetData - Get data validation teller
 func GetData(ctx *iris.Context) {
 	var err error
 	var instalmentData []InstallmentData
 	params := struct {
-		BranchId int64  `json:"branchId"`
+		BranchID int64  `json:"branchId"`
 		Date     string `json:"date"`
 	}{}
-	params.BranchId, _ = ctx.URLParamInt64("branchId")
+	params.BranchID, _ = ctx.URLParamInt64("branchId")
 	params.Date = ctx.URLParam("date")
-	instalmentData, err = FindInstallmentData(params.BranchId, params.Date)
+	dateParam, err := misUtility.StringToDate(params.Date)
 	if err != nil {
-		ctx.JSON(iris.StatusOK, iris.Map{
+		ctx.JSON(iris.StatusBadRequest, iris.Map{
+			"status":       iris.StatusBadRequest,
+			"message":      "Bad Request",
+			"errorMessage": "Can not parse " + params.Date + " to Date",
+		})
+		return
+	}
+
+	if misUtility.IsAfterToday(dateParam) {
+		ctx.JSON(iris.StatusBadRequest, iris.Map{
+			"status":       iris.StatusBadRequest,
+			"message":      "Bad Request",
+			"errorMessage": "Date must be today or less than today",
+		})
+		return
+	}
+
+	if misUtility.IsBeforeToday(dateParam) {
+
+	}
+
+	if misUtility.IsToday(dateParam) {
+
+	}
+
+	instalmentData, err = FindInstallmentData(params.BranchID, params.Date)
+	if err != nil {
+		ctx.JSON(iris.StatusInternalServerError, iris.Map{
 			"status": http.StatusInternalServerError,
 			"data":   nil,
 		})
@@ -100,23 +129,26 @@ func GetDetail(ctx *iris.Context) {
 	params.GroupId, _ = ctx.URLParamInt64("groupId")
 	params.Date = ctx.URLParam("date")
 
-	query := `select i.id,rlbo."borrowerId" as "borrowerId",cif."name", i."paidInstallment" as "repayment",i.reserve as "tabungan",(i."paidInstallment"+i.reserve) as "total",
-				i.cash_on_hand as "cashOnHand",
-				i.cash_on_reserve as "cashOnReserve"
+	query := `select i.id,rlbo."borrowerId" as "borrowerId",cif."name", 
+					i."paidInstallment" as "repayment",i.reserve as "tabungan",
+					(i."paidInstallment"+i.reserve) as "total",
+					i.cash_on_hand as "cashOnHand",
+					i.cash_on_reserve as "cashOnReserve"
 				from loan l join r_loan_group rlg on l.id = rlg."loanId"
-				join "group" g on g.id = rlg."groupId"
-				join r_group_agent rga on g.id = rga."groupId"
-				join agent a on a.id = rga."agentId"
-				join r_loan_branch rlb on rlb."loanId" = l.id
-				join r_loan_borrower rlbo on rlbo."loanId" = l.id
-				join r_cif_borrower on r_cif_borrower."borrowerId"=rlbo."borrowerId"
-				join cif on cif.id=r_cif_borrower."cifId"
-				join branch b on b.id = rlb."branchId"
-				join r_loan_installment rli on rli."loanId" = l.id
-				join installment i on i.id = rli."installmentId"
-				join r_loan_disbursement rld on rld."loanId" = l.id
-				join disbursement d on d.id = rld."disbursementId"
-				where l."deletedAt" isnull and coalesce(i."transactionDate",i."createdAt")::date = ? and l.stage = 'INSTALLMENT' and g.id=?`
+					join "group" g on g.id = rlg."groupId"
+					join r_group_agent rga on g.id = rga."groupId"
+					join agent a on a.id = rga."agentId"
+					join r_loan_branch rlb on rlb."loanId" = l.id
+					join r_loan_borrower rlbo on rlbo."loanId" = l.id
+					join r_cif_borrower on r_cif_borrower."borrowerId"=rlbo."borrowerId"
+					join cif on cif.id=r_cif_borrower."cifId"
+					join branch b on b.id = rlb."branchId"
+					join r_loan_installment rli on rli."loanId" = l.id
+					join installment i on i.id = rli."installmentId"
+					join r_loan_disbursement rld on rld."loanId" = l.id
+					join disbursement d on d.id = rld."disbursementId"
+				where l."deletedAt" isnull and coalesce(i."transactionDate",i."createdAt")::date = ? and 
+				l.stage = 'INSTALLMENT' and g.id=?`
 
 	queryResult := []RawInstallmentDetail{}
 	services.DBCPsql.Raw(query, params.Date, params.GroupId).Scan(&queryResult)
@@ -200,7 +232,7 @@ func SubmitValidationTeller(ctx *iris.Context) {
 			"message":      err.Error(),
 		})
 	}
-	go postToLog(getLog(params.BranchId, instalmentData))
+	_ = postToLog(getLog(params.BranchId, instalmentData))
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"message": "Success",
 	})
@@ -228,9 +260,7 @@ func postToLog(l Log) error {
 	json.NewEncoder(logBytes).Encode(l)
 	log.Println(logAPIPath)
 	log.Println(l)
-	resp, err := http.Post(logAPIPath, "application/json; charset=utf-8", logBytes)
-	log.Println(resp.Status)
-	resp.Body.Close()
+	_, err := http.Post(logAPIPath+"archive", "application/json; charset=utf-8", logBytes)
 	if err != nil {
 		return errors.New(err.Error())
 	}
@@ -250,27 +280,30 @@ func FindInstallmentData(branchID int64, date string) ([]InstallmentData, error)
 	queryResult := make([]RawInstallmentData, 0)
 	res := make([]InstallmentData, 0)
 	agents := map[string]bool{"": false}
-	query := `select g.id as "groupId", a.fullname,g.name, sum(i."paidInstallment") "repayment",sum(i.reserve) "tabungan",sum(i."paidInstallment"+i.reserve) "total", 
-				sum(i.cash_on_hand) "cashOnHand",
-				sum(i.cash_on_reserve) "cashOnReserve",
-				coalesce(sum(case
-				when d.stage = 'SUCCESS' then plafond end
-				),0) "totalCair",
-				coalesce(sum(case
-				when d.stage = 'FAILED' then plafond end
-				),0) "totalGagalDropping",
-				split_part(string_agg(i.stage,'| '),'|',1) "status"
+	query := `select g.id as "groupId", a.fullname,g.name, 
+					sum(i."paidInstallment") "repayment",sum(i.reserve) "tabungan",
+					sum(i."paidInstallment"+i.reserve) "total", 
+					sum(i.cash_on_hand) "cashOnHand",
+					sum(i.cash_on_reserve) "cashOnReserve",
+					coalesce(sum(case
+					when d.stage = 'SUCCESS' then plafond end
+					),0) "totalCair",
+					coalesce(sum(case
+					when d.stage = 'FAILED' then plafond end
+					),0) "totalGagalDropping",
+					split_part(string_agg(i.stage,'| '),'|',1) "status"
 				from loan l join r_loan_group rlg on l.id = rlg."loanId"
-				join "group" g on g.id = rlg."groupId"
-				join r_group_agent rga on g.id = rga."groupId"
-				join agent a on a.id = rga."agentId"
-				join r_loan_branch rlb on rlb."loanId" = l.id
-				join branch b on b.id = rlb."branchId"
-				join r_loan_installment rli on rli."loanId" = l.id
-				join installment i on i.id = rli."installmentId"
-				join r_loan_disbursement rld on rld."loanId" = l.id
-				join disbursement d on d.id = rld."disbursementId"
-				where l."deletedAt" isnull and b.id= ? and coalesce(i."transactionDate",i."createdAt")::date = ? and l.stage = 'INSTALLMENT'
+					join "group" g on g.id = rlg."groupId"
+					join r_group_agent rga on g.id = rga."groupId"
+					join agent a on a.id = rga."agentId"
+					join r_loan_branch rlb on rlb."loanId" = l.id
+					join branch b on b.id = rlb."branchId"
+					join r_loan_installment rli on rli."loanId" = l.id
+					join installment i on i.id = rli."installmentId"
+					join r_loan_disbursement rld on rld."loanId" = l.id
+					join disbursement d on d.id = rld."disbursementId"
+				where l."deletedAt" isnull and b.id= ? and coalesce(i."transactionDate",i."createdAt")::date = ? and 
+				l.stage = 'INSTALLMENT'
 				group by g.name, a.fullname, g.id
 				order by a.fullname`
 	err = services.DBCPsql.Raw(query, branchID, date).Scan(&queryResult).Error
@@ -307,4 +340,19 @@ func FindInstallmentData(branchID int64, date string) ([]InstallmentData, error)
 		res[idx].TotalActualRepayment = totalRepayment
 	}
 	return res, nil
+}
+
+// GetDataFromLog - Retrive data from GO-LOG App
+func GetDataFromLog(branchID int64) ([]Log, error) {
+	logs := make([]Log, 0)
+	archiveID := generateArchiveID(branchID)
+	groupID := "VALIDATION TELLER"
+	apiPath := logAPIPath + "archive/" + archiveID + "/" + groupID
+	_, err := http.Get(apiPath)
+	if err != nil {
+		log.Println("#ERROR: Unable to retrive data from GO-LOG App")
+		log.Println("#ERROR: ", err)
+		return logs, err
+	}
+	return nil, nil
 }
