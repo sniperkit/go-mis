@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 
+	"bitbucket.org/go-mis/config"
 	"bitbucket.org/go-mis/services"
 	"gopkg.in/kataras/iris.v4"
 
@@ -299,11 +300,11 @@ func FindInstallmentData(branchID int64, date string) ([]InstallmentData, error)
 }
 
 // GetDataFromLog - Retrive data from GO-LOG App
-func GetDataFromLog(branchID int64) ([]Log, error) {
-	logs := make([]Log, 0)
-	archiveID := generateArchiveID(branchID)
+func GetDataFromLog(branchID int64) ([]services.Log, error) {
+	logs := make([]services.Log, 0)
+	archiveID := services.GenerateArchiveID(branchID)
 	groupID := "VALIDATION TELLER"
-	apiPath := logAPIPath + "archive/" + archiveID + "/" + groupID
+	apiPath := config.GoLogPath + "archive/" + archiveID + "/" + groupID
 	_, err := http.Get(apiPath)
 	if err != nil {
 		log.Println("#ERROR: Unable to retrive data from GO-LOG App")

@@ -33,6 +33,7 @@ type InstallmentFetch struct {
 
 type InstallmentDetail struct {
 	GroupID         uint64  `gorm:"column:groupId" json:"groupId"`
+	BranchID        uint64  `gorm:"column:branchId" json:"branchId"`
 	GroupName       string  `gorm:"column:groupName" json:"groupName"`
 	CifName         string  `gorm:"column:cifName" json:"cifName"`
 	BorrowerNo      string  `gorm:"column:borrowerNo" json:"borrowerNo"`

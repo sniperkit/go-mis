@@ -28,7 +28,7 @@ func GetLog(branchID int64, data interface{}, groupId string) Log {
 	}
 	logger = Log{
 		GroupID:   groupId,
-		ArchiveID: generateArchiveID(branchID),
+		ArchiveID: GenerateArchiveID(branchID),
 		Data:      data,
 	}
 	return logger

@@ -317,7 +317,7 @@ func SubmitInstallmentByGroupIDAndTransactionDateWithStatus(ctx *iris.Context) {
 	if strings.ToLower(ctx.Param("status")) == "agent" || strings.ToLower(ctx.Param("status")) == "teller" || strings.ToLower(ctx.Param("status")) == "approve" || strings.ToLower(ctx.Param("status")) == "reject" || strings.ToLower(ctx.Param("status")) == "in-review" || strings.ToLower(ctx.Param("status")) == "success" {
 		query := "SELECT "
 		query += "\"group\".\"id\" as \"groupId\", \"group\".\"name\" as \"groupName\","
-		query += "installment.\"id\" as \"installmentId\", installment.\"type\", installment.\"paidInstallment\", installment.\"penalty\", installment.\"reserve\", installment.\"presence\", installment.\"frequency\", installment.\"stage\" "
+		query += "installment.\"id\" as \"installmentId\", installment.\"type\", installment.\"paidInstallment\", installment.\"penalty\", installment.\"reserve\", installment.\"presence\", installment.\"frequency\", installment.\"stage\", branch.\"id\" "
 		query += "FROM installment "
 		query += "JOIN r_loan_installment ON r_loan_installment.\"installmentId\" = installment.\"id\" "
 		query += "JOIN loan ON loan.\"id\" = r_loan_installment.\"loanId\" "
@@ -346,6 +346,17 @@ func SubmitInstallmentByGroupIDAndTransactionDateWithStatus(ctx *iris.Context) {
 		}
 		db.Commit()
 
+		// write to go-log
+		instalmentData, err := GetDataPendingInstallment(strconv.Itoa(int(installmentDetailSchema[0].BranchID)), transactionDate)
+		if err != nil {
+			ctx.JSON(iris.StatusInternalServerError, iris.Map{
+				"errorMessage": "System Error",
+				"message":      err.Error(),
+			})
+		}
+		gid, _ := strconv.Atoi(groupID)
+		_ = services.PostToLog(services.GetLog(int64(gid), instalmentData, "Pending Installment"))
+
 		ctx.JSON(iris.StatusOK, iris.Map{
 			"status": "success",
 			"data": iris.Map{
@@ -360,6 +371,11 @@ func SubmitInstallmentByGroupIDAndTransactionDateWithStatus(ctx *iris.Context) {
 			},
 		})
 	}
+}
+
+// Fungsi ini  lagi dikerjain Rizki
+func GetDataPendingInstallment(branchID string, date string) (string, error) {
+	return "something", nil
 }
 
 //
@@ -652,16 +668,7 @@ func FindByBranchAndDate(branchID int64, transactionDate string) ([]Installment,
 	}
 	installemnts := make([]Installment, 0)
 	query = `select installment.id,
-<<<<<<< HEAD
-				installment.type,
-				installment.presence,
-				installment."paidInstallment",
-				installment.penalty,
-				installment.reserve,
-				installment.frequency,
-				installment.stage,
-				installment."transactionDate"
-=======
+
 					installment.type,
 					installment.presence,
 					installment."paidInstallment",
@@ -671,7 +678,6 @@ func FindByBranchAndDate(branchID int64, transactionDate string) ([]Installment,
 					installment.stage,
 					installment."transactionDate",
 					installment."createdAt"
->>>>>>> MS-157
 			FROM installment,
 					r_loan_installment,
 					loan,
@@ -685,15 +691,9 @@ func FindByBranchAndDate(branchID int64, transactionDate string) ([]Installment,
 			UPPER(installment.stage) = 'TELLER' AND
 			branch.id = ? AND
 			installment."createdAt"::date = ?`
-<<<<<<< HEAD
-	db.Raw(query, branchID, transactionDate).Scan(&installemnts)
-	if db.Error != nil {
-		log.Println("#ERROR: ", db.Error)
-=======
 
 	if err := services.DBCPsql.Raw(query, branchID, transactionDate).Scan(&installemnts).Error; err != nil {
 		log.Println("#ERROR: ", err.Error())
->>>>>>> MS-157
 		return nil, errors.New("Unable to retrieve installments")
 	}
 	return installemnts, nil
