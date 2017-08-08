@@ -170,7 +170,7 @@ func InitCustomApi() {
 		v2.Any("/disbursement-weekly-report", disbursementReport.FetchAllActive)
 		v2.Any("/disbursement-weekly-report/:id/detail", disbursementReport.GetDetail)
 		// Validation Teller
-		v2.Any("/validation-teller/save", installment.ValidationTeller)
+		v2.Any("/validation-teller/save", validationTeller.SubmitValidationTeller)
 		v2.Any("/validation-teller/getdata", validationTeller.GetData)
 		v2.Any("/validation-teller/detail", validationTeller.GetDetail)
 		v2.Any("/validation-teller/detail/save", validationTeller.SaveDetail)

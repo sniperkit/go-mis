@@ -5,6 +5,19 @@ import (
 
 	"bitbucket.org/go-mis/services"
 	"gopkg.in/kataras/iris.v4"
+	"bytes"
+	"strings"
+	"net/http"
+	"time"
+	"log"
+	ins "bitbucket.org/go-mis/modules/installment"
+	"errors"
+	"encoding/json"
+	misConfig "bitbucket.org/go-mis/config"
+)
+
+var (
+	logAPIPath = misConfig.GoLogPath + "archive"
 )
 
 var STAGE map[int]string = map[int]string{
@@ -187,4 +200,91 @@ func UpdateInstallmentStage(ctx *iris.Context) {
 		"status": "success",
 		"data":   "Installment id:" + strconv.Itoa(params.InstallmentID) + " updated. Stage:" + STAGE[params.Stage],
 	})
+}
+
+// ValidationTeller - Controller
+func SubmitValidationTeller(ctx *iris.Context) {
+	var err error
+	var installment ins.Installment
+
+	validationTellerModel := TellerValidation{}
+	err = ctx.ReadJSON(&validationTellerModel)
+	if err != nil {
+		ctx.JSON(iris.StatusBadRequest, iris.Map{
+			"errorMessage": "Bad Request",
+			"message":      "Can not Unmarshall JSON Body",
+		})
+		return
+	}
+
+	date := ctx.Param("date")
+	branchID := ctx.Param("branchID")
+	installments, err := ins.FindByBranchAndDate(branchID, date)
+	if err != nil {
+		log.Println("#ERROR: ", err)
+		ctx.JSON(iris.StatusInternalServerError, iris.Map{
+			"errorMessage": "System Error",
+			"message":      err.Error(),
+		})
+		return
+	}
+	// db.begin
+	db := services.DBCPsql.Begin()
+	for _, installment = range installments {
+
+		ins.UpdateStageInstallmentApproveOrReject(db, installment.ID, installment.Stage, "PENDING")
+		if err != nil {
+			log.Println("#ERROR: ", err)
+			db.Rollback()
+			ctx.JSON(iris.StatusInternalServerError, iris.Map{
+				"errorMessage": "System Error",
+				"message":      err.Error(),
+			})
+			return
+		}
+	}
+
+	db.Commit()
+	go postToLog(getLog(branchID, validationTellerModel))
+	ctx.JSON(iris.StatusOK, iris.Map{
+		"message": "Success",
+	})
+
+}
+
+func getLog(branchID string, data interface{}) Log {
+	var logger Log
+	if len(strings.Trim(branchID, " ")) == 0 || len(strings.Trim(branchID, " ")) == 0 {
+		return logger
+	}
+	logger = Log{
+		GroupID:   "Validasi Teller",
+		ArchiveID: generateArchiveID(branchID),
+		Data:      data,
+	}
+	return logger
+}
+
+func postToLog(l Log) error {
+	if l.Data == nil {
+		return errors.New("Can not send empty data")
+	}
+	logBytes := new(bytes.Buffer)
+	json.NewEncoder(logBytes).Encode(l)
+	log.Println(logAPIPath)
+	log.Println(l)
+	resp, err := http.Post(logAPIPath, "application/json; charset=utf-8", logBytes)
+	log.Println(resp.Status)
+	resp.Body.Close()
+	if err != nil {
+		return errors.New(err.Error())
+	}
+	return nil
+}
+
+func generateArchiveID(branchID string) string {
+	if len(strings.Trim(branchID, " ")) == 0 {
+		return ""
+	}
+	return branchID + "-" + time.Now().Local().Format("2006-01-02")
 }

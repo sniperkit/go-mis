@@ -1,18 +1,12 @@
 package installment
 
 import (
-	"bytes"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"net/http"
 	"strconv"
 	"strings"
 	"time"
-
 	"log"
-
-	misConfig "bitbucket.org/go-mis/config"
 	"bitbucket.org/go-mis/modules/account"
 	accountTransactionCredit "bitbucket.org/go-mis/modules/account-transaction-credit"
 	accountTransactionDebit "bitbucket.org/go-mis/modules/account-transaction-debit"
@@ -22,10 +16,6 @@ import (
 	"bitbucket.org/go-mis/services"
 	"github.com/jinzhu/gorm"
 	iris "gopkg.in/kataras/iris.v4"
-)
-
-var (
-	logAPIPath = misConfig.GoLogPath + "archive"
 )
 
 func Init() {
@@ -269,24 +259,7 @@ func StoreInstallment(db *gorm.DB, installmentId uint64, status string) error {
 }
 
 // UpdateStageInstallmentApproveOrReject - Update installment stage
-func UpdateStageInstallmentApproveOrReject(db *gorm.DB, installmentId uint64, stageFrom string, status string) {
-	convertedInstallmentID := strconv.FormatUint(installmentId, 10)
-	fmt.Println("Updating status to " + status + ". installmentId=" + convertedInstallmentID)
-
-	installmentHistorySchema := &installmentHistory.InstallmentHistory{StageFrom: stageFrom, StageTo: status}
-	db.Table("installment_history").Create(installmentHistorySchema)
-
-	installmentHistoryID := installmentHistorySchema.ID
-
-	rInstallmentHistorySchema := &r.RInstallmentHistory{InstallmentId: installmentId, InstallmentHistoryId: installmentHistoryID}
-	db.Table("r_installment_history").Create(rInstallmentHistorySchema)
-
-	db.Table("installment").Where("\"id\" = ?", installmentId).UpdateColumn("stage", status)
-
-	fmt.Println("Done. Updated status to " + status + ". installmentId=" + convertedInstallmentID)
-}
-
-func UpdateStageAndCashOnHand(db *gorm.DB, installmentId uint64, stageFrom string, status string, coh float64) error {
+func UpdateStageInstallmentApproveOrReject(db *gorm.DB, installmentId uint64, stageFrom string, status string) error{
 	var err error
 	convertedInstallmentID := strconv.FormatUint(installmentId, 10)
 	fmt.Println("Updating status to " + status + ". installmentId=" + convertedInstallmentID)
@@ -308,14 +281,6 @@ func UpdateStageAndCashOnHand(db *gorm.DB, installmentId uint64, stageFrom strin
 	}
 
 	fmt.Println("Done. Updated status to " + status + ". installmentId=" + convertedInstallmentID)
-
-	// Check cash on hand
-	// -1 means we are not updating cash on hand
-	if coh != -1 {
-		if err = db.Table("installment").Where("\"id\" = ?", installmentId).UpdateColumn("cash_on_hand", coh).Error; err != nil {
-			return err
-		}
-	}
 	return nil
 }
 
@@ -675,6 +640,47 @@ func GetStageTo(installment Installment, loan SimpleLoan) (string, error) {
 	return "END-PENDING", errors.New("Calculation End or End Early not match")
 }
 
+// FindByBranchAndDate - Filter Installment by branch and date
+func FindByBranchAndDate(branchID, transactionDate string) ([]Installment, error) {
+	if len(strings.Trim(branchID, " ")) == 0 {
+		return nil, errors.New("Branch ID can not be empty")
+	}
+	if len(strings.Trim(transactionDate, " ")) == 0 {
+		return nil, errors.New("Transaction date can not be empty")
+	}
+	installemnts := make([]Installment, 0)
+	db := services.DBCPsql.Begin()
+	defer db.Close()
+	query = `select installment.id,
+				installment.type,
+				installment.presence,
+				installment."paidInstallment",
+				installment.penalty,
+				installment.reserve,
+				installment.frequency,
+				installment.stage,
+				installment."transactionDate"
+			FROM installment,
+				r_loan_installment,
+				loan,
+				branch,
+				r_loan_branch
+			WHERE installment.id = r_loan_installment."installmentId" AND
+			loan.id = r_loan_installment."loanId" AND
+			loan.id = r_loan_branch."loanId" AND
+			branch.id = r_loan_branch."branchId" AND
+			installment."deletedAt" is null AND
+			UPPER(installment.stage) = 'TELLER'
+			branch.id = ? AND
+			installment."transactionDate" = ?`
+	db.Raw(query, branchID, transactionDate).Scan(&installemnts)
+	if db.Error != nil {
+		log.Println("#ERROR: ", db.Error)
+		return nil, errors.New("Unable to retrieve installments")
+	}
+	return installemnts, nil
+}
+
 func ProcessErrorAndRollback(ctx *iris.Context, db *gorm.DB, message string) {
 	log.Println("#Error", message)
 	db.Rollback()
@@ -682,100 +688,4 @@ func ProcessErrorAndRollback(ctx *iris.Context, db *gorm.DB, message string) {
 		"status":  "error",
 		"message": message,
 	})
-}
-
-// ValidationTeller - Controller
-func ValidationTeller(ctx *iris.Context) {
-	var err error
-	var installment Installment
-	db := services.DBCPsql.Begin()
-	validationTellerModel := TellerValidation{}
-	err = ctx.ReadJSON(&validationTellerModel)
-	if err != nil {
-		ctx.JSON(iris.StatusBadRequest, iris.Map{
-			"errorMessage": "Bad Request",
-			"message":      "Can not Unmarshall JSON Body",
-		})
-		return
-	}
-
-	date := ctx.Param("date")
-	branchID := ctx.Param("branchID")
-	installments, err := installment.FindByBranchAndDate(branchID, date)
-	if err != nil {
-		log.Println("#ERROR: ", err)
-		ctx.JSON(iris.StatusInternalServerError, iris.Map{
-			"errorMessage": "System Error",
-			"message":      err.Error(),
-		})
-		return
-	}
-	// db.begin
-	for _, installment = range installments {
-		
-		err:=UpdateStageAndCashOnHand(db, installment.ID, installment.Stage, "PENDING", coh)
-			if err != nil {
-				log.Println("#ERROR: ", err)
-				db.Rollback()
-				ctx.JSON(iris.StatusInternalServerError, iris.Map{
-					"errorMessage": "System Error",
-					"message":      err.Error(),
-				})
-				return
-			}
-		}
-	}
-	db.Commit()
-	go postToLog(getLog(branchID, validationTellerModel))
-	ctx.JSON(iris.StatusOK, iris.Map{
-		"message": "Success",
-	})
-
-}
-
-// getCOH - filter cash on hand from client based on installment ID
-func getCOH(instalmentID uint64, coh []Coh) float64 {
-	for _, c := range coh {
-		if c.InstallmentId == instalmentID {
-			return c.cash
-		}
-	}
-	return -1
-}
-
-func getLog(branchID string, data interface{}) Log {
-	var logger Log
-	if len(strings.Trim(branchID, " ")) == 0 || len(strings.Trim(branchID, " ")) == 0 {
-		return logger
-	}
-	logger = Log{
-		GroupID:   "Validasi Teller",
-		ArchiveID: generateArchiveID(branchID),
-		Data:      data,
-	}
-	return logger
-}
-
-func postToLog(l Log) error {
-	if l.Data == nil {
-		return errors.New("Can not send empty data")
-	}
-	logBytes := new(bytes.Buffer)
-	json.NewEncoder(logBytes).Encode(l)
-	log.Println(logAPIPath)
-	log.Println(l)
-	resp, err := http.Post(logAPIPath, "application/json; charset=utf-8", logBytes)
-	log.Println(resp.Status)
-	resp.Body.Close()
-	if err != nil {
-		return errors.New(err.Error())
-	}
-	return nil
-}
-
-func generateArchiveID(branchID string) string {
-	if len(strings.Trim(branchID, " ")) == 0 {
-		return ""
-	}
-	return branchID + "-" + time.Now().Local().Format("2006-01-02")
 }

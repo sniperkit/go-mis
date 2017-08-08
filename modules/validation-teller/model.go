@@ -44,3 +44,22 @@ type InstallmentData struct {
 	Majelis              []Majelis
 	TotalActualRepayment float64 `gorm:"column:totalActualRepayment" json:"totalActualRepayment"`
 }
+
+// Coh - Cash on hand struct
+type Coh struct {
+	InstallmentId uint64
+	cash          float64
+}
+
+// TellerValidation struct
+type TellerValidation struct {
+	ID         string `json:"id"`
+	CashOnHand []Coh
+}
+
+// Log struct
+type Log struct {
+	GroupID   string      `json:"groupId"`
+	ArchiveID string      `json:"archiveId"`
+	Data      interface{} `json:"data"`
+}
