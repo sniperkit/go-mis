@@ -695,14 +695,14 @@ func GetPendingInstallmentNew(ctx *iris.Context) {
 	params := struct {
 		BranchId int64 `json:"branchId"`
 		Date     string `json:"date"`
-	}
+	}{}
 	params.BranchId,_=ctx.URLParamInt64("branchId")
 	params.Date=ctx.URLParam("date")
 
-	GetDataPendingInstallment(params.BranchId, params.Date);
+	GetDataPendingInstallment(ctx, params.BranchId, params.Date);
 }
 
-func GetDataPendingInstallment(BranchId int64, Date string){
+func GetDataPendingInstallment(ctx *iris.Context, BranchId int64, Date string){
 	query := `select g.id as "groupId", a.fullname,g.name, sum(i."paidInstallment") "repayment",sum(i.reserve) "tabungan",sum(i."paidInstallment"+i.reserve) "total",
 				sum(i.cash_on_hand) "cashOnHand",
 				sum(i.cash_on_reserve) "cashOnReserve",
