@@ -232,7 +232,7 @@ func SubmitValidationTeller(ctx *iris.Context) {
 	db := services.DBCPsql.Begin()
 	for _, installment = range installments {
 
-		ins.UpdateStageInstallmentApproveOrReject(db, installment.ID, installment.Stage, "PENDING")
+		err:=ins.UpdateStageInstallmentApproveOrReject(db, installment.ID, installment.Stage, "PENDING")
 		if err != nil {
 			log.Println("#ERROR: ", err)
 			db.Rollback()
