@@ -1,6 +1,7 @@
 package validationTeller
 
 import (
+	"io/ioutil"
 	"strconv"
 
 	"bytes"
@@ -60,13 +61,21 @@ func GetData(ctx *iris.Context) {
 	}
 
 	if misUtility.IsBeforeToday(dateParam) {
-
+		dataLog, err := GetDataFromLog(params.BranchID)
+		if err != nil {
+			ctx.JSON(iris.StatusInternalServerError, iris.Map{
+				"status":       iris.StatusBadRequest,
+				"message":      "Internal Server Error",
+				"errorMessage": "Unable to retrive data from LOG",
+			})
+			return
+		}
+		ctx.JSON(iris.StatusOK, iris.Map{
+			"status": "success",
+			"data":   dataLog.Data,
+		})
+		return
 	}
-
-	if misUtility.IsToday(dateParam) {
-
-	}
-
 	instalmentData, err = FindInstallmentData(params.BranchID, params.Date)
 	if err != nil {
 		ctx.JSON(iris.StatusInternalServerError, iris.Map{
@@ -343,16 +352,27 @@ func FindInstallmentData(branchID int64, date string) ([]InstallmentData, error)
 }
 
 // GetDataFromLog - Retrive data from GO-LOG App
-func GetDataFromLog(branchID int64) ([]Log, error) {
-	logs := make([]Log, 0)
+func GetDataFromLog(branchID int64) (Log, error) {
+	var logger Log
 	archiveID := generateArchiveID(branchID)
 	groupID := "VALIDATION TELLER"
 	apiPath := logAPIPath + "archive/" + archiveID + "/" + groupID
-	_, err := http.Get(apiPath)
+	resp, err := http.Get(apiPath)
 	if err != nil {
 		log.Println("#ERROR: Unable to retrive data from GO-LOG App")
 		log.Println("#ERROR: ", err)
-		return logs, err
+		return logger, err
 	}
-	return nil, nil
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Println("#ERROR: When read body reponse from GO-LOG")
+		return logger, err
+	}
+	err = json.Unmarshal([]byte(body), &logger)
+	if err != nil {
+		log.Println("#ERROR: When unmarshall resp body GO-LOG to Log struct")
+		return logger, err
+	}
+	return logger, nil
 }
