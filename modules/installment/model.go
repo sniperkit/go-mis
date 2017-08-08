@@ -52,6 +52,25 @@ type InstallmentDetail struct {
 	Stage           string  `gorm:"column:stage" json:"stage"`
 }
 
+// Coh - Cash on hand struct
+type Coh struct {
+	InstallmentId uint64
+	cash          float64
+}
+
+// TellerValidation struct
+type TellerValidation struct {
+	ID         string `json:"id"`
+	CashOnHand []Coh
+}
+
+// Log struct
+type Log struct {
+	GroupID   string      `json:"groupId"`
+	ArchiveID string      `json:"archiveId"`
+	Data      interface{} `json:"data"`
+}
+
 // FindByBranchAndDate - Filter Installment by branch and date
 func (i Installment) FindByBranchAndDate(branchID, transactionDate string) ([]Installment, error) {
 	if len(strings.Trim(branchID, " ")) == 0 {

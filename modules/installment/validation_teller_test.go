@@ -7,6 +7,8 @@ import (
 	"time"
 )
 
+type Db struct{}
+
 func TestGenerateArchiveID(t *testing.T) {
 	branchID := "BRANCH-001"
 	date := time.Now().Local().Format("2006-01-02")
@@ -22,15 +24,15 @@ func TestGenerateArchiveID(t *testing.T) {
 func TestCOH(t *testing.T) {
 	coh := []Coh{
 		{
-			installmentId: 1,
+			InstallmentId: 1,
 			cash:          50,
 		},
 		{
-			installmentId: 2,
+			InstallmentId: 2,
 			cash:          100,
 		},
 		{
-			installmentId: 3,
+			InstallmentId: 3,
 			cash:          150,
 		},
 	}
@@ -58,8 +60,8 @@ func TestCOH(t *testing.T) {
 		}
 	}
 	tempCoh := coh[0]
-	tempCoh.installmentId = 555555
-	res := getCOH(tempCoh.installmentId, coh)
+	tempCoh.InstallmentId = 555555
+	res := getCOH(tempCoh.InstallmentId, coh)
 	if res != -1 {
 		t.Errorf("Expected %f actual %v\n", res, -1)
 	}
@@ -106,4 +108,18 @@ func TestPostToLog(t *testing.T) {
 		log.Println("#ERROR: ", err)
 		t.Error("Failed POST loging to GO-LOG APPS")
 	}
+}
+
+func TestFindByBranchAndDate(t *testing.T) {
+	branchID := "BRA-0001"
+	date := "2015-08-11"
+	var installment Installment
+	installmentList := make([]Installment, 0)
+	var err error
+	installmentList, err = installment.FindByBranchAndDate(branchID, date)
+	if err != nil {
+		log.Println(err)
+		t.Error("Can not retrive installment")
+	}
+	log.Println("Installment list length: ", installmentList)
 }
