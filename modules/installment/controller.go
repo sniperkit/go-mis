@@ -652,6 +652,7 @@ func FindByBranchAndDate(branchID int64, transactionDate string) ([]Installment,
 	}
 	installemnts := make([]Installment, 0)
 	query = `select installment.id,
+<<<<<<< HEAD
 				installment.type,
 				installment.presence,
 				installment."paidInstallment",
@@ -660,22 +661,39 @@ func FindByBranchAndDate(branchID int64, transactionDate string) ([]Installment,
 				installment.frequency,
 				installment.stage,
 				installment."transactionDate"
+=======
+					installment.type,
+					installment.presence,
+					installment."paidInstallment",
+					installment.penalty,
+					installment.reserve,
+					installment.frequency,
+					installment.stage,
+					installment."transactionDate",
+					installment."createdAt"
+>>>>>>> MS-157
 			FROM installment,
-				r_loan_installment,
-				loan,
-				branch,
-				r_loan_branch
+					r_loan_installment,
+					loan,
+					branch,
+					r_loan_branch
 			WHERE installment.id = r_loan_installment."installmentId" AND
 			loan.id = r_loan_installment."loanId" AND
 			loan.id = r_loan_branch."loanId" AND
 			branch.id = r_loan_branch."branchId" AND
 			installment."deletedAt" is null AND
-			UPPER(installment.stage) = 'TELLER'
+			UPPER(installment.stage) = 'TELLER' AND
 			branch.id = ? AND
 			installment."createdAt"::date = ?`
+<<<<<<< HEAD
 	db.Raw(query, branchID, transactionDate).Scan(&installemnts)
 	if db.Error != nil {
 		log.Println("#ERROR: ", db.Error)
+=======
+
+	if err := services.DBCPsql.Raw(query, branchID, transactionDate).Scan(&installemnts).Error; err != nil {
+		log.Println("#ERROR: ", err.Error())
+>>>>>>> MS-157
 		return nil, errors.New("Unable to retrieve installments")
 	}
 	return installemnts, nil
