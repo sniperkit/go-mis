@@ -1,21 +1,22 @@
 package auth
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"net/http"
-	"encoding/json"
-	"bytes"
+	"regexp"
 	"time"
+
 	"bitbucket.org/go-mis/config"
 	"bitbucket.org/go-mis/modules/r"
+	"bitbucket.org/go-mis/modules/role"
 	"bitbucket.org/go-mis/modules/user-mis"
 	"bitbucket.org/go-mis/services"
-	"gopkg.in/kataras/iris.v4"
-	"bitbucket.org/go-mis/modules/role"
-	"regexp"
 	"github.com/dgrijalva/jwt-go"
+	"gopkg.in/kataras/iris.v4"
 )
 
 func generateAccessToken() string {
@@ -29,9 +30,9 @@ func generateAccessToken() string {
 // UserMisLogin - login for UserMis and generate accessToken
 func UserMisLogin(ctx *iris.Context) {
 
-	type Cas struct{
-    Username string `json:"username"`
-    Password string `json:"password"`
+	type Cas struct {
+		Username string `json:"username"`
+		Password string `json:"password"`
 		UserType string `json:"userType"`
 	}
 
@@ -63,11 +64,11 @@ func UserMisLogin(ctx *iris.Context) {
 	json.NewEncoder(b).Encode(u)
 	fmt.Println(config.GoCasApiPath)
 	fmt.Println(config.SignStringKey)
-	res, _ := http.Post(config.GoCasApiPath + "/api/v1/auth", "application/json; charset=utf-8", b)
+	res, _ := http.Post(config.GoCasApiPath+"/api/v1/auth", "application/json; charset=utf-8", b)
 
-	var casResp struct{
-		Status 	uint64 `json:"status"`
-		Data 		string `json:"data"`
+	var casResp struct {
+		Status uint64 `json:"status"`
+		Data   string `json:"data"`
 	}
 
 	json.NewDecoder(res.Body).Decode(&casResp)
@@ -85,8 +86,7 @@ func UserMisLogin(ctx *iris.Context) {
 		return
 	}
 
-	accessTokenHash := casResp.Data;
-
+	accessTokenHash := casResp.Data
 
 	userMisObj := arrUserMisObj[0]
 
@@ -130,7 +130,7 @@ func UserMisLogin(ctx *iris.Context) {
 		ctx.JSON(iris.StatusOK, iris.Map{
 			"status": "success",
 			"data": iris.Map{
-				"idUserMis":        userMisObj.ID,
+				"idUserMis":   userMisObj.ID,
 				"name":        userMisObj.Fullname,
 				"accessToken": accessTokenHash,
 				"branchId":    rUserMisBranch.BranchId,
@@ -168,12 +168,12 @@ func UserMisLogin(ctx *iris.Context) {
 		ctx.JSON(iris.StatusOK, iris.Map{
 			"status": "success",
 			"data": iris.Map{
-				"idUserMis":        userMisObj.ID,
-				"username":        userMisObj.Username,
+				"idUserMis":   userMisObj.ID,
+				"username":    userMisObj.Username,
 				"name":        userMisObj.Fullname,
 				"accessToken": accessTokenHash,
 				"branchId":    rUserMisBranch.BranchId,
-				"areaId":   rAreaUserMis.AreaId,
+				"areaId":      rAreaUserMis.AreaId,
 				"role": iris.Map{
 					"assignedRole": roleObj.Name,
 					"config":       roleObj.Config,
@@ -184,24 +184,24 @@ func UserMisLogin(ctx *iris.Context) {
 
 }
 
-type CasResponse struct{
+type CasResponse struct {
 	Status string `json:"username"`
-	Data string `json:"username"`
+	Data   string `json:"username"`
 }
 
 // EnsureAuth - validate access token
 func EnsureAuth(ctx *iris.Context) {
 	accessToken := ctx.URLParam("accessToken")
-	if accessToken==""{
+	if accessToken == "" {
 		accessToken = ctx.RequestHeader("accessToken")
 	}
 	signString := []byte(config.SignStringKey)
 
-	claim :=&jwt.StandardClaims{}
-	jwt.ParseWithClaims(accessToken,claim, func(token *jwt.Token) (interface{}, error) {
+	claim := &jwt.StandardClaims{}
+	jwt.ParseWithClaims(accessToken, claim, func(token *jwt.Token) (interface{}, error) {
 		return signString, nil
 	})
-	if claim.Id=="" || time.Now().UnixNano()>claim.NotBefore{
+	if claim.Id == "" || time.Now().UnixNano() > claim.NotBefore {
 		ctx.JSON(iris.StatusUnauthorized, iris.Map{
 			"status":  "error",
 			"message": "Unauthorized access.",
