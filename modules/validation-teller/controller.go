@@ -1,8 +1,6 @@
 package validationTeller
 
 import (
-	"strconv"
-
 	"bitbucket.org/go-mis/services"
 	"gopkg.in/kataras/iris.v4"
 	"bytes"
