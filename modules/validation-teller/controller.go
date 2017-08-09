@@ -1,20 +1,17 @@
 package validationTeller
 
 import (
-	"encoding/json"
 	"errors"
-	"io/ioutil"
 	"strconv"
 	"strings"
 
 	"log"
-	"net/http"
 
-	"bitbucket.org/go-mis/services"
 	"gopkg.in/kataras/iris.v4"
 
 	ins "bitbucket.org/go-mis/modules/installment"
 	misUtility "bitbucket.org/go-mis/modules/utility"
+	"bitbucket.org/go-mis/services"
 )
 
 var STAGE map[int]string = map[int]string{
@@ -343,34 +340,6 @@ func FindInstallmentData(branchID int64, date string) (ResponseGetData, error) {
 	}
 	response.InstallmentData = res
 	return response, nil
-}
-
-// GetDataFromLog - Retrive data from GO-LOG App
-func GetDataFromLog(branchID int64) (Log, error) {
-	var logger Log
-	archiveID := services.GenerateArchiveID(branchID)
-	groupID := "VALIDATION TELLER"
-	apiPath := services.GetLogAPIPath() + "archive/" + archiveID + "/group/" + groupID
-	log.Println("[INFO]", apiPath)
-	resp, err := http.Get(apiPath)
-	if err != nil {
-		log.Println("#ERROR: Unable to retrive data from GO-LOG App")
-		log.Println("#ERROR: ", err)
-		return logger, err
-	}
-	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		log.Println("#ERROR: When read body reponse from GO-LOG App")
-		return logger, err
-	}
-	err = json.Unmarshal([]byte(body), &logger)
-	if err != nil {
-		log.Println("#ERROR: When unmarshall resp body GO-LOG App to Log struct")
-		return logger, err
-	}
-	log.Println("[INFO]", logger)
-	return logger, nil
 }
 
 // GetDataValidation - Data validation before Get Validation Teller

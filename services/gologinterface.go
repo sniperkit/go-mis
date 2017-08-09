@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"bitbucket.org/go-mis/config"
-	"bitbucket.org/go-mis/services"
 )
 
 type Log struct {
@@ -54,10 +53,10 @@ func PostToLog(l Log) error {
 	return nil
 }
 
-// FindNotes - Find data validation teller notes
+// GetNotes - Find data validation teller notes
 // This method will call API GO-LOG APP
 // Path: http://localhost:5500/api/v1/archive-list/group/{groupId}
-func FindNotes(groupID string) ([]Log, error) {
+func GetNotes(groupID string) ([]Log, error) {
 	var err error
 	var notes []Log
 	if len(strings.Trim(groupID, " ")) == 0 {
@@ -86,9 +85,9 @@ func FindNotes(groupID string) ([]Log, error) {
 // GetDataFromLog - Retrive data from GO-LOG App
 func GetDataFromLog(branchID int64) (Log, error) {
 	var logger Log
-	archiveID := services.GenerateArchiveID(branchID)
+	archiveID := GenerateArchiveID(branchID)
 	groupID := "VALIDATION TELLER"
-	apiPath := services.GetLogAPIPath() + "archive/" + archiveID + "/group/" + groupID
+	apiPath := GetLogAPIPath() + "archive/" + archiveID + "/group/" + groupID
 	log.Println("[INFO]", apiPath)
 	resp, err := http.Get(apiPath)
 	if err != nil {

@@ -40,24 +40,26 @@ type Majelis struct {
 }
 
 type ResponseGetData struct {
-	InstallmentData []InstallmentData `gorm:"column:installmentData" json:"installmentData"`
-	TotalActualRepayment float64 `gorm:"column:totalActualRepayment" json:"totalActualRepayment"`
-	TotalCashOnHand	float64 `gorm:"column:totalCashOnHand" json:"totalCashOnHand"`
-	TotalTabungan	float64 `gorm:"column:totalTabungan" json:"totalTabungan"`
-	TotalCashOnReserve	float64 `gorm:"column:totalCashOnReserve" json:"totalCashOnReserve"`
-	TotalCair	float64 `gorm:"column:totalCair" json:"totalCair"`
-	TotalGagalDroping	float64 `gorm:"column:totalGagalDroping" json:"totalGagalDroping"`
+	InstallmentData      []InstallmentData `gorm:"column:installmentData" json:"installmentData"`
+	TotalActualRepayment float64           `gorm:"column:totalActualRepayment" json:"totalActualRepayment"`
+	TotalCashOnHand      float64           `gorm:"column:totalCashOnHand" json:"totalCashOnHand"`
+	TotalTabungan        float64           `gorm:"column:totalTabungan" json:"totalTabungan"`
+	TotalCashOnReserve   float64           `gorm:"column:totalCashOnReserve" json:"totalCashOnReserve"`
+	TotalCair            float64           `gorm:"column:totalCair" json:"totalCair"`
+	TotalGagalDroping    float64           `gorm:"column:totalGagalDroping" json:"totalGagalDroping"`
+	BorrowerNotes        []interface{}     `json:"BorrowerNotes, omitempty"`
+	MajelisNotes         []interface{}     `json:"majelisNotes, omitempty"`
 }
 
 type InstallmentData struct {
 	Agent                string `gorm:"column:fullname" json:"fullname"`
 	Majelis              []Majelis
 	TotalActualRepayment float64 `gorm:"column:totalActualRepayment" json:"totalActualRepayment"`
-	TotalCashOnHand	float64 `gorm:"column:totalCashOnHand" json:"totalCashOnHand"`
-	TotalTabungan	float64 `gorm:"column:totalTabungan" json:"totalTabungan"`
-	TotalCashOnReserve	float64 `gorm:"column:totalCashOnReserve" json:"totalCashOnReserve"`
-	TotalCair	float64 `gorm:"column:totalCair" json:"totalCair"`
-	TotalGagalDroping	float64 `gorm:"column:totalGagalDroping" json:"totalGagalDroping"`
+	TotalCashOnHand      float64 `gorm:"column:totalCashOnHand" json:"totalCashOnHand"`
+	TotalTabungan        float64 `gorm:"column:totalTabungan" json:"totalTabungan"`
+	TotalCashOnReserve   float64 `gorm:"column:totalCashOnReserve" json:"totalCashOnReserve"`
+	TotalCair            float64 `gorm:"column:totalCair" json:"totalCair"`
+	TotalGagalDroping    float64 `gorm:"column:totalGagalDroping" json:"totalGagalDroping"`
 }
 
 // Coh - Cash on hand struct
