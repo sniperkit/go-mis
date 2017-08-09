@@ -347,13 +347,8 @@ func SubmitInstallmentByGroupIDAndTransactionDateWithStatus(ctx *iris.Context) {
 		db.Commit()
 
 		// write to go-log
-		instalmentData, err := GetDataPendingInstallment(strconv.Itoa(int(installmentDetailSchema[0].BranchID)), transactionDate)
-		if err != nil {
-			ctx.JSON(iris.StatusInternalServerError, iris.Map{
-				"errorMessage": "System Error",
-				"message":      err.Error(),
-			})
-		}
+		instalmentData := GetDataPendingInstallment(installmentDetailSchema[0].BranchID, transactionDate)
+
 		gid, _ := strconv.Atoi(groupID)
 		_ = services.PostToLog(services.GetLog(int64(gid), instalmentData, "Pending Installment"))
 
@@ -373,12 +368,6 @@ func SubmitInstallmentByGroupIDAndTransactionDateWithStatus(ctx *iris.Context) {
 	}
 }
 
-// Fungsi ini  lagi dikerjain Rizki
-func GetDataPendingInstallment(branchID string, date string) (string, error) {
-	return "something", nil
-}
-
-//
 func SubmitInstallmentByGroupIDAndTransactionDateWithStatusAndInstallmentId(ctx *iris.Context) {
 	key := ctx.URLParam("ais")
 
@@ -710,16 +699,23 @@ func ProcessErrorAndRollback(ctx *iris.Context, db *gorm.DB, message string) {
 
 func GetPendingInstallmentNew(ctx *iris.Context) {
 	params := struct {
-		BranchId int64 `json:"branchId"`
+		BranchId uint64 `json:"branchId"`
 		Date     string `json:"date"`
 	}{}
-	params.BranchId,_=ctx.URLParamInt64("branchId")
-	params.Date=ctx.URLParam("date")
+	err := ctx.ReadJSON(&params)
+	if err != nil {
+		ctx.JSON(iris.StatusBadRequest, iris.Map{"status": "error", "message": err.Error()})
+		return
+	}
 
-	GetDataPendingInstallment(ctx, params.BranchId, params.Date);
+	res := GetDataPendingInstallment(params.BranchId, params.Date)
+	ctx.JSON(iris.StatusOK, iris.Map{
+		"status": "success",
+		"data":   res,
+	})
 }
 
-func GetDataPendingInstallment(ctx *iris.Context, BranchId int64, Date string){
+func GetDataPendingInstallment(BranchId uint64, Date string) []PendingInstallmentData {
 	query := `select g.id as "groupId", a.fullname,g.name, sum(i."paidInstallment") "repayment",sum(i.reserve) "tabungan",sum(i."paidInstallment"+i.reserve) "total",
 				sum(i.cash_on_hand) "cashOnHand",
 				sum(i.cash_on_reserve) "cashOnReserve",
@@ -790,18 +786,18 @@ func GetDataPendingInstallment(ctx *iris.Context, BranchId int64, Date string){
 		for _, qrval := range queryResult {
 			if rval.Agent == qrval.Fullname {
 				m = append(m, Majelis{
-					GroupId:            qrval.GroupId,
-					Name:               qrval.Name,
-					Repayment:          qrval.Repayment,
-					Tabungan:           qrval.Tabungan,
-					TotalActual:        qrval.Total,
-					TotalProyeksi:		qrval.ProjectionRepayment+qrval.ProjectionTabungan,
-					TotalCoh: 			qrval.CashOnHand+qrval.CashOnReserve,
-					TotalCair:          qrval.TotalCair,
-					TotalGagalDropping: qrval.TotalGagalDropping,
-					Status: qrval.Status,
-					CashOnHand:qrval.CashOnHand,
-					CashOnReserve:qrval.CashOnReserve,
+					GroupId:             qrval.GroupId,
+					Name:                qrval.Name,
+					Repayment:           qrval.Repayment,
+					Tabungan:            qrval.Tabungan,
+					TotalActual:         qrval.Total,
+					TotalProyeksi:       qrval.ProjectionRepayment + qrval.ProjectionTabungan,
+					TotalCoh:            qrval.CashOnHand + qrval.CashOnReserve,
+					TotalCair:           qrval.TotalCair,
+					TotalGagalDropping:  qrval.TotalGagalDropping,
+					Status:              qrval.Status,
+					CashOnHand:          qrval.CashOnHand,
+					CashOnReserve:       qrval.CashOnReserve,
 					ProjectionRepayment: qrval.ProjectionRepayment,
 					ProjectionTabungan:  qrval.ProjectionTabungan,
 				})
@@ -812,8 +808,8 @@ func GetDataPendingInstallment(ctx *iris.Context, BranchId int64, Date string){
 				totalTabunganProj += qrval.ProjectionTabungan
 				totalTabunganCoh += qrval.CashOnReserve
 				totalActualAgent += qrval.Total
-				totalProjectionAgent += qrval.ProjectionRepayment+qrval.ProjectionTabungan
-				totalCohAgent += qrval.CashOnHand+qrval.CashOnReserve
+				totalProjectionAgent += qrval.ProjectionRepayment + qrval.ProjectionTabungan
+				totalCohAgent += qrval.CashOnHand + qrval.CashOnReserve
 				totalPencairanAgent += qrval.TotalCair
 				totalGagalDroppingAgent += qrval.TotalGagalDropping
 			}
@@ -832,8 +828,5 @@ func GetDataPendingInstallment(ctx *iris.Context, BranchId int64, Date string){
 		res[idx].TotalGagalDroppingAgent = totalGagalDroppingAgent
 	}
 
-	ctx.JSON(iris.StatusOK, iris.Map{
-		"status": "success",
-		"data":   res,
-	})
+	return res
 }
