@@ -312,9 +312,10 @@ func SubmitInstallmentByInstallmentIDWithStatus(ctx *iris.Context) {
 func SubmitInstallmentByGroupIDAndTransactionDateWithStatus(ctx *iris.Context) {
 	groupID := ctx.Param("group_id")
 	transactionDate := ctx.Param("transaction_date")
-	status := strings.ToUpper(ctx.Param("status"))
+	stageTo := strings.ToUpper(ctx.Param("stageTo"))
+	stageFrom := ctx.Param("stageFrom")
 
-	if strings.ToLower(ctx.Param("status")) == "agent" || strings.ToLower(ctx.Param("status")) == "teller" || strings.ToLower(ctx.Param("status")) == "approve" || strings.ToLower(ctx.Param("status")) == "reject" || strings.ToLower(ctx.Param("status")) == "in-review" || strings.ToLower(ctx.Param("status")) == "success" {
+	if strings.ToLower(stageTo) == "agent" || strings.ToLower(stageTo) == "teller" || strings.ToLower(stageTo) == "approve" || strings.ToLower(stageTo) == "reject" || strings.ToLower(stageTo) == "in-review" || strings.ToLower(stageTo) == "success" {
 		query := "SELECT "
 		query += "\"group\".\"id\" as \"groupId\", \"group\".\"name\" as \"groupName\","
 		query += "installment.\"id\" as \"installmentId\", installment.\"type\", installment.\"paidInstallment\", installment.\"penalty\", installment.\"reserve\", installment.\"presence\", installment.\"frequency\", installment.\"stage\", branch.\"id\" "
@@ -327,7 +328,7 @@ func SubmitInstallmentByGroupIDAndTransactionDateWithStatus(ctx *iris.Context) {
 		query += "JOIN \"group\" ON \"group\".\"id\" = r_loan_group.\"groupId\" "
 		db := services.DBCPsql.Begin()
 		installmentDetailSchema := []InstallmentDetail{}
-		if strings.ToLower(ctx.Param("status")) == "success" {
+		if strings.ToLower(stageTo) == "success" {
 			query += "WHERE installment.\"stage\" = 'APPROVE'"
 			db.Raw(query).Scan(&installmentDetailSchema)
 		} else {
@@ -337,7 +338,7 @@ func SubmitInstallmentByGroupIDAndTransactionDateWithStatus(ctx *iris.Context) {
 
 		for _, item := range installmentDetailSchema {
 			// go StoreInstallment(item.InstallmentID, status)
-			err := StoreInstallment(db, item.InstallmentID, status)
+			err := StoreInstallment(db, item.InstallmentID, stageTo)
 			if err != nil {
 				fmt.Println(err)
 				ProcessErrorAndRollback(ctx, db, err.Error())
@@ -347,10 +348,22 @@ func SubmitInstallmentByGroupIDAndTransactionDateWithStatus(ctx *iris.Context) {
 		db.Commit()
 
 		// write to go-log
-		instalmentData := GetDataPendingInstallment(installmentDetailSchema[0].BranchID, transactionDate)
 
 		gid, _ := strconv.Atoi(groupID)
-		_ = services.PostToLog(services.GetLog(int64(gid), instalmentData, "Pending Installment"))
+		inst := struct {
+			GroupID     int64
+			Date        string
+			StageFrom   string
+			StageTo     string
+			Installment []InstallmentDetail
+		}{
+			GroupID:     int64(gid),
+			Date:        transactionDate,
+			StageFrom:   stageFrom,
+			StageTo:     stageTo,
+			Installment: installmentDetailSchema,
+		}
+		_ = services.PostToLog(services.GetLog(int64(gid), inst, stageTo))
 
 		ctx.JSON(iris.StatusOK, iris.Map{
 			"status": "success",
