@@ -86,7 +86,7 @@ func GetData(ctx *iris.Context) {
 func SaveNotes(ctx *iris.Context) {
 	params := struct {
 		Date           string  `json:"date"`
-		BranchId       uint64  `json:"branchId"`
+		BranchId       int64  `json:"branchId"`
 		Notes			[]Notes  `json:"notes"`
 	}{}
 	err := ctx.ReadJSON(&params)
@@ -107,8 +107,8 @@ func SaveNotes(ctx *iris.Context) {
 	})
 }
 
-func constructNotesGroupId(branchId uint64,date string)string{
-	return string(branchId)+"-"+date+"-VTNotes"
+func constructNotesGroupId(branchId int64,date string)string{
+	return strconv.FormatInt(branchId,10)+"-"+date+"-VTNotes"
 }
 func SaveDetail(ctx *iris.Context) {
 	params := []struct {
