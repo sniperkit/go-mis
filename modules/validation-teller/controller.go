@@ -52,48 +52,19 @@ func GetData(ctx *iris.Context) {
 	}
 	notes, err := services.GetNotes(constructNotesGroupId(branchID, dateParam))
 	if err == nil && len(notes) > 0 {
-		borrowerNotes := make([]interface{}, 0)
-		majelisNotes := make([]interface{}, 0)
 		for _, note := range notes {
 			if strings.ToLower(note.ArchiveID) == "borrower" {
-				borrowerNotes = append(borrowerNotes, note.Data)
+				instalmentData.BorrowerNotes = note.Data
 			}
 			if strings.ToLower(note.ArchiveID) == "majelis" {
-				majelisNotes = append(majelisNotes, note.Data)
+				instalmentData.MajelisNotes = note.Data
 			}
 		}
-		instalmentData.BorrowerNotes = append(instalmentData.BorrowerNotes, borrowerNotes)
-		instalmentData.MajelisNotes = append(instalmentData.MajelisNotes, majelisNotes)
 	}
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"status": "success",
 		"data":   instalmentData,
 	})
-	// Change Requirement
-	// Always send data form DB
-	// dataDate, _ := misUtility.StringToDate(dateParam)
-	// if misUtility.IsBeforeToday(dataDate) {
-	// 	log.Println(dataDate)
-	// 	dataLog, err := GetDataFromLog(branchID)
-	// 	if err != nil {
-	// 		ctx.JSON(iris.StatusInternalServerError, iris.Map{
-	// 			"message":      "Internal Server Error",
-	// 			"errorMessage": "Unable to retrive data from LOG",
-	// 		})
-	// 		return
-	// 	}
-	// 	ctx.JSON(iris.StatusOK, iris.Map{
-	// 		"status": "success",
-	// 		"data":   dataLog.Data,
-	// 	})
-	// 	return
-	// }
-	// if misUtility.IsToday(dataDate) {
-	// 	ctx.JSON(iris.StatusOK, iris.Map{
-	// 		"status": "success",
-	// 		"data":   instalmentData,
-	// 	})
-	// }
 }
 
 func SaveNotes(ctx *iris.Context) {
