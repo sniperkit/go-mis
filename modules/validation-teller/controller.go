@@ -335,7 +335,7 @@ func FindInstallmentData(branchID int64, date string) (ResponseGetData, error) {
 			res = append(res, InstallmentData{Agent: val.Fullname})
 		}
 	}
-	majelists := []string{}
+	majelists := []MajelisId{}
 	for idx, rval := range res {
 		m := []Majelis{}
 		var totalRepayment float64
@@ -358,7 +358,7 @@ func FindInstallmentData(branchID int64, date string) (ResponseGetData, error) {
 					CashOnHand:         qrval.CashOnHand,
 					CashOnReserve:      qrval.CashOnReserve,
 				})
-				majelists = append(majelists,qrval.Name)
+				majelists = append(majelists,MajelisId{GroupId:qrval.GroupId,Name:qrval.Name})
 				totalRepayment += qrval.Repayment
 				totalCashOnHand += qrval.CashOnHand
 				totalCashOnReserve += qrval.CashOnReserve
