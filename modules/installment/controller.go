@@ -711,17 +711,12 @@ func ProcessErrorAndRollback(ctx *iris.Context, db *gorm.DB, message string) {
 }
 
 func GetPendingInstallmentNew(ctx *iris.Context) {
-	params := struct {
-		BranchId uint64 `json:"branchId"`
-		Date     string `json:"date"`
-	}{}
-	err := ctx.ReadJSON(&params)
-	if err != nil {
-		ctx.JSON(iris.StatusBadRequest, iris.Map{"status": "error", "message": err.Error()})
-		return
-	}
+	bId := ctx.Param("branchId")
+	intBid,_ := strconv.Atoi(bId)
+	BranchId := uint64(intBid)
+	Date := ctx.Param("date")
 
-	res := GetDataPendingInstallment(params.BranchId, params.Date)
+	res := GetDataPendingInstallment(BranchId, Date)
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"status": "success",
 		"data":   res,

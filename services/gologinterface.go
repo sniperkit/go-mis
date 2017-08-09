@@ -6,6 +6,7 @@ import (
 	"errors"
 	"log"
 	"net/http"
+	"strconv"
 	"time"
 
 	"bitbucket.org/go-mis/config"
@@ -53,5 +54,11 @@ func GenerateArchiveID(branchID int64) string {
 	if branchID == 0 {
 		return ""
 	}
-	return string(branchID) + "-" + time.Now().Local().Format("2006-01-02")
+	branchIDStr := strconv.FormatInt(branchID, 10)
+	return branchIDStr + "-" + time.Now().Local().Format("2006-01-02")
+}
+
+// GetLogAPIPath base path of GO-LOG APP API
+func GetLogAPIPath() string {
+	return logAPIPath
 }

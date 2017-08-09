@@ -26,6 +26,14 @@ type RawInstallmentData struct {
 	CashOnReserve      float64 `gorm:"column:cashOnReserve" json:"cashOnReserve"`
 }
 
+type Notes struct {
+	GroupId    int64   `gorm:"column:groupId" json:"groupId"`
+	Name               string  `gorm:"column:name" json:"name"`
+	CashOnHand         float64 `gorm:"column:cashOnHand" json:"cashOnHand"`
+	CashOnReserve      float64 `gorm:"column:cashOnReserve" json:"cashOnReserve"`
+	Note               string  `gorm:"column:note" json:"note"`
+}
+
 type Majelis struct {
 	GroupId            int64   `gorm:"column:groupId" json:"groupId"`
 	Name               string  `gorm:"column:name" json:"name"`
@@ -39,10 +47,25 @@ type Majelis struct {
 	CashOnReserve      float64 `gorm:"column:cashOnReserve" json:"cashOnReserve"`
 }
 
+type ResponseGetData struct {
+	InstallmentData []InstallmentData `gorm:"column:installmentData" json:"installmentData"`
+	TotalActualRepayment float64 `gorm:"column:totalActualRepayment" json:"totalActualRepayment"`
+	TotalCashOnHand	float64 `gorm:"column:totalCashOnHand" json:"totalCashOnHand"`
+	TotalTabungan	float64 `gorm:"column:totalTabungan" json:"totalTabungan"`
+	TotalCashOnReserve	float64 `gorm:"column:totalCashOnReserve" json:"totalCashOnReserve"`
+	TotalCair	float64 `gorm:"column:totalCair" json:"totalCair"`
+	TotalGagalDroping	float64 `gorm:"column:totalGagalDroping" json:"totalGagalDroping"`
+}
+
 type InstallmentData struct {
 	Agent                string `gorm:"column:fullname" json:"fullname"`
 	Majelis              []Majelis
 	TotalActualRepayment float64 `gorm:"column:totalActualRepayment" json:"totalActualRepayment"`
+	TotalCashOnHand	float64 `gorm:"column:totalCashOnHand" json:"totalCashOnHand"`
+	TotalTabungan	float64 `gorm:"column:totalTabungan" json:"totalTabungan"`
+	TotalCashOnReserve	float64 `gorm:"column:totalCashOnReserve" json:"totalCashOnReserve"`
+	TotalCair	float64 `gorm:"column:totalCair" json:"totalCair"`
+	TotalGagalDroping	float64 `gorm:"column:totalGagalDroping" json:"totalGagalDroping"`
 }
 
 // Coh - Cash on hand struct
@@ -58,6 +81,12 @@ type TellerValidation struct {
 }
 
 // Log struct
+type Log struct {
+	ID        string      `json:"id,omitempty"`
+	GroupID   string      `json:"groupId,omitempty"`
+	ArchiveID string      `json:"archiveId,omitempty"`
+	Data      interface{} `json:"data,omitempty"`
+}
 
 // SubmitBody - struct
 type SubmitBody struct {

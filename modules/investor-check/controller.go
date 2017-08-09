@@ -4,13 +4,14 @@ import (
 	"fmt"
 	"strconv"
 
+	"strings"
+
 	"bitbucket.org/go-mis/modules/cif"
 	email "bitbucket.org/go-mis/modules/email"
 	"bitbucket.org/go-mis/modules/r"
 	va "bitbucket.org/go-mis/modules/virtual-account"
 	"bitbucket.org/go-mis/services"
 	iris "gopkg.in/kataras/iris.v4"
-	"strings"
 )
 
 type totalData struct {
@@ -118,7 +119,7 @@ func Verify(ctx *iris.Context) {
 				}
 			}
 			vaData["MANDIRI_HOLDER"] = vaData["BCA_HOLDER"]
-			vaData["MANDIRI"]= rightPad2Len("88000101000000", strconv.FormatUint(inv.InvestorId, 10), 14-len(strconv.FormatUint(inv.InvestorId, 10)))
+			vaData["MANDIRI"] = rightPad2Len("88000101000000", strconv.FormatUint(inv.InvestorId, 10), 14-len(strconv.FormatUint(inv.InvestorId, 10)))
 
 			if cifSchema.Username != "" {
 				fmt.Println("Sending email..")
