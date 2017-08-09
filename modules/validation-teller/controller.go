@@ -35,7 +35,6 @@ var STAGE map[int]string = map[int]string{
 // GetData - Get data validation teller
 func GetData(ctx *iris.Context) {
 	var err error
-	var instalmentData []InstallmentData
 	branchID, _ := ctx.URLParamInt64("branchId")
 	dateParam := ctx.URLParam("date")
 	// Check data whehter valid or not
@@ -49,7 +48,7 @@ func GetData(ctx *iris.Context) {
 		return
 	}
 	log.Println("[INFO] Validation get data installment pass")
-	instalmentData, err = FindInstallmentData(branchID, dateParam)
+	instalmentData, err := FindInstallmentData(branchID, dateParam)
 	if err != nil {
 		log.Println("[INFO] Can not retrive installment data")
 		if err != nil {
@@ -289,16 +288,17 @@ func generateArchiveID(branchID int64) string {
 }
 
 // FindInstallmentData - function to get installment data by branch ID and date
-func FindInstallmentData(branchID int64, date string) ([]InstallmentData, error) {
+func FindInstallmentData(branchID int64, date string) (ResponseGetData, error) {
 	var err error
 	queryResult := []RawInstallmentData{}
+	response := ResponseGetData{}
 	res := []InstallmentData{}
 	agents := map[string]bool{"": false}
 	if branchID <= 0 {
-		return res, errors.New("Invalid Branch ID")
+		return response, errors.New("Invalid Branch ID")
 	}
 	if len(strings.Trim(date, " ")) == 0 {
-		return res, errors.New("Invalid Date")
+		return response, errors.New("Invalid Date")
 	}
 	query := `select g.id as "groupId", a.fullname,g.name, 
 					sum(i."paidInstallment") "repayment",sum(i.reserve) "tabungan",
@@ -330,7 +330,7 @@ func FindInstallmentData(branchID int64, date string) ([]InstallmentData, error)
 	if err != nil {
 		log.Println("#ERROR: Unable to retrieve Installment data")
 		log.Println("#ERROR: ", err)
-		return nil, errors.New("Unable to retrieve Installment data")
+		return response, errors.New("Unable to retrieve Installment data")
 	}
 	for _, val := range queryResult {
 		if agents[val.Fullname] == false {
@@ -338,9 +338,15 @@ func FindInstallmentData(branchID int64, date string) ([]InstallmentData, error)
 			res = append(res, InstallmentData{Agent: val.Fullname})
 		}
 	}
+
 	for idx, rval := range res {
 		m := []Majelis{}
 		var totalRepayment float64
+		var totalCashOnHand float64
+		var totalTabungan float64
+		var totalCashOnReserve float64
+		var totalCair float64
+		var totalGagalDroping float64
 		for _, qrval := range queryResult {
 			if rval.Agent == qrval.Fullname {
 				m = append(m, Majelis{
@@ -356,12 +362,30 @@ func FindInstallmentData(branchID int64, date string) ([]InstallmentData, error)
 					CashOnReserve:      qrval.CashOnReserve,
 				})
 				totalRepayment += qrval.Repayment
+				totalCashOnHand += qrval.CashOnHand
+				totalCashOnReserve += qrval.CashOnReserve
+				totalTabungan += qrval.Tabungan
+				totalCair += qrval.TotalCair
+				totalGagalDroping += qrval.TotalGagalDropping
 			}
 		}
+		response.TotalActualRepayment+=totalRepayment
+		response.TotalCair+=totalCair
+		response.TotalTabungan+=totalTabungan
+		response.TotalGagalDroping+=totalGagalDroping
+		response.TotalCashOnReserve+=totalCashOnReserve
+		response.TotalCashOnHand+=totalCashOnHand
+
 		res[idx].Majelis = m
 		res[idx].TotalActualRepayment = totalRepayment
+		res[idx].TotalCair = totalCair
+		res[idx].TotalCashOnHand = totalCashOnHand
+		res[idx].TotalCashOnReserve = totalCashOnReserve
+		res[idx].TotalGagalDroping = totalGagalDroping
+		res[idx].TotalTabungan = totalTabungan
 	}
-	return res, nil
+	response.InstallmentData = res
+	return response, nil
 }
 
 // GetDataFromLog - Retrive data from GO-LOG App
