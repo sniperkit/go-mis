@@ -80,6 +80,33 @@ func GetData(ctx *iris.Context) {
 	// }
 }
 
+func SaveNotes(ctx *iris.Context) {
+	params := struct {
+		Date           string  `json:"date"`
+		BranchId       uint64  `json:"branchId"`
+		Notes			[]Notes  `json:"notes"`
+	}{}
+	err := ctx.ReadJSON(&params)
+	if err != nil {
+		ctx.JSON(iris.StatusBadRequest, iris.Map{"status": "error", "message": err.Error()})
+		return
+	}
+	logGroupId := constructNotesGroupId(params.BranchId,params.Date)
+	log:=services.Log{Data:params.Notes,GroupID:logGroupId,ArchiveID:ctx.Param("logType")}
+	err=services.PostToLog(log)
+	if err!=nil{
+		ctx.JSON(iris.StatusInternalServerError, iris.Map{"status": "error", "message": err.Error()})
+		return
+	}
+	ctx.JSON(iris.StatusOK, iris.Map{
+		"status": "success",
+		"data":   params,
+	})
+}
+
+func constructNotesGroupId(branchId uint64,date string)string{
+	return string(branchId)+"-"+date+"-VTNotes"
+}
 func SaveDetail(ctx *iris.Context) {
 	params := []struct {
 		CashOnReserve float64 `json:"cashOnReserve"`
