@@ -14,14 +14,6 @@ import (
 	"bitbucket.org/go-mis/services"
 )
 
-var STAGE map[int]string = map[int]string{
-	1: "AGENT",
-	2: "TELLER",
-	3: "PENDING",
-	4: "REVIEW",
-	5: "APPROVE",
-}
-
 // GetData - Get data validation teller
 func GetData(ctx *iris.Context) {
 	var err error
@@ -172,29 +164,6 @@ func GetDetail(ctx *iris.Context) {
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"status": "success",
 		"data":   queryResult,
-	})
-}
-
-func UpdateInstallmentStage(ctx *iris.Context) {
-	params := struct {
-		InstallmentID int `json:"installmentId"`
-		Stage         int `json:"stage"`
-	}{}
-
-	err := ctx.ReadJSON(&params)
-	if err != nil {
-		ctx.JSON(iris.StatusBadRequest, iris.Map{"status": "error", "message": err.Error()})
-		return
-	}
-
-	if err := services.DBCPsql.Table("installment").Where("id = ?", params.InstallmentID).UpdateColumn("stage", STAGE[params.Stage]).Error; err != nil {
-		ctx.JSON(iris.StatusBadRequest, iris.Map{"status": "error", "message": err.Error()})
-		return
-	}
-
-	ctx.JSON(iris.StatusOK, iris.Map{
-		"status": "success",
-		"data":   "Installment id:" + strconv.Itoa(params.InstallmentID) + " updated. Stage:" + STAGE[params.Stage],
 	})
 }
 
