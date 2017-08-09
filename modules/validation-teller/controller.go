@@ -1,27 +1,20 @@
 package validationTeller
 
 import (
+	"encoding/json"
+	"errors"
 	"io/ioutil"
 	"strconv"
 	"strings"
 
-	"bytes"
-	"encoding/json"
-	"errors"
 	"log"
 	"net/http"
-	"time"
 
 	"bitbucket.org/go-mis/services"
 	"gopkg.in/kataras/iris.v4"
 
-	misConfig "bitbucket.org/go-mis/config"
 	ins "bitbucket.org/go-mis/modules/installment"
 	misUtility "bitbucket.org/go-mis/modules/utility"
-)
-
-var (
-	logAPIPath = misConfig.GoLogPath
 )
 
 var STAGE map[int]string = map[int]string{
@@ -243,48 +236,12 @@ func SubmitValidationTeller(ctx *iris.Context) {
 	// Create go routine to push data to GO-LOG APP
 	// in order to no need to wait
 	go func() {
-		_ = postToLog(getLog(params.BranchID, instalmentData))
+		_ = services.PostToLog(services.GetLog(params.BranchID, instalmentData, "VALIDATION TELLER"))
 	}()
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"message": "Success",
 	})
 
-}
-
-func getLog(branchID int64, data interface{}) Log {
-	var logger Log
-	if branchID <= 0 {
-		return logger
-	}
-	logger = Log{
-		GroupID:   "Validasi Teller",
-		ArchiveID: generateArchiveID(branchID),
-		Data:      data,
-	}
-	return logger
-}
-
-func postToLog(l Log) error {
-	if l.Data == nil {
-		return errors.New("Can not send empty data")
-	}
-	logBytes := new(bytes.Buffer)
-	json.NewEncoder(logBytes).Encode(l)
-	log.Println(logAPIPath)
-	log.Println(l)
-	_, err := http.Post(logAPIPath+"archive", "application/json; charset=utf-8", logBytes)
-	if err != nil {
-		return errors.New(err.Error())
-	}
-	return nil
-}
-
-func generateArchiveID(branchID int64) string {
-	if branchID == 0 {
-		return ""
-	}
-	branchStr := strconv.FormatInt(branchID, 10)
-	return branchStr + "-" + time.Now().Local().Format("2006-01-02")
 }
 
 // FindInstallmentData - function to get installment data by branch ID and date
@@ -391,9 +348,9 @@ func FindInstallmentData(branchID int64, date string) (ResponseGetData, error) {
 // GetDataFromLog - Retrive data from GO-LOG App
 func GetDataFromLog(branchID int64) (Log, error) {
 	var logger Log
-	archiveID := generateArchiveID(branchID)
+	archiveID := services.GenerateArchiveID(branchID)
 	groupID := "VALIDATION TELLER"
-	apiPath := logAPIPath + "archive/" + archiveID + "/group/" + groupID
+	apiPath := services.GetLogAPIPath() + "archive/" + archiveID + "/group/" + groupID
 	log.Println("[INFO]", apiPath)
 	resp, err := http.Get(apiPath)
 	if err != nil {

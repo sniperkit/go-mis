@@ -317,7 +317,7 @@ func SubmitInstallmentByGroupIDAndTransactionDateWithStatus(ctx *iris.Context) {
 	if strings.ToLower(ctx.Param("status")) == "agent" || strings.ToLower(ctx.Param("status")) == "teller" || strings.ToLower(ctx.Param("status")) == "approve" || strings.ToLower(ctx.Param("status")) == "reject" || strings.ToLower(ctx.Param("status")) == "in-review" || strings.ToLower(ctx.Param("status")) == "success" {
 		query := "SELECT "
 		query += "\"group\".\"id\" as \"groupId\", \"group\".\"name\" as \"groupName\","
-		query += "installment.\"id\" as \"installmentId\", installment.\"type\", installment.\"paidInstallment\", installment.\"penalty\", installment.\"reserve\", installment.\"presence\", installment.\"frequency\", installment.\"stage\" "
+		query += "installment.\"id\" as \"installmentId\", installment.\"type\", installment.\"paidInstallment\", installment.\"penalty\", installment.\"reserve\", installment.\"presence\", installment.\"frequency\", installment.\"stage\", branch.\"id\" "
 		query += "FROM installment "
 		query += "JOIN r_loan_installment ON r_loan_installment.\"installmentId\" = installment.\"id\" "
 		query += "JOIN loan ON loan.\"id\" = r_loan_installment.\"loanId\" "
@@ -346,6 +346,12 @@ func SubmitInstallmentByGroupIDAndTransactionDateWithStatus(ctx *iris.Context) {
 		}
 		db.Commit()
 
+		// write to go-log
+		instalmentData := GetDataPendingInstallment(installmentDetailSchema[0].BranchID, transactionDate)
+
+		gid, _ := strconv.Atoi(groupID)
+		_ = services.PostToLog(services.GetLog(int64(gid), instalmentData, "Pending Installment"))
+
 		ctx.JSON(iris.StatusOK, iris.Map{
 			"status": "success",
 			"data": iris.Map{
@@ -362,7 +368,6 @@ func SubmitInstallmentByGroupIDAndTransactionDateWithStatus(ctx *iris.Context) {
 	}
 }
 
-//
 func SubmitInstallmentByGroupIDAndTransactionDateWithStatusAndInstallmentId(ctx *iris.Context) {
 	key := ctx.URLParam("ais")
 
@@ -652,6 +657,7 @@ func FindByBranchAndDate(branchID int64, transactionDate string) ([]Installment,
 	}
 	installemnts := make([]Installment, 0)
 	query = `select installment.id,
+
 					installment.type,
 					installment.presence,
 					installment."paidInstallment",
@@ -692,12 +698,19 @@ func ProcessErrorAndRollback(ctx *iris.Context, db *gorm.DB, message string) {
 }
 
 func GetPendingInstallmentNew(ctx *iris.Context) {
-	BranchId := ctx.Param("branchId")
+	bId := ctx.Param("branchId")
+	intBid,_ := strconv.Atoi(bId)
+	BranchId := uint64(intBid)
 	Date := ctx.Param("date")
-	GetDataPendingInstallment(ctx, BranchId, Date);
+
+	res := GetDataPendingInstallment(BranchId, Date)
+	ctx.JSON(iris.StatusOK, iris.Map{
+		"status": "success",
+		"data":   res,
+	})
 }
 
-func GetDataPendingInstallment(ctx *iris.Context, BranchId string, Date string){
+func GetDataPendingInstallment(BranchId uint64, Date string) []PendingInstallmentData {
 	query := `select g.id as "groupId", a.fullname,g.name, sum(i."paidInstallment") "repayment",sum(i.reserve) "tabungan",sum(i."paidInstallment"+i.reserve) "total",
 				sum(i.cash_on_hand) "cashOnHand",
 				sum(i.cash_on_reserve) "cashOnReserve",
@@ -768,18 +781,18 @@ func GetDataPendingInstallment(ctx *iris.Context, BranchId string, Date string){
 		for _, qrval := range queryResult {
 			if rval.Agent == qrval.Fullname {
 				m = append(m, Majelis{
-					GroupId:            qrval.GroupId,
-					Name:               qrval.Name,
-					Repayment:          qrval.Repayment,
-					Tabungan:           qrval.Tabungan,
-					TotalActual:        qrval.Total,
-					TotalProyeksi:		qrval.ProjectionRepayment+qrval.ProjectionTabungan,
-					TotalCoh: 			qrval.CashOnHand+qrval.CashOnReserve,
-					TotalCair:          qrval.TotalCair,
-					TotalGagalDropping: qrval.TotalGagalDropping,
-					Status: qrval.Status,
-					CashOnHand:qrval.CashOnHand,
-					CashOnReserve:qrval.CashOnReserve,
+					GroupId:             qrval.GroupId,
+					Name:                qrval.Name,
+					Repayment:           qrval.Repayment,
+					Tabungan:            qrval.Tabungan,
+					TotalActual:         qrval.Total,
+					TotalProyeksi:       qrval.ProjectionRepayment + qrval.ProjectionTabungan,
+					TotalCoh:            qrval.CashOnHand + qrval.CashOnReserve,
+					TotalCair:           qrval.TotalCair,
+					TotalGagalDropping:  qrval.TotalGagalDropping,
+					Status:              qrval.Status,
+					CashOnHand:          qrval.CashOnHand,
+					CashOnReserve:       qrval.CashOnReserve,
 					ProjectionRepayment: qrval.ProjectionRepayment,
 					ProjectionTabungan:  qrval.ProjectionTabungan,
 				})
@@ -790,8 +803,8 @@ func GetDataPendingInstallment(ctx *iris.Context, BranchId string, Date string){
 				totalTabunganProj += qrval.ProjectionTabungan
 				totalTabunganCoh += qrval.CashOnReserve
 				totalActualAgent += qrval.Total
-				totalProjectionAgent += qrval.ProjectionRepayment+qrval.ProjectionTabungan
-				totalCohAgent += qrval.CashOnHand+qrval.CashOnReserve
+				totalProjectionAgent += qrval.ProjectionRepayment + qrval.ProjectionTabungan
+				totalCohAgent += qrval.CashOnHand + qrval.CashOnReserve
 				totalPencairanAgent += qrval.TotalCair
 				totalGagalDroppingAgent += qrval.TotalGagalDropping
 			}
@@ -810,8 +823,5 @@ func GetDataPendingInstallment(ctx *iris.Context, BranchId string, Date string){
 		res[idx].TotalGagalDroppingAgent = totalGagalDroppingAgent
 	}
 
-	ctx.JSON(iris.StatusOK, iris.Map{
-		"status": "success",
-		"data":   res,
-	})
+	return res
 }
