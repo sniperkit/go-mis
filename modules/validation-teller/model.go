@@ -57,6 +57,7 @@ type ResponseGetData struct {
 	TotalGagalDroping    float64           `gorm:"column:totalGagalDroping" json:"totalGagalDroping"`
 	BorrowerNotes        []interface{}     `json:"BorrowerNotes, omitempty"`
 	MajelisNotes         []interface{}     `json:"majelisNotes, omitempty"`
+	ListMajelis         []string     `json:"listMajelis, omitempty"`
 }
 
 type InstallmentData struct {
