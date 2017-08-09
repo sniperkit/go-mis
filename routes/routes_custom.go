@@ -175,6 +175,8 @@ func InitCustomApi() {
 		v2.Any("/validation-teller/detail", validationTeller.GetDetail)
 		v2.Any("/validation-teller/detail/save", validationTeller.SaveDetail)
 		v2.Any("/installment-pending/get/:branchId/:date", installment.GetPendingInstallmentNew)
+		v2.Any("/validation-teller/borrower-notes/save", validationTeller.SaveDetail)
+		v2.Any("/validation-teller/group-notes/:logType/save", validationTeller.SaveNotes)
 	}
 
 	iris.Get(baseURL+"/generate-topsheet/:group_id", topsheet.GenerateTopsheet)
