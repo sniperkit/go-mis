@@ -41,7 +41,7 @@ func GetData(ctx *iris.Context) {
 	// Check data whehter valid or not
 	err = GetDataValidation(branchID, dateParam)
 	if err != nil {
-		log.Println("[INFO] data is not valid")
+		log.Println("[INFO] Params is not valid")
 		ctx.JSON(iris.StatusBadRequest, iris.Map{
 			"message":      "Bad Request",
 			"errorMessage": err.Error(),
@@ -60,30 +60,35 @@ func GetData(ctx *iris.Context) {
 			return
 		}
 	}
-	dataDate, _ := misUtility.StringToDate(dateParam)
-
-	if misUtility.IsBeforeToday(dataDate) {
-		log.Println(dataDate)
-		dataLog, err := GetDataFromLog(branchID)
-		if err != nil {
-			ctx.JSON(iris.StatusInternalServerError, iris.Map{
-				"message":      "Internal Server Error",
-				"errorMessage": "Unable to retrive data from LOG",
-			})
-			return
-		}
-		ctx.JSON(iris.StatusOK, iris.Map{
-			"status": "success",
-			"data":   dataLog.Data,
-		})
-		return
-	}
-	if misUtility.IsToday(dataDate) {
-		ctx.JSON(iris.StatusOK, iris.Map{
-			"status": "success",
-			"data":   instalmentData,
-		})
-	}
+	ctx.JSON(iris.StatusOK, iris.Map{
+		"status": "success",
+		"data":   instalmentData,
+	})
+	// Change Requirement
+	// Always send data form DB
+	// dataDate, _ := misUtility.StringToDate(dateParam)
+	// if misUtility.IsBeforeToday(dataDate) {
+	// 	log.Println(dataDate)
+	// 	dataLog, err := GetDataFromLog(branchID)
+	// 	if err != nil {
+	// 		ctx.JSON(iris.StatusInternalServerError, iris.Map{
+	// 			"message":      "Internal Server Error",
+	// 			"errorMessage": "Unable to retrive data from LOG",
+	// 		})
+	// 		return
+	// 	}
+	// 	ctx.JSON(iris.StatusOK, iris.Map{
+	// 		"status": "success",
+	// 		"data":   dataLog.Data,
+	// 	})
+	// 	return
+	// }
+	// if misUtility.IsToday(dataDate) {
+	// 	ctx.JSON(iris.StatusOK, iris.Map{
+	// 		"status": "success",
+	// 		"data":   instalmentData,
+	// 	})
+	// }
 }
 
 func SaveDetail(ctx *iris.Context) {
@@ -193,7 +198,7 @@ func SubmitValidationTeller(ctx *iris.Context) {
 	var installment ins.Installment
 
 	params := struct {
-		BranchId int64  `json:"branchId"`
+		BranchID int64  `json:"branchId"`
 		Date     string `json:"date"`
 	}{}
 
@@ -205,7 +210,7 @@ func SubmitValidationTeller(ctx *iris.Context) {
 		})
 		return
 	}
-	installments, err := ins.FindByBranchAndDate(params.BranchId, params.Date)
+	installments, err := ins.FindByBranchAndDate(params.BranchID, params.Date)
 	if err != nil {
 		log.Println("#ERROR: ", err)
 		ctx.JSON(iris.StatusInternalServerError, iris.Map{
@@ -228,16 +233,19 @@ func SubmitValidationTeller(ctx *iris.Context) {
 			return
 		}
 	}
-
 	db.Commit()
-	instalmentData, err := FindInstallmentData(params.BranchId, params.Date)
+	instalmentData, err := FindInstallmentData(params.BranchID, params.Date)
 	if err != nil {
 		ctx.JSON(iris.StatusInternalServerError, iris.Map{
 			"errorMessage": "System Error",
 			"message":      err.Error(),
 		})
 	}
-	_ = postToLog(getLog(params.BranchId, instalmentData))
+	// Create go routine to push data to GO-LOG APP
+	// in order to no need to wait
+	go func() {
+		_ = postToLog(getLog(params.BranchID, instalmentData))
+	}()
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"message": "Success",
 	})
@@ -390,12 +398,12 @@ func GetDataValidation(branchID int64, date string) error {
 	if branchID <= 0 {
 		return errors.New("Invalid Branch ID")
 	}
-	dataDate, err := misUtility.StringToDate(date)
+	_, err := misUtility.StringToDate(date)
 	if err != nil || len(strings.Trim(date, " ")) == 0 {
 		return errors.New("Invalid Date")
 	}
-	if misUtility.IsAfterToday(dataDate) {
-		return errors.New("Date must be today or less than today")
-	}
+	// if misUtility.IsAfterToday(dataDate) {
+	// 	return errors.New("Date must be today or less than today")
+	// }
 	return nil
 }
