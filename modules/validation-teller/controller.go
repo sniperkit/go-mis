@@ -25,6 +25,7 @@ var STAGE map[int]string = map[int]string{
 // GetData - Get data validation teller
 func GetData(ctx *iris.Context) {
 	var err error
+	var instalmentData ResponseGetData
 	branchID, _ := ctx.URLParamInt64("branchId")
 	dateParam := ctx.URLParam("date")
 	// Check data whehter valid or not
@@ -38,7 +39,7 @@ func GetData(ctx *iris.Context) {
 		return
 	}
 	log.Println("[INFO] Validation get data installment pass")
-	instalmentData, err := FindInstallmentData(branchID, dateParam)
+	instalmentData, err = FindInstallmentData(branchID, dateParam)
 	if err != nil {
 		log.Println("[INFO] Can not retrive installment data")
 		if err != nil {
@@ -48,6 +49,21 @@ func GetData(ctx *iris.Context) {
 			})
 			return
 		}
+	}
+	notes, err := services.GetNotes(constructNotesGroupId(branchID, dateParam))
+	if err == nil && len(notes) > 0 {
+		borrowerNotes := make([]interface{}, 0)
+		majelisNotes := make([]interface{}, 0)
+		for _, note := range notes {
+			if strings.ToLower(note.ArchiveID) == "borrower" {
+				borrowerNotes = append(borrowerNotes, note.Data)
+			}
+			if strings.ToLower(note.ArchiveID) == "majelis" {
+				majelisNotes = append(majelisNotes, note.Data)
+			}
+		}
+		instalmentData.BorrowerNotes = append(instalmentData.BorrowerNotes, borrowerNotes)
+		instalmentData.MajelisNotes = append(instalmentData.MajelisNotes, majelisNotes)
 	}
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"status": "success",
@@ -82,19 +98,19 @@ func GetData(ctx *iris.Context) {
 
 func SaveNotes(ctx *iris.Context) {
 	params := struct {
-		Date           string  `json:"date"`
-		BranchId       uint64  `json:"branchId"`
-		Notes			[]Notes  `json:"notes"`
+		Date     string  `json:"date"`
+		BranchId int64   `json:"branchId"`
+		Notes    []Notes `json:"notes"`
 	}{}
 	err := ctx.ReadJSON(&params)
 	if err != nil {
 		ctx.JSON(iris.StatusBadRequest, iris.Map{"status": "error", "message": err.Error()})
 		return
 	}
-	logGroupId := constructNotesGroupId(params.BranchId,params.Date)
-	log:=services.Log{Data:params.Notes,GroupID:logGroupId,ArchiveID:ctx.Param("logType")}
-	err=services.PostToLog(log)
-	if err!=nil{
+	logGroupId := constructNotesGroupId(params.BranchId, params.Date)
+	log := services.Log{Data: params.Notes, GroupID: logGroupId, ArchiveID: ctx.Param("logType")}
+	err = services.PostToLog(log)
+	if err != nil {
 		ctx.JSON(iris.StatusInternalServerError, iris.Map{"status": "error", "message": err.Error()})
 		return
 	}
@@ -104,8 +120,8 @@ func SaveNotes(ctx *iris.Context) {
 	})
 }
 
-func constructNotesGroupId(branchId uint64,date string)string{
-	return string(branchId)+"-"+date+"-VTNotes"
+func constructNotesGroupId(branchId int64, date string) string {
+	return string(branchId) + "-" + date + "-VTNotes"
 }
 func SaveDetail(ctx *iris.Context) {
 	params := []struct {
