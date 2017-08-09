@@ -1,7 +1,6 @@
 package validationTeller
 
 import (
-	"fmt"
 	"io/ioutil"
 	"strconv"
 	"strings"
@@ -36,23 +35,59 @@ var STAGE map[int]string = map[int]string{
 // GetData - Get data validation teller
 func GetData(ctx *iris.Context) {
 	var err error
-	var instalmentData []InstallmentData
 	branchID, _ := ctx.URLParamInt64("branchId")
 	dateParam := ctx.URLParam("date")
-	GetDataValidation(ctx)
-	fmt.Println("Hello")
-	instalmentData, err = FindInstallmentData(branchID, dateParam)
+	// Check data whehter valid or not
+	err = GetDataValidation(branchID, dateParam)
 	if err != nil {
-		ctx.JSON(iris.StatusInternalServerError, iris.Map{
-			"status": http.StatusInternalServerError,
-			"data":   nil,
+		log.Println("[INFO] Params is not valid")
+		ctx.JSON(iris.StatusBadRequest, iris.Map{
+			"message":      "Bad Request",
+			"errorMessage": err.Error(),
 		})
 		return
+	}
+	log.Println("[INFO] Validation get data installment pass")
+	instalmentData, err := FindInstallmentData(branchID, dateParam)
+	if err != nil {
+		log.Println("[INFO] Can not retrive installment data")
+		if err != nil {
+			ctx.JSON(iris.StatusInternalServerError, iris.Map{
+				"message":      "Internal Server Error",
+				"errorMessage": "Unable to retrive data from LOG",
+			})
+			return
+		}
 	}
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"status": "success",
 		"data":   instalmentData,
 	})
+	// Change Requirement
+	// Always send data form DB
+	// dataDate, _ := misUtility.StringToDate(dateParam)
+	// if misUtility.IsBeforeToday(dataDate) {
+	// 	log.Println(dataDate)
+	// 	dataLog, err := GetDataFromLog(branchID)
+	// 	if err != nil {
+	// 		ctx.JSON(iris.StatusInternalServerError, iris.Map{
+	// 			"message":      "Internal Server Error",
+	// 			"errorMessage": "Unable to retrive data from LOG",
+	// 		})
+	// 		return
+	// 	}
+	// 	ctx.JSON(iris.StatusOK, iris.Map{
+	// 		"status": "success",
+	// 		"data":   dataLog.Data,
+	// 	})
+	// 	return
+	// }
+	// if misUtility.IsToday(dataDate) {
+	// 	ctx.JSON(iris.StatusOK, iris.Map{
+	// 		"status": "success",
+	// 		"data":   instalmentData,
+	// 	})
+	// }
 }
 
 func SaveDetail(ctx *iris.Context) {
@@ -162,7 +197,7 @@ func SubmitValidationTeller(ctx *iris.Context) {
 	var installment ins.Installment
 
 	params := struct {
-		BranchId int64  `json:"branchId"`
+		BranchID int64  `json:"branchId"`
 		Date     string `json:"date"`
 	}{}
 
@@ -174,7 +209,7 @@ func SubmitValidationTeller(ctx *iris.Context) {
 		})
 		return
 	}
-	installments, err := ins.FindByBranchAndDate(params.BranchId, params.Date)
+	installments, err := ins.FindByBranchAndDate(params.BranchID, params.Date)
 	if err != nil {
 		log.Println("#ERROR: ", err)
 		ctx.JSON(iris.StatusInternalServerError, iris.Map{
@@ -197,16 +232,19 @@ func SubmitValidationTeller(ctx *iris.Context) {
 			return
 		}
 	}
-
 	db.Commit()
-	instalmentData, err := FindInstallmentData(params.BranchId, params.Date)
+	instalmentData, err := FindInstallmentData(params.BranchID, params.Date)
 	if err != nil {
 		ctx.JSON(iris.StatusInternalServerError, iris.Map{
 			"errorMessage": "System Error",
 			"message":      err.Error(),
 		})
 	}
-	_ = postToLog(getLog(params.BranchId, instalmentData))
+	// Create go routine to push data to GO-LOG APP
+	// in order to no need to wait
+	go func() {
+		_ = postToLog(getLog(params.BranchID, instalmentData))
+	}()
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"message": "Success",
 	})
@@ -250,11 +288,18 @@ func generateArchiveID(branchID int64) string {
 }
 
 // FindInstallmentData - function to get installment data by branch ID and date
-func FindInstallmentData(branchID int64, date string) ([]InstallmentData, error) {
+func FindInstallmentData(branchID int64, date string) (ResponseGetData, error) {
 	var err error
-	queryResult := make([]RawInstallmentData, 0)
-	res := make([]InstallmentData, 0)
+	queryResult := []RawInstallmentData{}
+	response := ResponseGetData{}
+	res := []InstallmentData{}
 	agents := map[string]bool{"": false}
+	if branchID <= 0 {
+		return response, errors.New("Invalid Branch ID")
+	}
+	if len(strings.Trim(date, " ")) == 0 {
+		return response, errors.New("Invalid Date")
+	}
 	query := `select g.id as "groupId", a.fullname,g.name, 
 					sum(i."paidInstallment") "repayment",sum(i.reserve) "tabungan",
 					sum(i."paidInstallment"+i.reserve) "total", 
@@ -283,7 +328,9 @@ func FindInstallmentData(branchID int64, date string) ([]InstallmentData, error)
 				order by a.fullname`
 	err = services.DBCPsql.Raw(query, branchID, date).Scan(&queryResult).Error
 	if err != nil {
-		return nil, err
+		log.Println("#ERROR: Unable to retrieve Installment data")
+		log.Println("#ERROR: ", err)
+		return response, errors.New("Unable to retrieve Installment data")
 	}
 	for _, val := range queryResult {
 		if agents[val.Fullname] == false {
@@ -291,9 +338,15 @@ func FindInstallmentData(branchID int64, date string) ([]InstallmentData, error)
 			res = append(res, InstallmentData{Agent: val.Fullname})
 		}
 	}
+
 	for idx, rval := range res {
 		m := []Majelis{}
 		var totalRepayment float64
+		var totalCashOnHand float64
+		var totalTabungan float64
+		var totalCashOnReserve float64
+		var totalCair float64
+		var totalGagalDroping float64
 		for _, qrval := range queryResult {
 			if rval.Agent == qrval.Fullname {
 				m = append(m, Majelis{
@@ -309,12 +362,30 @@ func FindInstallmentData(branchID int64, date string) ([]InstallmentData, error)
 					CashOnReserve:      qrval.CashOnReserve,
 				})
 				totalRepayment += qrval.Repayment
+				totalCashOnHand += qrval.CashOnHand
+				totalCashOnReserve += qrval.CashOnReserve
+				totalTabungan += qrval.Tabungan
+				totalCair += qrval.TotalCair
+				totalGagalDroping += qrval.TotalGagalDropping
 			}
 		}
+		response.TotalActualRepayment+=totalRepayment
+		response.TotalCair+=totalCair
+		response.TotalTabungan+=totalTabungan
+		response.TotalGagalDroping+=totalGagalDroping
+		response.TotalCashOnReserve+=totalCashOnReserve
+		response.TotalCashOnHand+=totalCashOnHand
+
 		res[idx].Majelis = m
 		res[idx].TotalActualRepayment = totalRepayment
+		res[idx].TotalCair = totalCair
+		res[idx].TotalCashOnHand = totalCashOnHand
+		res[idx].TotalCashOnReserve = totalCashOnReserve
+		res[idx].TotalGagalDroping = totalGagalDroping
+		res[idx].TotalTabungan = totalTabungan
 	}
-	return res, nil
+	response.InstallmentData = res
+	return response, nil
 }
 
 // GetDataFromLog - Retrive data from GO-LOG App
@@ -322,7 +393,8 @@ func GetDataFromLog(branchID int64) (Log, error) {
 	var logger Log
 	archiveID := generateArchiveID(branchID)
 	groupID := "VALIDATION TELLER"
-	apiPath := logAPIPath + "archive/" + archiveID + "/" + groupID
+	apiPath := logAPIPath + "archive/" + archiveID + "/group/" + groupID
+	log.Println("[INFO]", apiPath)
 	resp, err := http.Get(apiPath)
 	if err != nil {
 		log.Println("#ERROR: Unable to retrive data from GO-LOG App")
@@ -335,62 +407,27 @@ func GetDataFromLog(branchID int64) (Log, error) {
 		log.Println("#ERROR: When read body reponse from GO-LOG")
 		return logger, err
 	}
+	log.Println("[INFO]", body)
 	err = json.Unmarshal([]byte(body), &logger)
 	if err != nil {
 		log.Println("#ERROR: When unmarshall resp body GO-LOG to Log struct")
 		return logger, err
 	}
+	log.Println("[INFO]", logger)
 	return logger, nil
 }
 
 // GetDataValidation - Data validation before Get Validation Teller
-func GetDataValidation(ctx *iris.Context) {
-	params := struct {
-		BranchID int64  `json:"branchId"`
-		Date     string `json:"date"`
-	}{}
-	params.BranchID, _ = ctx.URLParamInt64("branchId")
-	params.Date = ctx.URLParam("date")
-	if params.BranchID <= 0 || len(strings.Trim(params.Date, " ")) == 0 {
-		ctx.JSON(iris.StatusBadRequest, iris.Map{
-			"status":       iris.StatusBadRequest,
-			"message":      "Bad Request",
-			"errorMessage": "Can not parse " + params.Date + " to Date",
-		})
-		return
+func GetDataValidation(branchID int64, date string) error {
+	if branchID <= 0 {
+		return errors.New("Invalid Branch ID")
 	}
-	dataDate, err := misUtility.StringToDate(params.Date)
-	if err != nil {
-		ctx.JSON(iris.StatusBadRequest, iris.Map{
-			"status":       iris.StatusBadRequest,
-			"message":      "Bad Request",
-			"errorMessage": "Can not parse " + params.Date + " to Date",
-		})
-		return
+	_, err := misUtility.StringToDate(date)
+	if err != nil || len(strings.Trim(date, " ")) == 0 {
+		return errors.New("Invalid Date")
 	}
-
-	if misUtility.IsAfterToday(dataDate) {
-		ctx.JSON(iris.StatusBadRequest, iris.Map{
-			"status":       iris.StatusBadRequest,
-			"message":      "Bad Request",
-			"errorMessage": "Date must be today or less than today",
-		})
-		return
-	}
-	if misUtility.IsBeforeToday(dataDate) {
-		dataLog, err := GetDataFromLog(params.BranchID)
-		if err != nil {
-			ctx.JSON(iris.StatusInternalServerError, iris.Map{
-				"status":       iris.StatusBadRequest,
-				"message":      "Internal Server Error",
-				"errorMessage": "Unable to retrive data from LOG",
-			})
-			return
-		}
-		ctx.JSON(iris.StatusOK, iris.Map{
-			"status": "success",
-			"data":   dataLog.Data,
-		})
-		return
-	}
+	// if misUtility.IsAfterToday(dataDate) {
+	// 	return errors.New("Date must be today or less than today")
+	// }
+	return nil
 }
