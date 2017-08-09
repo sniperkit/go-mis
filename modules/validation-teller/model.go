@@ -47,6 +47,11 @@ type Majelis struct {
 	CashOnReserve      float64 `gorm:"column:cashOnReserve" json:"cashOnReserve"`
 }
 
+type MajelisId struct {
+	GroupId            int64   `gorm:"column:groupId" json:"groupId"`
+	Name               string  `gorm:"column:name" json:"name"`
+}
+
 type ResponseGetData struct {
 	InstallmentData      []InstallmentData `gorm:"column:installmentData" json:"installmentData"`
 	TotalActualRepayment float64           `gorm:"column:totalActualRepayment" json:"totalActualRepayment"`
@@ -57,7 +62,7 @@ type ResponseGetData struct {
 	TotalGagalDroping    float64           `gorm:"column:totalGagalDroping" json:"totalGagalDroping"`
 	BorrowerNotes        []interface{}     `json:"BorrowerNotes, omitempty"`
 	MajelisNotes         []interface{}     `json:"majelisNotes, omitempty"`
-	ListMajelis         []string     `json:"listMajelis, omitempty"`
+	ListMajelis         []MajelisId     `json:"listMajelis, omitempty"`
 }
 
 type InstallmentData struct {
