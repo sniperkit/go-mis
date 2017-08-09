@@ -20,6 +20,12 @@ type Log struct {
 	Data      interface{} `json:"data"`
 }
 
+type LogResponse struct {
+	Status  int64  `json:"status"`
+	Message string `json:"message"`
+	Data    []Log  `json:"data"`
+}
+
 var (
 	logAPIPath = config.GoLogPath
 )
@@ -58,11 +64,13 @@ func PostToLog(l Log) error {
 // Path: http://localhost:5500/api/v1/archive-list/group/{groupId}
 func GetNotes(groupID string) ([]Log, error) {
 	var err error
-	var notes []Log
+	var logResp LogResponse
 	if len(strings.Trim(groupID, " ")) == 0 {
 		return nil, errors.New("Group ID can not be empty")
 	}
-	resp, err := http.Get(logAPIPath + "archive-list/group/" + groupID)
+	apiPath := logAPIPath + "archive-list/group/" + groupID
+	log.Println(apiPath)
+	resp, err := http.Get(apiPath)
 	if resp.StatusCode != 200 || err != nil {
 		return nil, errors.New("Unable to retrieve data notes from GO-LOG APP")
 	}
@@ -73,13 +81,15 @@ func GetNotes(groupID string) ([]Log, error) {
 		log.Println("#ERROR: ", err)
 		return nil, errors.New("Unable to retrieve data notes from GO-LOG APP")
 	}
-	err = json.Unmarshal([]byte(body), &notes)
+	err = json.Unmarshal([]byte(body), &logResp)
+	log.Println(logResp)
 	if err != nil {
 		log.Println("#ERROR: Unable to unmarshall body")
 		log.Println("#ERROR: ", err)
 		return nil, errors.New("Unable to unmarshall body")
 	}
-	return notes, nil
+	logNotes := logResp.Data
+	return logNotes, nil
 }
 
 // GetDataFromLog - Retrive data from GO-LOG App

@@ -121,7 +121,10 @@ func SaveNotes(ctx *iris.Context) {
 }
 
 func constructNotesGroupId(branchId int64, date string) string {
-	return string(branchId) + "-" + date + "-VTNotes"
+	log.Println("[INFO]", branchId)
+	log.Println("[INFO]", date)
+	groupID := strconv.FormatInt(branchId, 10) + "-" + date + "-VTNotes"
+	return groupID
 }
 func SaveDetail(ctx *iris.Context) {
 	params := []struct {
@@ -358,7 +361,7 @@ func FindInstallmentData(branchID int64, date string) (ResponseGetData, error) {
 					CashOnHand:         qrval.CashOnHand,
 					CashOnReserve:      qrval.CashOnReserve,
 				})
-				majelists = append(majelists,qrval.Name)
+				majelists = append(majelists, qrval.Name)
 				totalRepayment += qrval.Repayment
 				totalCashOnHand += qrval.CashOnHand
 				totalCashOnReserve += qrval.CashOnReserve
@@ -383,7 +386,7 @@ func FindInstallmentData(branchID int64, date string) (ResponseGetData, error) {
 		res[idx].TotalTabungan = totalTabungan
 	}
 	response.InstallmentData = res
-	response.ListMajelis=majelists
+	response.ListMajelis = majelists
 	return response, nil
 }
 
