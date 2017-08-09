@@ -326,12 +326,12 @@ func FindInstallmentData(branchID int64, date string) (ResponseGetData, error) {
 				totalGagalDroping += qrval.TotalGagalDropping
 			}
 		}
-		response.TotalActualRepayment+=totalRepayment
-		response.TotalCair+=totalCair
-		response.TotalTabungan+=totalTabungan
-		response.TotalGagalDroping+=totalGagalDroping
-		response.TotalCashOnReserve+=totalCashOnReserve
-		response.TotalCashOnHand+=totalCashOnHand
+		response.TotalActualRepayment += totalRepayment
+		response.TotalCair += totalCair
+		response.TotalTabungan += totalTabungan
+		response.TotalGagalDroping += totalGagalDroping
+		response.TotalCashOnReserve += totalCashOnReserve
+		response.TotalCashOnHand += totalCashOnHand
 
 		res[idx].Majelis = m
 		res[idx].TotalActualRepayment = totalRepayment
@@ -361,13 +361,12 @@ func GetDataFromLog(branchID int64) (Log, error) {
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.Println("#ERROR: When read body reponse from GO-LOG")
+		log.Println("#ERROR: When read body reponse from GO-LOG App")
 		return logger, err
 	}
-	log.Println("[INFO]", body)
 	err = json.Unmarshal([]byte(body), &logger)
 	if err != nil {
-		log.Println("#ERROR: When unmarshall resp body GO-LOG to Log struct")
+		log.Println("#ERROR: When unmarshall resp body GO-LOG App to Log struct")
 		return logger, err
 	}
 	log.Println("[INFO]", logger)
