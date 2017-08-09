@@ -59,10 +59,10 @@ type TellerValidation struct {
 
 // Log struct
 type Log struct {
-	ID        string      `json:"id"`
-	GroupID   string      `json:"groupId"`
-	ArchiveID string      `json:"archiveId"`
-	Data      interface{} `json:"data"`
+	ID        string      `json:"id,omitempty"`
+	GroupID   string      `json:"groupId,omitempty"`
+	ArchiveID string      `json:"archiveId,omitempty"`
+	Data      interface{} `json:"data,omitempty"`
 }
 
 // SubmitBody - struct
