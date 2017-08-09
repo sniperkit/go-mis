@@ -26,6 +26,14 @@ type RawInstallmentData struct {
 	CashOnReserve      float64 `gorm:"column:cashOnReserve" json:"cashOnReserve"`
 }
 
+type Notes struct {
+	GroupId    int64   `gorm:"column:groupId" json:"groupId"`
+	Name               string  `gorm:"column:name" json:"name"`
+	CashOnHand         float64 `gorm:"column:cashOnHand" json:"cashOnHand"`
+	CashOnReserve      float64 `gorm:"column:cashOnReserve" json:"cashOnReserve"`
+	Note               string  `gorm:"column:note" json:"note"`
+}
+
 type Majelis struct {
 	GroupId            int64   `gorm:"column:groupId" json:"groupId"`
 	Name               string  `gorm:"column:name" json:"name"`
