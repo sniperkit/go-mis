@@ -47,6 +47,8 @@ type InstallmentDetail struct {
 	Reserve             float64 `gorm:"column:reserve" json:"reserve"`
 	Stage               string  `gorm:"column:stage" json:"stage"`
 	TotalCair           float64 `gorm:"column:totalCair" json:"totalCair"`
+	CashOnHand          float64 `gorm:"column:cashOnHand" json:"cashOnHand"`
+	CashOnReserve       float64 `gorm:"column:cashOnReserve" json:"cashOnReserve"`
 }
 
 type PendingRawInstallmentData struct {
