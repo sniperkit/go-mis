@@ -737,10 +737,10 @@ func GetPendingInstallmentNew(ctx *iris.Context) {
 	if err != nil || len(notes) > 0 {
 		borrowerNotes := services.GetBorrowerNotes(notes)
 		majelisNotes := services.GetMajelisNotes(notes)
-		if len(borrowerNotes) > 0 {
+		if borrowerNotes != nil {
 			pendingInstallment.BorrowerNotes = borrowerNotes
 		}
-		if len(majelisNotes) > 0 {
+		if borrowerNotes != nil {
 			pendingInstallment.MajelisNotes = majelisNotes
 		}
 	}
