@@ -349,21 +349,22 @@ func SubmitInstallmentByGroupIDAndTransactionDateWithStatus(ctx *iris.Context) {
 
 		// write to go-log
 
-		gid, _ := strconv.Atoi(groupID)
+		tempGid, _ := strconv.Atoi(groupID)
+		gid := uint64(tempGid)
 		inst := struct {
-			GroupID     int64
+			GroupID     uint64
 			Date        string
 			StageFrom   string
 			StageTo     string
 			Installment []InstallmentDetail
 		}{
-			GroupID:     int64(gid),
+			GroupID:     gid,
 			Date:        transactionDate,
 			StageFrom:   stageFrom,
 			StageTo:     stageTo,
 			Installment: installmentDetailSchema,
 		}
-		_ = services.PostToLog(services.GetLog(int64(gid), inst, stageTo))
+		_ = services.PostToLog(services.GetLog(gid, inst, stageTo))
 
 		ctx.JSON(iris.StatusOK, iris.Map{
 			"status": "success",
@@ -661,7 +662,7 @@ func GetStageTo(installment Installment, loan SimpleLoan) (string, error) {
 }
 
 // FindByBranchAndDate - Filter Installment by branch and date
-func FindByBranchAndDate(branchID int64, transactionDate string) ([]Installment, error) {
+func FindByBranchAndDate(branchID uint64, transactionDate string) ([]Installment, error) {
 	if branchID < 0 {
 		return nil, errors.New("Branch ID can not be empty")
 	}
@@ -669,7 +670,7 @@ func FindByBranchAndDate(branchID int64, transactionDate string) ([]Installment,
 		return nil, errors.New("Transaction date can not be empty")
 	}
 	installemnts := make([]Installment, 0)
-	query = `select installment.id,
+	query := `select installment.id,
 
 					installment.type,
 					installment.presence,
@@ -712,14 +713,40 @@ func ProcessErrorAndRollback(ctx *iris.Context, db *gorm.DB, message string) {
 
 func GetPendingInstallmentNew(ctx *iris.Context) {
 	bId := ctx.Param("branchId")
-	intBid,_ := strconv.Atoi(bId)
-	BranchId := uint64(intBid)
-	Date := ctx.Param("date")
-
-	res := GetDataPendingInstallment(BranchId, Date)
+	intBid, _ := strconv.Atoi(bId)
+	branchID := uint64(intBid)
+	dateParam := ctx.Param("date")
+	// Check branchID, if equal to 0 return error message to client
+	if branchID == 0 {
+		ctx.JSON(iris.StatusOK, iris.Map{
+			"status":       iris.StatusBadRequest,
+			"errorMessage": "Invalid Branch ID",
+		})
+		return
+	}
+	if len(strings.Trim(dateParam, " ")) == 0 {
+		ctx.JSON(iris.StatusOK, iris.Map{
+			"status":       iris.StatusBadRequest,
+			"errorMessage": "Date can not be empty",
+		})
+		return
+	}
+	res := GetDataPendingInstallment(branchID, dateParam)
+	pendingInstallment := PendingInstallment{PendingInstallmentData: res}
+	notes, err := services.GetNotes(services.ConstructNotesGroupId(branchID, dateParam))
+	if err != nil || len(notes) > 0 {
+		borrowerNotes := services.GetBorrowerNotes(notes)
+		majelisNotes := services.GetMajelisNotes(notes)
+		if len(borrowerNotes) > 0 {
+			pendingInstallment.BorrowerNotes = borrowerNotes
+		}
+		if len(majelisNotes) > 0 {
+			pendingInstallment.MajelisNotes = majelisNotes
+		}
+	}
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"status": "success",
-		"data":   res,
+		"data":   pendingInstallment,
 	})
 }
 
