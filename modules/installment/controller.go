@@ -767,7 +767,7 @@ func GetDataPendingInstallment(currentStage string, branchId uint64, now string)
 	if currentStage == "review" {
 		parseNow, _ := time.Parse("2006-01-02", now)
 		yesterday := parseNow.AddDate(0, 0, -1).Format("2006-01-02")
-		query += `where l."deletedAt" isnull and b.id= ? and coalesce(i."transactionDate",i."createdAt")::date <= ? and coalesce(i."transactionDate",i."createdAt")::date >= ? and l.stage = 'INSTALLMENT' and (i.stage = 'TELLER' or i.stage = 'PENDING')
+		query += `where l."deletedAt" isnull and b.id= ? and coalesce(i."transactionDate",i."createdAt")::date <= ? and coalesce(i."transactionDate",i."createdAt")::date >= ? and l.stage = 'INSTALLMENT' and (i.stage = 'TELLER' or i.stage = 'PENDING' or i.stage='REVIEW')
 				group by g.name, a.fullname, g.id
 				order by a.fullname`
 		services.DBCPsql.Raw(query, branchId, now, yesterday).Scan(&queryResult)
