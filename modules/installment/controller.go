@@ -140,7 +140,7 @@ func GetInstallmentByGroupIDAndTransactionDate(ctx *iris.Context) {
         join disbursement d on d.id = rld."disbursementId"
         where l."deletedAt" isnull and b.id= ? and coalesce(i."transactionDate",i."createdAt")::date = ?
         and l.stage = 'INSTALLMENT' and i.stage= ? and g.id=?
-		group by l.id, i.id, bow.id, g.name, cif.name,i.type,i."paidInstallment", i.penalty, i.reserve, i.presence, i.frequency, i.stage 
+		group by l.id, i.id, bow.id, g.name, cif.name,i.type,i."paidInstallment", i.penalty, i.reserve, i.presence, i.frequency, i.stage, i.cash_on_hand, i.cash_on_reserve 
 			`
 
 	installmentDetailSchema := []InstallmentDetail{}
