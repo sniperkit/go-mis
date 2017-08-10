@@ -52,7 +52,7 @@ func PostToLog(l Log) error {
 	json.NewEncoder(logBytes).Encode(l)
 	log.Println(logAPIPath)
 	log.Println(l)
-	_, err := http.Post(logAPIPath+"archive", "application/json; charset=utf-8", logBytes)
+	_, err := http.Post(logAPIPath+"/api/v1/archive", "application/json; charset=utf-8", logBytes)
 	if err != nil {
 		return errors.New(err.Error())
 	}
@@ -68,7 +68,7 @@ func GetNotes(groupID string) ([]Log, error) {
 	if len(strings.Trim(groupID, " ")) == 0 {
 		return nil, errors.New("Group ID can not be empty")
 	}
-	apiPath := logAPIPath + "archive-list/group/" + groupID
+	apiPath := logAPIPath + "/api/v1/archive-list/group/" + groupID
 	log.Println(apiPath)
 	resp, err := http.Get(apiPath)
 	if resp.StatusCode != 200 || err != nil {
@@ -97,7 +97,7 @@ func GetDataFromLog(branchID int64) (Log, error) {
 	var logger Log
 	archiveID := GenerateArchiveID(branchID)
 	groupID := "VALIDATION TELLER"
-	apiPath := GetLogAPIPath() + "archive/" + archiveID + "/group/" + groupID
+	apiPath := GetLogAPIPath() + "/api/v1/archive/" + archiveID + "/group/" + groupID
 	log.Println("[INFO]", apiPath)
 	resp, err := http.Get(apiPath)
 	if err != nil {
