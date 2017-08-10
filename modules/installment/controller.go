@@ -712,18 +712,20 @@ func ProcessErrorAndRollback(ctx *iris.Context, db *gorm.DB, message string) {
 
 func GetPendingInstallmentNew(ctx *iris.Context) {
 	bId := ctx.Param("branchId")
-	intBid,_ := strconv.Atoi(bId)
+	intBid, _ := strconv.Atoi(bId)
 	BranchId := uint64(intBid)
 	Date := ctx.Param("date")
 
-	res := GetDataPendingInstallment(BranchId, Date)
+	res := GetDataPendingInstallment(ctx.Param("currentStage"), BranchId, Date)
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"status": "success",
 		"data":   res,
 	})
 }
 
-func GetDataPendingInstallment(BranchId uint64, Date string) []PendingInstallmentData {
+func GetDataPendingInstallment(currentStage string, branchId uint64, now string) []PendingInstallmentData {
+
+	queryResult := []PendingRawInstallmentData{}
 	query := `select g.id as "groupId", a.fullname,g.name, sum(i."paidInstallment") "repayment",sum(i.reserve) "tabungan",sum(i."paidInstallment"+i.reserve) "total",
 				sum(i.cash_on_hand) "cashOnHand",
 				sum(i.cash_on_reserve) "cashOnReserve",
@@ -761,13 +763,20 @@ func GetDataPendingInstallment(BranchId uint64, Date string) []PendingInstallmen
 				join r_loan_installment rli on rli."loanId" = l.id
 				join installment i on i.id = rli."installmentId"
 				join r_loan_disbursement rld on rld."loanId" = l.id
-				join disbursement d on d.id = rld."disbursementId"
-				where l."deletedAt" isnull and b.id= ? and coalesce(i."transactionDate",i."createdAt")::date = ? and l.stage = 'INSTALLMENT' and (i.stage = 'TELLER' or i.stage = 'PENDING')
+				join disbursement d on d.id = rld."disbursementId"`
+	if currentStage == "review" {
+		parseNow, _ := time.Parse("2006-01-02", now)
+		yesterday := parseNow.AddDate(0, 0, -1).Format("2006-01-02")
+		query += `where l."deletedAt" isnull and b.id= ? and coalesce(i."transactionDate",i."createdAt")::date <= ? and coalesce(i."transactionDate",i."createdAt")::date >= ? and l.stage = 'INSTALLMENT' and (i.stage = 'TELLER' or i.stage = 'PENDING' or i.stage='REVIEW')
 				group by g.name, a.fullname, g.id
 				order by a.fullname`
-
-	queryResult := []PendingRawInstallmentData{}
-	services.DBCPsql.Raw(query, BranchId, Date).Scan(&queryResult)
+		services.DBCPsql.Raw(query, branchId, now, yesterday).Scan(&queryResult)
+	} else {
+		query += `where l."deletedAt" isnull and b.id= ? and coalesce(i."transactionDate",i."createdAt")::date = ? and l.stage = 'INSTALLMENT' and (i.stage = 'TELLER' or i.stage = 'PENDING')
+				group by g.name, a.fullname, g.id
+				order by a.fullname`
+		services.DBCPsql.Raw(query, branchId, now).Scan(&queryResult)
+	}
 
 	res := []PendingInstallmentData{}
 	agents := map[string]bool{"": false}
