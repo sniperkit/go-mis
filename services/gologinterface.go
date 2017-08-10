@@ -140,25 +140,25 @@ func ConstructNotesGroupId(branchId uint64, date string) string {
 	return groupID
 }
 
-func GetBorrowerNotes(logNotes []Log) (borrowerNotes []interface{}) {
+func GetBorrowerNotes(logNotes []Log) (borrowerNotes interface{}) {
 	if len(logNotes) == 0 {
 		return
 	}
 	for _, note := range logNotes {
 		if strings.ToLower(note.ArchiveID) == "borrower" {
-			borrowerNotes = append(borrowerNotes, note.Data)
+			borrowerNotes = note.Data
 		}
 	}
 	return
 }
 
-func GetMajelisNotes(logNotes []Log) (majelisNotes []interface{}) {
+func GetMajelisNotes(logNotes []Log) (majelisNotes interface{}) {
 	if len(logNotes) == 0 {
 		return
 	}
 	for _, note := range logNotes {
 		if strings.ToLower(note.ArchiveID) == "majelis" {
-			majelisNotes = append(majelisNotes, note.Data)
+			majelisNotes = note.Data
 		}
 	}
 	return
