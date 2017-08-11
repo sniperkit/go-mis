@@ -267,6 +267,7 @@ func FindInstallmentData(branchID uint64, date string) (ResponseGetData, error) 
 		}
 	}
 	majelists := []MajelisId{}
+	isEnableSubmit := true
 	for idx, rval := range res {
 		m := []Majelis{}
 		var totalRepayment float64
@@ -289,6 +290,9 @@ func FindInstallmentData(branchID uint64, date string) (ResponseGetData, error) 
 					CashOnHand:         qrval.CashOnHand,
 					CashOnReserve:      qrval.CashOnReserve,
 				})
+				if qrval.Status=="AGENT" {
+					isEnableSubmit=false
+				}
 				majelists = append(majelists, MajelisId{GroupId: qrval.GroupId, Name: qrval.Name})
 				totalRepayment += qrval.Repayment
 				totalCashOnHand += qrval.CashOnHand
@@ -315,6 +319,7 @@ func FindInstallmentData(branchID uint64, date string) (ResponseGetData, error) 
 	}
 	response.InstallmentData = res
 	response.ListMajelis = majelists
+	response.IsEnableSubmit = isEnableSubmit
 	return response, nil
 }
 

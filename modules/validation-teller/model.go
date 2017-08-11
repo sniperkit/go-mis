@@ -64,6 +64,7 @@ type (
 		BorrowerNotes        interface{}       `json:"borrowerNotes, omitempty"`
 		MajelisNotes         interface{}       `json:"majelisNotes, omitempty"`
 		ListMajelis          []MajelisId       `json:"listMajelis, omitempty"`
+		IsEnableSubmit       bool       `json:"isEnableSubmit"`
 	}
 
 	InstallmentData struct {
