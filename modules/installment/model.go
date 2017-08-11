@@ -99,5 +99,6 @@ type PendingInstallmentData struct {
 	TotalCohTabungan         float64 `gorm:"column:totalCohTabungan" json:"totalCohTabungan"`
 	TotalCohAgent            float64 `gorm:"column:totalCohAgent" json:"totalCohAgent"`
 	TotalPencairanAgent      float64 `gorm:"column:totalPencairanAgent" json:"totalPencairanAgent"`
+	TotalPencairanProjAgent  float64 `gorm:"column:totalPencairanProjAgent" json:"totalPencairanProjAgent"`
 	TotalGagalDroppingAgent  float64 `gorm:"column:totalGagalDroppingAgent" json:"totalGagalDroppingAgent"`
 }

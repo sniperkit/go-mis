@@ -820,6 +820,7 @@ func GetDataPendingInstallment(currentStage string, branchId uint64, now string)
 		var totalProjectionAgent float64
 		var totalCohAgent float64
 		var totalPencairanAgent float64
+		var totalPencairanProjAgent float64
 		var totalGagalDroppingAgent float64
 		m := []Majelis{}
 		for _, qrval := range queryResult {
@@ -851,6 +852,7 @@ func GetDataPendingInstallment(currentStage string, branchId uint64, now string)
 				totalProjectionAgent += qrval.ProjectionRepayment + qrval.ProjectionTabungan
 				totalCohAgent += qrval.CashOnHand + qrval.CashOnReserve
 				totalPencairanAgent += qrval.TotalCair
+				totalPencairanProjAgent += qrval.TotalCairProj
 				totalGagalDroppingAgent += qrval.TotalGagalDropping
 			}
 		}
@@ -865,6 +867,7 @@ func GetDataPendingInstallment(currentStage string, branchId uint64, now string)
 		res[idx].TotalProjectionAgent = totalProjectionAgent
 		res[idx].TotalCohAgent = totalCohAgent
 		res[idx].TotalPencairanAgent = totalPencairanAgent
+		res[idx].TotalPencairanProjAgent = totalPencairanProjAgent
 		res[idx].TotalGagalDroppingAgent = totalGagalDroppingAgent
 	}
 
