@@ -2,7 +2,6 @@ package validationTeller
 
 import (
 	"errors"
-	"strconv"
 	"strings"
 
 	"log"
@@ -18,7 +17,8 @@ import (
 func GetData(ctx *iris.Context) {
 	var err error
 	var instalmentData ResponseGetData
-	branchID, _ := ctx.URLParamInt64("branchId")
+	branchIDParam, _ := ctx.URLParamInt64("branchId")
+	branchID := uint64(branchIDParam)
 	dateParam := ctx.URLParam("date")
 	// Check data whehter valid or not
 	err = GetDataValidation(branchID, dateParam)
@@ -42,16 +42,10 @@ func GetData(ctx *iris.Context) {
 			return
 		}
 	}
-	notes, err := services.GetNotes(constructNotesGroupId(branchID, dateParam))
+	notes, err := services.GetNotes(services.ConstructNotesGroupId(branchID, dateParam))
 	if err == nil && len(notes) > 0 {
-		for _, note := range notes {
-			if strings.ToLower(note.ArchiveID) == "borrower" {
-				instalmentData.BorrowerNotes = note.Data
-			}
-			if strings.ToLower(note.ArchiveID) == "majelis" {
-				instalmentData.MajelisNotes = note.Data
-			}
-		}
+		instalmentData.BorrowerNotes = services.GetBorrowerNotes(notes)
+		instalmentData.MajelisNotes = services.GetMajelisNotes(notes)
 	}
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"status": "success",
@@ -62,7 +56,7 @@ func GetData(ctx *iris.Context) {
 func SaveNotes(ctx *iris.Context) {
 	params := struct {
 		Date     string  `json:"date"`
-		BranchId int64   `json:"branchId"`
+		BranchId uint64  `json:"branchId"`
 		Notes    []Notes `json:"notes"`
 	}{}
 	err := ctx.ReadJSON(&params)
@@ -70,7 +64,7 @@ func SaveNotes(ctx *iris.Context) {
 		ctx.JSON(iris.StatusBadRequest, iris.Map{"status": "error", "message": err.Error()})
 		return
 	}
-	logGroupId := constructNotesGroupId(params.BranchId, params.Date)
+	logGroupId := services.ConstructNotesGroupId(params.BranchId, params.Date)
 	log := services.Log{Data: params.Notes, GroupID: logGroupId, ArchiveID: ctx.Param("logType")}
 	err = services.PostToLog(log)
 	if err != nil {
@@ -83,12 +77,6 @@ func SaveNotes(ctx *iris.Context) {
 	})
 }
 
-func constructNotesGroupId(branchId int64, date string) string {
-	log.Println("[INFO]", branchId)
-	log.Println("[INFO]", date)
-	groupID := strconv.FormatInt(branchId, 10) + "-" + date + "-VTNotes"
-	return groupID
-}
 func SaveDetail(ctx *iris.Context) {
 	params := []struct {
 		CashOnReserve float64 `json:"cashOnReserve"`
@@ -173,7 +161,7 @@ func SubmitValidationTeller(ctx *iris.Context) {
 	var installment ins.Installment
 
 	params := struct {
-		BranchID int64  `json:"branchId"`
+		BranchID uint64 `json:"branchId"`
 		Date     string `json:"date"`
 	}{}
 
@@ -228,7 +216,7 @@ func SubmitValidationTeller(ctx *iris.Context) {
 }
 
 // FindInstallmentData - function to get installment data by branch ID and date
-func FindInstallmentData(branchID int64, date string) (ResponseGetData, error) {
+func FindInstallmentData(branchID uint64, date string) (ResponseGetData, error) {
 	var err error
 	queryResult := []RawInstallmentData{}
 	response := ResponseGetData{}
@@ -331,7 +319,7 @@ func FindInstallmentData(branchID int64, date string) (ResponseGetData, error) {
 }
 
 // GetDataValidation - Data validation before Get Validation Teller
-func GetDataValidation(branchID int64, date string) error {
+func GetDataValidation(branchID uint64, date string) error {
 	if branchID <= 0 {
 		return errors.New("Invalid Branch ID")
 	}
