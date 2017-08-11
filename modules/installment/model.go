@@ -31,20 +31,23 @@ type (
 	}
 
 	InstallmentDetail struct {
-		GroupID         uint64  `gorm:"column:groupId" json:"groupId"`
-		BranchID        uint64  `gorm:"column:branchId" json:"branchId"`
-		GroupName       string  `gorm:"column:groupName" json:"groupName"`
-		CifName         string  `gorm:"column:cifName" json:"cifName"`
-		BorrowerNo      string  `gorm:"column:borrowerNo" json:"borrowerNo"`
-		LoanId          string  `gorm:"column:loanId" json:"loanId"`
-		InstallmentID   uint64  `gorm:"column:installmentId" json:"installmentId"`
-		Type            string  `gorm:"column:type" json:"type"`
-		Presence        string  `gorm:"column:presence" json:"presence"`
-		PaidInstallment float64 `gorm:"column:paidInstallment" json:"paidInstallment"`
-		Penalty         float64 `gorm:"column:penalty" json:"penalty"`
-		Reserve         float64 `gorm:"column:reserve" json:"reserve"`
-		Frequency       int32   `gorm:"column:frequency" json:"frequency"`
-		Stage           string  `gorm:"column:stage" json:"stage"`
+		InstallmentID       uint64  `gorm:"column:installmentId" json:"installmentId"`
+		BorrowerID          string  `gorm:"column:borrowerId" json:"borrowerId"`
+		BorrowerName        string  `gorm:"column:borrowerName" json:"borrowerName"`
+		Type                string  `gorm:"column:type" json:"type"`
+		Presence            string  `gorm:"column:presence" json:"presence"`
+		Frequency           int32   `gorm:"column:frequency" json:"frequency"`
+		Repayment           float64 `gorm:"column:repayment" json:"repayment"`
+		Tabungan            float64 `gorm:"column:tabungan" json:"tabungan"`
+		Total               float64 `gorm:"column:total" json:"total"`
+		ProjectionRepayment float64 `gorm:"column:projectionRepayment" json:"projectionRepayment"`
+		ProjectionTabungan  float64 `gorm:"column:projectionTabungan" json:"projectionTabungan"`
+		PaidInstallment     float64 `gorm:"column:paidInstallment" json:"paidInstallment"`
+		Reserve             float64 `gorm:"column:reserve" json:"reserve"`
+		Stage               string  `gorm:"column:stage" json:"stage"`
+		TotalCair           float64 `gorm:"column:totalCair" json:"totalCair"`
+		CashOnHand          float64 `gorm:"column:cashOnHand" json:"cashOnHand"`
+		CashOnReserve       float64 `gorm:"column:cashOnReserve" json:"cashOnReserve"`
 	}
 
 	PendingRawInstallmentData struct {
