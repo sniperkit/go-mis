@@ -88,44 +88,63 @@ func GetInstallmentByGroupIDAndTransactionDate(ctx *iris.Context) {
 	transactionDate := ctx.Param("transaction_date")
 
 	query := `
-		SELECT 
-		"group".id as "groupId", 
-		"group".name as "groupName",
-		cif.name as "cifName",
-		borrower."borrowerNo",
-		loan.id "loanId",
-		installment."id" as "installmentId", 
-		installment.type, 
-		installment."paidInstallment", 
-		installment.penalty, 
-		installment.reserve, 
-		installment.presence, 
-		installment.frequency, 
-		installment.stage 
-
-		FROM installment 
-
-		JOIN r_loan_installment ON installment.id = r_loan_installment."installmentId"
-		JOIN loan               ON loan.id        = r_loan_installment."loanId"
-		JOIN r_loan_branch      ON loan.id        = r_loan_branch."loanId"
-		JOIN r_loan_group       ON loan.id        = r_loan_group."loanId"
-		JOIN "group"            ON "group".id     = r_loan_group."groupId"
-		JOIN r_loan_borrower    ON loan.id        = r_loan_borrower."loanId"
-		JOIN borrower           ON borrower.id    = r_loan_borrower."borrowerId"
-		JOIN r_cif_borrower     ON borrower.id    = r_cif_borrower."borrowerId"
-		JOIN cif                ON cif.id         = r_cif_borrower."cifId"
-
-		WHERE 
-
-		installment."createdAt"::date = ? 
-		AND r_loan_group."groupId" = ? 
-		AND r_loan_branch."branchId" = ?
-		AND installment."deletedAt" IS NULL
-		AND installment.stage=?
-	`
+			select g.name,cif.name as "borrowerName", sum(i."paidInstallment") "repayment",sum(i.reserve) "tabungan",sum(i."paidInstallment"+i.reserve) "total",
+		bow.id as "borrowerId",
+		i.id as "installmentId",
+		i.type,          
+    i."paidInstallment", 
+    i.penalty,       
+    i.reserve, 
+    i.presence, 
+    i.frequency, 
+    i.stage, 
+        sum(i.cash_on_hand) "cashOnHand",
+        sum(i.cash_on_reserve) "cashOnReserve",
+        coalesce(sum(
+                case
+                when frequency >= 3 then l.installment+((plafond/tenor)*(frequency-1))
+                when frequency >0 then l.installment*frequency
+                when frequency = 0 then 0
+                end
+                ),0) "projectionRepayment",
+                coalesce(sum(
+                case
+                when plafond < 0 then 0
+                when plafond <= 3000000 then 3000
+                when plafond > 3000000 and plafond <= 5000000 then 4000
+                when plafond > 5000000 and plafond <= 7000000 then 5000
+                when plafond > 7000000 and plafond <= 9000000 then 6000
+                when plafond > 9000000 and plafond <= 11000000 then 7000
+                else 8000
+                end
+                ),0) "projectionTabungan",
+        coalesce(sum(case
+        when d.stage = 'SUCCESS' then plafond end
+        ),0) "totalCair",
+        coalesce(sum(case
+        when d.stage = 'FAILED' then plafond end
+        ),0) "totalGagalDropping",
+        split_part(string_agg(i.stage,'| '),'|',1) "status"
+        from loan l join r_loan_group rlg on l.id = rlg."loanId"
+        join r_loan_borrower bow on bow."loanId"=l.id
+        join r_cif_borrower rcif using("borrowerId") 
+        join cif on cif.id = rcif."cifId"
+        join "group" g on g.id = rlg."groupId"
+        join r_group_agent rga on g.id = rga."groupId"
+        join agent a on a.id = rga."agentId"
+        join r_loan_branch rlb on rlb."loanId" = l.id
+        join branch b on b.id = rlb."branchId"
+        join r_loan_installment rli on rli."loanId" = l.id
+        join installment i on i.id = rli."installmentId"
+        join r_loan_disbursement rld on rld."loanId" = l.id
+        join disbursement d on d.id = rld."disbursementId"
+        where l."deletedAt" isnull and b.id= ? and coalesce(i."transactionDate",i."createdAt")::date = ?
+        and l.stage = 'INSTALLMENT' and i.stage= ? and g.id=?
+		group by l.id, i.id, bow.id, g.name, cif.name,i.type,i."paidInstallment", i.penalty, i.reserve, i.presence, i.frequency, i.stage, i.cash_on_hand, i.cash_on_reserve 
+			`
 
 	installmentDetailSchema := []InstallmentDetail{}
-	err := services.DBCPsql.Raw(query, transactionDate, groupID, branchID, stage).Scan(&installmentDetailSchema).Error
+	err := services.DBCPsql.Raw(query, branchID, transactionDate, stage, groupID).Scan(&installmentDetailSchema).Error
 	if err != nil {
 		ctx.JSON(iris.StatusInternalServerError, iris.Map{"data": err})
 		return
