@@ -30,7 +30,7 @@ var (
 	logAPIPath = config.GoLogPath
 )
 
-func GetLog(branchID int64, data interface{}, groupId string) Log {
+func GetLog(branchID uint64, data interface{}, groupId string) Log {
 	var logger Log
 	if branchID <= 0 {
 		return logger
@@ -93,7 +93,7 @@ func GetNotes(groupID string) ([]Log, error) {
 }
 
 // GetDataFromLog - Retrive data from GO-LOG App
-func GetDataFromLog(branchID int64) (Log, error) {
+func GetDataFromLog(branchID uint64) (Log, error) {
 	var logger Log
 	archiveID := GenerateArchiveID(branchID)
 	groupID := "VALIDATION TELLER"
@@ -120,15 +120,46 @@ func GetDataFromLog(branchID int64) (Log, error) {
 	return logger, nil
 }
 
-func GenerateArchiveID(branchID int64) string {
+func GenerateArchiveID(branchID uint64) string {
 	if branchID == 0 {
 		return ""
 	}
-	branchIDStr := strconv.FormatInt(branchID, 10)
+	branchIDStr := string(branchID)
 	return branchIDStr + "-" + time.Now().Local().Format("2006-01-02")
 }
 
 // GetLogAPIPath base path of GO-LOG APP API
 func GetLogAPIPath() string {
 	return logAPIPath
+}
+
+func ConstructNotesGroupId(branchId uint64, date string) string {
+	log.Println("[INFO]", branchId)
+	log.Println("[INFO]", date)
+	groupID := strconv.FormatUint(branchId, 10) + "-" + date + "-VTNotes"
+	return groupID
+}
+
+func GetBorrowerNotes(logNotes []Log) (borrowerNotes interface{}) {
+	if len(logNotes) == 0 {
+		return
+	}
+	for _, note := range logNotes {
+		if strings.ToLower(note.ArchiveID) == "borrower" {
+			borrowerNotes = note.Data
+		}
+	}
+	return
+}
+
+func GetMajelisNotes(logNotes []Log) (majelisNotes interface{}) {
+	if len(logNotes) == 0 {
+		return
+	}
+	for _, note := range logNotes {
+		if strings.ToLower(note.ArchiveID) == "majelis" {
+			majelisNotes = note.Data
+		}
+	}
+	return
 }

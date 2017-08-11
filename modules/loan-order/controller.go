@@ -162,7 +162,10 @@ func AcceptLoanOrder(ctx *iris.Context) {
 	}
 
 	db.Commit()
-
+	/**
+		-TODO
+		- Send email and sms to investor
+	**/
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"status": "success",
 		"data":   "",
