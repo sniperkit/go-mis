@@ -58,7 +58,7 @@ type (
 		Tabungan            float64 `gorm:"column:tabungan" json:"tabungan"`
 		Total               float64 `gorm:"column:total" json:"total"`
 		TotalCair           float64 `gorm:"column:totalCair" json:"totalCair"`
-		TotalCairProj       float64 `gorm:"column:totalCairProyeksi" json:"totalCair"`
+		TotalCairProj       float64 `gorm:"column:totalCairProj" json:"totalCairProj"`
 		TotalGagalDropping  float64 `gorm:"column:totalGagalDropping" json:"totalGagalDropping"`
 		Status              string  `gorm:"column:status" json:"status"`
 		CashOnHand          float64 `gorm:"column:cashOnHand" json:"cashOnHand"`
@@ -76,7 +76,7 @@ type (
 		TotalProyeksi       float64 `gorm:"column:totalProyeksi" json:"totalProyeksi"`
 		TotalCoh            float64 `gorm:"column:totalCoh" json:"totalCoh"`
 		TotalCair           float64 `gorm:"column:totalCair" json:"totalCair"`
-		TotalCairProj       float64 `gorm:"column:totalCairProyeksi" json:"totalCair"`
+		TotalCairProj       float64 `gorm:"column:totalCairProj" json:"totalCairProj"`
 		TotalGagalDropping  float64 `gorm:"column:totalGagalDropping" json:"totalGagalDropping"`
 		Status              string  `gorm:"column:status" json:"status"`
 		CashOnHand          float64 `gorm:"column:cashOnHand" json:"cashOnHand"`
