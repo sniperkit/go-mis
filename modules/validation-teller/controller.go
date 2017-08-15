@@ -11,6 +11,7 @@ import (
 	ins "bitbucket.org/go-mis/modules/installment"
 	misUtility "bitbucket.org/go-mis/modules/utility"
 	"bitbucket.org/go-mis/services"
+	"strconv"
 )
 
 // GetData - Get data validation teller
@@ -215,6 +216,42 @@ func SubmitValidationTeller(ctx *iris.Context) {
 
 }
 
+func GetValidationTellerData(ctx *iris.Context) {
+	var err error
+	bId := ctx.Param("branchId")
+	intBid, _ := strconv.Atoi(bId)
+	branchID := uint64(intBid)
+	dateParam := ctx.Param("date")
+	// Check branchID, if equal to 0 return error message to client
+	if branchID == 0 {
+		ctx.JSON(iris.StatusOK, iris.Map{
+			"status":       iris.StatusBadRequest,
+			"errorMessage": "Invalid Branch ID",
+		})
+		return
+	}
+	if len(strings.Trim(dateParam, " ")) == 0 {
+		ctx.JSON(iris.StatusOK, iris.Map{
+			"status":       iris.StatusBadRequest,
+			"errorMessage": "Date can not be empty",
+		})
+		return
+	}
+
+	res,err := FindInstallmentData(branchID,dateParam)
+	if err != nil {
+		ctx.JSON(iris.StatusInternalServerError, iris.Map{
+			"errorMessage": "System Error",
+			"message":      err.Error(),
+		})
+	}
+
+	ctx.JSON(iris.StatusOK, iris.Map {
+		"status": "success",
+		"data": res,
+	})
+}
+
 // FindInstallmentData - function to get installment data by branch ID and date
 func FindInstallmentData(branchID uint64, date string) (ResponseGetData, error) {
 	var err error
@@ -228,19 +265,41 @@ func FindInstallmentData(branchID uint64, date string) (ResponseGetData, error) 
 	if len(strings.Trim(date, " ")) == 0 {
 		return response, errors.New("Invalid Date")
 	}
-	query := `select g.id as "groupId", a.fullname,g.name, 
-					sum(i."paidInstallment") "repayment",sum(i.reserve) "tabungan",
-					sum(i."paidInstallment"+i.reserve) "total", 
+	query := `select g.id as "groupId", a.fullname,g.name,
+					sum(i."paidInstallment") "repayment",
+					sum(i.reserve) "tabungan",
+					sum(i."paidInstallment"+i.reserve) "total",
 					sum(i.cash_on_hand) "cashOnHand",
 					sum(i.cash_on_reserve) "cashOnReserve",
+					coalesce(sum(
+					case
+					when frequency >= 3 then l.installment+((plafond/tenor)*(frequency-1))
+					when frequency >0 then l.installment*frequency
+					when frequency = 0 then 0
+					end
+					),0) "projectionRepayment",
+					coalesce(sum(
+					case
+					when plafond < 0 then 0
+					when plafond <= 3000000 then 3000
+					when plafond > 3000000 and plafond <= 5000000 then 4000
+					when plafond > 5000000 and plafond <= 7000000 then 5000
+					when plafond > 7000000 and plafond <= 9000000 then 6000
+					when plafond > 9000000 and plafond <= 11000000 then 7000
+					else 8000
+					end
+					),0) "projectionTabungan",
 					coalesce(sum(case
-					when d.stage = 'SUCCESS' then plafond end
+					when d."disbursementDate"::date = current_date then plafond end
+					),0) "totalCairProj",
+					coalesce(sum(case
+					when d.stage = 'SUCCESS' and d."disbursementDate"::date = current_date then plafond end
 					),0) "totalCair",
 					coalesce(sum(case
 					when d.stage = 'FAILED' then plafond end
 					),0) "totalGagalDropping",
 					split_part(string_agg(i.stage,'| '),'|',1) "status"
-				from loan l join r_loan_group rlg on l.id = rlg."loanId"
+					from loan l join r_loan_group rlg on l.id = rlg."loanId"
 					join "group" g on g.id = rlg."groupId"
 					join r_group_agent rga on g.id = rga."groupId"
 					join agent a on a.id = rga."agentId"
@@ -250,10 +309,10 @@ func FindInstallmentData(branchID uint64, date string) (ResponseGetData, error) 
 					join installment i on i.id = rli."installmentId"
 					join r_loan_disbursement rld on rld."loanId" = l.id
 					join disbursement d on d.id = rld."disbursementId"
-				where l."deletedAt" isnull and b.id= ? and coalesce(i."transactionDate",i."createdAt")::date = ? and 
-				l.stage = 'INSTALLMENT'
-				group by g.name, a.fullname, g.id
-				order by a.fullname`
+					where l."deletedAt" isnull and b.id= ? and coalesce(i."transactionDate",i."createdAt")::date = ? and
+					l.stage = 'INSTALLMENT' and i."stage" = 'APPROVE'
+					group by g.name, a.fullname, g.id
+					order by a.fullname`
 	err = services.DBCPsql.Raw(query, branchID, date).Scan(&queryResult).Error
 	if err != nil {
 		log.Println("#ERROR: Unable to retrieve Installment data")
@@ -269,53 +328,69 @@ func FindInstallmentData(branchID uint64, date string) (ResponseGetData, error) 
 	majelists := []MajelisId{}
 	isEnableSubmit := true
 	for idx, rval := range res {
+		var totalRepaymentAct float64
+		var totalRepaymentProj float64
+		var totalRepaymentCoh float64
+		var totalTabunganAct float64
+		var totalTabunganProj float64
+		var totalTabunganCoh float64
+		var totalActualAgent float64
+		var totalProjectionAgent float64
+		var totalCohAgent float64
+		var totalPencairanAgent float64
+		var totalPencairanProjAgent float64
+		var totalGagalDroppingAgent float64
 		m := []Majelis{}
-		var totalRepayment float64
-		var totalCashOnHand float64
-		var totalTabungan float64
-		var totalCashOnReserve float64
-		var totalCair float64
-		var totalGagalDroping float64
 		for _, qrval := range queryResult {
 			if rval.Agent == qrval.Fullname {
 				m = append(m, Majelis{
-					GroupId:            qrval.GroupId,
-					Name:               qrval.Name,
-					Repayment:          qrval.Repayment,
-					Tabungan:           qrval.Tabungan,
-					Total:              qrval.Total,
-					TotalCair:          qrval.TotalCair,
-					TotalGagalDropping: qrval.TotalGagalDropping,
-					Status:             qrval.Status,
-					CashOnHand:         qrval.CashOnHand,
-					CashOnReserve:      qrval.CashOnReserve,
+					GroupId:             qrval.GroupId,
+					Name:                qrval.Name,
+					Repayment:           qrval.Repayment,
+					Tabungan:            qrval.Tabungan,
+					TotalActual:         qrval.Total,
+					TotalProyeksi:       qrval.ProjectionRepayment + qrval.ProjectionTabungan,
+					TotalCoh:            qrval.CashOnHand + qrval.CashOnReserve,
+					TotalCair:			 qrval.TotalCair,
+					TotalCairProj:       qrval.TotalCairProj,
+					TotalGagalDropping:  qrval.TotalGagalDropping,
+					Status:              qrval.Status,
+					CashOnHand:          qrval.CashOnHand,
+					CashOnReserve:       qrval.CashOnReserve,
+					ProjectionRepayment: qrval.ProjectionRepayment,
+					ProjectionTabungan:  qrval.ProjectionTabungan,
 				})
 				if qrval.Status=="AGENT" {
 					isEnableSubmit=false
 				}
 				majelists = append(majelists, MajelisId{GroupId: qrval.GroupId, Name: qrval.Name})
-				totalRepayment += qrval.Repayment
-				totalCashOnHand += qrval.CashOnHand
-				totalCashOnReserve += qrval.CashOnReserve
-				totalTabungan += qrval.Tabungan
-				totalCair += qrval.TotalCair
-				totalGagalDroping += qrval.TotalGagalDropping
+				totalRepaymentAct += qrval.Repayment
+				totalRepaymentProj += qrval.ProjectionRepayment
+				totalRepaymentCoh += qrval.CashOnHand
+				totalTabunganAct += qrval.Tabungan
+				totalTabunganProj += qrval.ProjectionTabungan
+				totalTabunganCoh += qrval.CashOnReserve
+				totalActualAgent += qrval.Total
+				totalProjectionAgent += qrval.ProjectionRepayment + qrval.ProjectionTabungan
+				totalCohAgent += qrval.CashOnHand + qrval.CashOnReserve
+				totalPencairanAgent += qrval.TotalCair
+				totalPencairanProjAgent += qrval.TotalCairProj
+				totalGagalDroppingAgent += qrval.TotalGagalDropping
 			}
 		}
-		response.TotalActualRepayment += totalRepayment
-		response.TotalCair += totalCair
-		response.TotalTabungan += totalTabungan
-		response.TotalGagalDroping += totalGagalDroping
-		response.TotalCashOnReserve += totalCashOnReserve
-		response.TotalCashOnHand += totalCashOnHand
-
 		res[idx].Majelis = m
-		res[idx].TotalActualRepayment = totalRepayment
-		res[idx].TotalCair = totalCair
-		res[idx].TotalCashOnHand = totalCashOnHand
-		res[idx].TotalCashOnReserve = totalCashOnReserve
-		res[idx].TotalGagalDroping = totalGagalDroping
-		res[idx].TotalTabungan = totalTabungan
+		res[idx].TotalActualRepayment = totalRepaymentAct
+		res[idx].TotalProjectionRepayment = totalRepaymentProj
+		res[idx].TotalCohRepayment = totalRepaymentCoh
+		res[idx].TotalActualTabungan = totalTabunganAct
+		res[idx].TotalProjectionTabungan = totalTabunganProj
+		res[idx].TotalCohTabungan = totalTabunganCoh
+		res[idx].TotalActualAgent = totalActualAgent
+		res[idx].TotalProjectionAgent = totalProjectionAgent
+		res[idx].TotalCohAgent = totalCohAgent
+		res[idx].TotalPencairanAgent = totalPencairanAgent
+		res[idx].TotalPencairanProjAgent = totalPencairanProjAgent
+		res[idx].TotalGagalDroppingAgent = totalGagalDroppingAgent
 	}
 	response.InstallmentData = res
 	response.ListMajelis = majelists
