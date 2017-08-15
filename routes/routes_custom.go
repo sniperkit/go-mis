@@ -23,6 +23,7 @@ import (
 	"bitbucket.org/go-mis/modules/loan-order"
 	"bitbucket.org/go-mis/modules/loan-raw"
 	"bitbucket.org/go-mis/modules/location"
+	"bitbucket.org/go-mis/modules/multi-loan"
 	"bitbucket.org/go-mis/modules/notification"
 	"bitbucket.org/go-mis/modules/product-pricing"
 	prospectiveBorrower "bitbucket.org/go-mis/modules/prospective-borrower"
@@ -168,6 +169,9 @@ func InitCustomApi() {
 		v2.Any("/loan-raw/:id", loanRaw.GetLoanRawById)
 		v2.Any("/disbursement-weekly-report", disbursementReport.FetchAllActive)
 		v2.Any("/disbursement-weekly-report/:id/detail", disbursementReport.GetDetail)
+		
+		v2.Get("/multi-loan-undisbursed", multiloan.GetAllUndisbursedMultiLoan)
+		v2.Get("/multi-loan-update-disb-date/:loan_id/:last_disb_date/:next_disb_date", disbursement.UpdateDisbursementDate)
 	}
 
 	iris.Get(baseURL+"/generate-topsheet/:group_id", topsheet.GenerateTopsheet)
