@@ -72,7 +72,8 @@ type (
 		BorrowerNotes        interface{}       `json:"borrowerNotes, omitempty"`
 		MajelisNotes         interface{}       `json:"majelisNotes, omitempty"`
 		ListMajelis          []MajelisId       `json:"listMajelis, omitempty"`
-		IsEnableSubmit       bool       `json:"isEnableSubmit"`
+		IsEnableSubmit       bool              `json:"isEnableSubmit"`
+		DataTransfer         DataTransfer      `json:"dataTransfer,omitempty"`
 	}
 
 	InstallmentData struct {
@@ -121,5 +122,20 @@ type (
 	// DataLog - struct to store loging data archive / installment
 	DataLog struct {
 		Data interface{}
+	}
+
+	DataTransfer struct {
+		ID                uint64             `json:"id,omitempty"`
+		ValidationDate    string             `json:"validationDate"`
+		TransferDate      string             `json:"transferDate"`
+		DataTransferTypes []DataTransferType `json:"dataTransferTypes"`
+	}
+
+	DataTransferType struct {
+		ID         uint64  `json:"id,omitempty"`
+		Name       string  `json:"name"`
+		IDTransfer string  `json:"idTransfer"`
+		Nominal    float64 `json:"nominal"`
+		Type       string  `json:"type"`
 	}
 )

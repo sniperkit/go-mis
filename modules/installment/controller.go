@@ -730,6 +730,8 @@ func ProcessErrorAndRollback(ctx *iris.Context, db *gorm.DB, message string) {
 	})
 }
 
+// GetPendingInstallmentNew - Get data pending Installment
+// Route: /api/v2/installment-pending/get/:currentStage/:branchId/:date
 func GetPendingInstallmentNew(ctx *iris.Context) {
 	bId := ctx.Param("branchId")
 	intBid, _ := strconv.Atoi(bId)
@@ -860,7 +862,7 @@ func GetDataPendingInstallment(currentStage string, branchId uint64, now string)
 					TotalActual:         qrval.Total,
 					TotalProyeksi:       qrval.ProjectionRepayment + qrval.ProjectionTabungan,
 					TotalCoh:            qrval.CashOnHand + qrval.CashOnReserve,
-					TotalCair:			 qrval.TotalCair,
+					TotalCair:           qrval.TotalCair,
 					TotalCairProj:       qrval.TotalCairProj,
 					TotalGagalDropping:  qrval.TotalGagalDropping,
 					Status:              qrval.Status,

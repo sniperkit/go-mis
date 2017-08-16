@@ -8,14 +8,16 @@ import (
 
 	"gopkg.in/kataras/iris.v4"
 
+	"strconv"
+
 	ins "bitbucket.org/go-mis/modules/installment"
 	misUtility "bitbucket.org/go-mis/modules/utility"
 	"bitbucket.org/go-mis/services"
-	"strconv"
 )
 
-// GetData - Get data validation teller
-func GetData(ctx *iris.Context) {
+// GetDataValidationTeller - Get data validation teller
+// Route: /api/v2//validation-teller/getdata
+func GetDataValidationTeller(ctx *iris.Context) {
 	var err error
 	var instalmentData ResponseGetData
 	branchIDParam, _ := ctx.URLParamInt64("branchId")
@@ -32,7 +34,7 @@ func GetData(ctx *iris.Context) {
 		return
 	}
 	log.Println("[INFO] Validation get data installment pass")
-	instalmentData, err = FindInstallmentData(branchID, dateParam)
+	instalmentData, err = FindInstallmentData(branchID, dateParam, false)
 	if err != nil {
 		log.Println("[INFO] Can not retrive installment data")
 		if err != nil {
@@ -54,7 +56,9 @@ func GetData(ctx *iris.Context) {
 	})
 }
 
-func SaveNotes(ctx *iris.Context) {
+// SaveValidationTellerNotes: Save notes validation teller
+// Route: /api/v2//validation-teller/group-notes/:logType/save
+func SaveValidationTellerNotes(ctx *iris.Context) {
 	params := struct {
 		Date     string  `json:"date"`
 		BranchId uint64  `json:"branchId"`
@@ -78,7 +82,10 @@ func SaveNotes(ctx *iris.Context) {
 	})
 }
 
-func SaveDetail(ctx *iris.Context) {
+// SaveValidationTellerDetail - Save detail and notes validation teller
+// Route: - /api/v2//validation-teller/detail/save
+//		  - /validation-teller/borrower-notes/save
+func SaveValidationTellerDetail(ctx *iris.Context) {
 	params := []struct {
 		CashOnReserve float64 `json:"cashOnReserve"`
 		CashOnHand    float64 `json:"cashOnHand"`
@@ -118,7 +125,9 @@ func SaveDetail(ctx *iris.Context) {
 	})
 }
 
-func GetDetail(ctx *iris.Context) {
+// GetValidationTellerDetail - Get detail data validation teller
+// Route: /api/v2/validation-teller/detail
+func GetValidationTellerDetail(ctx *iris.Context) {
 	params := struct {
 		Date    string `json:"date"`
 		GroupId int64  `json:"groupId"`
@@ -156,8 +165,9 @@ func GetDetail(ctx *iris.Context) {
 	})
 }
 
-// SubmitValidationTeller - Controller
-func SubmitValidationTeller(ctx *iris.Context) {
+// SaveValidationTeller - Controller
+// Route: api/v2/validation-teller/save
+func SaveValidationTeller(ctx *iris.Context) {
 	var err error
 	var installment ins.Installment
 
@@ -198,7 +208,7 @@ func SubmitValidationTeller(ctx *iris.Context) {
 		}
 	}
 	db.Commit()
-	instalmentData, err := FindInstallmentData(params.BranchID, params.Date)
+	instalmentData, err := FindInstallmentData(params.BranchID, params.Date, false)
 	if err != nil {
 		ctx.JSON(iris.StatusInternalServerError, iris.Map{
 			"errorMessage": "System Error",
@@ -216,11 +226,13 @@ func SubmitValidationTeller(ctx *iris.Context) {
 
 }
 
-func GetValidationTellerData(ctx *iris.Context) {
+// GetDataValidationAndTransfer - Get validation teller data by branch, date and stage = 'APPROVE'
+// Route: /api/v2//validation-teller/branch/:branchId/date/:date
+func GetDataValidationAndTransfer(ctx *iris.Context) {
 	var err error
-	bId := ctx.Param("branchId")
-	intBid, _ := strconv.Atoi(bId)
-	branchID := uint64(intBid)
+	branchParam := ctx.Param("branchId")
+	intBranchID, _ := strconv.Atoi(branchParam)
+	branchID := uint64(intBranchID)
 	dateParam := ctx.Param("date")
 	// Check branchID, if equal to 0 return error message to client
 	if branchID == 0 {
@@ -238,7 +250,7 @@ func GetValidationTellerData(ctx *iris.Context) {
 		return
 	}
 
-	res,err := FindInstallmentData(branchID,dateParam)
+	res, err := FindInstallmentData(branchID, dateParam, true)
 	if err != nil {
 		ctx.JSON(iris.StatusInternalServerError, iris.Map{
 			"errorMessage": "System Error",
@@ -246,14 +258,14 @@ func GetValidationTellerData(ctx *iris.Context) {
 		})
 	}
 
-	ctx.JSON(iris.StatusOK, iris.Map {
+	ctx.JSON(iris.StatusOK, iris.Map{
 		"status": "success",
-		"data": res,
+		"data":   res,
 	})
 }
 
 // FindInstallmentData - function to get installment data by branch ID and date
-func FindInstallmentData(branchID uint64, date string) (ResponseGetData, error) {
+func FindInstallmentData(branchID uint64, date string, isApprove bool) (ResponseGetData, error) {
 	var err error
 	queryResult := []RawInstallmentData{}
 	response := ResponseGetData{}
@@ -290,16 +302,16 @@ func FindInstallmentData(branchID uint64, date string) (ResponseGetData, error) 
 					end
 					),0) "projectionTabungan",
 					coalesce(sum(case
-					when d."disbursementDate"::date = current_date then plafond end
+					when d."disbursementDate"::date = ? then plafond end
 					),0) "totalCairProj",
 					coalesce(sum(case
-					when d.stage = 'SUCCESS' and d."disbursementDate"::date = current_date then plafond end
+					when d.stage = 'SUCCESS' and d."disbursementDate"::date = ? then plafond end
 					),0) "totalCair",
 					coalesce(sum(case
 					when d.stage = 'FAILED' then plafond end
 					),0) "totalGagalDropping",
 					split_part(string_agg(i.stage,'| '),'|',1) "status"
-					from loan l join r_loan_group rlg on l.id = rlg."loanId"
+				from loan l join r_loan_group rlg on l.id = rlg."loanId"
 					join "group" g on g.id = rlg."groupId"
 					join r_group_agent rga on g.id = rga."groupId"
 					join agent a on a.id = rga."agentId"
@@ -309,11 +321,13 @@ func FindInstallmentData(branchID uint64, date string) (ResponseGetData, error) 
 					join installment i on i.id = rli."installmentId"
 					join r_loan_disbursement rld on rld."loanId" = l.id
 					join disbursement d on d.id = rld."disbursementId"
-					where l."deletedAt" isnull and b.id= ? and coalesce(i."transactionDate",i."createdAt")::date = ? and
-					l.stage = 'INSTALLMENT' and i."stage" = 'APPROVE'
-					group by g.name, a.fullname, g.id
-					order by a.fullname`
-	err = services.DBCPsql.Raw(query, branchID, date).Scan(&queryResult).Error
+				where l."deletedAt" isnull and b.id= ? and coalesce(i."transactionDate",i."createdAt")::date = ? 
+					and l.stage = 'INSTALLMENT' `
+	if isApprove {
+		query += ` and i."stage" = 'APPROVE' `
+	}
+	query += ` group by g.name, a.fullname, g.id order by a.fullname `
+	err = services.DBCPsql.Raw(query, date, date, branchID, date).Scan(&queryResult).Error
 	if err != nil {
 		log.Println("#ERROR: Unable to retrieve Installment data")
 		log.Println("#ERROR: ", err)
@@ -351,7 +365,7 @@ func FindInstallmentData(branchID uint64, date string) (ResponseGetData, error) 
 					TotalActual:         qrval.Total,
 					TotalProyeksi:       qrval.ProjectionRepayment + qrval.ProjectionTabungan,
 					TotalCoh:            qrval.CashOnHand + qrval.CashOnReserve,
-					TotalCair:			 qrval.TotalCair,
+					TotalCair:           qrval.TotalCair,
 					TotalCairProj:       qrval.TotalCairProj,
 					TotalGagalDropping:  qrval.TotalGagalDropping,
 					Status:              qrval.Status,
@@ -360,8 +374,8 @@ func FindInstallmentData(branchID uint64, date string) (ResponseGetData, error) 
 					ProjectionRepayment: qrval.ProjectionRepayment,
 					ProjectionTabungan:  qrval.ProjectionTabungan,
 				})
-				if qrval.Status=="AGENT" {
-					isEnableSubmit=false
+				if qrval.Status == "AGENT" {
+					isEnableSubmit = false
 				}
 				majelists = append(majelists, MajelisId{GroupId: qrval.GroupId, Name: qrval.Name})
 				totalRepaymentAct += qrval.Repayment
