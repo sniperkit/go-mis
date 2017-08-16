@@ -90,19 +90,6 @@ func FetchSingle(ctx *iris.Context) {
 	})
 }
 
-func calculateTotalPayment(orderNo string, db *gorm.DB) (float64, error) {
-	query := `select SUM(plafond) "total"
-	from loan l join r_loan_order rlo on l.id = rlo."loanId"
-	join loan_order lo on lo.id = rlo."loanOrderId"
-	where lo."orderNo"=?`
-
-	r := struct{ Total float64 }{}
-	if err := db.Raw(query, orderNo).Scan(&r).Error; err != nil {
-		return 100000000000, err
-	}
-	return r.Total, nil
-}
-
 // fungsi-fungsi dewa
 func AcceptLoanOrder(ctx *iris.Context) {
 	// seting order no
