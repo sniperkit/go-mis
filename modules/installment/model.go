@@ -106,5 +106,11 @@ type (
 		PendingInstallmentData []PendingInstallmentData `json:"pendingInstallmentData, omitempty"`
 		BorrowerNotes          interface{}              `json:"borrowerNotes, omitempty"`
 		MajelisNotes           interface{}              `json:"majelisNotes, omitempty"`
+		ListMajelis            []MajelisId              `json:"listMajelis,omitempty"`
+	}
+
+	MajelisId struct {
+		GroupId int64  `gorm:"column:groupId" json:"groupId"`
+		Name    string `gorm:"column:name" json:"name"`
 	}
 )
