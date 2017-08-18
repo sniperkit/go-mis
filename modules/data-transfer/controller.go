@@ -21,13 +21,27 @@ func Save(ctx *iris.Context) {
 		return
 	}
 
-	err = services.DBCPsql.Create(&m).Error
-	if err != nil {
-		ctx.JSON(iris.StatusBadRequest, iris.Map{
-			"message":      "Create Error",
-			"errorMessage": err.Error(),
-		})
-		return
+	dt := DataTransfer{}
+	services.DBCPsql.Where("validation_date = ?", m.ValidationDate).Find(&dt)
+
+	if (DataTransfer{}) != dt {
+		err := services.DBCPsql.Model(&m).Updates(&m).Error
+		if err != nil {
+			ctx.JSON(iris.StatusBadRequest, iris.Map{
+				"message":      "Update Error",
+				"errorMessage": err.Error(),
+			})
+			return
+		}
+	} else {
+		err = services.DBCPsql.Create(&m).Error
+		if err != nil {
+			ctx.JSON(iris.StatusBadRequest, iris.Map{
+				"message":      "Create Error",
+				"errorMessage": err.Error(),
+			})
+			return
+		}
 	}
 
 	ctx.JSON(iris.StatusOK, iris.Map{"status": "success", "data": m})
