@@ -35,6 +35,7 @@ import (
 	"bitbucket.org/go-mis/modules/role"
 	"bitbucket.org/go-mis/modules/sector"
 	"bitbucket.org/go-mis/modules/survey"
+	"bitbucket.org/go-mis/modules/system-parameter"
 	"bitbucket.org/go-mis/modules/user-mis"
 	"bitbucket.org/go-mis/modules/virtual-account"
 	"bitbucket.org/go-mis/modules/virtual-account-statement"
@@ -45,6 +46,9 @@ import (
 // then it will automatically initialize all domain
 func initializeAll() {
 	fmt.Println("[INFO] Initializing all domain")
+
+	config.Domain = "system-parameter"
+	systemParameter.Init()
 
 	config.Domain = "data-transfer"
 	dataTransfer.Init()
@@ -153,6 +157,8 @@ func initializeAll() {
 // Init - Initialize routes
 func Init() {
 	switch config.Domain {
+	case "system-parameter":
+		systemParameter.Init()
 	case "data-transfer":
 		dataTransfer.Init()
 	case "access-token":
