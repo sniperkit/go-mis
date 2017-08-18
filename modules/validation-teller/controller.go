@@ -53,7 +53,7 @@ func GetData(ctx *iris.Context) {
 	})
 }
 
-func SaveNotes(ctx *iris.Context) {
+func SaveValidationTellerNotes(ctx *iris.Context) {
 	params := struct {
 		Date     string  `json:"date"`
 		BranchId uint64  `json:"branchId"`
@@ -93,7 +93,7 @@ func SaveRejectNotes(ctx *iris.Context) {
 		return
 	}
 	logGroupId := services.ConstructNotesGroupId(params.BranchId, params.Date)
-	log := services.Log{Data: params.Notes, GroupID: logGroupId, ArchiveID: "reject"}
+	log := services.Log{Data: params.Notes, GroupID: logGroupId, ArchiveID: ctx.Param("stage")}
 	err = services.PostToLog(log)
 	if err != nil {
 		ctx.JSON(iris.StatusInternalServerError, iris.Map{"status": "error", "message": err.Error()})
