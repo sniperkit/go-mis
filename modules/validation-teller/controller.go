@@ -3,6 +3,7 @@ package validationTeller
 import (
 	"errors"
 	"strings"
+	"time"
 
 	"log"
 
@@ -257,7 +258,10 @@ func GetDataValidationAndTransfer(ctx *iris.Context) {
 			"message":      err.Error(),
 		})
 	}
-
+	dataTransfer, err := FindDataTransfer(time.Now().Local().Format("2006-01-02"))
+	if err == nil {
+		res.DataTransfer = dataTransfer
+	}
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"status": "success",
 		"data":   res,
@@ -425,4 +429,23 @@ func GetDataValidation(branchID uint64, date string) error {
 	// 	return errors.New("Date must be today or less than today")
 	// }
 	return nil
+}
+
+// FindDataTransfer - Get data transfer information based on transfer date
+func FindDataTransfer(date string) (DataTransfer, error) {
+	// This function is not fixed yet
+	// Just for temporary data
+	var dataTransfer DataTransfer
+	dataTransfer = DataTransfer{
+		ID:                   1,
+		ValidationDate:       time.Now().Local().Format("2006-01-02"),
+		TransferDate:         time.Now().Local().Format("2006-01-02"),
+		RepaymentID:          "REPAY-001",
+		RepaymentNominal:     2000000.00,
+		TabunganID:           "TABUNGAN-001",
+		TabunganNominal:      5000000.00,
+		GagalDroppingID:      "GAGAL-001",
+		GagalDroppingNominal: 1000000.00,
+	}
+	return dataTransfer, nil
 }

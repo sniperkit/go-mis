@@ -125,17 +125,14 @@ type (
 	}
 
 	DataTransfer struct {
-		ID                uint64             `json:"id,omitempty"`
-		ValidationDate    string             `json:"validationDate"`
-		TransferDate      string             `json:"transferDate"`
-		DataTransferTypes []DataTransferType `json:"dataTransferTypes"`
-	}
-
-	DataTransferType struct {
-		ID         uint64  `json:"id,omitempty"`
-		Name       string  `json:"name"`
-		IDTransfer string  `json:"idTransfer"`
-		Nominal    float64 `json:"nominal"`
-		Type       string  `json:"type"`
+		ID                   uint64  `json:"id,omitempty"`
+		ValidationDate       string  `json:"validationDate"`
+		TransferDate         string  `json:"transferDate"`
+		RepaymentID          string  `json:"repaymentId"`
+		RepaymentNominal     float64 `json:"repaymentNominal"`
+		TabunganID           string  `json:"tabunganId"`
+		TabunganNominal      float64 `json:"tabunganNominal"`
+		GagalDroppingID      string  `json:"gagalDroppingId"`
+		GagalDroppingNominal float64 `json:"gagalDroppingNominal"`
 	}
 )
