@@ -438,19 +438,33 @@ func GetDataValidation(branchID uint64, date string) error {
 
 // FindDataTransfer - Get data transfer information based on transfer date
 func FindDataTransfer(date string) (DataTransfer, error) {
-	// This function is not fixed yet
-	// Just for temporary data
 	var dataTransfer DataTransfer
-	dataTransfer = DataTransfer{
-		ID:                   1,
-		ValidationDate:       time.Now().Local().Format("2006-01-02"),
-		TransferDate:         time.Now().Local().Format("2006-01-02"),
-		RepaymentID:          "REPAY-001",
-		RepaymentNominal:     2000000.00,
-		TabunganID:           "TABUNGAN-001",
-		TabunganNominal:      5000000.00,
-		GagalDroppingID:      "GAGAL-001",
-		GagalDroppingNominal: 1000000.00,
+	if len(strings.Trim(date, " ")) == 0 {
+		log.Println("#ERROR: Date is empty")
+		return dataTransfer, errors.New("Date can not be empty")
+	}
+	_, err := misUtility.StringToDate(date)
+	if err != nil {
+		log.Println("#ERROR: Invalid date parameter", date)
+		return dataTransfer, errors.New("Invalid date parameter")
+	}
+	query := `select data_transfer.id,
+				data_transfer.validation_date,
+				data_transfer.transfer_date,
+				data_transfer.transfer_date,
+				data_transfer.repayment_id,
+				data_transfer.repayment_nominal,
+				data_transfer.tabungan_id,
+				data_transfer.tabungan_nominal,
+				data_transfer.gagal_dropping_id,
+				data_transfer.gagal_droping_nominal
+			from data_transfer
+			where data_transfer.validation_date::date = ? 
+			order by data_transfer.id DESC`
+	err = services.DBCPsql.Raw(query, date).Scan(&dataTransfer).Error
+	if err != nil {
+		log.Println("#ERROR: Unable to retrieve data transfer", err)
+		return dataTransfer, errors.New("Unable to retrive data transfer")
 	}
 	return dataTransfer, nil
 }
