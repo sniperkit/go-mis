@@ -59,6 +59,7 @@ func SaveNotes(ctx *iris.Context) {
 		BranchId uint64  `json:"branchId"`
 		Notes    []Notes `json:"notes"`
 	}{}
+
 	err := ctx.ReadJSON(&params)
 	if err != nil {
 		ctx.JSON(iris.StatusBadRequest, iris.Map{"status": "error", "message": err.Error()})
@@ -66,6 +67,33 @@ func SaveNotes(ctx *iris.Context) {
 	}
 	logGroupId := services.ConstructNotesGroupId(params.BranchId, params.Date)
 	log := services.Log{Data: params.Notes, GroupID: logGroupId, ArchiveID: ctx.Param("logType")}
+	err = services.PostToLog(log)
+	if err != nil {
+		ctx.JSON(iris.StatusInternalServerError, iris.Map{"status": "error", "message": err.Error()})
+		return
+	}
+	ctx.JSON(iris.StatusOK, iris.Map{
+		"status": "success",
+		"data":   params,
+	})
+}
+
+func SaveRejectNotes(ctx *iris.Context) {
+	params := struct {
+		Date     string `json:"date"`
+		BranchId uint64 `json:"branchId"`
+		GroupId  uint64 `json:"groupId"`
+		Name     string `json:"string"`
+		Notes    string `json:"notes"`
+	}{}
+
+	err := ctx.ReadJSON(&params)
+	if err != nil {
+		ctx.JSON(iris.StatusBadRequest, iris.Map{"status": "error", "message": err.Error()})
+		return
+	}
+	logGroupId := services.ConstructNotesGroupId(params.BranchId, params.Date)
+	log := services.Log{Data: params.Notes, GroupID: logGroupId, ArchiveID: "reject"}
 	err = services.PostToLog(log)
 	if err != nil {
 		ctx.JSON(iris.StatusInternalServerError, iris.Map{"status": "error", "message": err.Error()})
@@ -290,8 +318,8 @@ func FindInstallmentData(branchID uint64, date string) (ResponseGetData, error) 
 					CashOnHand:         qrval.CashOnHand,
 					CashOnReserve:      qrval.CashOnReserve,
 				})
-				if qrval.Status=="AGENT" {
-					isEnableSubmit=false
+				if qrval.Status == "AGENT" {
+					isEnableSubmit = false
 				}
 				majelists = append(majelists, MajelisId{GroupId: qrval.GroupId, Name: qrval.Name})
 				totalRepayment += qrval.Repayment
