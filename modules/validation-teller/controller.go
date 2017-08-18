@@ -251,7 +251,7 @@ func GetDataValidationAndTransfer(ctx *iris.Context) {
 		return
 	}
 
-	res, err := FindInstallmentData(branchID, dateParam, true)
+	instalmentData, err := FindInstallmentData(branchID, dateParam, true)
 	if err != nil {
 		ctx.JSON(iris.StatusInternalServerError, iris.Map{
 			"errorMessage": "System Error",
@@ -260,11 +260,16 @@ func GetDataValidationAndTransfer(ctx *iris.Context) {
 	}
 	dataTransfer, err := FindDataTransfer(time.Now().Local().Format("2006-01-02"))
 	if err == nil {
-		res.DataTransfer = dataTransfer
+		instalmentData.DataTransfer = dataTransfer
+	}
+	notes, err := services.GetNotes(services.ConstructNotesGroupId(branchID, dateParam))
+	if err == nil && len(notes) > 0 {
+		instalmentData.BorrowerNotes = services.GetBorrowerNotes(notes)
+		instalmentData.MajelisNotes = services.GetMajelisNotes(notes)
 	}
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"status": "success",
-		"data":   res,
+		"data":   instalmentData,
 	})
 }
 
