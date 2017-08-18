@@ -330,7 +330,7 @@ func FindInstallmentData(branchID uint64, date string, isApprove bool) (Response
 					join installment i on i.id = rli."installmentId"
 					join r_loan_disbursement rld on rld."loanId" = l.id
 					join disbursement d on d.id = rld."disbursementId"
-				where l."deletedAt" isnull and b.id= ? and coalesce(i."transactionDate",i."createdAt")::date = ? 
+				where l."deletedAt" is null and i."deletedAt" is null and b.id= ? and coalesce(i."transactionDate",i."createdAt")::date = ?
 					and l.stage = 'INSTALLMENT' `
 	if isApprove {
 		query += ` and i."stage" = 'APPROVE' `
