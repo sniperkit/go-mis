@@ -11,6 +11,7 @@ import (
 	"bitbucket.org/go-mis/modules/branch"
 	"bitbucket.org/go-mis/modules/cashout"
 	"bitbucket.org/go-mis/modules/cif"
+	"bitbucket.org/go-mis/modules/data-transfer"
 	"bitbucket.org/go-mis/modules/disbursement"
 	"bitbucket.org/go-mis/modules/disbursement-report"
 	"bitbucket.org/go-mis/modules/emergency-loan"
@@ -178,6 +179,8 @@ func InitCustomApi() {
 		v2.Any("/installment-pending/get/:currentStage/:branchId/:date", installment.GetPendingInstallmentNew)
 		v2.Any("/validation-teller/borrower-notes/save", validationTeller.SaveDetail)
 		v2.Any("/validation-teller/group-notes/:logType/save", validationTeller.SaveNotes)
+
+		v2.Any("/data-transfer/save", dataTransfer.Save)
 	}
 
 	iris.Get(baseURL+"/generate-topsheet/:group_id", topsheet.GenerateTopsheet)
