@@ -172,15 +172,15 @@ func InitCustomApi() {
 		v2.Any("/disbursement-weekly-report", disbursementReport.FetchAllActive)
 		v2.Any("/disbursement-weekly-report/:id/detail", disbursementReport.GetDetail)
 		// Validation Teller
-		v2.Any("/validation-teller/save", validationTeller.SubmitValidationTeller)
-		v2.Any("/validation-teller/getdata", validationTeller.GetData)
-		v2.Any("/validation-teller/detail", validationTeller.GetDetail)
-		v2.Any("/validation-teller/detail/save", validationTeller.SaveDetail)
+		v2.Any("/validation-teller/save", validationTeller.SaveValidationTeller)
+		v2.Any("/validation-teller/getdata", validationTeller.GetDataValidationTeller)
+		v2.Any("/validation-teller/detail", validationTeller.GetValidationTellerDetail)
+		v2.Any("/validation-teller/detail/save", validationTeller.SaveValidationTellerDetail)
 		v2.Any("/installment-pending/get/:currentStage/:branchId/:date", installment.GetPendingInstallmentNew)
-		v2.Any("/validation-teller/borrower-notes/save", validationTeller.SaveDetail)
-		v2.Any("/validation-teller/group-notes/:logType/save", validationTeller.SaveNotes)
-
+		v2.Any("/validation-teller/group-notes/:logType/save", validationTeller.SaveValidationTellerNotes)
+		v2.Any("/validation-teller/view/branch/:branchId/date/:date", validationTeller.GetDataValidationAndTransfer)
 		v2.Any("/data-transfer/save", dataTransfer.Save)
+
 	}
 
 	iris.Get(baseURL+"/generate-topsheet/:group_id", topsheet.GenerateTopsheet)
