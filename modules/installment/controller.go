@@ -14,6 +14,7 @@ import (
 	installmentHistory "bitbucket.org/go-mis/modules/installment-history"
 	loanHistory "bitbucket.org/go-mis/modules/loan-history"
 	"bitbucket.org/go-mis/modules/r"
+	systemParameter "bitbucket.org/go-mis/modules/system-parameter"
 	"bitbucket.org/go-mis/services"
 	"github.com/jinzhu/gorm"
 	iris "gopkg.in/kataras/iris.v4"
@@ -749,6 +750,14 @@ func GetPendingInstallmentNew(ctx *iris.Context) {
 		ctx.JSON(iris.StatusOK, iris.Map{
 			"status":       iris.StatusBadRequest,
 			"errorMessage": "Date can not be empty",
+		})
+		return
+	}
+	if !systemParameter.IsAllowedBackdate(dateParam) {
+		log.Println("#ERROR: Not Allowed back date")
+		ctx.JSON(405, iris.Map{
+			"message":      "Not Allowed",
+			"errorMessage": "View back date is not allowed",
 		})
 		return
 	}

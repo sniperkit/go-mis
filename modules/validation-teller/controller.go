@@ -12,6 +12,7 @@ import (
 	"strconv"
 
 	ins "bitbucket.org/go-mis/modules/installment"
+	systemParameter "bitbucket.org/go-mis/modules/system-parameter"
 	misUtility "bitbucket.org/go-mis/modules/utility"
 	"bitbucket.org/go-mis/services"
 )
@@ -24,6 +25,7 @@ func GetDataValidationTeller(ctx *iris.Context) {
 	branchIDParam, _ := ctx.URLParamInt64("branchId")
 	branchID := uint64(branchIDParam)
 	dateParam := ctx.URLParam("date")
+
 	// Check data whehter valid or not
 	err = GetDataValidation(branchID, dateParam)
 	if err != nil {
@@ -35,6 +37,16 @@ func GetDataValidationTeller(ctx *iris.Context) {
 		return
 	}
 	log.Println("[INFO] Validation get data installment pass")
+
+	if !systemParameter.IsAllowedBackdate(dateParam) {
+		log.Println("#ERROR: Not Allowed back date")
+		ctx.JSON(405, iris.Map{
+			"message":      "Not Allowed",
+			"errorMessage": "View back date is not allowed",
+		})
+		return
+	}
+
 	instalmentData, err = FindInstallmentData(branchID, dateParam, false)
 	if err != nil {
 		log.Println("[INFO] Can not retrive installment data")
