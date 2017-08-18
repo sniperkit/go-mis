@@ -154,7 +154,7 @@ func GetValidationTellerDetail(ctx *iris.Context) {
 					join installment i on i.id = rli."installmentId"
 					join r_loan_disbursement rld on rld."loanId" = l.id
 					join disbursement d on d.id = rld."disbursementId"
-				where l."deletedAt" isnull and coalesce(i."transactionDate",i."createdAt")::date = ? and 
+				where l."deletedAt" is null and i."deletedAt" is null and coalesce(i."transactionDate",i."createdAt")::date = ? and
 				l.stage = 'INSTALLMENT' and g.id=?`
 
 	queryResult := []RawInstallmentDetail{}
