@@ -318,6 +318,7 @@ func CreateLoan(payload map[string]interface{}) (error,loan.Loan) {
 	newLoan.Purpose = cpl["data_tujuan"]
 	newLoan.SubmittedLoanDate, _ = cpl["data_tgl"] // time.Parse("2006-01-02 15:04:05", cpl["data_tgl"])
 	newLoan.SubmittedTenor, _ = strconv.ParseInt(cpl["data_jangkawaktu"], 10, 64)
+	newLoan.AgreementType = cpl["data_akad"]
 	newLoan.SubmittedPlafond, _ = strconv.ParseFloat(cpl["data_pengajuan"], 64)
 	newLoan.SubmittedInstallment, _ = strconv.ParseFloat(cpl["data_rencana_angsuran"], 64)
 	newLoan.LoanPeriod, _ = strconv.ParseInt(cpl["data_ke"], 10, 64)
