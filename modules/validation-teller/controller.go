@@ -362,6 +362,14 @@ func FindInstallmentData(branchID uint64, date string, isApprove bool) (Response
 	}
 	majelists := []MajelisId{}
 	isEnableSubmit := true
+	var totalCabRepaymentAct float64
+	var totalCabRepaymentCoh float64
+	var totalCabTabunganAct float64
+	var totalCabTabunganCoh float64
+	var totalCabActualAgent float64
+	var totalCabCohAgent float64
+	var totalCabPencairanAgent float64
+	var totalCabGagalDroppingAgent float64
 	for idx, rval := range res {
 		var totalRepaymentAct float64
 		var totalRepaymentProj float64
@@ -426,10 +434,25 @@ func FindInstallmentData(branchID uint64, date string, isApprove bool) (Response
 		res[idx].TotalPencairanAgent = totalPencairanAgent
 		res[idx].TotalPencairanProjAgent = totalPencairanProjAgent
 		res[idx].TotalGagalDroppingAgent = totalGagalDroppingAgent
+
+		totalCabRepaymentAct += totalRepaymentAct
+		totalCabRepaymentCoh += totalRepaymentCoh
+		totalCabTabunganAct += totalTabunganAct
+		totalCabTabunganCoh += totalTabunganCoh
+		totalCabActualAgent += totalActualAgent
+		totalCabCohAgent += totalCohAgent
+		totalCabPencairanAgent += totalPencairanAgent
+		totalCabGagalDroppingAgent += totalGagalDroppingAgent
 	}
 	response.InstallmentData = res
 	response.ListMajelis = majelists
 	response.IsEnableSubmit = isEnableSubmit
+	response.TotalActualRepayment  =totalCabRepaymentAct
+	response.TotalCashOnHand  =totalCabRepaymentCoh
+	response.TotalCashOnReserve  =totalCabTabunganCoh
+	response.TotalGagalDroping  =totalCabGagalDroppingAgent
+	response.TotalTabungan=totalCabTabunganAct
+	response.TotalCair=totalCabPencairanAgent
 	return response, nil
 }
 
