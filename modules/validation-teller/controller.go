@@ -98,8 +98,6 @@ func SaveRejectNotes(ctx *iris.Context) {
 	params := struct {
 		Date     string `json:"date"`
 		BranchId uint64 `json:"branchId"`
-		GroupId  uint64 `json:"groupId"`
-		Name     string `json:"string"`
 		Notes    string `json:"notes"`
 	}{}
 
