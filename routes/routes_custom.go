@@ -179,7 +179,7 @@ func InitCustomApi() {
 		v2.Any("/installment-pending/get/:currentStage/:branchId/:date", installment.GetPendingInstallmentNew)
 
 		v2.Any("/validation-teller/borrower-notes/save", validationTeller.SaveValidationTellerDetail)
-		v2.Any("/reject-notes/:stage/save", validationTeller.SaveRejectNotes)
+		v2.Any("/reject-notes/:status/:stage/save", validationTeller.SaveRejectNotes)
 
 		v2.Any("/validation-teller/group-notes/:logType/save", validationTeller.SaveValidationTellerNotes)
 		v2.Any("/validation-teller/view/branch/:branchId/date/:date", validationTeller.GetDataValidationAndTransfer)

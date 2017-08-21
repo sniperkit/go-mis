@@ -108,7 +108,7 @@ func SaveRejectNotes(ctx *iris.Context) {
 		ctx.JSON(iris.StatusBadRequest, iris.Map{"status": "error", "message": err.Error()})
 		return
 	}
-	logGroupId := services.ConstructNotesGroupId(params.BranchId, params.Date)
+	logGroupId := services.ConstructRejectsNotesGroupId(params.BranchId, params.Date, ctx.Param("status"), ctx.Param("stage"))
 	log := services.Log{Data: params.Notes, GroupID: logGroupId, ArchiveID: ctx.Param("stage")}
 	err = services.PostToLog(log)
 	if err != nil {
@@ -470,12 +470,12 @@ func FindInstallmentData(branchID uint64, date string, isApprove bool) (Response
 	response.InstallmentData = res
 	response.ListMajelis = majelists
 	response.IsEnableSubmit = isEnableSubmit
-	response.TotalActualRepayment  =totalCabRepaymentAct
-	response.TotalCashOnHand  =totalCabRepaymentCoh
-	response.TotalCashOnReserve  =totalCabTabunganCoh
-	response.TotalGagalDroping  =totalCabGagalDroppingAgent
-	response.TotalTabungan=totalCabTabunganAct
-	response.TotalCair=totalCabPencairanAgent
+	response.TotalActualRepayment = totalCabRepaymentAct
+	response.TotalCashOnHand = totalCabRepaymentCoh
+	response.TotalCashOnReserve = totalCabTabunganCoh
+	response.TotalGagalDroping = totalCabGagalDroppingAgent
+	response.TotalTabungan = totalCabTabunganAct
+	response.TotalCair = totalCabPencairanAgent
 	return response, nil
 }
 
