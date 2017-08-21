@@ -69,14 +69,13 @@ func GetDataValidationTeller(ctx *iris.Context) {
 	})
 }
 
-// SaveValidationTellerNotes: Save notes validation teller
-// Route: /api/v2//validation-teller/group-notes/:logType/save
 func SaveValidationTellerNotes(ctx *iris.Context) {
 	params := struct {
 		Date     string  `json:"date"`
 		BranchId uint64  `json:"branchId"`
 		Notes    []Notes `json:"notes"`
 	}{}
+
 	err := ctx.ReadJSON(&params)
 	if err != nil {
 		ctx.JSON(iris.StatusBadRequest, iris.Map{"status": "error", "message": err.Error()})
@@ -95,9 +94,31 @@ func SaveValidationTellerNotes(ctx *iris.Context) {
 	})
 }
 
-// SaveValidationTellerDetail - Save detail and notes validation teller
-// Route: - /api/v2//validation-teller/detail/save
-//		  - /validation-teller/borrower-notes/save
+func SaveRejectNotes(ctx *iris.Context) {
+	params := struct {
+		Date     string `json:"date"`
+		BranchId uint64 `json:"branchId"`
+		Notes    string `json:"notes"`
+	}{}
+
+	err := ctx.ReadJSON(&params)
+	if err != nil {
+		ctx.JSON(iris.StatusBadRequest, iris.Map{"status": "error", "message": err.Error()})
+		return
+	}
+	logGroupId := services.ConstructRejectsNotesGroupId(params.BranchId, params.Date, ctx.Param("status"), ctx.Param("stage"))
+	log := services.Log{Data: params.Notes, GroupID: logGroupId, ArchiveID: ctx.Param("stage")}
+	err = services.PostToLog(log)
+	if err != nil {
+		ctx.JSON(iris.StatusInternalServerError, iris.Map{"status": "error", "message": err.Error()})
+		return
+	}
+	ctx.JSON(iris.StatusOK, iris.Map{
+		"status": "success",
+		"data":   params,
+	})
+}
+
 func SaveValidationTellerDetail(ctx *iris.Context) {
 	params := []struct {
 		CashOnReserve float64 `json:"cashOnReserve"`
@@ -447,12 +468,12 @@ func FindInstallmentData(branchID uint64, date string, isApprove bool) (Response
 	response.InstallmentData = res
 	response.ListMajelis = majelists
 	response.IsEnableSubmit = isEnableSubmit
-	response.TotalActualRepayment  =totalCabRepaymentAct
-	response.TotalCashOnHand  =totalCabRepaymentCoh
-	response.TotalCashOnReserve  =totalCabTabunganCoh
-	response.TotalGagalDroping  =totalCabGagalDroppingAgent
-	response.TotalTabungan=totalCabTabunganAct
-	response.TotalCair=totalCabPencairanAgent
+	response.TotalActualRepayment = totalCabRepaymentAct
+	response.TotalCashOnHand = totalCabRepaymentCoh
+	response.TotalCashOnReserve = totalCabTabunganCoh
+	response.TotalGagalDroping = totalCabGagalDroppingAgent
+	response.TotalTabungan = totalCabTabunganAct
+	response.TotalCair = totalCabPencairanAgent
 	return response, nil
 }
 
