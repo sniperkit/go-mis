@@ -12,6 +12,7 @@ import (
 	"strconv"
 
 	ins "bitbucket.org/go-mis/modules/installment"
+	systemParameter "bitbucket.org/go-mis/modules/system-parameter"
 	misUtility "bitbucket.org/go-mis/modules/utility"
 	"bitbucket.org/go-mis/services"
 )
@@ -24,6 +25,7 @@ func GetDataValidationTeller(ctx *iris.Context) {
 	branchIDParam, _ := ctx.URLParamInt64("branchId")
 	branchID := uint64(branchIDParam)
 	dateParam := ctx.URLParam("date")
+
 	// Check data whehter valid or not
 	err = GetDataValidation(branchID, dateParam)
 	if err != nil {
@@ -35,6 +37,16 @@ func GetDataValidationTeller(ctx *iris.Context) {
 		return
 	}
 	log.Println("[INFO] Validation get data installment pass")
+
+	if !systemParameter.IsAllowedBackdate(dateParam) {
+		log.Println("#ERROR: Not Allowed back date")
+		ctx.JSON(405, iris.Map{
+			"message":      "Not Allowed",
+			"errorMessage": "View back date is not allowed",
+		})
+		return
+	}
+
 	instalmentData, err = FindInstallmentData(branchID, dateParam, false)
 	if err != nil {
 		log.Println("[INFO] Can not retrive installment data")
@@ -177,7 +189,7 @@ func GetValidationTellerDetail(ctx *iris.Context) {
 					join installment i on i.id = rli."installmentId"
 					join r_loan_disbursement rld on rld."loanId" = l.id
 					join disbursement d on d.id = rld."disbursementId"
-				where l."deletedAt" isnull and coalesce(i."transactionDate",i."createdAt")::date = ? and 
+				where l."deletedAt" is null and i."deletedAt" is null and coalesce(i."transactionDate",i."createdAt")::date = ? and
 				l.stage = 'INSTALLMENT' and g.id=?`
 
 	queryResult := []RawInstallmentDetail{}
@@ -373,6 +385,14 @@ func FindInstallmentData(branchID uint64, date string, isApprove bool) (Response
 	}
 	majelists := []MajelisId{}
 	isEnableSubmit := true
+	var totalCabRepaymentAct float64
+	var totalCabRepaymentCoh float64
+	var totalCabTabunganAct float64
+	var totalCabTabunganCoh float64
+	var totalCabActualAgent float64
+	var totalCabCohAgent float64
+	var totalCabPencairanAgent float64
+	var totalCabGagalDroppingAgent float64
 	for idx, rval := range res {
 		var totalRepaymentAct float64
 		var totalRepaymentProj float64
@@ -437,10 +457,25 @@ func FindInstallmentData(branchID uint64, date string, isApprove bool) (Response
 		res[idx].TotalPencairanAgent = totalPencairanAgent
 		res[idx].TotalPencairanProjAgent = totalPencairanProjAgent
 		res[idx].TotalGagalDroppingAgent = totalGagalDroppingAgent
+
+		totalCabRepaymentAct += totalRepaymentAct
+		totalCabRepaymentCoh += totalRepaymentCoh
+		totalCabTabunganAct += totalTabunganAct
+		totalCabTabunganCoh += totalTabunganCoh
+		totalCabActualAgent += totalActualAgent
+		totalCabCohAgent += totalCohAgent
+		totalCabPencairanAgent += totalPencairanAgent
+		totalCabGagalDroppingAgent += totalGagalDroppingAgent
 	}
 	response.InstallmentData = res
 	response.ListMajelis = majelists
 	response.IsEnableSubmit = isEnableSubmit
+	response.TotalActualRepayment  =totalCabRepaymentAct
+	response.TotalCashOnHand  =totalCabRepaymentCoh
+	response.TotalCashOnReserve  =totalCabTabunganCoh
+	response.TotalGagalDroping  =totalCabGagalDroppingAgent
+	response.TotalTabungan=totalCabTabunganAct
+	response.TotalCair=totalCabPencairanAgent
 	return response, nil
 }
 
