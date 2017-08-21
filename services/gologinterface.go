@@ -140,6 +140,12 @@ func ConstructNotesGroupId(branchId uint64, date string) string {
 	return groupID
 }
 
+func ConstructRejectsNotesGroupId(groupId uint64, date string, status string, stage string) string {
+	status = strings.Title(status)
+	groupID := strconv.FormatUint(groupId, 10) + "-" + date + "VT" + status + strings.ToUpper(stage)
+	return groupID
+}
+
 func GetBorrowerNotes(logNotes []Log) (borrowerNotes interface{}) {
 	if len(logNotes) == 0 {
 		return
