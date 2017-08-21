@@ -762,26 +762,25 @@ func GetPendingInstallmentNew(ctx *iris.Context) {
 		return
 	}
 	res := GetDataPendingInstallment(ctx.Param("currentStage"), branchID, dateParam)
-	pendingInstallment := PendingInstallment{PendingInstallmentData: res}
 	notes, err := services.GetNotes(services.ConstructNotesGroupId(branchID, dateParam))
 	if err != nil || len(notes) > 0 {
 		borrowerNotes := services.GetBorrowerNotes(notes)
 		majelisNotes := services.GetMajelisNotes(notes)
 		if borrowerNotes != nil {
-			pendingInstallment.BorrowerNotes = borrowerNotes
+			res.BorrowerNotes = borrowerNotes
 		}
 		if borrowerNotes != nil {
-			pendingInstallment.MajelisNotes = majelisNotes
+			res.MajelisNotes = majelisNotes
 		}
 	}
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"status": "success",
-		"data":   pendingInstallment,
+		"data":   res,
 	})
 }
 
-func GetDataPendingInstallment(currentStage string, branchId uint64, now string) []PendingInstallmentData {
-
+func GetDataPendingInstallment(currentStage string, branchId uint64, now string) PendingInstallment {
+	var pendingInstallment PendingInstallment
 	queryResult := []PendingRawInstallmentData{}
 	query := `select g.id as "groupId", a.fullname,g.name, sum(i."paidInstallment") "repayment",sum(i.reserve) "tabungan",sum(i."paidInstallment"+i.reserve) "total",
 				sum(i.cash_on_hand) "cashOnHand",
@@ -846,7 +845,7 @@ func GetDataPendingInstallment(currentStage string, branchId uint64, now string)
 			res = append(res, PendingInstallmentData{Agent: val.Fullname})
 		}
 	}
-
+	majelisIDs := make([]MajelisId, len(res))
 	for idx, rval := range res {
 		var totalRepaymentAct float64
 		var totalRepaymentProj float64
@@ -880,6 +879,7 @@ func GetDataPendingInstallment(currentStage string, branchId uint64, now string)
 					ProjectionRepayment: qrval.ProjectionRepayment,
 					ProjectionTabungan:  qrval.ProjectionTabungan,
 				})
+				majelisIDs = append(majelisIDs, MajelisId{GroupId: qrval.GroupId, Name: qrval.Name})
 				totalRepaymentAct += qrval.Repayment
 				totalRepaymentProj += qrval.ProjectionRepayment
 				totalRepaymentCoh += qrval.CashOnHand
@@ -908,6 +908,7 @@ func GetDataPendingInstallment(currentStage string, branchId uint64, now string)
 		res[idx].TotalPencairanProjAgent = totalPencairanProjAgent
 		res[idx].TotalGagalDroppingAgent = totalGagalDroppingAgent
 	}
-
-	return res
+	pendingInstallment.ListMajelis = majelisIDs
+	pendingInstallment.PendingInstallmentData = res
+	return pendingInstallment
 }
