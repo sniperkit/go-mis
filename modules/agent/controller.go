@@ -7,7 +7,17 @@ import (
 	"bitbucket.org/go-mis/modules/r"
 	"fmt"
 	"strconv"
+	"bytes"
+	"encoding/json"
+	"net/http"
+	"bitbucket.org/go-mis/config"
 )
+
+type Cas struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+	UserType string `json:"userType"`
+}
 
 func Init() {
 	services.DBCPsql.AutoMigrate(&Agent{})
@@ -19,7 +29,7 @@ func GetAllAgentByBranchID(ctx *iris.Context) {
 	GetAgent(ctx, branchID.(uint64))
 }
 
-func GetAgent(ctx *iris.Context, branchID uint64){
+func GetAgent(ctx *iris.Context, branchID uint64) {
 	agentSchema := []Agent{}
 	query := ""
 
@@ -43,8 +53,8 @@ func GetAgent(ctx *iris.Context, branchID uint64){
 func GetAllAgent(ctx *iris.Context) {
 
 	id := ctx.Get("id")
-	branchId,_ :=strconv.ParseUint(id.(string),0,64)
-	GetAgent(ctx,branchId)
+	branchId, _ := strconv.ParseUint(id.(string), 0, 64)
+	GetAgent(ctx, branchId)
 
 }
 
@@ -83,6 +93,7 @@ func GetAgentById(ctx *iris.Context) {
 }
 
 func CreateAgent(ctx *iris.Context) {
+
 	type Payload struct {
 		Username        string           `json:"username"`
 		Password        string           `json:"password"`
@@ -105,8 +116,20 @@ func CreateAgent(ctx *iris.Context) {
 
 	m := Payload{}
 	err := ctx.ReadJSON(&m)
+	//Register to Go-CAS
+	u := Cas{Username: m.Username, Password: m.Password, UserType: "APP"}
+	b := new(bytes.Buffer)
+	json.NewEncoder(b).Encode(u)
+	res, _ := http.Post(config.GoCasApiPath+"/api/v1/register", "application/json; charset=utf-8", b)
+	if res.StatusCode != 200 {
+		ctx.JSON(iris.StatusInternalServerError, iris.Map{
+			"status":  "error",
+			"message": "Error Create User in Go-CAS",
+		})
+		return
+	}
+	//Create Agent to Postgre
 	a := Agent{}
-
 	a.Username = m.Username;
 	a.Fullname = m.Fullname;
 	a.BankName = m.BankName;
@@ -123,7 +146,7 @@ func CreateAgent(ctx *iris.Context) {
 	a.Lat = m.Lat;
 	a.Lng = m.Lng;
 	a.Password = m.Password
-	fmt.Println("Password",m.Password)
+	fmt.Println("Password", m.Password)
 
 	if err != nil {
 		ctx.JSON(iris.StatusBadRequest, iris.Map{"status": "error", "message": err.Error()})
@@ -145,7 +168,6 @@ func CreateAgent(ctx *iris.Context) {
 		db.Commit()
 	}
 	ctx.JSON(iris.StatusOK, iris.Map{"status": "success", "data": m})
-
 }
 
 func UpdateAgent(ctx *iris.Context) {
@@ -172,8 +194,8 @@ func UpdateAgent(ctx *iris.Context) {
 
 	m := Payload{}
 	err := ctx.ReadJSON(&m)
+	//Update Agent to Postgre
 	a := Agent{}
-
 	a.Username = m.Username;
 	a.Password = m.Password
 	a.Fullname = m.Fullname;
@@ -202,6 +224,55 @@ func UpdateAgent(ctx *iris.Context) {
 		db.Commit()
 	}
 	ctx.JSON(iris.StatusOK, iris.Map{"status": "success", "data": a})
+
+}
+
+func UpdateAgentPasswordById(ctx *iris.Context) {
+	agentId := ctx.Get("id")
+	fmt.Println(agentId)
+
+	type Payload struct {
+		Username string        `json:"username"`
+		Password string        `json:"password"`
+	}
+
+	type Cas struct {
+		Username string `json:"username"`
+		Password string `json:"password"`
+		UserType string `json:"userType"`
+	}
+
+	m := Payload{}
+	err := ctx.ReadJSON(&m)
+
+	if err != nil {
+		ctx.JSON(iris.StatusBadRequest, iris.Map{"status": "error", "message": err.Error()})
+		return
+	}
+
+	agent := Agent{}
+	agent.Username = m.Username
+	agent.Password = m.Password;
+	u := Cas{Username: agent.Username, Password: agent.Password, UserType: "APP"}
+	fmt.Println(u)
+	b := new(bytes.Buffer)
+	json.NewEncoder(b).Encode(u)
+	res, _ := http.Post(config.GoCasApiPath+"/api/v1/update-password", "application/json; charset=utf-8", b)
+	fmt.Println(res.StatusCode)
+	fmt.Println(res.Status)
+	if res.StatusCode != 200 {
+		ctx.JSON(iris.StatusInternalServerError, iris.Map{
+			"status":  "error",
+			"message": "Error update password in go-cas",
+		})
+		return
+	}
+	agent.BeforeUpdate()
+	db := services.DBCPsql.Begin()
+	// Update User in PSQL
+	userQuery := `UPDATE agent SET "password" = ? WHERE "id" = ?`
+	db.Exec(userQuery, agent.Password, agentId)
+	db.Commit();
 
 }
 
