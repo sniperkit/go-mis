@@ -103,7 +103,14 @@ func UpdateStage(ctx *iris.Context) {
 
 	cashoutNo := strconv.FormatUint(cashoutInvestorSchema.CashoutNo, 10)
 
-	if stage == "SUCCESS" {
+	if stage == "SEND-TO-MANDIRI" {
+		// TODO: hit go-banking for Mandiri Corporate Payable
+		
+		ctx.JSON(iris.StatusOK, iris.Map{
+			"status": "success",
+			"data":   iris.Map{},
+		})
+	} else if stage == "SUCCESS" {
 		services.DBCPsql.Table("account_transaction_credit").Where("remark = ?", cashoutInvestorSchema.Remark).Update("remark", "CASHOUT #"+cashoutNo+" SUCCESS")
 		ctx.JSON(iris.StatusOK, iris.Map{
 			"status": "success",

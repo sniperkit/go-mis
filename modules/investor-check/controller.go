@@ -3,7 +3,8 @@ package investorCheck
 import (
 	"fmt"
 	"strconv"
-
+	
+	"bitbucket.org/go-mis/config"
 	"bitbucket.org/go-mis/modules/cif"
 	email "bitbucket.org/go-mis/modules/email"
 	"bitbucket.org/go-mis/modules/r"
@@ -11,6 +12,8 @@ import (
 	"bitbucket.org/go-mis/services"
 	iris "gopkg.in/kataras/iris.v4"
 	"strings"
+	"net/http"
+	"bitbucket.org/go-mis/modules/investor"
 )
 
 type totalData struct {
@@ -98,7 +101,7 @@ func Verify(ctx *iris.Context) {
 			// get investor id
 			inv := &r.RCifInvestor{}
 			services.DBCPsql.Table("r_cif_investor").Where("\"cifId\" = ?", id).Scan(&inv)
-
+			
 			// get virtual account
 			rInvVa := []r.RInvestorVirtualAccount{}
 			services.DBCPsql.Table("r_investor_virtual_account").Where("\"investorId\" = ?", inv.InvestorId).Scan(&rInvVa)
@@ -119,7 +122,24 @@ func Verify(ctx *iris.Context) {
 			}
 			vaData["MANDIRI_HOLDER"] = vaData["BCA_HOLDER"]
 			vaData["MANDIRI"]= rightPad2Len("88000101000000", strconv.FormatUint(inv.InvestorId, 10), 14-len(strconv.FormatUint(inv.InvestorId, 10)))
-
+			
+			// get investor data
+			investorSchema := investor.Investor{}
+			services.DBCPsql.Table("investor").Where("id = ?", inv.InvestorId).Scan(&investorSchema)
+			
+			// send create BCA VA request
+			params := strings.NewReader(`{"investorNo":` + strconv.FormatUint(investorSchema.InvestorNo, 10) + `}`)
+			request, err := http.NewRequest("POST", config.GoBankingPath, params)
+			if err != nil {
+				fmt.Println(err)
+			}
+			
+			client := &http.Client{}
+			_, errResp := client.Do(request)
+			if errResp != nil {
+				fmt.Println(errResp)
+			}
+			
 			if cifSchema.Username != "" {
 				fmt.Println("Sending email..")
 				go email.SendEmailVerificationSuccess(cifSchema.Username, cifSchema.Name, vaData["BCA"], vaData["BCA_HOLDER"], vaData["MANDIRI"], vaData["MANDIRI_HOLDER"])
@@ -139,6 +159,7 @@ func Verify(ctx *iris.Context) {
 				twilio.SetParam(cifSchema.PhoneNo, message)
 				twilio.SendSMS()
 			}
+			
 		} else {
 			status = "verification failed, user not validated"
 		}
