@@ -129,7 +129,7 @@ func Verify(ctx *iris.Context) {
 			
 			// send create BCA VA request
 			params := strings.NewReader(`{"investorNo":` + strconv.FormatUint(investorSchema.InvestorNo, 10) + `}`)
-			request, err := http.NewRequest("POST", config.GoBankingPath, params)
+			request, err := http.NewRequest("POST", config.GoBankingPath + `/bca/register-va`, params)
 			if err != nil {
 				fmt.Println(err)
 			}
