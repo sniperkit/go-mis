@@ -120,6 +120,36 @@ func GetDataFromLog(branchID uint64) (Log, error) {
 	return logger, nil
 }
 
+func GetRejectNotesData(status string, groupId string, date string, stage string) (Log, error) {
+	logger := Log{}
+
+	// 1-2017-08-18VTRejectIN-REVIEW
+	logGroupId := groupId + "-" + date + "VT" + strings.Title(status) + strings.ToUpper(stage)
+	archiveId := stage
+
+	apiPath := GetLogAPIPath() + "/api/v1/archive/" + archiveId + "/group/" + logGroupId
+	log.Println("[INFO]", apiPath)
+	resp, err := http.Get(apiPath)
+	if err != nil {
+		log.Println("#ERROR: Unable to retrive data from GO-LOG App")
+		log.Println("#ERROR: ", err)
+		return logger, err
+	}
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Println("#ERROR: When read body reponse from GO-LOG App")
+		return logger, err
+	}
+	err = json.Unmarshal([]byte(body), &logger)
+	if err != nil {
+		log.Println("#ERROR: When unmarshall resp body GO-LOG App to Log struct")
+		return logger, err
+	}
+	log.Println("[INFO]", logger)
+	return logger, nil
+}
+
 func GenerateArchiveID(branchID uint64) string {
 	if branchID == 0 {
 		return ""

@@ -94,31 +94,6 @@ func SaveValidationTellerNotes(ctx *iris.Context) {
 	})
 }
 
-func SaveRejectNotes(ctx *iris.Context) {
-	params := struct {
-		Date     string `json:"date"`
-		BranchId uint64 `json:"branchId"`
-		Notes    string `json:"notes"`
-	}{}
-
-	err := ctx.ReadJSON(&params)
-	if err != nil {
-		ctx.JSON(iris.StatusBadRequest, iris.Map{"status": "error", "message": err.Error()})
-		return
-	}
-	logGroupId := services.ConstructRejectsNotesGroupId(params.BranchId, params.Date, ctx.Param("status"), ctx.Param("stage"))
-	log := services.Log{Data: params.Notes, GroupID: logGroupId, ArchiveID: ctx.Param("stage")}
-	err = services.PostToLog(log)
-	if err != nil {
-		ctx.JSON(iris.StatusInternalServerError, iris.Map{"status": "error", "message": err.Error()})
-		return
-	}
-	ctx.JSON(iris.StatusOK, iris.Map{
-		"status": "success",
-		"data":   params,
-	})
-}
-
 func SaveValidationTellerDetail(ctx *iris.Context) {
 	params := []struct {
 		CashOnReserve float64 `json:"cashOnReserve"`
@@ -523,4 +498,54 @@ func FindDataTransfer(date string) (DataTransfer, error) {
 		return dataTransfer, errors.New("Unable to retrive data transfer")
 	}
 	return dataTransfer, nil
+}
+
+func SaveRejectNotes(ctx *iris.Context) {
+	params := struct {
+		Date    string `json:"date"`
+		GroupId uint64 `json:"groupId"`
+		Notes   string `json:"notes"`
+	}{}
+
+	err := ctx.ReadJSON(&params)
+	if err != nil {
+		ctx.JSON(iris.StatusBadRequest, iris.Map{"status": "error", "message": err.Error()})
+		return
+	}
+	logGroupId := services.ConstructRejectsNotesGroupId(params.GroupId, params.Date, ctx.Param("status"), ctx.Param("stage"))
+	log := services.Log{Data: params.Notes, GroupID: logGroupId, ArchiveID: ctx.Param("stage")}
+	err = services.PostToLog(log)
+	if err != nil {
+		ctx.JSON(iris.StatusInternalServerError, iris.Map{"status": "error", "message": err.Error()})
+		return
+	}
+	ctx.JSON(iris.StatusOK, iris.Map{
+		"status": "success",
+		"data":   params,
+	})
+}
+
+func GetRejectNotes(ctx *iris.Context) {
+	l, err := services.GetRejectNotesData(ctx.Param("status"), ctx.Param("groupId"), ctx.Param("date"), ctx.Param("stage"))
+	if err != nil {
+		ctx.JSON(iris.StatusInternalServerError, iris.Map{"status": "error", "message": err.Error()})
+		return
+	}
+
+	response := struct {
+		GroupID string      `json:groupId`
+		Date    string      `json:date`
+		Stage   string      `json:archiveId`
+		Notes   interface{} `json:notes`
+	}{
+		GroupID: ctx.Param("groupId"),
+		Date:    ctx.Param("date"),
+		Stage:   ctx.Param("stage"),
+		Notes:   l.Data,
+	}
+
+	ctx.JSON(iris.StatusOK, iris.Map{
+		"status": "success",
+		"data":   response,
+	})
 }
