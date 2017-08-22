@@ -96,7 +96,7 @@ func CreateUserMis(ctx *iris.Context){
 			};
 			db.Commit()
 		}else{
-			ctx.JSON(iris.StatusUnauthorized, iris.Map{
+			ctx.JSON(iris.StatusInternalServerError, iris.Map{
 				"status":  "error",
 				"message": "Error Create User in Go-CAS",
 			})
