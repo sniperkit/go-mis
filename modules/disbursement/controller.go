@@ -220,3 +220,27 @@ func UpdateStage(ctx *iris.Context) {
 	})
 
 }
+
+func UpdateDisbursementDate(ctx *iris.Context) {
+	query := `with upd as (insert into disbursement_history ("stageFrom","stageTo",remark, "lastDisbursementDate", "nextDisbursementDate", "createdAt", "updatedAt")
+	select 'PENDING', 'PENDING', concat('MANUAL ASSIGN FOR DISBURSEMENT ID = ', d.id::varchar), ?, ?, current_timestamp, current_timestamp
+	from loan l
+	join r_loan_disbursement rld on l.id = rld."loanId"
+	join disbursement d on d.id = rld."disbursementId"
+	where l.id = ?
+	returning id, split_part(remark,' ',7)::int "disbursementId", "nextDisbursementDate"),
+	upd2 as (update disbursement set "disbursementDate"= foo."nextDisbursementDate" from ( select "disbursementId", "nextDisbursementDate" from upd ) foo where foo."disbursementId" = disbursement.id)
+	insert into r_disbursement_history ("disbursementId", "disbursementHistoryId", "createdAt", "updatedAt") select "disbursementId", id, current_timestamp, current_timestamp
+	from upd`
+	
+	loanId := ctx.Param("loan_id")
+	lastDisbursementDate := ctx.Param("last_disb_date") + " 00:00:00"
+	nextDisbursementDate := ctx.Param("next_disb_date") + " 00:00:00"
+	
+	services.DBCPsql.Exec(query, lastDisbursementDate, nextDisbursementDate, loanId)
+	
+	ctx.JSON(iris.StatusOK, iris.Map{
+		"status":    "success",
+		"data": iris.Map{},
+	})
+}

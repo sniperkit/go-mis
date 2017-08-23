@@ -18,9 +18,10 @@ var (
 	PsqlHostAddressSurvey     string
 	MysqlHostAddress          string
 	UploaderApiPath           string
-	GoCasPath			           string
+	GoCasPath			      string
 	EnableEmergencyLoan		  bool
-	GoBankingPath 						string
+	GoBankingPath 			  string
+	GoLogPath				  string
 )
 
 type Config struct {
@@ -32,6 +33,7 @@ type Config struct {
 	ApiVersion   string     `json:"apiVersion"`
 	EnableEmergencyLoan bool `json:"enableEmergencyLoan"`
 	GoBankingPath	string		`json:"goBankingPath"`
+	GoLogPath string `json:"goLogPath"`
 }
 
 type DbConfig struct {
@@ -90,10 +92,9 @@ func init() {
 
 	UploaderApiPath = c.UploaderPath
 	GoCasApiPath = c.GoCasPath
+	GoLogPath = c.GoLogPath
 	SignStringKey = c.SignString
 	GoBankingPath = c.GoBankingPath
-
-
 	EnableEmergencyLoan = c.EnableEmergencyLoan
 
 	// Postgresql Host Address

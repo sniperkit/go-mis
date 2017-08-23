@@ -11,9 +11,10 @@ import (
 	"gopkg.in/iris-contrib/middleware.v4/recovery"
 	"gopkg.in/kataras/iris.v4"
 
+	"regexp"
+
 	"bitbucket.org/go-mis/config"
 	"bitbucket.org/go-mis/routes"
-	"regexp"
 )
 
 func main() {
@@ -82,11 +83,11 @@ func (l *customHTTPLoggerMiddleware) logCustom(path string) iris.HandlerFunc {
 
 		requestLogString := fmt.Sprintf("#REQUEST %s %4v %s %s \n%s\n", startDate, latency, method, requestURI, requestBody)
 		responseLogString := fmt.Sprintf("#RESPONSE %s %v %s\n\n", endDate, status, responseBody)
-		logString := requestLogString+", "+responseLogString
+		logString := requestLogString + ", " + responseLogString
 
 		//remove newline
 		regex := regexp.MustCompile(`\r?\n`)
-		logString=regex.ReplaceAllString(logString,"")+"\n"
+		logString = regex.ReplaceAllString(logString, "") + "\n"
 		l.createAndWrite(path+"/"+logName, logString)
 	}
 }
