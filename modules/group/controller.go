@@ -76,6 +76,26 @@ func FetchAll(ctx *iris.Context) {
 	})
 }
 
+func SearchGroup(ctx *iris.Context){
+
+	searchStr := ctx.Param("searchStr")
+	branchId := ctx.Param("branchId")
+	sGroup := []GroupSearch{}
+
+	query := `SELECT "group".id,"group"."name" FROM "group" 
+JOIN r_loan_group ON r_loan_group."groupId"="group".id
+JOIN r_loan_branch ON r_loan_branch."loanId"=r_loan_group."loanId"
+WHERE r_loan_branch."branchId"=? AND "group"."name" ILIKE ?
+GROUP BY "group".id`
+
+	services.DBCPsql.Raw(query, branchId, searchStr+"%").Scan(&sGroup)
+
+	ctx.JSON(iris.StatusOK, iris.Map{
+		"status": "success",
+		"data":   sGroup,
+	})
+}
+
 func GroupDetail(ctx *iris.Context) {
 
 	id := ctx.Get("id")
