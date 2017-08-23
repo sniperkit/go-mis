@@ -91,7 +91,7 @@ func init() {
 	UploaderApiPath = c.UploaderPath
 	GoCasApiPath = c.GoCasPath
 	SignStringKey = c.SignString
-
+	GoBankingPath = c.GoBankingPath
 
 
 	EnableEmergencyLoan = c.EnableEmergencyLoan

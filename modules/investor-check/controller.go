@@ -86,11 +86,39 @@ func Verify(ctx *iris.Context) {
 	// status type: verified or declined
 	status := ctx.Param("status")
 
+	fmt.Println(status)
+
 	if status == "validated" {
 		services.DBCPsql.Table("cif").Where("id = ?", id).Update("isValidated", true)
 
 		cifSchema := cif.Cif{}
 		services.DBCPsql.Table("cif").Where("id = ?", id).Scan(&cifSchema)
+		
+		// get investor id
+		inv := &r.RCifInvestor{}
+		services.DBCPsql.Table("r_cif_investor").Where("\"cifId\" = ?", cifSchema.ID).Scan(&inv)
+		
+		// get investor data
+		investorSchema := investor.Investor{}
+		services.DBCPsql.Table("investor").Where("id = ?", inv.InvestorId).Scan(&investorSchema)
+		
+		// send create BCA VA request
+		params := strings.NewReader(`{"investorNo":` + strconv.FormatUint(investorSchema.InvestorNo, 10) + `}`)
+		url := config.GoBankingPath + `/bca/register-va`
+		request, err := http.NewRequest("POST", url, params)
+		if err != nil {
+			fmt.Println(err)
+		}
+		
+		fmt.Println("requesting ... " + url)
+		
+		request.Header.Set("X-Auth-Token", "AMARTHA123")
+		
+		client := &http.Client{}
+		_, errResp := client.Do(request)
+		if errResp != nil {
+			fmt.Println(errResp)
+		}
 
 	} else if status == "verified" {
 		cifSchema := cif.Cif{}
@@ -134,6 +162,8 @@ func Verify(ctx *iris.Context) {
 				fmt.Println(err)
 			}
 			
+			request.Header.Set("X-Auth-Token", "AMARTHA123")
+			
 			client := &http.Client{}
 			_, errResp := client.Do(request)
 			if errResp != nil {
@@ -142,7 +172,7 @@ func Verify(ctx *iris.Context) {
 			
 			if cifSchema.Username != "" {
 				fmt.Println("Sending email..")
-				go email.SendEmailVerificationSuccess(cifSchema.Username, cifSchema.Name, vaData["BCA"], vaData["BCA_HOLDER"], vaData["MANDIRI"], vaData["MANDIRI_HOLDER"])
+				// go email.SendEmailVerificationSuccess(cifSchema.Username, cifSchema.Name, vaData["BCA"], vaData["BCA_HOLDER"], vaData["MANDIRI"], vaData["MANDIRI_HOLDER"])
 				// sendgrid := email.Sendgrid{}
 				// sendgrid.SetFrom("Amartha", "no-reply@amartha.com")
 				// sendgrid.SetTo(cifSchema.Name, cifSchema.Username)
@@ -151,14 +181,14 @@ func Verify(ctx *iris.Context) {
 				// sendgrid.SendEmail()
 			}
 
-			if cifSchema.PhoneNo != "" {
-				// send sms notification
-				fmt.Println("Sending sms ... ")
-				twilio := services.InitTwilio()
-				message := "Selamat data Anda sudah terverifikasi. Silakan login ke dashboard Anda dan mulai berinvestasi. www.amartha.com"
-				twilio.SetParam(cifSchema.PhoneNo, message)
-				twilio.SendSMS()
-			}
+			// if cifSchema.PhoneNo != "" {
+			// 	// send sms notification
+			// 	fmt.Println("Sending sms ... ")
+			// 	twilio := services.InitTwilio()
+			// 	message := "Selamat data Anda sudah terverifikasi. Silakan login ke dashboard Anda dan mulai berinvestasi. www.amartha.com"
+			// 	twilio.SetParam(cifSchema.PhoneNo, message)
+			// 	twilio.SendSMS()
+			// }
 			
 		} else {
 			status = "verification failed, user not validated"
@@ -168,12 +198,12 @@ func Verify(ctx *iris.Context) {
 		cifSchema := cif.Cif{}
 		services.DBCPsql.Table("cif").Where("id = ?", id).Scan(&cifSchema)
 
-		sendgrid := email.Sendgrid{}
-		sendgrid.SetFrom("Amartha", "no-reply@amartha.com")
-		sendgrid.SetTo(cifSchema.Name, cifSchema.Username)
-		sendgrid.SetSubject(cifSchema.Name + ", Verifikasi Data Anda Gagal")
-		sendgrid.SetVerificationBodyEmail("UNVERIFIED_DATA", cifSchema.Name, cifSchema.Name, cifSchema.Username, "")
-		sendgrid.SendEmail()
+		// sendgrid := email.Sendgrid{}
+		// sendgrid.SetFrom("Amartha", "no-reply@amartha.com")
+		// sendgrid.SetTo(cifSchema.Name, cifSchema.Username)
+		// sendgrid.SetSubject(cifSchema.Name + ", Verifikasi Data Anda Gagal")
+		// sendgrid.SetVerificationBodyEmail("UNVERIFIED_DATA", cifSchema.Name, cifSchema.Name, cifSchema.Username, "")
+		// sendgrid.SendEmail()
 	}
 
 	ctx.JSON(iris.StatusOK, iris.Map{
