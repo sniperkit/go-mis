@@ -90,6 +90,7 @@ func InitCustomApi() {
 		v2.Any("/group/create", group.Create)
 		v2.Any("/group/set/:id", group.Update)
 		v2.Any("/group-borrower/set/:id", group.UpdateGroupBorrower)
+		v2.Any("/group/s/branch/:branchId/:searchStr", group.SearchGroup)
 		v2.Any("/loan", loan.FetchAll)
 		v2.Any("/loan/get/:id", loan.GetLoanDetail)
 		v2.Any("/loan/set/:id/stage/:stage", loan.UpdateStage)

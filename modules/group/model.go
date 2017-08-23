@@ -19,6 +19,11 @@ type Group struct {
 	DeletedAt    *time.Time       `gorm:"column:deletedAt" json:"deletedAt"`
 }
 
+type GroupSearch struct {
+	ID                uint64  `gorm:"column:id" json:"id"`
+	Group							string  `gorm:"column:name" json:"name"`
+}
+
 type GroupAgentBorrower struct {
 	ID           uint64           `gorm:"primary_key" gorm:"column:_id" json:"_id"`
 	BranchId     uint64           `gorm:"column:branchId" json:"branchId"`
