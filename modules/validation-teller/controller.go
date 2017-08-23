@@ -358,6 +358,7 @@ func FindInstallmentData(branchID uint64, date string, isApprove bool) (Response
 	}
 	majelists := []MajelisId{}
 	isEnableSubmit := true
+	var TELLER_COUNTER int = 0
 	var totalCabRepaymentAct float64
 	var totalCabRepaymentCoh float64
 	var totalCabTabunganAct float64
@@ -402,6 +403,9 @@ func FindInstallmentData(branchID uint64, date string, isApprove bool) (Response
 				if qrval.Status == "AGENT" {
 					isEnableSubmit = false
 				}
+				if qrval.Status=="TELLER"{
+					TELLER_COUNTER+=1
+				}
 				majelists = append(majelists, MajelisId{GroupId: qrval.GroupId, Name: qrval.Name})
 				totalRepaymentAct += qrval.Repayment
 				totalRepaymentProj += qrval.ProjectionRepayment
@@ -439,6 +443,9 @@ func FindInstallmentData(branchID uint64, date string, isApprove bool) (Response
 		totalCabCohAgent += totalCohAgent
 		totalCabPencairanAgent += totalPencairanAgent
 		totalCabGagalDroppingAgent += totalGagalDroppingAgent
+	}
+	if TELLER_COUNTER==0{
+		isEnableSubmit = false
 	}
 	response.InstallmentData = res
 	response.ListMajelis = majelists
