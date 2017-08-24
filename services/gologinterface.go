@@ -71,6 +71,13 @@ func GetNotes(groupID string) ([]Log, error) {
 	apiPath := logAPIPath + "/api/v1/archive-list/group/" + groupID
 	log.Println(apiPath)
 	resp, err := http.Get(apiPath)
+
+	// In case of GO-LOG App not running
+	if resp == nil {
+		log.Println("Unable to get response form GO-LOG App")
+		return nil, errors.New("Unable to get response form GO-LOG App")
+	}
+
 	if resp.StatusCode != 200 || err != nil {
 		return nil, errors.New("Unable to retrieve data notes from GO-LOG APP")
 	}
@@ -82,7 +89,6 @@ func GetNotes(groupID string) ([]Log, error) {
 		return nil, errors.New("Unable to retrieve data notes from GO-LOG APP")
 	}
 	err = json.Unmarshal([]byte(body), &logResp)
-	log.Println(logResp)
 	if err != nil {
 		log.Println("#ERROR: Unable to unmarshall body")
 		log.Println("#ERROR: ", err)
@@ -100,6 +106,12 @@ func GetDataFromLog(branchID uint64) (Log, error) {
 	apiPath := GetLogAPIPath() + "/api/v1/archive/" + archiveID + "/group/" + groupID
 	log.Println("[INFO]", apiPath)
 	resp, err := http.Get(apiPath)
+
+	// In case of GO-LOG App not running
+	if resp == nil {
+		log.Println("Unable to get response from GO-LOG App")
+		return logger, errors.New("Unable to get response from GO-LOG App")
+	}
 	if err != nil {
 		log.Println("#ERROR: Unable to retrive data from GO-LOG App")
 		log.Println("#ERROR: ", err)
@@ -116,7 +128,6 @@ func GetDataFromLog(branchID uint64) (Log, error) {
 		log.Println("#ERROR: When unmarshall resp body GO-LOG App to Log struct")
 		return logger, err
 	}
-	log.Println("[INFO]", logger)
 	return logger, nil
 }
 
