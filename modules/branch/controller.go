@@ -73,30 +73,6 @@ func GetBranchById(ctx *iris.Context) {
 	})
 }
 
-func getBranchWithoutManager() []BranchManagerArea {
-	query := "SELECT branch.\"id\", branch.\"name\", branch.\"city\", branch.\"province\", area.\"name\" as \"area\" "
-	query += "FROM branch "
-	query += "LEFT JOIN r_area_branch ON r_area_branch.\"branchId\" = branch.\"id\" "
-	query += "LEFT JOIN area ON r_area_branch.\"areaId\" = area.\"id\" "
-	query += "WHERE branch.\"deletedAt\" IS NULL"
-
-	result := []BranchManagerArea{}
-	services.DBCPsql.Raw(query).Find(&result)
-	return result
-}
-
-func getBranchManager() []BranchManager {
-	query := "SELECT \"branchId\",\"fullname\" "
-	query += "FROM r_branch_user_mis rbum "
-	query += "JOIN user_mis um on um.id = rbum.\"userMisId\" "
-	query += "LEFT JOIN r_user_mis_role rumr on rbum.\"userMisId\" = rumr.\"userMisId\" "
-	//query += "WHERE roleId = 4 "
-
-	result := []BranchManager{}
-	services.DBCPsql.Raw(query).Find(&result)
-	return result
-}
-
 func GetBranchbyArea(ctx *iris.Context) (error, []BranchByArea) {
 	query := "SELECT branch.\"id\", area.name, branch.name FROM branch "
 	query += "LEFT JOIN r_area_branch ON r_area_branch.\"branchId\" = branch.id "
@@ -112,24 +88,13 @@ func GetBranchbyArea(ctx *iris.Context) (error, []BranchByArea) {
 	return nil, result
 }
 
-func IrisGetByAreaId(ctx *iris.Context) {
+func GetBranchAreaWithoutManager(ctx *iris.Context) {
 	err, result := GetBranchbyArea(ctx)
 	if err != nil {
 		ctx.JSON(iris.StatusInternalServerError, iris.Map{"data": err})
 		return
 	}
 	ctx.JSON(iris.StatusOK, iris.Map{"data": result})
-}
-
-func combineBranchManager(branch []BranchManagerArea, branchManager []BranchManager) []BranchManagerArea {
-	for i := 0; i < len(branch); i++ {
-		for j := 0; j < len(branchManager); j++ {
-			if branch[i].ID == branchManager[j].BranchId {
-				branch[i].Manager = branchManager[j].Fullname
-			}
-		}
-	}
-	return branch
 }
 
 // GetByID branch by id
