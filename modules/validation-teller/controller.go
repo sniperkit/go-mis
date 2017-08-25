@@ -459,7 +459,7 @@ func FindDataTransfer(date string) (DataTransfer, error) {
 func SaveRejectNotes(ctx *iris.Context) {
 	params := struct {
 		Date    string `json:"date"`
-		GroupId uint64 `json:"groupId"`
+		GroupID uint64 `json:"groupId"`
 		Notes   string `json:"notes"`
 	}{}
 
@@ -468,9 +468,9 @@ func SaveRejectNotes(ctx *iris.Context) {
 		ctx.JSON(iris.StatusBadRequest, iris.Map{"status": "error", "message": err.Error()})
 		return
 	}
-	logGroupId := services.ConstructRejectsNotesGroupId(params.GroupId, params.Date, ctx.Param("status"), ctx.Param("stage"))
-	log := services.Log{Data: params.Notes, GroupID: logGroupId, ArchiveID: ctx.Param("stage")}
-	err = services.PostToLog(log)
+	logGroupID := services.ConstructRejectsNotesGroupId(params.GroupID, params.Date, ctx.Param("status"), ctx.Param("stage"))
+	dataLog := services.Log{Data: params.Notes, GroupID: logGroupID, ArchiveID: ctx.Param("stage")}
+	err = services.PostToLog(dataLog)
 	if err != nil {
 		ctx.JSON(iris.StatusInternalServerError, iris.Map{"status": "error", "message": err.Error()})
 		return
