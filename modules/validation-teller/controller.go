@@ -507,10 +507,11 @@ func FindDataTransfer(branchID uint64, date string) (DataTransfer, error) {
 				data_transfer.tabungan_id,
 				data_transfer.tabungan_nominal,
 				data_transfer.gagal_dropping_id,
-				data_transfer.gagal_droping_nominal
+				data_transfer.gagal_droping_nominal,
+				data_transfer.branch_id
 			from data_transfer
 			where data_transfer.validation_date::date = ?
-			AND branchId = ? 
+			AND branch_id = ? 
 			order by data_transfer.id DESC`
 	err = services.DBCPsql.Raw(query, branchID, date).Scan(&dataTransfer).Error
 	if err != nil {
