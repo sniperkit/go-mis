@@ -349,10 +349,10 @@ func SubmitInstallmentByGroupIDAndTransactionDateWithStatus(ctx *iris.Context) {
 		db := services.DBCPsql.Begin()
 		installmentDetailSchema := []InstallmentDetail{}
 		if strings.ToLower(stageTo) == "success" {
-			query += "WHERE installment.\"stage\" = 'APPROVE'"
+			query += "WHERE installment.\"stage\" = 'APPROVE' AND installment.\"deletedAt\" is null"
 			db.Raw(query).Scan(&installmentDetailSchema)
 		} else {
-			query += "WHERE installment.\"createdAt\"::date = ? AND \"group\".\"id\" = ? AND installment.\"stage\" != 'APPROVE'"
+			query += "WHERE installment.\"createdAt\"::date = ? AND \"group\".\"id\" = ? AND installment.\"stage\" != 'APPROVE' AND installment.\"deletedAt\" is null"
 			db.Raw(query, transactionDate, groupID).Scan(&installmentDetailSchema)
 		}
 
