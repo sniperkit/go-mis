@@ -135,4 +135,101 @@ type (
 		GagalDroppingID      string  `json:"gagalDroppingId"`
 		GagalDroppingNominal float64 `json:"gagalDroppingNominal"`
 	}
+
+	TotalCabang struct {
+		TotalCabRepaymentAct       float64
+		TotalCabRepaymentCoh       float64
+		TotalCabTabunganAct        float64
+		TotalCabTabunganCoh        float64
+		TotalCabActualAgent        float64
+		TotalCabCohAgent           float64
+		TotalCabPencairanAgent     float64
+		TotalCabGagalDroppingAgent float64
+	}
+
+	TotalRepayment struct {
+		TotalRepaymentAct       float64
+		TotalRepaymentProj      float64
+		TotalRepaymentCoh       float64
+		TotalTabunganAct        float64
+		TotalTabunganProj       float64
+		TotalTabunganCoh        float64
+		TotalActualAgent        float64
+		TotalProjectionAgent    float64
+		TotalCohAgent           float64
+		TotalPencairanAgent     float64
+		TotalPencairanProjAgent float64
+		TotalGagalDroppingAgent float64
+	}
 )
+
+func (totalRepayment *TotalRepayment) AddTotal(rawInstallmentData RawInstallmentData) {
+	totalRepayment.TotalRepaymentAct += rawInstallmentData.Repayment
+	totalRepayment.TotalRepaymentProj += rawInstallmentData.ProjectionRepayment
+	totalRepayment.TotalRepaymentCoh += rawInstallmentData.CashOnHand
+	totalRepayment.TotalTabunganAct += rawInstallmentData.Tabungan
+	totalRepayment.TotalTabunganProj += rawInstallmentData.ProjectionTabungan
+	totalRepayment.TotalTabunganCoh += rawInstallmentData.CashOnReserve
+	totalRepayment.TotalActualAgent += rawInstallmentData.Total
+	totalRepayment.TotalProjectionAgent += rawInstallmentData.ProjectionRepayment + rawInstallmentData.ProjectionTabungan
+	totalRepayment.TotalCohAgent += rawInstallmentData.CashOnHand + rawInstallmentData.CashOnReserve
+	totalRepayment.TotalPencairanAgent += rawInstallmentData.TotalCair
+	totalRepayment.TotalPencairanProjAgent += rawInstallmentData.TotalCairProj
+	totalRepayment.TotalGagalDroppingAgent += rawInstallmentData.TotalGagalDropping
+}
+
+func (totalCabang *TotalCabang) AddTotal(totalRepayment *TotalRepayment) {
+	totalCabang.TotalCabRepaymentAct += totalRepayment.TotalRepaymentAct
+	totalCabang.TotalCabRepaymentCoh += totalRepayment.TotalRepaymentCoh
+	totalCabang.TotalCabTabunganAct += totalRepayment.TotalTabunganAct
+	totalCabang.TotalCabTabunganCoh += totalRepayment.TotalTabunganCoh
+	totalCabang.TotalCabActualAgent += totalRepayment.TotalActualAgent
+	totalCabang.TotalCabCohAgent += totalRepayment.TotalCohAgent
+	totalCabang.TotalCabPencairanAgent += totalRepayment.TotalPencairanAgent
+	totalCabang.TotalCabGagalDroppingAgent += totalRepayment.TotalGagalDroppingAgent
+}
+
+func (installmentData *InstallmentData) AddTotal(totalRepayment *TotalRepayment) {
+	installmentData.TotalActualRepayment = totalRepayment.TotalRepaymentAct
+	installmentData.TotalProjectionRepayment = totalRepayment.TotalRepaymentProj
+	installmentData.TotalCohRepayment = totalRepayment.TotalRepaymentCoh
+	installmentData.TotalActualTabungan = totalRepayment.TotalTabunganAct
+	installmentData.TotalProjectionTabungan = totalRepayment.TotalTabunganProj
+	installmentData.TotalCohTabungan = totalRepayment.TotalTabunganCoh
+	installmentData.TotalActualAgent = totalRepayment.TotalActualAgent
+	installmentData.TotalProjectionAgent = totalRepayment.TotalProjectionAgent
+	installmentData.TotalCohAgent = totalRepayment.TotalCohAgent
+	installmentData.TotalPencairanAgent = totalRepayment.TotalPencairanAgent
+	installmentData.TotalPencairanProjAgent = totalRepayment.TotalPencairanProjAgent
+	installmentData.TotalGagalDroppingAgent = totalRepayment.TotalGagalDroppingAgent
+}
+
+func (majelis Majelis) InitializedByRawInstallmentData(rawInstallmentData RawInstallmentData) Majelis {
+	m := Majelis{
+		GroupId:             rawInstallmentData.GroupId,
+		Name:                rawInstallmentData.Name,
+		Repayment:           rawInstallmentData.Repayment,
+		Tabungan:            rawInstallmentData.Tabungan,
+		TotalActual:         rawInstallmentData.Total,
+		TotalProyeksi:       rawInstallmentData.ProjectionRepayment + rawInstallmentData.ProjectionTabungan,
+		TotalCoh:            rawInstallmentData.CashOnHand + rawInstallmentData.CashOnReserve,
+		TotalCair:           rawInstallmentData.TotalCair,
+		TotalCairProj:       rawInstallmentData.TotalCairProj,
+		TotalGagalDropping:  rawInstallmentData.TotalGagalDropping,
+		Status:              rawInstallmentData.Status,
+		CashOnHand:          rawInstallmentData.CashOnHand,
+		CashOnReserve:       rawInstallmentData.CashOnReserve,
+		ProjectionRepayment: rawInstallmentData.ProjectionRepayment,
+		ProjectionTabungan:  rawInstallmentData.ProjectionTabungan,
+	}
+	return m
+}
+
+func AssignTotalResponseData(responseData *ResponseGetData, totalCabang *TotalCabang) {
+	responseData.TotalActualRepayment = totalCabang.TotalCabRepaymentAct
+	responseData.TotalCashOnHand = totalCabang.TotalCabRepaymentCoh
+	responseData.TotalCashOnReserve = totalCabang.TotalCabTabunganCoh
+	responseData.TotalGagalDroping = totalCabang.TotalCabGagalDroppingAgent
+	responseData.TotalTabungan = totalCabang.TotalCabTabunganAct
+	responseData.TotalCair = totalCabang.TotalCabPencairanAgent
+}
