@@ -134,6 +134,7 @@ type (
 		TabunganNominal      float64 `json:"tabunganNominal"`
 		GagalDroppingID      string  `json:"gagalDroppingId"`
 		GagalDroppingNominal float64 `json:"gagalDroppingNominal"`
+		BranchID             uint64  `json:"branchId"`
 	}
 
 	TotalCabang struct {
