@@ -368,6 +368,7 @@ func FindInstallmentData(branchID uint64, date string, isApprove bool) (Response
 		}
 	}
 	totalCabang, majelists, isEnableSubmit := GetTotalCabang(rawInstallmentData, installmentData)
+	log.Println("Majelists: ", majelists)
 	responseData.InstallmentData = installmentData
 	responseData.ListMajelis = majelists
 	responseData.IsEnableSubmit = isEnableSubmit
@@ -377,13 +378,13 @@ func FindInstallmentData(branchID uint64, date string, isApprove bool) (Response
 
 // GetTotalCabang - Get summary of data Validation Teller
 func GetTotalCabang(rawInstallmentData []RawInstallmentData, installmentData []InstallmentData) (*TotalCabang, []MajelisId, bool) {
-	majelists := make([]MajelisId, len(rawInstallmentData))
+	majelists := make([]MajelisId, 0, len(rawInstallmentData))
 	var majelis Majelis
 	isEnableSubmit := true
 	var tellerCounter int
 	totalCabang := new(TotalCabang)
 	for idx, rval := range installmentData {
-		m := make([]Majelis, len(rawInstallmentData))
+		m := make([]Majelis, 0, len(rawInstallmentData))
 		totalRepayment := new(TotalRepayment)
 		for _, qrval := range rawInstallmentData {
 			if rval.Agent == qrval.Fullname {
@@ -394,7 +395,7 @@ func GetTotalCabang(rawInstallmentData []RawInstallmentData, installmentData []I
 				if strings.ToUpper(qrval.Status) == tellerStatus {
 					tellerCounter++
 				}
-				if qrval.GroupId > 0 {
+				if qrval.GroupId > 0 && len(strings.Trim(qrval.Name, " ")) > 0 {
 					majelists = append(majelists, MajelisId{GroupId: qrval.GroupId, Name: qrval.Name})
 				}
 				totalRepayment.AddTotal(qrval)
