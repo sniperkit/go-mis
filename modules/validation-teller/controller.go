@@ -11,10 +11,15 @@ import (
 
 	"strconv"
 
-	ins "bitbucket.org/go-mis/modules/installment"
-	systemParameter "bitbucket.org/go-mis/modules/system-parameter"
+	MISInstallment "bitbucket.org/go-mis/modules/installment"
+	SystemParameter "bitbucket.org/go-mis/modules/system-parameter"
 	MISUtility "bitbucket.org/go-mis/modules/utility"
 	"bitbucket.org/go-mis/services"
+)
+
+const (
+	agentStatus  = "AGENT"
+	tellerStatus = "TELLER"
 )
 
 // GetDataValidationTeller - Get data validation teller
@@ -38,7 +43,7 @@ func GetDataValidationTeller(ctx *iris.Context) {
 	}
 	log.Println("[INFO] Validation get data installment pass")
 
-	if !systemParameter.IsAllowedBackdate(dateParam) {
+	if !SystemParameter.IsAllowedBackdate(dateParam) {
 		log.Println("#ERROR: Not Allowed back date")
 		ctx.JSON(405, iris.Map{
 			"message":      "Not Allowed",
@@ -46,7 +51,6 @@ func GetDataValidationTeller(ctx *iris.Context) {
 		})
 		return
 	}
-
 	instalmentData, err = FindInstallmentData(branchID, dateParam, false)
 	if err != nil {
 		log.Println("[INFO] Can not retrive installment data")
@@ -69,10 +73,12 @@ func GetDataValidationTeller(ctx *iris.Context) {
 	})
 }
 
+// SaveValidationTellerNotes - save validation teller additional information / notes
+// Routes: api/v2/validation-teller/group-notes/:logType/save
 func SaveValidationTellerNotes(ctx *iris.Context) {
 	params := struct {
 		Date     string  `json:"date"`
-		BranchId uint64  `json:"branchId"`
+		BranchID uint64  `json:"branchId"`
 		Notes    []Notes `json:"notes"`
 	}{}
 
@@ -81,8 +87,8 @@ func SaveValidationTellerNotes(ctx *iris.Context) {
 		ctx.JSON(iris.StatusBadRequest, iris.Map{"status": "error", "message": err.Error()})
 		return
 	}
-	logGroupId := services.ConstructNotesGroupId(params.BranchId, params.Date)
-	log := services.Log{Data: params.Notes, GroupID: logGroupId, ArchiveID: ctx.Param("logType")}
+	logGroupID := services.ConstructNotesGroupId(params.BranchID, params.Date)
+	log := services.Log{Data: params.Notes, GroupID: logGroupID, ArchiveID: ctx.Param("logType")}
 	err = services.PostToLog(log)
 	if err != nil {
 		ctx.JSON(iris.StatusInternalServerError, iris.Map{"status": "error", "message": err.Error()})
@@ -94,12 +100,14 @@ func SaveValidationTellerNotes(ctx *iris.Context) {
 	})
 }
 
+// SaveValidationTellerDetail - save data validation teller and additional information/note
+// Routes: api/v2/validation-teller/detail/save
 func SaveValidationTellerDetail(ctx *iris.Context) {
 	params := []struct {
 		CashOnReserve float64 `json:"cashOnReserve"`
 		CashOnHand    float64 `json:"cashOnHand"`
-		Id            uint64  `json:"id"`
-		GroupId       uint64  `json:"groupId"`
+		ID            uint64  `json:"id"`
+		GroupID       uint64  `json:"groupId"`
 		Note          string  `json:"note"`
 	}{}
 	err := ctx.ReadJSON(&params)
@@ -109,7 +117,7 @@ func SaveValidationTellerDetail(ctx *iris.Context) {
 	}
 	db := services.DBCPsql.Begin()
 	for _, param := range params {
-		if err := db.Table("installment").Where("\"id\" = ?", param.Id).UpdateColumn("cash_on_hand", param.CashOnHand).Error; err != nil {
+		if err := db.Table("installment").Where("\"id\" = ?", param.ID).UpdateColumn("cash_on_hand", param.CashOnHand).Error; err != nil {
 			db.Rollback()
 			ctx.JSON(iris.StatusInternalServerError, iris.Map{
 				"status":  "error",
@@ -117,7 +125,7 @@ func SaveValidationTellerDetail(ctx *iris.Context) {
 			})
 			return
 		}
-		if err := db.Table("installment").Where("\"id\" = ?", param.Id).UpdateColumn("cash_on_reserve", param.CashOnReserve).Error; err != nil {
+		if err := db.Table("installment").Where("\"id\" = ?", param.ID).UpdateColumn("cash_on_reserve", param.CashOnReserve).Error; err != nil {
 			db.Rollback()
 			ctx.JSON(iris.StatusInternalServerError, iris.Map{
 				"status":  "error",
@@ -127,7 +135,6 @@ func SaveValidationTellerDetail(ctx *iris.Context) {
 		}
 	}
 	db.Commit()
-
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"status": "success",
 		"data":   params,
@@ -139,11 +146,10 @@ func SaveValidationTellerDetail(ctx *iris.Context) {
 func GetValidationTellerDetail(ctx *iris.Context) {
 	params := struct {
 		Date    string `json:"date"`
-		GroupId int64  `json:"groupId"`
+		GroupID int64  `json:"groupId"`
 	}{}
-	params.GroupId, _ = ctx.URLParamInt64("groupId")
+	params.GroupID, _ = ctx.URLParamInt64("groupId")
 	params.Date = ctx.URLParam("date")
-
 	query := `select i.id,rlbo."borrowerId" as "borrowerId",cif."name", 
 					i."paidInstallment" as "repayment",i.reserve as "tabungan",
 					(i."paidInstallment"+i.reserve) as "total",
@@ -164,10 +170,8 @@ func GetValidationTellerDetail(ctx *iris.Context) {
 					join disbursement d on d.id = rld."disbursementId"
 				where l."deletedAt" is null and i."deletedAt" is null and coalesce(i."transactionDate",i."createdAt")::date = ? and
 				l.stage = 'INSTALLMENT' and g.id=?`
-
 	queryResult := []RawInstallmentDetail{}
-	services.DBCPsql.Raw(query, params.Date, params.GroupId).Scan(&queryResult)
-
+	services.DBCPsql.Raw(query, params.Date, params.GroupID).Scan(&queryResult)
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"status": "success",
 		"data":   queryResult,
@@ -178,7 +182,7 @@ func GetValidationTellerDetail(ctx *iris.Context) {
 // Route: api/v2/validation-teller/save
 func SaveValidationTeller(ctx *iris.Context) {
 	var err error
-	var installment ins.Installment
+	var installment MISInstallment.Installment
 
 	params := struct {
 		BranchID uint64 `json:"branchId"`
@@ -193,7 +197,7 @@ func SaveValidationTeller(ctx *iris.Context) {
 		})
 		return
 	}
-	installments, err := ins.FindByBranchAndDate(params.BranchID, params.Date)
+	installments, err := MISInstallment.FindByBranchAndDate(params.BranchID, params.Date)
 	if err != nil {
 		log.Println("#ERROR: ", err)
 		ctx.JSON(iris.StatusInternalServerError, iris.Map{
@@ -205,7 +209,7 @@ func SaveValidationTeller(ctx *iris.Context) {
 	// db.begin
 	db := services.DBCPsql.Begin()
 	for _, installment = range installments {
-		err := ins.UpdateStageInstallmentApproveOrReject(db, installment.ID, installment.Stage, "PENDING")
+		err := MISInstallment.UpdateStageInstallmentApproveOrReject(db, installment.ID, installment.Stage, "PENDING")
 		if err != nil {
 			log.Println("#ERROR: ", err)
 			db.Rollback()
@@ -281,6 +285,58 @@ func GetDataValidationAndTransfer(ctx *iris.Context) {
 	})
 }
 
+// SaveRejectNotes - save note rejection of Validation Teller
+// Routes: api/v2/reject-notes/:status/:stage/save
+func SaveRejectNotes(ctx *iris.Context) {
+	params := struct {
+		Date    string `json:"date"`
+		GroupID uint64 `json:"groupId"`
+		Notes   string `json:"notes"`
+	}{}
+
+	err := ctx.ReadJSON(&params)
+	if err != nil {
+		ctx.JSON(iris.StatusBadRequest, iris.Map{"status": "error", "message": err.Error()})
+		return
+	}
+	logGroupID := services.ConstructRejectsNotesGroupId(params.GroupID, params.Date, ctx.Param("status"), ctx.Param("stage"))
+	dataLog := services.Log{Data: params.Notes, GroupID: logGroupID, ArchiveID: ctx.Param("stage")}
+	err = services.PostToLog(dataLog)
+	if err != nil {
+		ctx.JSON(iris.StatusInternalServerError, iris.Map{"status": "error", "message": err.Error()})
+		return
+	}
+	ctx.JSON(iris.StatusOK, iris.Map{
+		"status": "success",
+		"data":   params,
+	})
+}
+
+// GetRejectNotes - Get rejection notes of Validation teller
+// Routes: api/v2/reject-notes/:status/:stage/get/:groupId/:date
+func GetRejectNotes(ctx *iris.Context) {
+	l, err := services.GetRejectNotesData(ctx.Param("status"), ctx.Param("groupId"), ctx.Param("date"), ctx.Param("stage"))
+	if err != nil {
+		ctx.JSON(iris.StatusInternalServerError, iris.Map{"status": "error", "message": err.Error()})
+		return
+	}
+	response := struct {
+		GroupID string      `json:"groupId"`
+		Date    string      `json:"date"`
+		Stage   string      `json:"archiveId"`
+		Notes   interface{} `json:"notes"`
+	}{
+		GroupID: ctx.Param("groupId"),
+		Date:    ctx.Param("date"),
+		Stage:   ctx.Param("stage"),
+		Notes:   l.Data,
+	}
+	ctx.JSON(iris.StatusOK, iris.Map{
+		"status": "success",
+		"data":   response,
+	})
+}
+
 // FindInstallmentData - function to get installment data by branch ID and date
 func FindInstallmentData(branchID uint64, date string, isApprove bool) (ResponseGetData, error) {
 	// Declare and set variables with zero values
@@ -311,9 +367,7 @@ func FindInstallmentData(branchID uint64, date string, isApprove bool) (Response
 			installmentData = append(installmentData, InstallmentData{Agent: val.Fullname})
 		}
 	}
-
 	totalCabang, majelists, isEnableSubmit := GetTotalCabang(rawInstallmentData, installmentData)
-
 	responseData.InstallmentData = installmentData
 	responseData.ListMajelis = majelists
 	responseData.IsEnableSubmit = isEnableSubmit
@@ -326,6 +380,7 @@ func GetTotalCabang(rawInstallmentData []RawInstallmentData, installmentData []I
 	majelists := make([]MajelisId, len(rawInstallmentData))
 	var majelis Majelis
 	isEnableSubmit := true
+	var tellerCounter int
 	totalCabang := new(TotalCabang)
 	for idx, rval := range installmentData {
 		m := make([]Majelis, len(rawInstallmentData))
@@ -333,16 +388,24 @@ func GetTotalCabang(rawInstallmentData []RawInstallmentData, installmentData []I
 		for _, qrval := range rawInstallmentData {
 			if rval.Agent == qrval.Fullname {
 				m = append(m, majelis.InitializedByRawInstallmentData(qrval))
-				if qrval.Status == "AGENT" {
+				if strings.ToUpper(qrval.Status) == agentStatus {
 					isEnableSubmit = false
 				}
-				majelists = append(majelists, MajelisId{GroupId: qrval.GroupId, Name: qrval.Name})
+				if strings.ToUpper(qrval.Status) == tellerStatus {
+					tellerCounter++
+				}
+				if qrval.GroupId > 0 {
+					majelists = append(majelists, MajelisId{GroupId: qrval.GroupId, Name: qrval.Name})
+				}
 				totalRepayment.AddTotal(qrval)
 			}
 		}
 		installmentData[idx].Majelis = m
 		installmentData[idx].AddTotal(totalRepayment)
 		totalCabang.AddTotal(totalRepayment)
+	}
+	if tellerCounter == 0 {
+		isEnableSubmit = false
 	}
 	return totalCabang, majelists, isEnableSubmit
 }
@@ -454,54 +517,4 @@ func FindDataTransfer(date string) (DataTransfer, error) {
 		return dataTransfer, errors.New("Unable to retrive data transfer")
 	}
 	return dataTransfer, nil
-}
-
-func SaveRejectNotes(ctx *iris.Context) {
-	params := struct {
-		Date    string `json:"date"`
-		GroupID uint64 `json:"groupId"`
-		Notes   string `json:"notes"`
-	}{}
-
-	err := ctx.ReadJSON(&params)
-	if err != nil {
-		ctx.JSON(iris.StatusBadRequest, iris.Map{"status": "error", "message": err.Error()})
-		return
-	}
-	logGroupID := services.ConstructRejectsNotesGroupId(params.GroupID, params.Date, ctx.Param("status"), ctx.Param("stage"))
-	dataLog := services.Log{Data: params.Notes, GroupID: logGroupID, ArchiveID: ctx.Param("stage")}
-	err = services.PostToLog(dataLog)
-	if err != nil {
-		ctx.JSON(iris.StatusInternalServerError, iris.Map{"status": "error", "message": err.Error()})
-		return
-	}
-	ctx.JSON(iris.StatusOK, iris.Map{
-		"status": "success",
-		"data":   params,
-	})
-}
-
-func GetRejectNotes(ctx *iris.Context) {
-	l, err := services.GetRejectNotesData(ctx.Param("status"), ctx.Param("groupId"), ctx.Param("date"), ctx.Param("stage"))
-	if err != nil {
-		ctx.JSON(iris.StatusInternalServerError, iris.Map{"status": "error", "message": err.Error()})
-		return
-	}
-
-	response := struct {
-		GroupID string      `json:groupId`
-		Date    string      `json:date`
-		Stage   string      `json:archiveId`
-		Notes   interface{} `json:notes`
-	}{
-		GroupID: ctx.Param("groupId"),
-		Date:    ctx.Param("date"),
-		Stage:   ctx.Param("stage"),
-		Notes:   l.Data,
-	}
-
-	ctx.JSON(iris.StatusOK, iris.Map{
-		"status": "success",
-		"data":   response,
-	})
 }
