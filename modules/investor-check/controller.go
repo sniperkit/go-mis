@@ -127,30 +127,26 @@ func Verify(ctx *iris.Context) {
 		if *cifSchema.IsValidated == true {
 			services.DBCPsql.Table("cif").Where("id = ?", id).Update("isVerified", true)
 
+
 			// get investor id
 			inv := &r.RCifInvestor{}
 			services.DBCPsql.Table("r_cif_investor").Where("\"cifId\" = ?", id).Scan(&inv)
-			
+
+			// get investor id
+			invNo := &InvestorNumber{}
+			services.DBCPsql.Raw(`select id,"investorNo" from investor where id = ?`,inv.InvestorId).Scan(invNo)
+
 			// get virtual account
 			rInvVa := []r.RInvestorVirtualAccount{}
 			services.DBCPsql.Table("r_investor_virtual_account").Where("\"investorId\" = ?", inv.InvestorId).Scan(&rInvVa)
 
-			vaObj := &va.VirtualAccount{}
-			userVa := []va.VirtualAccount{}
-			for _, val := range rInvVa {
-				services.DBCPsql.Table("virtual_account").Where("\"id\" = ?", val.VirtualAccountId).Scan(&vaObj)
-				userVa = append(userVa, *vaObj)
-			}
-
 			vaData := make(map[string]string)
-			for _, val := range userVa {
-				if val.BankName == "BCA" {
-					vaData["BCA"] = val.VirtualAccountNo
-					vaData["BCA_HOLDER"] = val.VirtualAccountName
-				}
-			}
-			vaData["MANDIRI_HOLDER"] = vaData["BCA_HOLDER"]
-			vaData["MANDIRI"]= rightPad2Len("88000101000000", strconv.FormatUint(inv.InvestorId, 10), 14-len(strconv.FormatUint(inv.InvestorId, 10)))
+
+			vaData["MANDIRI"] = "88000"+strconv.Itoa(invNo.InvestorNo)
+			vaData["MANDIRI_HOLDER"] = cifSchema.Name
+
+			vaData["BCA_HOLDER"] = cifSchema.Name
+			vaData["BCA"]= "10036"+strconv.Itoa(invNo.InvestorNo)
 			
 			// get investor data
 			investorSchema := investor.Investor{}
@@ -173,23 +169,19 @@ func Verify(ctx *iris.Context) {
 			
 			if cifSchema.Username != "" {
 				fmt.Println("Sending email..")
-				// go email.SendEmailVerificationSuccess(cifSchema.Username, cifSchema.Name, vaData["BCA"], vaData["BCA_HOLDER"], vaData["MANDIRI"], vaData["MANDIRI_HOLDER"])
-				// sendgrid := email.Sendgrid{}
-				// sendgrid.SetFrom("Amartha", "no-reply@amartha.com")
-				// sendgrid.SetTo(cifSchema.Name, cifSchema.Username)
-				// sendgrid.SetSubject(cifSchema.Name + ", Verifikasi Data Anda Berhasil")
-				// sendgrid.VerifiedBodyEmail("VERIFIED_DATA", cifSchema.Name, cifSchema.Username, vaData)
-				// sendgrid.SendEmail()
+				 //go email.SendEmailVerificationSuccess(cifSchema.Username, cifSchema.Name, vaData["BCA"], vaData["BCA_HOLDER"], vaData["MANDIRI"], vaData["MANDIRI_HOLDER"])
+				go email.SendEmailVerificationSuccess("bakti.pratama@amartha.com", cifSchema.Name, vaData["BCA"], vaData["BCA_HOLDER"], vaData["MANDIRI"], vaData["MANDIRI_HOLDER"])
 			}
 
-			// if cifSchema.PhoneNo != "" {
+			 if cifSchema.PhoneNo != "" {
 			// 	// send sms notification
-			// 	fmt.Println("Sending sms ... ")
-			// 	twilio := services.InitTwilio()
-			// 	message := "Selamat data Anda sudah terverifikasi. Silakan login ke dashboard Anda dan mulai berinvestasi. www.amartha.com"
+			 	fmt.Println("Sending sms ... ")
+			 	twilio := services.InitTwilio()
+			 	message := "Selamat data Anda sudah terverifikasi. Silakan login ke dashboard Anda dan mulai berinvestasi. www.amartha.com"
 			// 	twilio.SetParam(cifSchema.PhoneNo, message)
-			// 	twilio.SendSMS()
-			// }
+				twilio.SetParam("+628992548716", message)
+				twilio.SendSMS()
+			 }
 			
 		} else {
 			status = "verification failed, user not validated"
