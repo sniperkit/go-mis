@@ -143,37 +143,24 @@ func SaveValidationTellerDetail(ctx *iris.Context) {
 // GetValidationTellerDetail - Get detail data validation teller
 // Route: /api/v2/validation-teller/detail
 func GetValidationTellerDetail(ctx *iris.Context) {
+	var installmentDetails []RawInstallmentDetail
 	params := struct {
 		Date    string `json:"date"`
 		GroupID int64  `json:"groupId"`
 	}{}
 	params.GroupID, _ = ctx.URLParamInt64("groupId")
 	params.Date = ctx.URLParam("date")
-	query := `select i.id,rlbo."borrowerId" as "borrowerId",cif."name", 
-					i."paidInstallment" as "repayment",i.reserve as "tabungan",
-					(i."paidInstallment"+i.reserve) as "total",
-					i.cash_on_hand as "cashOnHand",
-					i.cash_on_reserve as "cashOnReserve"
-				from loan l join r_loan_group rlg on l.id = rlg."loanId"
-					join "group" g on g.id = rlg."groupId"
-					join r_group_agent rga on g.id = rga."groupId"
-					join agent a on a.id = rga."agentId"
-					join r_loan_branch rlb on rlb."loanId" = l.id
-					join r_loan_borrower rlbo on rlbo."loanId" = l.id
-					join r_cif_borrower on r_cif_borrower."borrowerId"=rlbo."borrowerId"
-					join cif on cif.id=r_cif_borrower."cifId"
-					join branch b on b.id = rlb."branchId"
-					join r_loan_installment rli on rli."loanId" = l.id
-					join installment i on i.id = rli."installmentId"
-					join r_loan_disbursement rld on rld."loanId" = l.id
-					join disbursement d on d.id = rld."disbursementId"
-				where l."deletedAt" is null and i."deletedAt" is null and coalesce(i."transactionDate",i."createdAt")::date = ? and
-				l.stage = 'INSTALLMENT' and g.id=?`
-	queryResult := []RawInstallmentDetail{}
-	services.DBCPsql.Raw(query, params.Date, params.GroupID).Scan(&queryResult)
+	installmentDetails, err := FindVTDetailByGroupAndDate(uint64(params.GroupID), params.Date)
+	if err != nil {
+		ctx.JSON(iris.StatusInternalServerError, iris.Map{
+			"status":  "error",
+			"message": err.Error(),
+		})
+		return
+	}
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"status": "success",
-		"data":   queryResult,
+		"data":   installmentDetails,
 	})
 }
 
@@ -519,4 +506,48 @@ func FindDataTransfer(branchID uint64, date string) (DataTransfer, error) {
 		return dataTransfer, errors.New("Unable to retrive data transfer")
 	}
 	return dataTransfer, nil
+}
+
+// FindVTDetailByGroupAndDate - Get detail VT by branch ID, transaction and created date
+func FindVTDetailByGroupAndDate(groupID uint64, date string) ([]RawInstallmentDetail, error) {
+	var installmentDetails []RawInstallmentDetail
+	if groupID <= 0 {
+		return installmentDetails, errors.New("Group ID can not be empty")
+	}
+	if len(strings.Trim(date, " ")) == 0 {
+		return installmentDetails, errors.New("Date can not be empty")
+	}
+	_, err := MISUtility.StringToDate(date)
+	if err != nil {
+		return installmentDetails, errors.New("Invalid Date")
+	}
+	query := `select i.id,rlbo."borrowerId" as "borrowerId",cif."name", 
+					i."paidInstallment" as "repayment",i.reserve as "tabungan",
+					(i."paidInstallment"+i.reserve) as "total",
+					i.cash_on_hand as "cashOnHand",
+					i.cash_on_reserve as "cashOnReserve",
+					i.cash_on_reserve_note as "cashOnReserveNote",
+					i.cash_on_hand_note as "cashOnHandNote"
+				from loan l join r_loan_group rlg on l.id = rlg."loanId"
+					join "group" g on g.id = rlg."groupId"
+					join r_group_agent rga on g.id = rga."groupId"
+					join agent a on a.id = rga."agentId"
+					join r_loan_branch rlb on rlb."loanId" = l.id
+					join r_loan_borrower rlbo on rlbo."loanId" = l.id
+					join r_cif_borrower on r_cif_borrower."borrowerId"=rlbo."borrowerId"
+					join cif on cif.id=r_cif_borrower."cifId"
+					join branch b on b.id = rlb."branchId"
+					join r_loan_installment rli on rli."loanId" = l.id
+					join installment i on i.id = rli."installmentId"
+					join r_loan_disbursement rld on rld."loanId" = l.id
+					join disbursement d on d.id = rld."disbursementId"
+				where l."deletedAt" is null and i."deletedAt" is null 
+				and coalesce(i."transactionDate",i."createdAt")::date = ? and
+				l.stage = 'INSTALLMENT' and g.id=?`
+	err = services.DBCPsql.Raw(query, date, groupID).Scan(&installmentDetails).Error
+	if err != nil {
+		log.Println("#ERROR: ", err)
+		return installmentDetails, errors.New("Unable to retrive installment details")
+	}
+	return installmentDetails, nil
 }

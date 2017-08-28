@@ -2,15 +2,17 @@ package validationTeller
 
 type (
 	RawInstallmentDetail struct {
-		Id            int64   `gorm:"column:id" json:"id"`
-		BorrowerId    int64   `gorm:"column:borrowerId" json:"borrowerId"`
-		Name          string  `gorm:"column:name" json:"name"`
-		Repayment     float64 `gorm:"column:repayment" json:"repayment"`
-		Tabungan      float64 `gorm:"column:tabungan" json:"tabungan"`
-		Total         float64 `gorm:"column:total" json:"total"`
-		Status        string  `gorm:"column:status" json:"status"`
-		CashOnHand    float64 `gorm:"column:cashOnHand" json:"cashOnHand"`
-		CashOnReserve float64 `gorm:"column:cashOnReserve" json:"cashOnReserve"`
+		Id                int64   `gorm:"column:id" json:"id"`
+		BorrowerId        int64   `gorm:"column:borrowerId" json:"borrowerId"`
+		Name              string  `gorm:"column:name" json:"name"`
+		Repayment         float64 `gorm:"column:repayment" json:"repayment"`
+		Tabungan          float64 `gorm:"column:tabungan" json:"tabungan"`
+		Total             float64 `gorm:"column:total" json:"total"`
+		Status            string  `gorm:"column:status" json:"status"`
+		CashOnHand        float64 `gorm:"column:cashOnHand" json:"cashOnHand"`
+		CashOnReserve     float64 `gorm:"column:cashOnReserve" json:"cashOnReserve"`
+		CashOnHandNote    string  `gorm:"column:cashOnHandNote" json:"cashOnHandNote"`
+		CashOnReserveNote string  `gorm:"column:cashOnReserveNote" json:"cashOnReserveNote"`
 	}
 
 	RawInstallmentData struct {
