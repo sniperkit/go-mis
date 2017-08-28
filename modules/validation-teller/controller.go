@@ -3,7 +3,6 @@ package validationTeller
 import (
 	"errors"
 	"strings"
-	"time"
 
 	"log"
 
@@ -270,7 +269,7 @@ func GetDataValidationAndTransfer(ctx *iris.Context) {
 			"message":      err.Error(),
 		})
 	}
-	dataTransfer, err := FindDataTransfer(time.Now().Local().Format("2006-01-02"))
+	dataTransfer, err := FindDataTransfer(branchID, dateParam)
 	if err == nil {
 		instalmentData.DataTransfer = dataTransfer
 	}
@@ -488,7 +487,7 @@ func GetDataValidation(branchID uint64, date string) error {
 }
 
 // FindDataTransfer - Get data transfer information based on transfer date
-func FindDataTransfer(date string) (DataTransfer, error) {
+func FindDataTransfer(branchID uint64, date string) (DataTransfer, error) {
 	var dataTransfer DataTransfer
 	if len(strings.Trim(date, " ")) == 0 {
 		log.Println("#ERROR: Date is empty")
@@ -508,11 +507,13 @@ func FindDataTransfer(date string) (DataTransfer, error) {
 				data_transfer.tabungan_id,
 				data_transfer.tabungan_nominal,
 				data_transfer.gagal_dropping_id,
-				data_transfer.gagal_droping_nominal
+				data_transfer.gagal_dropping_nominal,
+				data_transfer.branch_id
 			from data_transfer
-			where data_transfer.validation_date::date = ? 
+			where data_transfer.validation_date::date = ?
+			AND branch_id = ? 
 			order by data_transfer.id DESC`
-	err = services.DBCPsql.Raw(query, date).Scan(&dataTransfer).Error
+	err = services.DBCPsql.Raw(query, date, branchID).Scan(&dataTransfer).Error
 	if err != nil {
 		log.Println("#ERROR: Unable to retrieve data transfer", err)
 		return dataTransfer, errors.New("Unable to retrive data transfer")
