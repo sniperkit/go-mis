@@ -52,7 +52,7 @@ type (
 		CashOnReserve       float64 `gorm:"column:cashOnReserve" json:"cashOnReserve"`
 	}
 
-	PendingRawInstallmentData struct {
+	RawInstallmentData struct {
 		Fullname            string  `gorm:"column:fullname" json:"fullname"`
 		GroupId             int64   `gorm:"column:groupId" json:"groupId"`
 		Name                string  `gorm:"column:name" json:"name"`
