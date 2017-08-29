@@ -1,33 +1,20 @@
 package validationTeller
 
+import "bitbucket.org/go-mis/modules/installment"
+
 type (
 	RawInstallmentDetail struct {
-		Id            int64   `gorm:"column:id" json:"id"`
-		BorrowerId    int64   `gorm:"column:borrowerId" json:"borrowerId"`
-		Name          string  `gorm:"column:name" json:"name"`
-		Repayment     float64 `gorm:"column:repayment" json:"repayment"`
-		Tabungan      float64 `gorm:"column:tabungan" json:"tabungan"`
-		Total         float64 `gorm:"column:total" json:"total"`
-		Status        string  `gorm:"column:status" json:"status"`
-		CashOnHand    float64 `gorm:"column:cashOnHand" json:"cashOnHand"`
-		CashOnReserve float64 `gorm:"column:cashOnReserve" json:"cashOnReserve"`
-	}
-
-	RawInstallmentData struct {
-		Fullname            string  `gorm:"column:fullname" json:"fullname"`
-		GroupId             int64   `gorm:"column:groupId" json:"groupId"`
-		Name                string  `gorm:"column:name" json:"name"`
-		Repayment           float64 `gorm:"column:repayment" json:"repayment"`
-		Tabungan            float64 `gorm:"column:tabungan" json:"tabungan"`
-		Total               float64 `gorm:"column:total" json:"total"`
-		TotalCair           float64 `gorm:"column:totalCair" json:"totalCair"`
-		TotalCairProj       float64 `gorm:"column:totalCairProj" json:"totalCairProj"`
-		TotalGagalDropping  float64 `gorm:"column:totalGagalDropping" json:"totalGagalDropping"`
-		Status              string  `gorm:"column:status" json:"status"`
-		CashOnHand          float64 `gorm:"column:cashOnHand" json:"cashOnHand"`
-		CashOnReserve       float64 `gorm:"column:cashOnReserve" json:"cashOnReserve"`
-		ProjectionRepayment float64 `gorm:"column:projectionRepayment" json:"projectionRepayment"`
-		ProjectionTabungan  float64 `gorm:"column:projectionTabungan" json:"projectionTabungan"`
+		Id                int64   `gorm:"column:id" json:"id"`
+		BorrowerId        int64   `gorm:"column:borrowerId" json:"borrowerId"`
+		Name              string  `gorm:"column:name" json:"name"`
+		Repayment         float64 `gorm:"column:repayment" json:"repayment"`
+		Tabungan          float64 `gorm:"column:tabungan" json:"tabungan"`
+		Total             float64 `gorm:"column:total" json:"total"`
+		Status            string  `gorm:"column:status" json:"status"`
+		CashOnHand        float64 `gorm:"column:cashOnHand" json:"cashOnHand"`
+		CashOnReserve     float64 `gorm:"column:cashOnReserve" json:"cashOnReserve"`
+		CashOnHandNote    string  `gorm:"column:cashOnHandNote" json:"cashOnHandNote"`
+		CashOnReserveNote string  `gorm:"column:cashOnReserveNote" json:"cashOnReserveNote"`
 	}
 
 	Notes struct {
@@ -164,7 +151,7 @@ type (
 	}
 )
 
-func (totalRepayment *TotalRepayment) AddTotal(rawInstallmentData RawInstallmentData) {
+func (totalRepayment *TotalRepayment) AddTotal(rawInstallmentData installment.RawInstallmentData) {
 	totalRepayment.TotalRepaymentAct += rawInstallmentData.Repayment
 	totalRepayment.TotalRepaymentProj += rawInstallmentData.ProjectionRepayment
 	totalRepayment.TotalRepaymentCoh += rawInstallmentData.CashOnHand
@@ -205,7 +192,7 @@ func (installmentData *InstallmentData) AddTotal(totalRepayment *TotalRepayment)
 	installmentData.TotalGagalDroppingAgent = totalRepayment.TotalGagalDroppingAgent
 }
 
-func (majelis Majelis) InitializedByRawInstallmentData(rawInstallmentData RawInstallmentData) Majelis {
+func (majelis Majelis) InitializedByRawInstallmentData(rawInstallmentData installment.RawInstallmentData) Majelis {
 	m := Majelis{
 		GroupId:             rawInstallmentData.GroupId,
 		Name:                rawInstallmentData.Name,
