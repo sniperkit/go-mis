@@ -51,3 +51,34 @@ func TestFindDataTransfer(t *testing.T) {
 		})
 	}
 }
+
+func TestFindVTDetailByGroupAndDate(t *testing.T) {
+	type args struct {
+		groupID uint64
+		date    string
+	}
+	tests := []struct {
+		name string
+		args args
+		want []RawInstallmentDetail
+	}{
+		{
+			name: "Positive Test Case",
+			args: args{
+				groupID: 1544,
+				date:    "2017-08-28",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := FindVTDetailByGroupAndDate(tt.args.groupID, tt.args.date)
+			if err != nil {
+				t.Errorf("FindVTDetailByGroupAndDate() error = %v", err)
+				return
+			}
+			t.Log("CASH ON HAND NOTE: ", got[0].CashOnHandNote)
+			t.Log("CASH ON RESERVE NOTE: ", got[0].CashOnReserveNote)
+		})
+	}
+}
