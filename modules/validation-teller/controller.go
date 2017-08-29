@@ -103,11 +103,13 @@ func SaveValidationTellerNotes(ctx *iris.Context) {
 // Routes: api/v2/validation-teller/detail/save
 func SaveValidationTellerDetail(ctx *iris.Context) {
 	params := []struct {
-		CashOnReserve float64 `json:"cashOnReserve"`
-		CashOnHand    float64 `json:"cashOnHand"`
-		ID            uint64  `json:"id"`
-		GroupID       uint64  `json:"groupId"`
-		Note          string  `json:"note"`
+		CashOnReserve     float64 `json:"cashOnReserve"`
+		CashOnHand        float64 `json:"cashOnHand"`
+		ID                uint64  `json:"id"`
+		GroupID           uint64  `json:"groupId"`
+		Note              string  `json:"note,omitempty"`
+		CashOnHandNote    string  `json:"cashOnHandNote"`
+		CashOnReserveNote string  `json:"cashOnReserveNote"`
 	}{}
 	err := ctx.ReadJSON(&params)
 	if err != nil {
@@ -116,7 +118,8 @@ func SaveValidationTellerDetail(ctx *iris.Context) {
 	}
 	db := services.DBCPsql.Begin()
 	for _, param := range params {
-		if err := db.Table("installment").Where("\"id\" = ?", param.ID).UpdateColumn("cash_on_hand", param.CashOnHand).Error; err != nil {
+		cashOnHandUpdate := map[string]interface{}{"cash_on_hand": param.CashOnHand, "cash_on_hand_note": param.CashOnHandNote, "cash_on_reserve_note": param.CashOnReserveNote}
+		if err := db.Table("installment").Where("\"id\" = ?", param.ID).Updates(cashOnHandUpdate).Error; err != nil {
 			db.Rollback()
 			ctx.JSON(iris.StatusInternalServerError, iris.Map{
 				"status":  "error",
@@ -124,7 +127,8 @@ func SaveValidationTellerDetail(ctx *iris.Context) {
 			})
 			return
 		}
-		if err := db.Table("installment").Where("\"id\" = ?", param.ID).UpdateColumn("cash_on_reserve", param.CashOnReserve).Error; err != nil {
+		cashOnReserveUpdate := map[string]interface{}{"cash_on_reserve": param.CashOnReserve, "cash_on_hand_note": param.CashOnHandNote, "cash_on_reserve_note": param.CashOnReserveNote}
+		if err := db.Table("installment").Where("\"id\" = ?", param.ID).Updates(cashOnReserveUpdate).Error; err != nil {
 			db.Rollback()
 			ctx.JSON(iris.StatusInternalServerError, iris.Map{
 				"status":  "error",
