@@ -18,8 +18,8 @@ type (
 		UpdatedAt         time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
 		DeletedAt         *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
 		TransactionDate   *time.Time `gorm:"column:transactionDate" json:"transactionDate"`
-		CashOnHandNote    string     `gorm:"column:cashOnHandNote" json:"cashOnHandNote"`
-		CashOnReserveNote string     `gorm:"column:cashOnReserveNote" json:"cashOnReserveNote"`
+		CashOnHandNote    string     `gorm:"column:cash_on_hand_note" json:"cashOnHandNote"`
+		CashOnReserveNote string     `gorm:"column:cash_on_reserve_note" json:"cashOnReserveNote"`
 	}
 
 	InstallmentFetch struct {
@@ -50,6 +50,8 @@ type (
 		TotalCair           float64 `gorm:"column:totalCair" json:"totalCair"`
 		CashOnHand          float64 `gorm:"column:cashOnHand" json:"cashOnHand"`
 		CashOnReserve       float64 `gorm:"column:cashOnReserve" json:"cashOnReserve"`
+		CashOnHandNote      string  `gorm:"column:cashOnHandNote" json:"cashOnHandNote"`
+		CasOnReserveNote    string  `gorm:"column:cashOnReserveNote" json:"cashOnReserveNote"`
 	}
 
 	PendingRawInstallmentData struct {
@@ -114,5 +116,43 @@ type (
 	MajelisId struct {
 		GroupId int64  `gorm:"column:groupId" json:"groupId"`
 		Name    string `gorm:"column:name" json:"name"`
+	}
+	LoanInvestorAccountID struct {
+		LoanID     uint64  `gorm:"column:loanId" json:"loanId"`
+		InvestorID uint64  `gorm:"column:investorId" json:"investorId"`
+		AccountID  uint64  `gorm:"column:accountId" json:"accountId"`
+		PPLROI     float64 `gorm:"column:pplROI" json:"pplROI"`
+	}
+
+	AccountTransactionDebitAndCredit struct {
+		TotalDebit  float64 `gorm:"column:totalDebit" json:"totalDebit"`
+		TotalCredit float64 `gorm:"column:totalCredit" json:"totalCredit"`
+	}
+
+	LoanSchema struct {
+		ID                   uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
+		LoanPeriod           int64      `gorm:"column:loanPeriod" json:"loanPeriod"`
+		AgreementType        string     `gorm:"column:agreementType" json:"agreementType"`
+		Subgroup             string     `gorm:"column:subgroup" json:"subgrop"`
+		Purpose              string     `gorm:"column:purpose" json:"purpose"`
+		URLPic1              string     `gorm:"column:urlPic1" json:"urlPic1"`
+		URLPic2              string     `gorm:"column:urlPic2" json:"urlPic2"`
+		SubmittedLoanDate    string     `gorm:"column:submittedLoanDate" json:"submittedLoanDate"`
+		SubmittedPlafond     float64    `gorm:"column:submittedPlafond" json:"submittedPlafond"`
+		SubmittedTenor       int64      `gorm:"column:submittedTenor" json:"submittedTenor"`
+		SubmittedInstallment float64    `gorm:"column:submittedInstallment" json:"submittedInstallment"`
+		CreditScoreGrade     string     `gorm:"column:creditScoreGrade" json:"creditScoreGrade"`
+		CreditScoreValue     float64    `gorm:"column:creditScoreValue" json:"creditScoreValue"`
+		Tenor                uint64     `gorm:"column:tenor" json:"tenor"`
+		Rate                 float64    `gorm:"column:rate" json:"rate"`
+		Installment          float64    `gorm:"column:installment" json:"installment"`
+		Plafond              float64    `gorm:"column:plafond" json:"plafond"`
+		GroupReserve         float64    `gorm:"column:groupReserve" json:"groupReserve"`
+		Stage                string     `gorm:"column:stage" json:"stage"`
+		IsLWK                bool       `gorm:"column:isLWK" json:"isLWK" sql:"default:false"`
+		IsUPK                bool       `gorm:"column:isUPK" json:"IsUPK" sql:"default:false"`
+		CreatedAt            time.Time  `gorm:"column:createdAt" json:"createdAt"`
+		UpdatedAt            time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
+		DeletedAt            *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
 	}
 )

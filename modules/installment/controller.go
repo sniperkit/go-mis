@@ -15,6 +15,7 @@ import (
 	loanHistory "bitbucket.org/go-mis/modules/loan-history"
 	"bitbucket.org/go-mis/modules/r"
 	systemParameter "bitbucket.org/go-mis/modules/system-parameter"
+	MISUtility "bitbucket.org/go-mis/modules/utility"
 	"bitbucket.org/go-mis/services"
 	"github.com/jinzhu/gorm"
 	iris "gopkg.in/kataras/iris.v4"
@@ -87,113 +88,99 @@ func GetInstallmentByGroupIDAndTransactionDate(ctx *iris.Context) {
 	groupID := ctx.Param("group_id")
 	stage := ctx.Param("stage")
 	transactionDate := ctx.Param("transaction_date")
-
-	query := `
-			select g.name,cif.name as "borrowerName", sum(i."paidInstallment") "repayment",sum(i.reserve) "tabungan",sum(i."paidInstallment"+i.reserve) "total",
-		bow.id as "borrowerId",
-		i.id as "installmentId",
-		i.type,          
-    i."paidInstallment", 
-    i.penalty,       
-    i.reserve, 
-    i.presence, 
-    i.frequency, 
-    i.stage, 
-        sum(i.cash_on_hand) "cashOnHand",
-        sum(i.cash_on_reserve) "cashOnReserve",
-        coalesce(sum(
-                case
-                when frequency >= 3 then l.installment+((plafond/tenor)*(frequency-1))
-                when frequency >0 then l.installment*frequency
-                when frequency = 0 then 0
-                end
-                ),0) "projectionRepayment",
-                coalesce(sum(
-                case
-                when plafond < 0 then 0
-                when plafond <= 3000000 then 3000
-                when plafond > 3000000 and plafond <= 5000000 then 4000
-                when plafond > 5000000 and plafond <= 7000000 then 5000
-                when plafond > 7000000 and plafond <= 9000000 then 6000
-                when plafond > 9000000 and plafond <= 11000000 then 7000
-                else 8000
-                end
-                ),0) "projectionTabungan",
-        coalesce(sum(case
-        when d.stage = 'SUCCESS' then plafond end
-        ),0) "totalCair",
-        coalesce(sum(case
-        when d.stage = 'FAILED' then plafond end
-        ),0) "totalGagalDropping",
-        split_part(string_agg(i.stage,'| '),'|',1) "status"
-        from loan l join r_loan_group rlg on l.id = rlg."loanId"
-        join r_loan_borrower bow on bow."loanId"=l.id
-        join r_cif_borrower rcif using("borrowerId") 
-        join cif on cif.id = rcif."cifId"
-        join "group" g on g.id = rlg."groupId"
-        join r_group_agent rga on g.id = rga."groupId"
-        join agent a on a.id = rga."agentId"
-        join r_loan_branch rlb on rlb."loanId" = l.id
-        join branch b on b.id = rlb."branchId"
-        join r_loan_installment rli on rli."loanId" = l.id
-        join installment i on i.id = rli."installmentId"
-        join r_loan_disbursement rld on rld."loanId" = l.id
-        join disbursement d on d.id = rld."disbursementId"
-        where l."deletedAt" isnull and b.id= ? and coalesce(i."transactionDate",i."createdAt")::date = ?
-        and l.stage = 'INSTALLMENT' and i.stage= ? and g.id=?
-		group by l.id, i.id, bow.id, g.name, cif.name,i.type,i."paidInstallment", i.penalty, i.reserve, i.presence, i.frequency, i.stage, i.cash_on_hand, i.cash_on_reserve 
-			`
-
-	installmentDetailSchema := []InstallmentDetail{}
-	err := services.DBCPsql.Raw(query, branchID, transactionDate, stage, groupID).Scan(&installmentDetailSchema).Error
+	installmentDetails, err := FindInstallmentByGroupIDAndTransactionDate(branchID, groupID, stage, transactionDate)
 	if err != nil {
-		ctx.JSON(iris.StatusInternalServerError, iris.Map{"data": err})
+		ctx.JSON(iris.StatusInternalServerError, iris.Map{"data": err.Error()})
 		return
 	}
-
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"status": "success",
-		"data":   installmentDetailSchema,
+		"data":   installmentDetails,
 	})
 }
 
-type LoanInvestorAccountID struct {
-	LoanID     uint64  `gorm:"column:loanId" json:"loanId"`
-	InvestorID uint64  `gorm:"column:investorId" json:"investorId"`
-	AccountID  uint64  `gorm:"column:accountId" json:"accountId"`
-	PPLROI     float64 `gorm:"column:pplROI" json:"pplROI"`
-}
-
-type AccountTransactionDebitAndCredit struct {
-	TotalDebit  float64 `gorm:"column:totalDebit" json:"totalDebit"`
-	TotalCredit float64 `gorm:"column:totalCredit" json:"totalCredit"`
-}
-
-type LoanSchema struct {
-	ID                   uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
-	LoanPeriod           int64      `gorm:"column:loanPeriod" json:"loanPeriod"`
-	AgreementType        string     `gorm:"column:agreementType" json:"agreementType"`
-	Subgroup             string     `gorm:"column:subgroup" json:"subgrop"`
-	Purpose              string     `gorm:"column:purpose" json:"purpose"`
-	URLPic1              string     `gorm:"column:urlPic1" json:"urlPic1"`
-	URLPic2              string     `gorm:"column:urlPic2" json:"urlPic2"`
-	SubmittedLoanDate    string     `gorm:"column:submittedLoanDate" json:"submittedLoanDate"`
-	SubmittedPlafond     float64    `gorm:"column:submittedPlafond" json:"submittedPlafond"`
-	SubmittedTenor       int64      `gorm:"column:submittedTenor" json:"submittedTenor"`
-	SubmittedInstallment float64    `gorm:"column:submittedInstallment" json:"submittedInstallment"`
-	CreditScoreGrade     string     `gorm:"column:creditScoreGrade" json:"creditScoreGrade"`
-	CreditScoreValue     float64    `gorm:"column:creditScoreValue" json:"creditScoreValue"`
-	Tenor                uint64     `gorm:"column:tenor" json:"tenor"`
-	Rate                 float64    `gorm:"column:rate" json:"rate"`
-	Installment          float64    `gorm:"column:installment" json:"installment"`
-	Plafond              float64    `gorm:"column:plafond" json:"plafond"`
-	GroupReserve         float64    `gorm:"column:groupReserve" json:"groupReserve"`
-	Stage                string     `gorm:"column:stage" json:"stage"`
-	IsLWK                bool       `gorm:"column:isLWK" json:"isLWK" sql:"default:false"`
-	IsUPK                bool       `gorm:"column:isUPK" json:"IsUPK" sql:"default:false"`
-	CreatedAt            time.Time  `gorm:"column:createdAt" json:"createdAt"`
-	UpdatedAt            time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
-	DeletedAt            *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
+func FindInstallmentByGroupIDAndTransactionDate(branchID interface{}, groupID, stage, transactionDate string) ([]InstallmentDetail, error) {
+	var installmentDetails []InstallmentDetail
+	if branchID == nil {
+		return installmentDetails, errors.New("Branch ID can not be empty")
+	}
+	if len(strings.Trim(groupID, " ")) == 0 {
+		return installmentDetails, errors.New("Group ID can not be empty")
+	}
+	if len(strings.Trim(stage, " ")) == 0 {
+		return installmentDetails, errors.New("Stage can not be empty")
+	}
+	if len(strings.Trim(transactionDate, " ")) == 0 {
+		return installmentDetails, errors.New("Transaction date can not be empty")
+	}
+	_, err := MISUtility.StringToDate(transactionDate)
+	if err != nil {
+		return installmentDetails, errors.New("Invalid transaction date")
+	}
+	query := `select g.name,cif.name as "borrowerName", 
+				sum(i."paidInstallment") "repayment",sum(i.reserve) "tabungan",
+				sum(i."paidInstallment"+i.reserve) "total",
+				bow.id as "borrowerId",
+				i.id as "installmentId",
+				i.type,          
+				i."paidInstallment", 
+				i.penalty,       
+				i.reserve, 
+				i.presence, 
+				i.frequency, 
+				i.stage, 
+				i.cash_on_hand_note as "cashOnHandNote",
+				i.cash_on_reserve_note as "cashOnReserveNote",
+				sum(i.cash_on_hand) "cashOnHand",
+				sum(i.cash_on_reserve) "cashOnReserve",
+				coalesce(sum(
+					case
+					when frequency >= 3 then l.installment+((plafond/tenor)*(frequency-1))
+					when frequency >0 then l.installment*frequency
+					when frequency = 0 then 0
+					end
+					),0) "projectionRepayment",
+					coalesce(sum(
+					case
+					when plafond < 0 then 0
+					when plafond <= 3000000 then 3000
+					when plafond > 3000000 and plafond <= 5000000 then 4000
+					when plafond > 5000000 and plafond <= 7000000 then 5000
+					when plafond > 7000000 and plafond <= 9000000 then 6000
+					when plafond > 9000000 and plafond <= 11000000 then 7000
+					else 8000
+					end
+				),0) "projectionTabungan",
+				coalesce(sum(case
+					when d.stage = 'SUCCESS' then plafond end
+				),0) "totalCair",
+				coalesce(sum(case
+					when d.stage = 'FAILED' then plafond end
+				),0) "totalGagalDropping",
+				split_part(string_agg(i.stage,'| '),'|',1) "status"
+			from loan l join r_loan_group rlg on l.id = rlg."loanId"
+				join r_loan_borrower bow on bow."loanId"=l.id
+				join r_cif_borrower rcif using("borrowerId") 
+				join cif on cif.id = rcif."cifId"
+				join "group" g on g.id = rlg."groupId"
+				join r_group_agent rga on g.id = rga."groupId"
+				join agent a on a.id = rga."agentId"
+				join r_loan_branch rlb on rlb."loanId" = l.id
+				join branch b on b.id = rlb."branchId"
+				join r_loan_installment rli on rli."loanId" = l.id
+				join installment i on i.id = rli."installmentId"
+				join r_loan_disbursement rld on rld."loanId" = l.id
+				join disbursement d on d.id = rld."disbursementId"
+			where l."deletedAt" isnull and b.id= ? and coalesce(i."transactionDate",i."createdAt")::date = ?
+			and l.stage = 'INSTALLMENT' and i.stage= ? and g.id=?
+			group by l.id, i.id, bow.id, g.name, cif.name,i.type,i."paidInstallment", i.penalty, i.reserve, 
+			i.presence, i.frequency, i.stage, i.cash_on_hand, i.cash_on_reserve`
+	err = services.DBCPsql.Raw(query, branchID, transactionDate, stage, groupID).Scan(&installmentDetails).Error
+	if err != nil {
+		log.Println("#ERROR: ", err)
+		return installmentDetails, errors.New("Unable to retrieve Installment Detail data from DB")
+	}
+	return installmentDetails, nil
 }
 
 func StoreInstallment(db *gorm.DB, installmentId uint64, status string) error {
