@@ -331,7 +331,7 @@ func GetRejectNotes(ctx *iris.Context) {
 func FindInstallmentData(branchID uint64, date string, isApprove bool) (ResponseGetData, error) {
 	// Declare and set variables with zero values
 	var err error
-	var rawInstallmentData []RawInstallmentData
+	var rawInstallmentData []MISInstallment.RawInstallmentData
 	var responseData ResponseGetData
 	var installmentData []InstallmentData
 	agents := make(map[string]bool)
@@ -347,10 +347,7 @@ func FindInstallmentData(branchID uint64, date string, isApprove bool) (Response
 	if err != nil {
 		return responseData, errors.New("Invalid Date parameter")
 	}
-	rawInstallmentData, err = FindInstallmentDataByDisbursementDateAndBranchID(branchID, date, isApprove)
-	if err != nil {
-		return responseData, errors.New(err.Error())
-	}
+	rawInstallmentData = MISInstallment.GetRawPendingInstallmentData("teller",branchID, date, isApprove)
 	for _, val := range rawInstallmentData {
 		if agents[val.Fullname] == false {
 			agents[val.Fullname] = true
@@ -367,7 +364,7 @@ func FindInstallmentData(branchID uint64, date string, isApprove bool) (Response
 }
 
 // GetTotalCabang - Get summary of data Validation Teller
-func GetTotalCabang(rawInstallmentData []RawInstallmentData, installmentData []InstallmentData) (*TotalCabang, []MajelisId, bool) {
+func GetTotalCabang(rawInstallmentData []MISInstallment.RawInstallmentData, installmentData []InstallmentData) (*TotalCabang, []MajelisId, bool) {
 	majelists := make([]MajelisId, 0, len(rawInstallmentData))
 	var majelis Majelis
 	isEnableSubmit := true
@@ -399,70 +396,6 @@ func GetTotalCabang(rawInstallmentData []RawInstallmentData, installmentData []I
 		isEnableSubmit = false
 	}
 	return totalCabang, majelists, isEnableSubmit
-}
-
-// FindInstallmentDataByDisbursementDateAndBranchID - Get data installment data based on branch ID, disbursement date and created at
-func FindInstallmentDataByDisbursementDateAndBranchID(branchID uint64, date string, isApprove bool) ([]RawInstallmentData, error) {
-	var err error
-	var rawInstallmentData []RawInstallmentData
-	query := `select g.id as "groupId", a.fullname,g.name,
-				sum(i."paidInstallment") "repayment",
-				sum(i.reserve) "tabungan",
-				sum(i."paidInstallment"+i.reserve) "total",
-				sum(i.cash_on_hand) "cashOnHand",
-				sum(i.cash_on_reserve) "cashOnReserve",
-				coalesce(sum(
-				case
-				when frequency >= 3 then l.installment+((plafond/tenor)*(frequency-1))
-				when frequency >0 then l.installment*frequency
-				when frequency = 0 then 0
-				end
-				),0) "projectionRepayment",
-				coalesce(sum(
-				case
-				when plafond < 0 then 0
-				when plafond <= 3000000 then 3000
-				when plafond > 3000000 and plafond <= 5000000 then 4000
-				when plafond > 5000000 and plafond <= 7000000 then 5000
-				when plafond > 7000000 and plafond <= 9000000 then 6000
-				when plafond > 9000000 and plafond <= 11000000 then 7000
-				else 8000
-				end
-				),0) "projectionTabungan",
-				coalesce(sum(case
-				when d."disbursementDate"::date = ? then plafond end
-				),0) "totalCairProj",
-				coalesce(sum(case
-				when d.stage = 'SUCCESS' and d."disbursementDate"::date = ? then plafond end
-				),0) "totalCair",
-				coalesce(sum(case
-				when d.stage = 'FAILED' then plafond end
-				),0) "totalGagalDropping",
-				split_part(string_agg(i.stage,'| '),'|',1) "status"
-			from loan l join r_loan_group rlg on l.id = rlg."loanId"
-				join "group" g on g.id = rlg."groupId"
-				join r_group_agent rga on g.id = rga."groupId"
-				join agent a on a.id = rga."agentId"
-				join r_loan_branch rlb on rlb."loanId" = l.id
-				join branch b on b.id = rlb."branchId"
-				join r_loan_installment rli on rli."loanId" = l.id
-				join installment i on i.id = rli."installmentId"
-				join r_loan_disbursement rld on rld."loanId" = l.id
-				join disbursement d on d.id = rld."disbursementId"
-			where l."deletedAt" is null and i."deletedAt" is null and b.id= ? and coalesce(i."transactionDate",i."createdAt")::date = ?
-				and l.stage = 'INSTALLMENT' `
-	if isApprove {
-		query += ` and i."stage" = 'APPROVE' `
-	}
-	query += ` group by g.name, a.fullname, g.id order by a.fullname `
-	err = services.DBCPsql.Raw(query, date, date, branchID, date).Scan(&rawInstallmentData).Error
-	if err != nil {
-		log.Println("Error when binding data to struct")
-		log.Println("#ERROR: Unable to retrieve Installment data")
-		log.Println("#ERROR: ", err)
-		return rawInstallmentData, errors.New("Unable to retrieve Installment data")
-	}
-	return rawInstallmentData, nil
 }
 
 // GetDataValidation - Data validation before Get Validation Teller
