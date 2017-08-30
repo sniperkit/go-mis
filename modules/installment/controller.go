@@ -750,15 +750,12 @@ func GetPendingInstallmentNew(ctx *iris.Context) {
 	}
 	res := GetDataPendingInstallment(ctx.Param("currentStage"), branchID, dateParam)
 	notes, err := services.GetNotes(services.ConstructNotesGroupId(branchID, dateParam))
-	if err != nil || len(notes) > 0 {
+	log.Println("Notes: ", notes)
+	if err == nil && len(notes) > 0 {
 		borrowerNotes := services.GetBorrowerNotes(notes)
 		majelisNotes := services.GetMajelisNotes(notes)
-		if borrowerNotes != nil {
-			res.BorrowerNotes = borrowerNotes
-		}
-		if borrowerNotes != nil {
-			res.MajelisNotes = majelisNotes
-		}
+		res.BorrowerNotes = borrowerNotes
+		res.MajelisNotes = majelisNotes
 	}
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"status": "success",
@@ -768,7 +765,7 @@ func GetPendingInstallmentNew(ctx *iris.Context) {
 
 func GetDataPendingInstallment(currentStage string, branchId uint64, now string) PendingInstallment {
 	var pendingInstallment PendingInstallment
-	queryResult := GetRawPendingInstallmentData(currentStage,branchId,now,false)
+	queryResult := GetRawPendingInstallmentData(currentStage, branchId, now, false)
 	res := []PendingInstallmentData{}
 	agents := map[string]bool{"": false}
 	for _, val := range queryResult {
@@ -845,9 +842,9 @@ func GetDataPendingInstallment(currentStage string, branchId uint64, now string)
 	return pendingInstallment
 }
 
-func GetRawPendingInstallmentData(currentStage string, branchId uint64, now string,isApprove bool) []RawInstallmentData{
+func GetRawPendingInstallmentData(currentStage string, branchId uint64, now string, isApprove bool) []RawInstallmentData {
 	queryResult := []RawInstallmentData{}
-	query:=`select g.id as "groupId", a.fullname,g.name,
+	query := `select g.id as "groupId", a.fullname,g.name,
                                 sum(i."paidInstallment") "repayment",
                                 sum(i.reserve) "tabungan",
                                 sum(i."paidInstallment"+i.reserve) "total",
@@ -915,12 +912,12 @@ func GetRawPendingInstallmentData(currentStage string, branchId uint64, now stri
 		parseNow, _ := time.Parse("2006-01-02", now)
 		yesterday := parseNow.AddDate(0, 0, -1).Format("2006-01-02")
 		query += `and coalesce(i."transactionDate",i."createdAt")::date <= ? and coalesce(i."transactionDate",i."createdAt")::date >= ? `
-		query+=`group by g.name, a.fullname, g.id, "totalCair", "totalGagalDropping" order by a.fullname`
-		services.DBCPsql.Raw(query, now,now,now,now,branchId, now, yesterday).Scan(&queryResult)
+		query += `group by g.name, a.fullname, g.id, "totalCair", "totalGagalDropping" order by a.fullname`
+		services.DBCPsql.Raw(query, now, now, now, now, branchId, now, yesterday).Scan(&queryResult)
 	} else {
 		query += `and coalesce(i."transactionDate",i."createdAt")::date = ? `
-		query+=`group by g.name, a.fullname, g.id, "totalCair", "totalGagalDropping" order by a.fullname`
-		services.DBCPsql.Raw(query, now,now,now,now,branchId, now).Scan(&queryResult)
+		query += `group by g.name, a.fullname, g.id, "totalCair", "totalGagalDropping" order by a.fullname`
+		services.DBCPsql.Raw(query, now, now, now, now, branchId, now).Scan(&queryResult)
 	}
-	return queryResult;
+	return queryResult
 }
