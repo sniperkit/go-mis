@@ -906,7 +906,7 @@ func GetRawPendingInstallmentData(currentStage string, branchId uint64, now stri
                         and i."deletedAt" is null and
                         b.id= ? and l.stage = 'INSTALLMENT'  `
 	if isApprove {
-		query += `and i."stage" = 'APPROVE' `
+		query += `and (i."stage" = 'APPROVE' || i."stage" = 'SUCCESS') `
 	}
 	if currentStage == "in-review" {
 		parseNow, _ := time.Parse("2006-01-02", now)
