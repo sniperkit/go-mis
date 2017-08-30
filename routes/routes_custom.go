@@ -60,7 +60,7 @@ func InitCustomApi() {
 		iris.Use(crs)
 	}
 	iris.Any(baseURL+"/user-mis-login", auth.UserMisLogin)
-	iris.Any(baseURL+"/installment-approve-success/:status", installment.SubmitInstallmentByGroupIDAndTransactionDateWithStatus)
+	iris.Any(baseURL+"/installment-approve-success/:stageFrom/:stageTo", installment.SubmitInstallmentByGroupIDAndTransactionDateWithStatus)
 	iris.Any(baseURL+"/installment-approve-success-custom-brooooo", installment.SubmitInstallmentByGroupIDAndTransactionDateWithStatusAndInstallmentId)
 
 	v2 := iris.Party(baseURL, auth.EnsureAuth)

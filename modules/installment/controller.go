@@ -321,7 +321,7 @@ func SubmitInstallmentByGroupIDAndTransactionDateWithStatus(ctx *iris.Context) {
 	transactionDate := ctx.Param("transaction_date")
 	stageTo := strings.ToUpper(ctx.Param("stageTo"))
 	stageFrom := ctx.Param("stageFrom")
-
+	fmt.Println(stageFrom,stageTo)
 	if strings.ToLower(stageTo) == "agent" || strings.ToLower(stageTo) == "teller" || strings.ToLower(stageTo) == "pending" || strings.ToLower(stageTo) == "approve" || strings.ToLower(stageTo) == "reject" || strings.ToLower(stageTo) == "in-review" || strings.ToLower(stageTo) == "success" {
 		query := "SELECT "
 		query += "\"group\".\"id\" as \"groupId\", \"group\".\"name\" as \"groupName\","
