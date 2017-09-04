@@ -12,4 +12,5 @@ type Borrower struct {
 	CreatedAt        time.Time  `gorm:"column:createdAt" json:"createdAt"`
 	UpdatedAt        time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
 	DeletedAt        *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
+	DODate           *time.Time `gorm:"column:doDate" json:"doDate"`
 }

@@ -4,6 +4,7 @@ type (
 	Status struct {
 		ID          uint64 `json:"id" gorm:"column:id"`
 		Description string `json:"reason" gorm:"column:description"`
+		Type        string `json:"type" gorm:"column:type"`
 	}
 
 	Reason struct {
