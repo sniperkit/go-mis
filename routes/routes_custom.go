@@ -194,7 +194,7 @@ func InitCustomApi() {
 		v2.Any("/data-transfer/save", dataTransfer.Save)
 
 		// Mitra Management
-		v2.Any("/mitra-management/portfolio-at-risk", mitramanagement.GetPortfolioAtRisk)
+		v2.Any("/mitra-management/borrowers", mitramanagement.GetPortfolioAtRisk)
 
 	}
 
