@@ -29,6 +29,7 @@ import (
 	"bitbucket.org/go-mis/modules/loan-history"
 	"bitbucket.org/go-mis/modules/loan-monitoring"
 	"bitbucket.org/go-mis/modules/loan-order"
+	mitramanagement "bitbucket.org/go-mis/modules/mitra-management"
 	"bitbucket.org/go-mis/modules/notification"
 	"bitbucket.org/go-mis/modules/product-pricing"
 	"bitbucket.org/go-mis/modules/r"
@@ -151,6 +152,9 @@ func initializeAll() {
 	config.Domain = "disbursement-report"
 	disbursementReport.Init()
 
+	config.Domain = "mitra-management"
+	mitramanagement.Init()
+
 	fmt.Println("[INFO] All domain have been initialized")
 }
 
@@ -225,6 +229,8 @@ func Init() {
 		voucher.Init()
 	case "disbursementReport":
 		disbursementReport.Init()
+	case "mitramanagement":
+		mitramanagement.Init()
 	default:
 		initializeAll()
 	}
