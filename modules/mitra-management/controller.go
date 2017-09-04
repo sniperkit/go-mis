@@ -58,7 +58,7 @@ func SubmitReason(ctx *iris.Context) {
 	}
 
 	// update installment
-	q := `update Installment set status_id = ?, reason_id = ?, "updatedAt"=? where id=?`
+	q := `update Installment set "statusId" = ?, "reasonId" = ?, "updatedAt"=? where id=?`
 	err = services.DBCPsql.Exec(q, payload.StatusID, payload.ReasonID, payload.Date, payload.InstallmentID).Error
 	if err != nil {
 		ctx.JSON(iris.StatusInternalServerError, iris.Map{
