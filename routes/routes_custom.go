@@ -196,6 +196,7 @@ func InitCustomApi() {
 		// Mitra Management
 		v2.Any("/mitra-management/portfolio-at-risk", mitramanagement.GetPortfolioAtRisk)
 		v2.Any("/mitra-management/status", mitramanagement.GetStatusAll)
+		v2.Any("/mitra-management/submit-reason", mitramanagement.SubmitReason)
 
 	}
 
