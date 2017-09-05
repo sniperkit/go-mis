@@ -56,8 +56,8 @@ const (
 func GetBorrowerByInstallmentTypeAndDate(ctx *iris.Context) {
 	var borrList []MMBorrower
 	branchID := ctx.Get("BRANCH_ID")
-	installmentType := ctx.URLParam("status")
-	date := ctx.URLParam("date")
+	installmentType := ctx.Param("status")
+	date := ctx.Param("date")
 	_, err := FindBorrowerByInstallmentType(&borrList, branchID, installmentType, date)
 	if err != nil {
 		errorResponse(ctx, err.Error(), iris.StatusInternalServerError)
