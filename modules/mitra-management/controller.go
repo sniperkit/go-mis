@@ -33,20 +33,20 @@ const (
 							installment."type" as "type" `
 	fromQuery = ` from loan l
 					join r_loan_borrower rlb on rlb."loanId" = l.id
-					join borrower on borrower.id = rlb."borrowerId"
-					join r_loan_installment rli on rli."loanId" = l.id
-					join installment on installment.id = rli."installmentId"
-					join r_group_borrower rgb on rgb."borrowerId" = borrower.id
-					join "group" on "group".id = rgb."groupId"
-					join r_cif_borrower rcb on rcb."borrowerId" = borrower.id
-					join cif on cif.id = rcb."cifId"
-					join r_loan_branch rlbranch on rlbranch."loanId" = l.id
-					join branch on branch.id = rlbranch."branchId"
-					left join status on status.id = installment."statusId"
-					left join reason on reason.id = installment."reasonId" 
-					left join r_group_agent rga on rga."groupId" = "group".id
-					left join agent on agent.id = rga."agentId" `
-	whereQuery     = ` where upper(status.type) = 'MITRA_MANAGEMENT' and branch.id = ? `
+                    join borrower on borrower.id = rlb."borrowerId"
+                    join r_loan_installment rli on rli."loanId" = l.id
+                    join installment on installment.id = rli."installmentId"
+                    join r_loan_group rlg on rlg."loanId" = rli."loanId"
+                    join "group" on "group".id = rlg."groupId"
+                    join r_cif_borrower rcb on rcb."borrowerId" = borrower.id
+                    join cif on cif.id = rcb."cifId"
+                    join r_loan_branch rlbranch on rlbranch."loanId" = l.id
+                    join branch on branch.id = rlbranch."branchId"
+                    left join status on status.id = installment."statusId"
+                    left join reason on reason.id = installment."reasonId"
+                    left join r_group_agent rga on rga."groupId" = "group".id
+                    left join agent on agent.id = rga."agentId"   `
+	whereQuery     = ` where branch.id = ? `
 	borrowerQuery  = selectBorrowerQuery + fromQuery + whereQuery
 	dODetailQuery  = selectBorrowerQuery + selectDetailDO + fromQuery + whereQuery
 	pARDetailQuery = selectBorrowerQuery + selectDetailPAR + fromQuery + whereQuery
