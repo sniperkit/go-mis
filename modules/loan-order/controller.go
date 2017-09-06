@@ -384,7 +384,7 @@ func CheckReferalAndEmptytreshold(investorId uint64, atcId uint64, orderNo strin
 				select ` + atcID + `, F.id, current_timestamp from F
 			),
 			H as (
-				update account set threshold = coalesce(threshold,0) - (bar.amount+foobar.amount), "totalDebit" = "totalDebit" - (bar.amount+foobar.amount), "totalBalance" = "totalBalance" - (bar.amount+foobar.amount)
+				update account set threshold = coalesce(threshold,0) - (bar.amount+foobar.amount)
 				from (select id from r_account_investor where "investorId" = ` + investorID + `) foo ,
 				(select count(1)*100000 "amount" from B) bar,
 				(select count(1)*100000 "amount" from F) foobar
