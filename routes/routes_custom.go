@@ -194,7 +194,9 @@ func InitCustomApi() {
 		v2.Any("/data-transfer/save", dataTransfer.Save)
 
 		// Mitra Management
-		v2.Any("/mitra-management/portfolio-at-risk", mitramanagement.GetPortfolioAtRisk)
+		v2.Any("/mitra-management/borrower/:borrowerType/date/:date", mitramanagement.GetBorrowerByInstallmentTypeAndDate)
+		v2.Any("/mitra-management/borrower-details", mitramanagement.GetBorrowerDetailByInstallmentTypeAndDate)
+		v2.Any("/mitra-management/borrower-status/:statusId/reasons", mitramanagement.GetBorrowerStatusReason)
 		v2.Any("/mitra-management/status", mitramanagement.GetStatusAll)
 		v2.Any("/mitra-management/submit-reason", mitramanagement.SubmitReason)
 
