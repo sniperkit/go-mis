@@ -3,7 +3,8 @@ package mitramanagement
 type (
 	Status struct {
 		ID          uint64 `json:"id" gorm:"column:id"`
-		Description string `json:"reason" gorm:"column:description"`
+		Description string `json:"description" gorm:"column:description"`
+		Type        string `json:"type" gorm:"column:type"`
 	}
 
 	Reason struct {
