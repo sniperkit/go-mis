@@ -46,7 +46,7 @@ const (
 					left join reason on reason.id = installment."reasonId" 
 					left join r_group_agent rga on rga."groupId" = "group".id
 					left join agent on agent.id = rga."agentId" `
-	whereQuery     = ` where upper(status.type) = 'MITRA_MANAGEMENT' branch.id = ? `
+	whereQuery     = ` where upper(status.type) = 'MITRA_MANAGEMENT' and branch.id = ? `
 	borrowerQuery  = selectBorrowerQuery + fromQuery + whereQuery
 	dODetailQuery  = selectBorrowerQuery + selectDetailDO + fromQuery + whereQuery
 	pARDetailQuery = selectBorrowerQuery + selectDetailPAR + fromQuery + whereQuery
@@ -56,8 +56,10 @@ const (
 func GetBorrowerByInstallmentTypeAndDate(ctx *iris.Context) {
 	var borrList []MMBorrower
 	branchID := ctx.Get("BRANCH_ID")
-	installmentType := ctx.Param("status")
+	installmentType := ctx.Param("borrowerType")
 	date := ctx.Param("date")
+	log.Println("Installment type: ", installmentType)
+	log.Println("date: ", date)
 	_, err := FindBorrowerByInstallmentType(&borrList, branchID, installmentType, date)
 	if err != nil {
 		errorResponse(ctx, err.Error(), iris.StatusInternalServerError)
@@ -98,7 +100,7 @@ func GetBorrowerDetailByInstallmentTypeAndDate(ctx *iris.Context) {
 
 func GetBorrowerStatusReason(ctx *iris.Context) {
 	var reasons []Reason
-	statusID := ctx.URLParam("statusId")
+	statusID := ctx.Param("statusId")
 	_, err := FindBorrowerStatusReason(&reasons, statusID)
 	if err != nil {
 		errorResponse(ctx, err.Error(), iris.StatusInternalServerError)
@@ -117,6 +119,7 @@ func FindBorrowerStatusReason(reasons *[]Reason, statusID string) (int, error) {
 
 func FindBorrowerByInstallmentType(borrowers *[]MMBorrower, branchID interface{}, installmentType, date string) (int, error) {
 	expQuery, err := findBorrowerQuery(installmentType)
+	log.Println(expQuery)
 	if err != nil {
 		return 0, err
 	}
