@@ -1,6 +1,7 @@
 package borrower
 
 import (
+	"fmt"
 	"strconv"
 	"time"
 
@@ -13,14 +14,37 @@ import (
 	"bitbucket.org/go-mis/modules/survey"
 	"bitbucket.org/go-mis/services"
 	"github.com/jinzhu/gorm"
-	iris "gopkg.in/kataras/iris.v4"
-	"fmt"
 	"github.com/kataras/go-errors"
+	iris "gopkg.in/kataras/iris.v4"
 )
 
 func Init() {
 	services.DBCPsql.AutoMigrate(&Borrower{})
 	services.BaseCrudInit(Borrower{}, []Borrower{})
+}
+
+func CheckBorrowerDO(idCardNo string) (bool, error) {
+	borrower := struct {
+		DODate *time.Time `gorm:"column:doDate" json:"doDate"`
+	}{}
+
+	q := `select borrower."doDate"
+		from cif
+		join r_cif_borrower rcb on rcb."cifId" = cif.id
+		join borrower on borrower.id = rcb."borrowerId"
+		where cif."idCardNo" = ?`
+
+	err := services.DBCPsql.Raw(q, idCardNo).Scan(&borrower).Error
+	if err != nil {
+		return false, errors.New("Error: checking borrower DO")
+	}
+
+	if borrower.DODate != nil {
+		if time.Now().Year() >= borrower.DODate.AddDate(1, 0, 0).Year() && time.Now().YearDay() > borrower.DODate.AddDate(1, 0, 0).YearDay() {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 // Approve prospective borrower, sourceType: OLD/NEW
@@ -36,7 +60,27 @@ func Approve(ctx *iris.Context) {
 		})
 		return
 	}
-	fmt.Println("Request JSON Approve Borrower",payload)
+
+	ktp, _ := payload["client_ktp"].(string)
+
+	d, err := CheckBorrowerDO(ktp)
+	if err != nil {
+		ctx.JSON(iris.StatusInternalServerError, iris.Map{
+			"status":  "error",
+			"message": err.Error(),
+		})
+		return
+	}
+
+	if d == false {
+		ctx.JSON(iris.StatusInternalServerError, iris.Map{
+			"status":  "error",
+			"message": "Gagal Aprrove Borrower: Borrower berada dalam masa DO",
+		})
+		return
+	}
+
+	fmt.Println("Request JSON Approve Borrower", payload)
 	loanID := CreateBorrowerData(ctx, payload, sourceType)
 
 	if loanID < 1 {
@@ -67,8 +111,8 @@ func CreateBorrowerData(ctx *iris.Context, payload map[string]interface{}, sourc
 	}
 
 	// reserve one loan record for this new borrower
-	errLoan,loan := CreateLoan(payload)
-	if errLoan!=nil{
+	errLoan, loan := CreateLoan(payload)
+	if errLoan != nil {
 		ProcessErrorAndRollback(ctx, db, "Error Create object loan "+errLoan.Error())
 		return 0
 	}
@@ -260,9 +304,9 @@ func CreateCIF(payload map[string]interface{}) cif.Cif {
 	var cpl map[string]string
 	cpl = make(map[string]string)
 	for k, v := range payload {
-		if v==nil{
-			cpl[k]=""
-		}else{
+		if v == nil {
+			cpl[k] = ""
+		} else {
 			cpl[k] = v.(string)
 		}
 	}
@@ -297,19 +341,19 @@ func CreateCIF(payload map[string]interface{}) cif.Cif {
 }
 
 // CreateLoan - create loan object
-func CreateLoan(payload map[string]interface{}) (error,loan.Loan) {
+func CreateLoan(payload map[string]interface{}) (error, loan.Loan) {
 	// convert each payload  field into empty string
 	var cpl map[string]string
 	cpl = make(map[string]string)
 	for k, v := range payload {
-		if v==nil{
-			cpl[k]=""
-		}else{
+		if v == nil {
+			cpl[k] = ""
+		} else {
 			cpl[k] = v.(string)
 		}
 	}
-	if cpl["tenor"]==""||cpl["plafond"]==""||cpl["rate"]==""||cpl["creditScoreGrade"]==""||cpl["creditScoreValue"]==""{
-		return errors.New("CSTrip is required"),loan.Loan{}
+	if cpl["tenor"] == "" || cpl["plafond"] == "" || cpl["rate"] == "" || cpl["creditScoreGrade"] == "" || cpl["creditScoreValue"] == "" {
+		return errors.New("CSTrip is required"), loan.Loan{}
 	}
 	// map each payload field to it's respective cif field
 	newLoan := loan.Loan{}
@@ -332,24 +376,24 @@ func CreateLoan(payload map[string]interface{}) (error,loan.Loan) {
 	newLoan.CreditScoreValue, _ = strconv.ParseFloat(cpl["creditScoreValue"], 64)
 	newLoan.Stage = "PRIVATE"
 
-	borrowerId:=payload["borrowerId"];
+	borrowerId := payload["borrowerId"]
 
 	query := `SELECT loan.* FROM borrower JOIN r_loan_borrower ON r_loan_borrower."borrowerId" = borrower."id" JOIN loan ON loan."id" = r_loan_borrower."loanId" WHERE borrower."id" = ?`
 
-	oldLoan:=loan.Loan{};
+	oldLoan := loan.Loan{}
 
 	services.DBCPsql.Raw(query, borrowerId).Scan(&oldLoan)
 
-	if (oldLoan == loan.Loan{}){
+	if (oldLoan == loan.Loan{}) {
 		newLoan.IsLWK = false
 		newLoan.IsUPK = false
-	}else{
+	} else {
 		newLoan.IsLWK = true
 		newLoan.IsUPK = true
 		newLoan.Subgroup = oldLoan.Subgroup
 	}
 
-	return nil,newLoan
+	return nil, newLoan
 }
 
 // CreateRelationLoanToGroup - Create relation loan to group
@@ -444,17 +488,15 @@ func ProcessErrorAndRollback(ctx *iris.Context, db *gorm.DB, message string) {
 	})
 }
 
+func GetBorrowerByGroup(ctx *iris.Context) {
 
-
-func GetBorrowerByGroup(ctx *iris.Context){
-
-	type BorrowerGroup struct{
-		ID 		uint64 `json:_id`
-		Name 	string `json:name`
+	type BorrowerGroup struct {
+		ID   uint64 `json:_id`
+		Name string `json:name`
 	}
 	m := []BorrowerGroup{}
 
-	groupId := ctx.Get("groupId");
+	groupId := ctx.Get("groupId")
 
 	query := `SELECT DISTINCT (cif."name") AS "name", borrower."id" as "id" FROM "group"
 	LEFT JOIN r_loan_group rlg ON rlg."groupId" = "group"."id"
