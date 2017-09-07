@@ -24,6 +24,9 @@ type Loan struct {
 	Stage                string     `gorm:"column:stage" json:"stage"`
 	IsLWK                bool       `gorm:"column:isLWK" json:"isLWK" sql:"default:false"`
 	IsUPK                bool       `gorm:"column:isUPK" json:"IsUPK" sql:"default:false"`
+	IsInsurance					 bool				`gorm:"column:isInsurance" json:"isInsurance" sql:"default:false"`
+	IsInsuranceRequested bool 			`gorm:"column:isInsuranceRequested" json:"isInsuranceRequested" sql:"default:false"`
+	IsInsuranceRefund		 bool 			`gorm:"column:isInsuranceRefund" json:"isInsuranceRefund" sql:"default:false"`
 	CreatedAt            time.Time  `gorm:"column:createdAt" json:"createdAt"`
 	UpdatedAt            time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
 	DeletedAt            *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
