@@ -15,7 +15,7 @@ type (
 
 	MMBorrower struct {
 		LoanID         uint64 `json:"loanId" gorm:"column:loanId"`
-		InstallmentID  uint64 `json:"installmentID" gorm:"colimn:installmentID"`
+		InstallmentID  uint64 `json:"installmentID" gorm:"column:installmentId"`
 		BorrowerNumber uint64 `json:"borrowerNumber" gorm:"column:borrowerNumber"`
 		BorrowerName   string `json:"borrowerName" gorm:"column:borrowerName"`
 		GroupName      string `json:"groupName" gorm:"column:groupName"`
@@ -24,7 +24,7 @@ type (
 
 	MMDOBorrower struct {
 		LoanID         uint64  `json:"loanId" gorm:"column:loanId"`
-		InstallmentID  uint64  `json:"installmentID" gorm:"colimn:installmentID"`
+		InstallmentID  uint64  `json:"installmentID" gorm:"column:installmentId"`
 		BorrowerNumber uint64  `json:"borrowerNumber" gorm:"column:borrowerNumber"`
 		BorrowerName   string  `json:"borrowerName" gorm:"column:borrowerName"`
 		GroupName      string  `json:"groupName" gorm:"column:groupName"`
@@ -38,7 +38,7 @@ type (
 
 	MMPARBorrower struct {
 		LoanID         uint64  `json:"loanId" gorm:"column:loanId"`
-		InstallmentID  uint64  `json:"installmentID" gorm:"colimn:installmentID"`
+		InstallmentID  uint64  `json:"installmentID" gorm:"column:installmentId"`
 		BorrowerNumber uint64  `json:"borrowerNumber" gorm:"column:borrowerNumber"`
 		BorrowerName   string  `json:"borrowerName" gorm:"column:borrowerName"`
 		GroupName      string  `json:"groupName" gorm:"column:groupName"`
@@ -50,7 +50,7 @@ type (
 
 	MMTRBorrower struct {
 		LoanID          uint64  `json:"loanId" gorm:"column:loanId"`
-		InstallmentID   uint64  `json:"installmentID" gorm:"colimn:installmentID"`
+		InstallmentID   uint64  `json:"installmentID" gorm:"column:installmentId"`
 		BorrowerNumber  uint64  `json:"borrowerNumber" gorm:"column:borrowerNumber"`
 		BorrowerName    string  `json:"borrowerName" gorm:"column:borrowerName"`
 		GroupName       string  `json:"groupName" gorm:"column:groupName"`

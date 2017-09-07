@@ -22,7 +22,8 @@ const (
 								borrower."borrowerNo" as "borrowerNumber",
 								cif."name" as "borrowerName",
 								"group"."name" as "groupName",
-								reason.description as "reason" `
+								reason.description as "reason",
+								installment.id as "installmentId" `
 
 	selectDetailDO = ` , l.plafond as "plafond", l.tenor as "tenor",
 							installment."createdAt" as "doDate",
@@ -61,8 +62,6 @@ func GetBorrowerByInstallmentTypeAndDate(ctx *iris.Context) {
 	branchID := ctx.Get("BRANCH_ID")
 	installmentType := ctx.Param("borrowerType")
 	date := ctx.Param("date")
-	log.Println("Installment type: ", installmentType)
-	log.Println("date: ", date)
 	_, err := FindBorrowerByInstallmentType(&borrList, branchID, installmentType, date)
 	if err != nil {
 		errorResponse(ctx, err.Error(), iris.StatusInternalServerError)
@@ -76,28 +75,29 @@ func GetBorrowerDetailByInstallmentTypeAndDate(ctx *iris.Context) {
 	installmentID := uint64(installmentParam)
 	installmentType := ctx.URLParam("status")
 	date := ctx.URLParam("date")
+
 	switch strings.ToUpper(installmentType) {
 	case "DO":
-		var doDetails []MMDOBorrower
-		_, err := FindDODetailBorrower(&doDetails, branchID, date, installmentID)
+		var DODetail MMDOBorrower
+		err := FindDODetailBorrower(&DODetail, branchID, date, installmentID)
 		if err != nil {
 			errorResponse(ctx, err.Error(), iris.StatusInternalServerError)
 		}
-		successResponse(ctx, doDetails)
+		successResponse(ctx, DODetail)
 	case "PAR":
-		var parDetails []MMPARBorrower
-		_, err := FindPARDetailBorrower(&parDetails, branchID, date, installmentID)
+		var PARDetail MMPARBorrower
+		err := FindPARDetailBorrower(&PARDetail, branchID, date, installmentID)
 		if err != nil {
 			errorResponse(ctx, err.Error(), iris.StatusInternalServerError)
 		}
-		successResponse(ctx, parDetails)
+		successResponse(ctx, PARDetail)
 	case "TR":
-		var trDetails []MMTRBorrower
-		_, err := FindTRDetailBorrower(&trDetails, branchID, date, installmentID)
+		var TRDetails MMTRBorrower
+		err := FindTRDetailBorrower(&TRDetails, branchID, date, installmentID)
 		if err != nil {
 			errorResponse(ctx, err.Error(), iris.StatusInternalServerError)
 		}
-		successResponse(ctx, trDetails)
+		successResponse(ctx, TRDetails)
 	}
 }
 
@@ -122,12 +122,11 @@ func FindBorrowerStatusReason(reasons *[]Reason, statusID string) (int, error) {
 
 func FindBorrowerByInstallmentType(borrowers *[]MMBorrower, branchID interface{}, installmentType, date string) (int, error) {
 	expQuery, err := findBorrowerQuery(installmentType)
-	log.Println(expQuery)
 	if err != nil {
 		return 0, err
 	}
 	expQuery += ` and installment."createdAt"::date = ? order by cif."name" ASC `
-	log.Println(expQuery)
+	log.Println("QUERY TO RUN: ", expQuery)
 	db := services.DBCPsql.Raw(expQuery, branchID, date).Scan(borrowers)
 	if db.Error != nil {
 		return 0, errors.New("Unable to retrive mitra management borrower")
@@ -135,42 +134,43 @@ func FindBorrowerByInstallmentType(borrowers *[]MMBorrower, branchID interface{}
 	return len(*borrowers), nil
 }
 
-func FindDODetailBorrower(doDetails *[]MMDOBorrower, branchID interface{}, date string, installmentID uint64) (int, error) {
+func FindDODetailBorrower(doDetails *MMDOBorrower, branchID interface{}, date string, installmentID uint64) error {
 	query, err := findBorrowerDetailQuery("DO", installmentID)
+	log.Println("Query to run: ", query)
 	if err != nil {
-		return 0, err
+		return err
 	}
 	query += ` and installment."createdAt"::date = ? order by cif."name" ASC `
-	err = services.DBCPsql.Raw(query, branchID, date).Scan(doDetails).Error
+	err = services.DBCPsql.Raw(query, branchID, installmentID, date).Scan(doDetails).Error
 	if err != nil {
-		return 0, errors.New("Unable to retrive data Borrower DO detail")
+		return errors.New("Unable to retrive data Borrower DO detail")
 	}
-	return len(*doDetails), err
+	return nil
 }
 
-func FindPARDetailBorrower(parDetails *[]MMPARBorrower, branchID interface{}, date string, installmentID uint64) (int, error) {
+func FindPARDetailBorrower(parDetails *MMPARBorrower, branchID interface{}, date string, installmentID uint64) error {
 	query, err := findBorrowerDetailQuery("PAR", installmentID)
 	if err != nil {
-		return 0, err
+		return err
 	}
 	query += ` and installment."createdAt"::date = ? order by cif."name" ASC `
-	err = services.DBCPsql.Raw(query, branchID, date).Scan(parDetails).Error
+	err = services.DBCPsql.Raw(query, branchID, installmentID, date).Scan(parDetails).Error
 	if err != nil {
-		return 0, err
+		return err
 	}
-	return len(*parDetails), nil
+	return nil
 }
 
-func FindTRDetailBorrower(trDetails *[]MMTRBorrower, branchID interface{}, date string, installmentID uint64) (int, error) {
+func FindTRDetailBorrower(trDetails *MMTRBorrower, branchID interface{}, date string, installmentID uint64) error {
 	query, err := findBorrowerDetailQuery("TR", installmentID)
 	if err != nil {
-		return 0, err
+		return err
 	}
-	err = services.DBCPsql.Raw(query, branchID, date).Scan(trDetails).Error
+	err = services.DBCPsql.Raw(query, branchID, installmentID, date).Scan(trDetails).Error
 	if err != nil {
-		return 0, err
+		return err
 	}
-	return len(*trDetails), nil
+	return nil
 }
 
 func findBorrowerQuery(installmentType string) (string, error) {
