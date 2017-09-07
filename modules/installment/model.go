@@ -20,6 +20,8 @@ type (
 		TransactionDate   *time.Time `gorm:"column:transactionDate" json:"transactionDate"`
 		CashOnHandNote    string     `gorm:"column:cash_on_hand_note" json:"cashOnHandNote"`
 		CashOnReserveNote string     `gorm:"column:cash_on_reserve_note" json:"cashOnReserveNote"`
+		StatusID          uint64     `gorm:"column:statusId" json:"statusId"`
+		ReasonID          uint64     `gorm:"column:reasonId" json:"reasonId"`
 	}
 
 	InstallmentFetch struct {
