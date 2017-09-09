@@ -24,7 +24,7 @@ import (
 	"bitbucket.org/go-mis/modules/loan-order"
 	"bitbucket.org/go-mis/modules/loan-raw"
 	"bitbucket.org/go-mis/modules/location"
-	"bitbucket.org/go-mis/modules/mitra-management"
+	mitramanagement "bitbucket.org/go-mis/modules/mitra-management"
 	"bitbucket.org/go-mis/modules/multi-loan"
 	"bitbucket.org/go-mis/modules/notification"
 	"bitbucket.org/go-mis/modules/product-pricing"
@@ -64,7 +64,6 @@ func InitCustomApi() {
 	iris.Any(baseURL+"/user-mis-login", auth.UserMisLogin)
 	iris.Any(baseURL+"/installment-approve-success/:stageFrom/:stageTo", installment.SubmitInstallmentByGroupIDAndTransactionDateWithStatus)
 	iris.Any(baseURL+"/installment-approve-success-custom-brooooo", installment.SubmitInstallmentByGroupIDAndTransactionDateWithStatusAndInstallmentId)
-
 	v2 := iris.Party(baseURL, auth.EnsureAuth)
 	{
 		v2.Any("/me-user-mis", auth.CurrentUserMis)
@@ -200,7 +199,6 @@ func InitCustomApi() {
 		v2.Any("/mitra-management/borrower-status/:statusId/reasons", mitramanagement.GetBorrowerStatusReason)
 		v2.Any("/mitra-management/status", mitramanagement.GetStatusAll)
 		v2.Any("/mitra-management/submit-reason", mitramanagement.SubmitReason)
-
 	}
 
 	vRestrict := iris.Party(baseRestrictedURL, auth.EnsureIp)
