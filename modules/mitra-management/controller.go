@@ -2,6 +2,7 @@ package mitramanagement
 
 import (
 	"errors"
+	"fmt"
 	"log"
 	"strings"
 	"time"
@@ -94,6 +95,7 @@ func GetBorrowerDetailByInstallmentTypeAndDate(ctx *iris.Context) {
 	case "TR":
 		var TRDetails MMTRBorrower
 		err := FindTRDetailBorrower(&TRDetails, branchID, date, installmentID)
+		fmt.Println(TRDetails)
 		if err != nil {
 			errorResponse(ctx, err.Error(), iris.StatusInternalServerError)
 		}
@@ -156,7 +158,7 @@ func FindPARDetailBorrower(parDetails *MMPARBorrower, branchID interface{}, date
 	query += ` and installment."createdAt"::date = ? order by cif."name" ASC `
 	err = services.DBCPsql.Raw(query, branchID, installmentID, date).Scan(parDetails).Error
 	if err != nil {
-		return err
+		return errors.New("Unable to retrive data Borrower PAR detail")
 	}
 	return nil
 }
@@ -166,10 +168,12 @@ func FindTRDetailBorrower(trDetails *MMTRBorrower, branchID interface{}, date st
 	if err != nil {
 		return err
 	}
+	query += ` and installment."createdAt"::date = ? order by cif."name" ASC `
 	err = services.DBCPsql.Raw(query, branchID, installmentID, date).Scan(trDetails).Error
 	if err != nil {
-		return err
+		return errors.New("Unable to retrive data Borrower TR detail")
 	}
+	fmt.Println(*trDetails)
 	return nil
 }
 
@@ -190,7 +194,7 @@ func findBorrowerQuery(installmentType string) (string, error) {
 func findBorrowerDetailQuery(installmentType string, installmentID uint64) (string, error) {
 	switch strings.ToUpper(installmentType) {
 	case "PAR":
-		return pARDetailQuery + ` and upper(installment."type") = 'PAR' and and installment.id = ? `, nil
+		return pARDetailQuery + ` and upper(installment."type") = 'PAR' and installment.id = ? `, nil
 	case "TR":
 		return tRDetailQuery + ` and (upper(installment."type") = 'TR1' OR upper(installment."type") = 'TR2' ) and installment.id = ? `, nil
 	case "DO":
