@@ -173,7 +173,6 @@ func FindTRDetailBorrower(trDetails *MMTRBorrower, branchID interface{}, date st
 	if err != nil {
 		return errors.New("Unable to retrive data Borrower TR detail")
 	}
-	fmt.Println(*trDetails)
 	return nil
 }
 
