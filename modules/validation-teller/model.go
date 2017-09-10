@@ -22,6 +22,7 @@ type (
 		Name          string  `gorm:"column:name" json:"name"`
 		CashOnHand    float64 `gorm:"column:cashOnHand" json:"cashOnHand"`
 		CashOnReserve float64 `gorm:"column:cashOnReserve" json:"cashOnReserve"`
+		Disbursement float64 `gorm:"column:disbursement" json:"disbursement"`
 		Note          string  `gorm:"column:note" json:"note"`
 	}
 
@@ -121,6 +122,7 @@ type (
 		TabunganNominal      float64 `json:"tabunganNominal"`
 		GagalDroppingID      string  `json:"gagalDroppingId"`
 		GagalDroppingNominal float64 `json:"gagalDroppingNominal"`
+		GagalDroppingNote string `json:"gagalDroppingNote"`
 		BranchID             uint64  `json:"branchId"`
 	}
 

@@ -11,5 +11,6 @@ type DataTransfer struct {
 	TabunganNominal      float64 `bson:"column:tabunganNominal" json:"tabunganNominal"`
 	GagalDroppingID      string  `bson:"column:gagalDroppingId" json:"gagalDroppingId"`
 	GagalDroppingNominal float64 `bson:"column:gagalDroppingNominal" json:"gagalDroppingNominal"`
+	GagalDroppingNote string `bson:"column:gagalDroppingNote" json:"gagalDroppingNote"`
 	BranchID             uint64  `bson:"branchId" json:"branchId"`
 }

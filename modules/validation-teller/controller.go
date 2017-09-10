@@ -432,6 +432,7 @@ func FindDataTransfer(branchID uint64, date string) (DataTransfer, error) {
 				data_transfer.tabungan_nominal,
 				data_transfer.gagal_dropping_id,
 				data_transfer.gagal_dropping_nominal,
+				data_transfer.gagal_dropping_note,
 				data_transfer.branch_id
 			from data_transfer
 			where data_transfer.validation_date::date = ?
