@@ -2,7 +2,13 @@ package loanInsurance
 
 import (
   "gopkg.in/kataras/iris.v4"
+  "bitbucket.org/go-mis/modules/account"
+  "bitbucket.org/go-mis/modules/loan"
+  accountTransactionCredit "bitbucket.org/go-mis/modules/account-transaction-credit"
+  accountTransactionDebit "bitbucket.org/go-mis/modules/account-transaction-debit"
+  "bitbucket.org/go-mis/modules/r"
   "bitbucket.org/go-mis/services"
+  "time"
 )
 
 func GetLoanWithInsurance (ctx *iris.Context) {
@@ -45,15 +51,54 @@ func RequestRefund (ctx *iris.Context) {
 	})
 }
 
+type Total struct {
+  TotalFrequency uint64 `gorm:"column:totalFrequency"`
+}
+
 func ApplyRefund (ctx *iris.Context) {
-  id := ctx.Param("loan_id")
+  loanID := ctx.Param("loan_id")
   
-  // TODO:
-  // Calculate total remaining principle and refund it to investor
+   loanSchema := loan.Loan{}
+  services.DBCPsql.Table("loan").Where("id = ?", loanID).Scan(&loanSchema)
   
-  services.DBCPsql.Table("loan").Where("id = ?", id).Update("isInsuranceRefund", "TRUE")
-  ctx.JSON(iris.StatusOK, iris.Map{
-		"status": "success",
-		"data": iris.Map{},
-	})
+  tenor := loanSchema.Tenor
+  installment := loanSchema.Plafond / float64(loanSchema.Tenor)
+  
+  query := `select sum(frequency) as "totalFrequency" from installment join r_loan_installment rli on rli."installmentId" = installment.id where rli."loanId"= ?`
+  totalSchema := Total{}
+  services.DBCPsql.Raw(query, loanID).Scan(&totalSchema)
+  
+  if totalSchema.TotalFrequency < tenor {
+    totalFrequencyRefund := tenor - totalSchema.TotalFrequency
+    totalRefund := installment * float64(totalFrequencyRefund)
+    
+    accountSchema := account.Account{}
+    queryGetAccountInvestor := `SELECT * FROM account JOIN r_account_investor rai ON rai."accountId" = account.id JOIN r_investor_product_pricing_loan rippl on rippl."investorId" = rai."investorId" WHERE rippl."loanId" = ?`
+    services.DBCPsql.Raw(queryGetAccountInvestor, loanID).Scan(&accountSchema)
+    
+    accountTransactionDebitSchema := &accountTransactionDebit.AccountTransactionDebit{Type: "REFUND", TransactionDate: time.Now(), Amount: totalRefund, Remark: "Refund using ..."}
+    services.DBCPsql.Table("account_transaction_debit").Create(accountTransactionDebitSchema)
+    
+    rAccountTransactionDebitSchema := &r.RAccountTransactionDebit{AccountId: accountSchema.ID, AccountTransactionDebitId: accountTransactionDebitSchema.ID}
+    services.DBCPsql.Table("r_account_transaction_debit").Create(rAccountTransactionDebitSchema)
+    
+    totalDebit := accountTransactionDebit.GetTotalAccountTransactionDebit(accountSchema.ID)
+    totalCredit := accountTransactionCredit.GetTotalAccountTransactionCredit(accountSchema.ID)
+    totalBalance := totalDebit - totalCredit
+    
+    services.DBCPsql.Table("account").Where("id = ?", accountSchema.ID).Updates(account.Account{TotalDebit: totalDebit, TotalCredit: totalCredit, TotalBalance: totalBalance})
+    
+    services.DBCPsql.Table("loan").Where("id = ?", loanID).Update("isInsuranceRefund", "TRUE")
+  
+    ctx.JSON(iris.StatusOK, iris.Map{
+  		"status": "success",
+  		"data": iris.Map{},
+  	}) 
+  } else {
+    ctx.JSON(iris.StatusInternalServerError, iris.Map{
+  		"status": "error",
+  		"message": "Loan has been paid. Refund request failed.",
+  		"data": iris.Map{},
+  	})
+  }
 }
