@@ -4,11 +4,13 @@ import (
   "gopkg.in/kataras/iris.v4"
   "bitbucket.org/go-mis/modules/account"
   "bitbucket.org/go-mis/modules/loan"
+  "bitbucket.org/go-mis/modules/loan-history"
   accountTransactionCredit "bitbucket.org/go-mis/modules/account-transaction-credit"
   accountTransactionDebit "bitbucket.org/go-mis/modules/account-transaction-debit"
   "bitbucket.org/go-mis/modules/r"
   "bitbucket.org/go-mis/services"
   "time"
+  "strconv"
 )
 
 func GetLoanWithInsurance (ctx *iris.Context) {
@@ -44,7 +46,16 @@ func GetLoanWithInsurance (ctx *iris.Context) {
 
 func RequestRefund (ctx *iris.Context) {
   id := ctx.Param("loan_id")
-  services.DBCPsql.Table("loan").Where("id = ?", id).Update("isInsuranceRequested", "TRUE")
+  services.DBCPsql.Table("loan").Where("id = ?", id).Update(map[string]interface{}{"isInsuranceRequested": true, "stage": "END"})
+  
+  loanHistorySchema := &loanHistory.LoanHistory{StageFrom: "INSTALLMENT", StageTo: "END", Remark: "Investor requested for REFUND.", CreatedAt: time.Now(), UpdatedAt: time.Now()}
+  services.DBCPsql.Table("loan_history").Create(loanHistorySchema);
+  
+  loanID, _ := strconv.ParseUint(id, 10, 64)
+  
+  rLoanHistorySchema := &r.RLoanHistory{LoanId: loanID, LoanHistoryId: loanHistorySchema.ID}
+  services.DBCPsql.Table("r_loan_history").Create(rLoanHistorySchema);
+  
   ctx.JSON(iris.StatusOK, iris.Map{
 		"status": "success",
 		"data": iris.Map{},

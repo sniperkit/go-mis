@@ -27,6 +27,8 @@ type Loan struct {
 	IsInsurance					 bool				`gorm:"column:isInsurance" json:"isInsurance" sql:"default:false"`
 	IsInsuranceRequested bool 			`gorm:"column:isInsuranceRequested" json:"isInsuranceRequested" sql:"default:false"`
 	IsInsuranceRefund		 bool 			`gorm:"column:isInsuranceRefund" json:"isInsuranceRefund" sql:"default:false"`
+	InsuranceType				 string			`gorm:"column:insuranceType" json:"insuranceType"` // JAMKRINDO, ALLIANZ
+	EndType							 string     `gorm:"column:endType" json:"endType"` // EARLY, PENDING, PELDIN, INSURANCE
 	CreatedAt            time.Time  `gorm:"column:createdAt" json:"createdAt"`
 	UpdatedAt            time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
 	DeletedAt            *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
