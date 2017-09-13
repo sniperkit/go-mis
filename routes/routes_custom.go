@@ -95,6 +95,7 @@ func InitCustomApi() {
 		v2.Any("/loan/akad/:id", loan.GetAkadData)
 		v2.Any("/loan-stage-history/:id", loan.GetLoanStageHistory)
 		v2.Any("/loan-insurance", loanInsurance.GetLoanWithInsurance)
+		v2.Any("/loan-insurance/get-finance-report", loanInsurance.GetFinanceReport)
 		v2.Any("/loan-insurance/:loan_id/request-refund", loanInsurance.RequestRefund)
 		v2.Any("/loan-insurance/:loan_id/apply-refund", loanInsurance.ApplyRefund)
 		//v2.Any("/loan-order/pending-waiting", loanOrder.FetchAllPendingWaiting)

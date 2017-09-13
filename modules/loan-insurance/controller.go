@@ -113,3 +113,33 @@ func ApplyRefund (ctx *iris.Context) {
   	})
   }
 }
+
+type InsuranceFinanceReport struct {
+  TransactionDate *time.Time `json:"transactionDate" gorm:"column:transactionDate"`
+  TransactionID uint64 `json:"transactionId" gorm:"column:transactionId"`
+  TransactionType string `json:"type" gorm:"column:type"`
+  Amount float64 `json:"amount" gorm:"column:amount"`
+  LoanID string `json:"loanId" gorm:"column:loanId"`
+}
+
+func GetFinanceReport (ctx *iris.Context) {
+  query := `SELECT atc."transactionDate", atc.id as "transactionId", atc.type, atc.amount, 
+    array_to_string(array_agg(l.id), ',') as "loanId"
+    FROM loan l
+    JOIN r_account_transaction_credit_loan ratcl ON ratcl."loanId" = l.id
+    JOIN account_transaction_credit atc ON atc.id = ratcl."accountTransactionCreditId"
+    WHERE 
+    l."isInsurance" = TRUE 
+    AND atc."type" = 'INSURANCE'
+    GROUP BY atc.id`
+  
+  insuranceFinanceReportSchema := []InsuranceFinanceReport{}
+  services.DBCPsql.Raw(query).Scan(&insuranceFinanceReportSchema)
+  
+  ctx.JSON(iris.StatusOK, iris.Map{
+		"status": "success",
+		"data": iris.Map{
+		  "transactions": insuranceFinanceReportSchema,
+		},
+	})
+}
