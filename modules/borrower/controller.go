@@ -34,15 +34,13 @@ func CheckBorrowerDO(idCardNo string) (bool, error) {
 		join borrower on borrower.id = rcb."borrowerId"
 		where cif."idCardNo" = ?`
 
-	err := services.DBCPsql.Raw(q, idCardNo).Scan(&borrower).Error
-	if err != nil {
-		return false, errors.New("Error: checking borrower DO")
-	}
+	services.DBCPsql.Raw(q, idCardNo).Scan(&borrower)
 
-	if borrower.DODate != nil {
-		if time.Now().Year() >= borrower.DODate.AddDate(1, 0, 0).Year() && time.Now().YearDay() > borrower.DODate.AddDate(1, 0, 0).YearDay() {
-			return true, nil
-		}
+	if borrower.DODate == nil {
+		return true, nil
+	}
+	if time.Now().Year() >= borrower.DODate.AddDate(1, 0, 0).Year() && time.Now().YearDay() > borrower.DODate.AddDate(1, 0, 0).YearDay() {
+		return true, nil
 	}
 	return false, nil
 }
