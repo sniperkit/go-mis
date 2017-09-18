@@ -66,10 +66,12 @@ type Total struct {
   TotalFrequency uint64 `gorm:"column:totalFrequency"`
 }
 
+const refundRate float64 = 0.75
+
 func ApplyRefund (ctx *iris.Context) {
   loanID := ctx.Param("loan_id")
   
-   loanSchema := loan.Loan{}
+  loanSchema := loan.Loan{}
   services.DBCPsql.Table("loan").Where("id = ?", loanID).Scan(&loanSchema)
   
   tenor := loanSchema.Tenor
@@ -81,13 +83,13 @@ func ApplyRefund (ctx *iris.Context) {
   
   if totalSchema.TotalFrequency < tenor {
     totalFrequencyRefund := tenor - totalSchema.TotalFrequency
-    totalRefund := installment * float64(totalFrequencyRefund)
+    totalRefund := (installment * float64(totalFrequencyRefund)) * refundRate
     
     accountSchema := account.Account{}
     queryGetAccountInvestor := `SELECT * FROM account JOIN r_account_investor rai ON rai."accountId" = account.id JOIN r_investor_product_pricing_loan rippl on rippl."investorId" = rai."investorId" WHERE rippl."loanId" = ?`
     services.DBCPsql.Raw(queryGetAccountInvestor, loanID).Scan(&accountSchema)
     
-    accountTransactionDebitSchema := &accountTransactionDebit.AccountTransactionDebit{Type: "REFUND", TransactionDate: time.Now(), Amount: totalRefund, Remark: "Refund using ..."}
+    accountTransactionDebitSchema := &accountTransactionDebit.AccountTransactionDebit{Type: "REFUND-INSURANCE", TransactionDate: time.Now(), Amount: totalRefund, Remark: "Refund via JAMKRINDO"}
     services.DBCPsql.Table("account_transaction_debit").Create(accountTransactionDebitSchema)
     
     rAccountTransactionDebitSchema := &r.RAccountTransactionDebit{AccountId: accountSchema.ID, AccountTransactionDebitId: accountTransactionDebitSchema.ID}
