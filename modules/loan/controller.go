@@ -608,6 +608,35 @@ func AssignInvestorToLoan(ctx *iris.Context) {
 
 	services.DBCPsql.Table("account").Where("id = ?", rAccountInvestorSchema.AccountId).Updates(account.Account{TotalDebit: totalDebit, TotalCredit: totalCredit, TotalBalance: totalBalance})
 
+	queryReferal:=`with A as (
+select id, "inviterInvestorId" from referral where "inviteeInvestorId" = ` + strconv.FormatUint(rCifInvestorSchema.InvestorId,10) + ` and "inviterGetTimestamp" isnull and "deletedAt" isnull
+),
+B as (
+    update referral set "inviterGetTimestamp" = current_timestamp, "inviteeUseTimestamp" = current_timestamp
+    from A where A.id = referral.id
+    returning referral.id,concat('SUCCESSFUL REFERRAL INVITEE = ',"inviteeInvestorId",' INVITER = ',referral."inviterInvestorId",' REFERALL ID = ',referral.id) "remark",
+    referral."inviterInvestorId","inviteeInvestorId","inviterGetTimestamp","inviteeGetTimestamp","createdAt","updatedAt","deletedAt"
+),
+C as (
+    insert into account_transaction_debit ("type", amount, remark, "transactionDate","createdAt", "updatedAt")
+    select 'REFERRAL-INVITER',100000,"remark",current_timestamp,current_timestamp,current_timestamp from B
+    returning id, remark
+),
+D as (
+    insert into r_account_transaction_debit_referral ("accountTransactionDebitId","referralId","createdAt")
+    select C.id, split_part(remark,' ',12)::int, current_timestamp from C),
+I as (
+    insert into r_account_transaction_debit ("accountTransactionDebitId","accountId","createdAt")
+    select C.id, rai."accountId", current_timestamp from C
+    join r_account_investor rai on split_part(C.remark,' ',8)::int = rai."investorId"
+    ),
+J as(
+    update account set threshold = coalesce(threshold,0) + total * 100000, "totalDebit" = coalesce("totalDebit",0) + total * 100000, "totalBalance" = coalesce("totalBalance",0) + total * 100000
+    from (select rai."accountId" id, count(1) "total" from r_account_investor rai join B on rai."investorId" = B."inviterInvestorId" group by "accountId" ) foo where account.id = foo.id
+    returning account.id
+)
+select * from B`
+	services.DBCPsql.Exec(queryReferal)
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"status": "success",
 		"data":   iris.Map{},
