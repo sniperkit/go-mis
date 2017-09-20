@@ -209,7 +209,7 @@ func EnsureAuth(ctx *iris.Context) {
 		return
 	}
 	userObj := userMis.UserMis{}
-	queryAccessToken := "SELECT * FROM user_mis WHERE \"id\" = ? "
+	queryAccessToken := "SELECT * FROM user_mis WHERE \"_username\" = ? "
 	queryAccessToken += "AND \"deletedAt\" IS NULL"
 	services.DBCPsql.Raw(queryAccessToken, claim.Id).Scan(&userObj)
 
