@@ -29,7 +29,7 @@ func GetLoanWithInsurance (ctx *iris.Context) {
   LEFT JOIN r_loan_installment rli ON rli."loanId" = l.id
   LEFT JOIN installment i ON i.id = rli."installmentId"
   WHERE 
-  l.stage = 'INSTALLMENT'
+  l.stage IN ('INSTALLMENT', 'END')
   AND l."isInsurance" = TRUE
   GROUP BY l.id, cif.name limit 10`
   
