@@ -26,8 +26,8 @@ func GetLoanWithInsurance (ctx *iris.Context) {
   JOIN r_loan_borrower rlb ON rlb."loanId" = l.id
   JOIN r_cif_borrower rcb ON rcb."borrowerId" = rlb."borrowerId"
   JOIN cif ON cif.id = rcb."cifId"
-  JOIN r_loan_installment rli ON rli."loanId" = l.id
-  JOIN installment i ON i.id = rli."installmentId"
+  LEFT JOIN r_loan_installment rli ON rli."loanId" = l.id
+  LEFT JOIN installment i ON i.id = rli."installmentId"
   WHERE 
   l.stage = 'INSTALLMENT'
   AND l."isInsurance" = TRUE
