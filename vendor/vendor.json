@@ -3,16 +3,26 @@
 	"ignore": "test",
 	"package": [
 		{
+			"checksumSHA1": "keA/DUpCUUVvjoRN8RiVkehRWGo=",
+			"path": "bitbucket.org/go-worker-topsheet/model",
+			"revision": "85910c4ccd65f153a6effde3ebdf72e3d87eb11b",
+			"revisionTime": "2017-08-21T03:55:05Z"
+		},
+		{
+			"checksumSHA1": "GXOurDGgsLmJs0wounpdWZZRSGw=",
+			"path": "github.com/dgrijalva/jwt-go",
+			"revision": "a539ee1a749a2b895533f979515ac7e6e0f5b650",
+			"revisionTime": "2017-06-08T00:51:49Z"
+		},
+		{
 			"checksumSHA1": "40Ns85VYa4smQPcewZ7SOdfLnKU=",
 			"path": "github.com/fatih/structs",
 			"revision": "a720dfa8df582c51dee1b36feabb906bde1588bd",
 			"revisionTime": "2017-01-03T08:10:50Z"
 		},
 		{
-			"checksumSHA1": "",
 			"path": "github.com/google/go-github/github",
-			"revision": "2ec691a35b10b8c1471955a96d0f182a572e1cad",
-			"revisionTime": ""
+			"revision": "2ec691a35b10b8c1471955a96d0f182a572e1cad"
 		},
 		{
 			"checksumSHA1": "p3IB18uJRs4dL2K5yx24MrLYE9A=",
@@ -69,10 +79,8 @@
 			"revisionTime": "2017-02-27T03:31:44Z"
 		},
 		{
-			"checksumSHA1": "",
 			"path": "github.com/kataras/go-fs",
-			"revision": "11186566954f34b08666ba97dd71b8908192e194",
-			"revisionTime": ""
+			"revision": "11186566954f34b08666ba97dd71b8908192e194"
 		},
 		{
 			"checksumSHA1": "+CqJGh7NIDMnHgScq9sl9tPrnVM=",
@@ -135,10 +143,28 @@
 			"revisionTime": "2017-03-10T21:57:03Z"
 		},
 		{
+			"checksumSHA1": "CxNwJP++vjUAyy3bbJnNss1Il9Q=",
+			"path": "github.com/moul/http2curl",
+			"revision": "4e24498b31dba4683efb9d35c1c8a91e2eda28c8",
+			"revisionTime": "2016-10-31T19:45:48Z"
+		},
+		{
 			"checksumSHA1": "lXRUQDBB6mO+1EMm1nMWGIGg5/4=",
 			"path": "github.com/nferruzzi/gormGIS",
 			"revision": "03632ffdc35f0d70fcb8397fd6610e451bcc4b1f",
 			"revisionTime": "2016-07-28T08:07:32Z"
+		},
+		{
+			"checksumSHA1": "7KKtPkiXnF1Tr9E322Ak4SakWdg=",
+			"path": "github.com/parnurzeal/gorequest",
+			"revision": "96c7975f7b7ec63d931b38b2296ee78d92753683",
+			"revisionTime": "2017-04-10T15:00:17Z"
+		},
+		{
+			"checksumSHA1": "ynJSWoF6v+3zMnh9R0QmmG6iGV8=",
+			"path": "github.com/pkg/errors",
+			"revision": "ff09b135c25aae272398c51a07235b90a75aa4f0",
+			"revisionTime": "2017-03-16T20:15:38Z"
 		},
 		{
 			"checksumSHA1": "c7jHQZk5ZEsFR9EXsWJXkszPBZA=",
