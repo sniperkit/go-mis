@@ -21,6 +21,7 @@ func Init() {
 const (
 	selectBorrowerQuery = ` select l.id as "loanId",
 								borrower."borrowerNo" as "borrowerNumber",
+								borrower."id" as "borrowerId",
 								cif."name" as "borrowerName",
 								"group"."name" as "groupName",
 								reason.description as "reason",
