@@ -59,7 +59,7 @@ type (
 		GroupName       string  `json:"groupName" gorm:"column:groupName"`
 		Reason          string  `json:"reason" gorm:"column:reason"`
 		Nominal         float64 `json:"nominal" gorm:"column:nominal"`
-		TRDate          string  `json:"parDate" gorm:"column:trDate"`
+		TRDate          string  `json:"trDate" gorm:"column:trDate"`
 		Agent           string  `json:"agent" gorm:"column:agent"`
 		InstallmentType string  `json:"installmentType" gorm:"column:type"`
 	}
