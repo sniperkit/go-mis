@@ -20,6 +20,7 @@ var (
 	UploaderApiPath           string
 	GoCasPath			           string
 	EnableEmergencyLoan		  bool
+	GoBankingPath						  string
 )
 
 type Config struct {
@@ -30,6 +31,7 @@ type Config struct {
 	SignString		 string     `json:"signString"`
 	ApiVersion   string     `json:"apiVersion"`
 	EnableEmergencyLoan bool `json:"enableEmergencyLoan"`
+	GoBankingPath string `json:"goBankingPath"`
 }
 
 type DbConfig struct {
@@ -89,8 +91,7 @@ func init() {
 	UploaderApiPath = c.UploaderPath
 	GoCasApiPath = c.GoCasPath
 	SignStringKey = c.SignString
-
-
+	GoBankingPath = c.GoBankingPath
 
 	EnableEmergencyLoan = c.EnableEmergencyLoan
 
