@@ -143,9 +143,16 @@ func UpdateStage(ctx *iris.Context) {
 		json.NewDecoder(resp.Body).Decode(&body)
 		
 		fmt.Println("---------")
-		fmt.Println(body)
+		fmt.Printf("%+v", body)
 		
-		if body.Success == false || body == false {
+		if body.Success == false {
+			cashoutHistoryObj := &cashoutHistory.CashoutHistory{StageFrom: "SEND-TO-MANDIRI", StageTo: "FAILED-PROCESS-MANDIRI"}
+			services.DBCPsql.Create(cashoutHistoryObj)
+		
+			rCashoutHistoryObj := &r.RCashoutHistory{CashoutId: cashoutID, CashoutHistoryId: cashoutHistoryObj.ID}
+			services.DBCPsql.Create(rCashoutHistoryObj)
+			
+			services.DBCPsql.Table("cashout").Where("cashout.\"id\" = ?", cashoutID).UpdateColumn("stage", "FAILED-PROCESS-MANDIRI")
 			ctx.JSON(iris.StatusInternalServerError, iris.Map{
 				"status": "error",
 				"message": "Failed to process request.",
