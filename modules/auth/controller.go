@@ -16,6 +16,7 @@ import (
 	"bitbucket.org/go-mis/modules/role"
 	"regexp"
 	"github.com/dgrijalva/jwt-go"
+	"strings"
 )
 
 func generateAccessToken() string {
@@ -233,6 +234,34 @@ func EnsureAuth(ctx *iris.Context) {
 
 		ctx.Next()
 	}
+}
+
+func EnsureIp(ctx *iris.Context) {
+	ips := strings.Split(config.WhiteList, ",")
+	fmt.Println(ctx.RemoteAddr())
+	if(contains(ips,ctx.RemoteAddr())){
+		accessToken := ctx.URLParam("accessToken")
+		if accessToken==""{
+			accessToken = ctx.RequestHeader("accessToken")
+		}
+		branchId := ctx.URLParam("branchId")
+		ctx.Set("BRANCH_ID", branchId)
+		ctx.Next()
+		return
+	}
+	ctx.JSON(iris.StatusForbidden, iris.Map{
+		"status":  "error",
+		"message": "Unauthorized access.",
+	})
+}
+
+func contains(s []string, e string) bool {
+	for _, a := range s {
+		if a == e {
+			return true
+		}
+	}
+	return false
 }
 
 // CurrentUserMis - get current user mis data

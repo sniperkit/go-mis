@@ -40,6 +40,7 @@ import (
 )
 
 var baseURL = "/api/v2"
+var baseRestrictedURL = "/api/restrict"
 
 // InitCustomApi - initialize custom api
 func InitCustomApi() {
@@ -173,6 +174,11 @@ func InitCustomApi() {
 		
 		v2.Get("/multi-loan-undisbursed", multiloan.GetAllUndisbursedMultiLoan)
 		v2.Get("/multi-loan-update-disb-date/:loan_id/:last_disb_date/:next_disb_date", disbursement.UpdateDisbursementDate)
+	}
+
+	vRestrict := iris.Party(baseRestrictedURL, auth.EnsureIp)
+	{
+		vRestrict.Any("/loan-order/accept/:orderNo", loanOrder.AcceptLoanOrder)
 	}
 
 	iris.Get(baseURL+"/generate-topsheet/:group_id", topsheet.GenerateTopsheet)
