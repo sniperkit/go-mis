@@ -3,18 +3,19 @@ package investorCheck
 import (
 	"fmt"
 	"strconv"
-	
+
 	"bitbucket.org/go-mis/config"
+
+	"net/http"
+	"strings"
 
 	"bitbucket.org/go-mis/modules/cif"
 	email "bitbucket.org/go-mis/modules/email"
+	"bitbucket.org/go-mis/modules/investor"
 	"bitbucket.org/go-mis/modules/r"
 	va "bitbucket.org/go-mis/modules/virtual-account"
 	"bitbucket.org/go-mis/services"
 	iris "gopkg.in/kataras/iris.v4"
-	"strings"
-	"net/http"
-	"bitbucket.org/go-mis/modules/investor"
 )
 
 type totalData struct {
@@ -24,60 +25,67 @@ type totalData struct {
 // FetchDatatables -  fetch data based on parameters sent by datatables
 func FetchDatatables(ctx *iris.Context) {
 	investors := []InvestorCheck{}
-	totalData := totalData{}
+	limit := ctx.URLParam("limit")
+	page := ctx.URLParam("page")
+	search := ctx.URLParam("search")
+	query := ` SELECT cif.id, cif."name", 
+					cif."phoneNo", 
+					cif."idCardNo", 
+					investor."bankAccountName",
+					cif."taxCardNo", 
+					cif."idCardFilename", 
+					cif."taxCardFilename", 
+					cif."idCardNo", 
+					cif."isValidated", 
+					cif."taxCardNo", 
+					array_to_string(array_agg(virtual_account."bankName"),',') as "virtualAccountBankName", 
+					array_to_string(array_agg(virtual_account."virtualAccountNo"),',') as "virtualAccountNumber", 
+					investor."investorNo", 
+					investor."createdAt",
+					cif."isActivated",
+					cif."isVerified",
+					cif."isDeclined",
+					cif."username",
+					cif."activationDate",
+					cif."declinedDate"
+				FROM investor 
+					LEFT JOIN r_investor_virtual_account ON r_investor_virtual_account."investorId" = investor.id 
+					LEFT JOIN virtual_account ON virtual_account.id = r_investor_virtual_account."vaId" 
+					JOIN r_cif_investor ON r_cif_investor."investorId" = investor.id 
+					JOIN cif ON cif.id = r_cif_investor."cifId" 
+				WHERE cif."isVerified" = FALSE 
+				AND cif."idCardFilename" IS NOT NULL 
+				and cif."isActivated" = TRUE 
+				AND cif."deletedAt" isnull AND virtual_account."deletedAt" isnull `
 
-	query := "SELECT cif.\"id\", cif.\"name\", cif.\"phoneNo\", cif.\"idCardNo\", \"bankAccountName\", "
-	query += "cif.\"taxCardNo\", cif.\"idCardFilename\", cif.\"taxCardFilename\", cif.\"idCardNo\", cif.\"isValidated\", "
-	query += "cif.\"taxCardNo\", array_to_string(array_agg(virtual_account.\"bankName\"),',') as \"virtualAccountBankName\", "
-	query += "array_to_string(array_agg(virtual_account.\"virtualAccountNo\"),',') as \"virtualAccountNumber\", investor.\"investorNo\", investor.\"createdAt\" "
-	query += "FROM investor "
-	query += "LEFT JOIN r_investor_virtual_account ON r_investor_virtual_account.\"investorId\" = investor.id "
-	query += "LEFT JOIN virtual_account ON virtual_account.id = r_investor_virtual_account.\"vaId\" "
-	query += "JOIN r_cif_investor ON r_cif_investor.\"investorId\" = investor.id "
-	query += "JOIN cif ON cif.id = r_cif_investor.\"cifId\" "
-	// query += "where (cif.\"isVerified\" = false or cif.\"isVerified\" is NULL) " // borrower will included at list
-	query += "WHERE cif.\"isVerified\" = FALSE "
-	query += "AND cif.\"idCardFilename\" IS NOT NULL "
-	query += "and cif.\"isActivated\" = TRUE "
-	query += "AND cif.\"deletedAt\" IS null AND virtual_account.\"deletedAt\" IS null "
-
-	// queryTotalData := "SELECT count(cif.*) as \"totalRows\" "
-	// queryTotalData += "FROM cif "
-	// queryTotalData += "WHERE \"isVerified\" = false "
-	// queryTotalData += "AND \"deletedAt\" IS NULL "
-
-	queryTotalData := "SELECT count(cif.*) as \"totalRows\" FROM cif WHERE cif.\"isVerified\" = false AND cif.\"isActivated\" = true "
-
-	if ctx.URLParam("search") != "" {
-		query += "AND cif.name ~* '" + ctx.URLParam("search") + "' "
-		queryTotalData += "AND cif.name ~* '" + ctx.URLParam("search") + "' "
+	if search != "" {
+		query += ` AND (cif.name ILIKE '%` + search + `%' OR investor."investorNo"::text ILIKE '%` + search + `%' OR cif."idCardNo" ILIKE '%` + search + `%' OR  
+					cif."taxCardNo" ILIKE '%` + search + `' OR cif."username" ILIKE '%` + search + `%') `
 	}
 
-	query += "group by cif.\"id\", cif.\"name\", cif.\"phoneNo\", cif.\"idCardNo\", \"bankAccountName\", cif.\"taxCardNo\", "
-	query += " cif.\"idCardNo\", cif.\"taxCardNo\", cif.\"idCardFilename\", cif.\"taxCardFilename\", cif.\"isValidated\", "
-	query += " investor.\"investorNo\", investor.\"createdAt\" "
+	groupedBy := ` group by cif."id", cif."name", cif."phoneNo", cif."idCardNo", "bankAccountName", cif."taxCardNo",
+	cif."idCardNo", cif."taxCardNo", cif."idCardFilename", cif."taxCardFilename", cif."isValidated",
+	investor."investorNo", investor."createdAt" `
+	query += groupedBy
 
-	if ctx.URLParam("limit") != "" {
-		query += "LIMIT " + ctx.URLParam("limit") + " "
+	if len(strings.TrimSpace(limit)) == 0 {
+		query += ` LIMIT 10 `
 	} else {
-		query += "LIMIT 10 "
+		query += ` LIMIT ` + limit
 	}
 
-	if ctx.URLParam("page") != "" {
-		query += "OFFSET " + ctx.URLParam("page")
+	if len(strings.TrimSpace(page)) == 0 {
+		query += ` OFFSET 0 `
 	} else {
-		query += "OFFSET 0 "
+		query += ` OFFSET ` + page
 	}
-
-	services.DBCPsql.Raw(query).Scan(&investors)
-	services.DBCPsql.Raw(queryTotalData).Scan(&totalData)
 
 	services.DBCPsql.Raw(query).Scan(&investors)
 
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"status":    "success",
-		"totalRows": totalData.TotalRows,
 		"data":      investors,
+		"totalRows": len(investors),
 	})
 }
 
@@ -94,15 +102,15 @@ func Verify(ctx *iris.Context) {
 
 		cifSchema := cif.Cif{}
 		services.DBCPsql.Table("cif").Where("id = ?", id).Scan(&cifSchema)
-		
+
 		// get investor id
 		inv := &r.RCifInvestor{}
 		services.DBCPsql.Table("r_cif_investor").Where("\"cifId\" = ?", cifSchema.ID).Scan(&inv)
-		
+
 		// get investor data
 		investorSchema := investor.Investor{}
 		services.DBCPsql.Table("investor").Where("id = ?", inv.InvestorId).Scan(&investorSchema)
-		
+
 		// send create BCA VA request
 		params := strings.NewReader(`{"investorNo":` + strconv.FormatUint(investorSchema.InvestorNo, 10) + `}`)
 		url := config.GoBankingPath + `/bca/register-va`
@@ -110,11 +118,11 @@ func Verify(ctx *iris.Context) {
 		if err != nil {
 			fmt.Println(err)
 		}
-		
+
 		fmt.Println("requesting ... " + url)
-		
+
 		request.Header.Set("X-Auth-Token", "AMARTHA123")
-		
+
 		client := &http.Client{}
 		_, errResp := client.Do(request)
 		if errResp != nil {
@@ -127,14 +135,13 @@ func Verify(ctx *iris.Context) {
 		if *cifSchema.IsValidated == true {
 			services.DBCPsql.Table("cif").Where("id = ?", id).Update("isVerified", true)
 
-
 			// get investor id
 			inv := &r.RCifInvestor{}
 			services.DBCPsql.Table("r_cif_investor").Where("\"cifId\" = ?", id).Scan(&inv)
 
 			// get investor id
 			invNo := &InvestorNumber{}
-			services.DBCPsql.Raw(`select id,"investorNo" from investor where id = ?`,inv.InvestorId).Scan(invNo)
+			services.DBCPsql.Raw(`select id,"investorNo" from investor where id = ?`, inv.InvestorId).Scan(invNo)
 
 			// get virtual account
 			rInvVa := []r.RInvestorVirtualAccount{}
@@ -142,47 +149,47 @@ func Verify(ctx *iris.Context) {
 
 			vaData := make(map[string]string)
 
-			vaData["MANDIRI"] = "88000"+strconv.Itoa(invNo.InvestorNo)
+			vaData["MANDIRI"] = "88000" + strconv.Itoa(invNo.InvestorNo)
 			vaData["MANDIRI_HOLDER"] = cifSchema.Name
 
 			vaData["BCA_HOLDER"] = cifSchema.Name
-			vaData["BCA"]= "10036"+strconv.Itoa(invNo.InvestorNo)
-			
+			vaData["BCA"] = "10036" + strconv.Itoa(invNo.InvestorNo)
+
 			// get investor data
 			investorSchema := investor.Investor{}
 			services.DBCPsql.Table("investor").Where("id = ?", inv.InvestorId).Scan(&investorSchema)
-			
+
 			// send create BCA VA request
 			params := strings.NewReader(`{"investorNo":` + strconv.FormatUint(investorSchema.InvestorNo, 10) + `}`)
-			request, err := http.NewRequest("POST", config.GoBankingPath + `/bca/register-va`, params)
+			request, err := http.NewRequest("POST", config.GoBankingPath+`/bca/register-va`, params)
 			if err != nil {
 				fmt.Println(err)
 			}
-			
+
 			request.Header.Set("X-Auth-Token", "AMARTHA123")
-			
+
 			client := &http.Client{}
 			_, errResp := client.Do(request)
 			if errResp != nil {
 				fmt.Println(errResp)
 			}
-			
+
 			if cifSchema.Username != "" {
 				fmt.Println("Sending email..")
-				 //go email.SendEmailVerificationSuccess(cifSchema.Username, cifSchema.Name, vaData["BCA"], vaData["BCA_HOLDER"], vaData["MANDIRI"], vaData["MANDIRI_HOLDER"])
+				//go email.SendEmailVerificationSuccess(cifSchema.Username, cifSchema.Name, vaData["BCA"], vaData["BCA_HOLDER"], vaData["MANDIRI"], vaData["MANDIRI_HOLDER"])
 				go email.SendEmailVerificationSuccess("bakti.pratama@amartha.com", cifSchema.Name, vaData["BCA"], vaData["BCA_HOLDER"], vaData["MANDIRI"], vaData["MANDIRI_HOLDER"])
 			}
 
-			 if cifSchema.PhoneNo != "" {
-			// 	// send sms notification
-			 	fmt.Println("Sending sms ... ")
-			 	twilio := services.InitTwilio()
-			 	message := "Selamat data Anda sudah terverifikasi. Silakan login ke dashboard Anda dan mulai berinvestasi. www.amartha.com"
-			// 	twilio.SetParam(cifSchema.PhoneNo, message)
+			if cifSchema.PhoneNo != "" {
+				// 	// send sms notification
+				fmt.Println("Sending sms ... ")
+				twilio := services.InitTwilio()
+				message := "Selamat data Anda sudah terverifikasi. Silakan login ke dashboard Anda dan mulai berinvestasi. www.amartha.com"
+				// 	twilio.SetParam(cifSchema.PhoneNo, message)
 				twilio.SetParam("+628992548716", message)
 				twilio.SendSMS()
-			 }
-			
+			}
+
 		} else {
 			status = "verification failed, user not validated"
 		}
