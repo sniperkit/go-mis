@@ -4,6 +4,7 @@ import (
 	"strconv"
 	"time"
 
+	"bitbucket.org/go-mis/config"
 	"bitbucket.org/go-mis/modules/account"
 	accountTransactionCredit "bitbucket.org/go-mis/modules/account-transaction-credit"
 	accountTransactionDebit "bitbucket.org/go-mis/modules/account-transaction-debit"
@@ -11,6 +12,10 @@ import (
 	"bitbucket.org/go-mis/modules/r"
 	"bitbucket.org/go-mis/services"
 	iris "gopkg.in/kataras/iris.v4"
+	"net/http"
+	"fmt"
+	"encoding/json"
+	"bytes"
 )
 
 func Init() {
@@ -104,8 +109,60 @@ func UpdateStage(ctx *iris.Context) {
 	cashoutNo := strconv.FormatUint(cashoutInvestorSchema.CashoutNo, 10)
 
 	if stage == "SEND-TO-MANDIRI" {
-		// TODO: hit go-banking for Mandiri Corporate Payable
-		
+		cashoutSchema := Cashout{}
+		services.DBCPsql.Table("cashout").Where("cashout.\"id\" = ?", cashoutID).Scan(&cashoutSchema)
+
+		params := map[string]string{"cashoutId": cashoutSchema.CashoutID}
+
+		b := new(bytes.Buffer)
+    json.NewEncoder(b).Encode(params)
+
+    var url string = config.GoBankingPath + `/mandiri/payment`
+    req, err := http.NewRequest("POST", url, b)
+    req.Header.Set("X-Auth-Token", "AMARTHA123")
+    req.Header.Set("Content-Type", "application/json")
+
+    client := &http.Client{}
+    resp, err := client.Do(req)
+    if err != nil {
+      fmt.Println(err)
+      ctx.JSON(iris.StatusInternalServerError, iris.Map{
+				"status": "error",
+				"message": "Failed to process request.",
+				"data":   iris.Map{},
+			})
+      return
+    }
+    defer resp.Body.Close()
+
+    var body struct {
+    	Success bool `json:"success"`
+    }
+    fmt.Println(resp)
+
+		json.NewDecoder(resp.Body).Decode(&body)
+
+		fmt.Println("---------")
+		fmt.Printf("%+v", body)
+
+		if body.Success == false {
+			cashoutHistoryObj := &cashoutHistory.CashoutHistory{StageFrom: "SEND-TO-MANDIRI", StageTo: "FAILED-PROCESS-MANDIRI"}
+			services.DBCPsql.Create(cashoutHistoryObj)
+
+			rCashoutHistoryObj := &r.RCashoutHistory{CashoutId: cashoutID, CashoutHistoryId: cashoutHistoryObj.ID}
+			services.DBCPsql.Create(rCashoutHistoryObj)
+
+			services.DBCPsql.Table("cashout").Where("cashout.\"id\" = ?", cashoutID).UpdateColumn("stage", "FAILED-PROCESS-MANDIRI")
+			ctx.JSON(iris.StatusInternalServerError, iris.Map{
+				"status": "error",
+				"message": "Failed to process request.",
+				"data":   iris.Map{},
+			})
+			return
+		}
+
+		services.DBCPsql.Table("account_transaction_credit").Where("remark = ?", cashoutInvestorSchema.Remark).Update("remark", "CASHOUT #"+cashoutNo+" HAS BEEN SUBMITTED.")
+
 		ctx.JSON(iris.StatusOK, iris.Map{
 			"status": "success",
 			"data":   iris.Map{},
