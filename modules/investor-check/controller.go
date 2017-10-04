@@ -28,6 +28,8 @@ func FetchDatatables(ctx *iris.Context) {
 	limit := ctx.URLParam("limit")
 	page := ctx.URLParam("page")
 	search := ctx.URLParam("search")
+	orderBy := ctx.URLParam("orderBy")
+
 	query := ` SELECT cif.id, cif."name", 
 					cif."phoneNo", 
 					cif."idCardNo", 
@@ -67,6 +69,34 @@ func FetchDatatables(ctx *iris.Context) {
 	cif."idCardNo", cif."taxCardNo", cif."idCardFilename", cif."taxCardFilename", cif."isValidated",
 	investor."investorNo", investor."createdAt" `
 	query += groupedBy
+
+	if len(strings.TrimSpace(orderBy)) > 0 {
+		splOrd := strings.Split(orderBy, ",")
+		// splOrd[0] => field name
+		// splOrd[1] => orientation sorting, ASC / DESC
+		if len(splOrd) == 2 && (strings.ToUpper(splOrd[1]) == "ASC" || strings.ToUpper(splOrd[1]) == "DESC") {
+			field := splOrd[0]
+			orientation := splOrd[1]
+			switch strings.ToUpper(field) {
+			case "INVESTORNO":
+				query += ` ORDER BY investor."investorNo" ` + orientation
+			case "NAME":
+				query += ` ORDER BY cif."name" ` + orientation
+			case "IDCARDNO":
+				query += ` ORDER BY cif."idCardNo" ` + orientation
+			case "EMAIL":
+				query += `ORDER BY cif.username ` + orientation
+			case "ACTIVATIONDATE":
+				query += `ORDER BY cif."activationDate" ` + orientation
+			case "DECLINEDATE":
+				query += `ORDER BY cif."declinedDate" ` + orientation
+			case "REGISTRATIONDATE":
+				query += `ORDER BY investor."createdAt" ` + orientation
+			default:
+				query += ` ORDER BY cif."name" ASC`
+			}
+		}
+	}
 
 	if len(strings.TrimSpace(limit)) == 0 {
 		query += ` LIMIT 10 `
