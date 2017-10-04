@@ -2,16 +2,13 @@ package investorCheck
 
 import (
 	"fmt"
-	"net/http"
 	"strconv"
 	"time"
 
 	"strings"
 
-	"bitbucket.org/go-mis/config"
 	"bitbucket.org/go-mis/modules/cif"
 	email "bitbucket.org/go-mis/modules/email"
-	"bitbucket.org/go-mis/modules/investor"
 	"bitbucket.org/go-mis/modules/r"
 	va "bitbucket.org/go-mis/modules/virtual-account"
 	"bitbucket.org/go-mis/services"
@@ -104,6 +101,7 @@ func Validate(ctx *iris.Context) {
 		services.DBCPsql.Table("cif").Where("id = ?", id).Update("isVerified", true)
 		services.DBCPsql.Table("cif").Where("id = ?", id).Update("isDeclined", false)
 
+		/** FOR PRODUCTION, PLEASE UNCOMMENT
 		// get investor id
 		inv := &r.RCifInvestor{}
 		services.DBCPsql.Table("r_cif_investor").Where("\"cifId\" = ?", id).Scan(&inv)
@@ -158,6 +156,7 @@ func Validate(ctx *iris.Context) {
 			// twilio.SetParam("+628992548716", message)
 			twilio.SendSMS()
 		}
+		*/
 
 	} else {
 		// set isDeclined true
@@ -167,7 +166,9 @@ func Validate(ctx *iris.Context) {
 
 		services.DBCPsql.Table("cif").Where("id = ?", id).Update("declinedDate", time.Now())
 
+		/* FOR PROUDCTION, pleas uncomment
 		email.SendEmailVerificationFailed(cifSchema.Username, cifSchema.Name, "Declined")
+		*/
 	}
 
 	ctx.JSON(iris.StatusOK, iris.Map{
