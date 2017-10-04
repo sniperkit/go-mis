@@ -18,6 +18,7 @@ import (
 	"bitbucket.org/go-mis/services"
 	"gopkg.in/kataras/iris.v4"
 	"bitbucket.org/go-mis/modules/product-pricing"
+	"github.com/jinzhu/gorm"
 )
 
 func Init() {
@@ -571,42 +572,83 @@ func AssignInvestorToLoan(ctx *iris.Context) {
 	services.DBCPsql.Table("loan").Where("\"id\" = ?", loanID).Scan(&loanSchema)
 
 	loanHistorySchema := &loanHistory.LoanHistory{StageFrom: loanSchema.Stage, StageTo: "INVESTOR", Remark: "MANUAL ASSIGN loanId=" + fmt.Sprintf("%v", loanSchema.ID) + " investorId=" + fmt.Sprintf("%v", rCifInvestorSchema.InvestorId)}
-	services.DBCPsql.Table("loan_history").Create(loanHistorySchema)
+
+	transac := services.DBCPsql.Begin()
+	err:=transac.Table("loan_history").Create(loanHistorySchema).Error
+	if err!=nil {
+		processErrorAndRollback(ctx,transac,err,"CREATE-LOAN-HISTORY")
+		return
+	}
 
 	rLoanHistorySchema := &r.RLoanHistory{LoanId: loanSchema.ID, LoanHistoryId: loanHistorySchema.ID}
-	services.DBCPsql.Table("r_loan_history").Create(rLoanHistorySchema)
+	err=transac.Table("r_loan_history").Create(rLoanHistorySchema).Error
+	if err!=nil {
+		processErrorAndRollback(ctx,transac,err,"CREATE-R-LOAN-HISTORY")
+		return
+	}
 
-	services.DBCPsql.Table("loan").Where("id = ?", loanID).Update("stage", "INVESTOR")
+	err=transac.Table("loan").Where("id = ?", loanID).Update("stage", "INVESTOR").Error
+	if err!=nil {
+		processErrorAndRollback(ctx,transac,err,"UPDATE-STAGE-INVESTOR")
+		return
+	}
 
 	// Checking Function if investorId has a product pricing.
 	rInvestorProductPricing := r.RInvestorProductPricing{}
 	services.DBCPsql.Table("r_investor_product_pricing").Where("\"investorId\" = ?", investorId).Scan(&rInvestorProductPricing)
 
 	if rInvestorProductPricing.ID == 0{
-		services.DBCPsql.Table("r_investor_product_pricing_loan").Where("\"loanId\" = ?", loanSchema.ID).UpdateColumn("investorId", rCifInvestorSchema.InvestorId)
+		err=transac.Table("r_investor_product_pricing_loan").Where("\"loanId\" = ?", loanSchema.ID).UpdateColumn("investorId", rCifInvestorSchema.InvestorId).Error
+		if err!=nil {
+			processErrorAndRollback(ctx,transac,err,"UPDATE-R-CIF-INVESTOR")
+			return
+		}
 	}else{
-		services.DBCPsql.Table("r_investor_product_pricing_loan").Where("\"loanId\" = ?", loanSchema.ID).UpdateColumn("investorId", rCifInvestorSchema.InvestorId)
-		services.DBCPsql.Table("r_investor_product_pricing_loan").Where("\"loanId\" = ?", loanSchema.ID).UpdateColumn("productPricingId", rInvestorProductPricing.ProductPricingId)
+		err=transac.Table("r_investor_product_pricing_loan").Where("\"loanId\" = ?", loanSchema.ID).UpdateColumn("investorId", rCifInvestorSchema.InvestorId).Error
+		if err!=nil {
+			processErrorAndRollback(ctx,transac,err,"UPDATE-R-INVESTOR-PRODUCT-PRICING-LOAN")
+			return
+		}
+		err=transac.Table("r_investor_product_pricing_loan").Where("\"loanId\" = ?", loanSchema.ID).UpdateColumn("productPricingId", rInvestorProductPricing.ProductPricingId).Error
+		if err!=nil {
+			processErrorAndRollback(ctx,transac,err,"UPDATE-R-INVESTOR-PRODUCT-PRICING-LOAN")
+			return
+		}
 	}
 
 	rAccountInvestorSchema := r.RAccountInvestor{}
 	services.DBCPsql.Table("r_account_investor").Where("\"investorId\" = ?", rCifInvestorSchema.InvestorId).Scan(&rAccountInvestorSchema)
 
 	accountTransactionCreditSchema := &accountTransactionCredit.AccountTransactionCredit{Type: "INVEST", TransactionDate: time.Now(), Amount: loanSchema.Plafond, Remark: "MANUAL ASSIGN"}
-	services.DBCPsql.Table("account_transaction_credit").Create(accountTransactionCreditSchema)
+	err=transac.Table("account_transaction_credit").Create(accountTransactionCreditSchema).Error
+	if err!=nil {
+		processErrorAndRollback(ctx,transac,err,"UPDATE-ACCOUNT-TRANSACTION-CREDIT")
+		return
+	}
 
 	rAccountTransactionCreditSchema := &r.RAccountTransactionCredit{AccountId: rAccountInvestorSchema.AccountId, AccountTransactionCreditId: accountTransactionCreditSchema.ID}
-	services.DBCPsql.Table("r_account_transaction_credit").Create(rAccountTransactionCreditSchema)
-
+	err=transac.Table("r_account_transaction_credit").Create(rAccountTransactionCreditSchema).Error
+	if err!=nil {
+		processErrorAndRollback(ctx,transac,err,"UPDATE-R-ACCOUNT-TRANSACTION-CREDIT")
+		return
+	}
 	rAccounTransactionCreditLoanSchema := &r.RAccountTransactionCreditLoan{AccountTransactionCreditId: accountTransactionCreditSchema.ID, LoanId: loanSchema.ID}
-	services.DBCPsql.Table("r_account_transaction_credit_loan").Create(rAccounTransactionCreditLoanSchema)
+	err=transac.Table("r_account_transaction_credit_loan").Create(rAccounTransactionCreditLoanSchema).Error
+	if err!=nil {
+		processErrorAndRollback(ctx,transac,err,"r_account_transaction_credit_loan")
+		return
+	}
 
 	totalDebit := accountTransactionDebit.GetTotalAccountTransactionDebit(rAccountInvestorSchema.AccountId)
 	totalCredit := accountTransactionCredit.GetTotalAccountTransactionCredit(rAccountInvestorSchema.AccountId)
 
 	totalBalance := totalDebit - totalCredit
 
-	services.DBCPsql.Table("account").Where("id = ?", rAccountInvestorSchema.AccountId).Updates(account.Account{TotalDebit: totalDebit, TotalCredit: totalCredit, TotalBalance: totalBalance})
+	err=transac.Table("account").Where("id = ?", rAccountInvestorSchema.AccountId).Updates(account.Account{TotalDebit: totalDebit, TotalCredit: totalCredit, TotalBalance: totalBalance}).Error
+	if err!=nil {
+		processErrorAndRollback(ctx,transac,err,"ACCOUNT")
+		return
+	}
 
 	queryReferal:=`with A as (
 select id, "inviterInvestorId" from referral where "inviteeInvestorId" = ` + strconv.FormatUint(rCifInvestorSchema.InvestorId,10) + ` and "inviterGetTimestamp" isnull and "deletedAt" isnull
@@ -636,9 +678,20 @@ J as(
     returning account.id
 )
 select * from B`
-	services.DBCPsql.Exec(queryReferal)
+	err=transac.Exec(queryReferal).Error
+	if err!=nil {
+		processErrorAndRollback(ctx,transac,err,"REFERAL")
+		return
+	}
+
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"status": "success",
 		"data":   iris.Map{},
 	})
+}
+
+func processErrorAndRollback(ctx *iris.Context, db *gorm.DB, err error, process string) {
+	fmt.Println("#ERROR#MANUALASSIGN",process,err)
+	db.Rollback()
+	ctx.JSON(iris.StatusInternalServerError, iris.Map{"status": "error", "error": "Error on " + process + " " + err.Error()})
 }
