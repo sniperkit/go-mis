@@ -6,21 +6,21 @@ import (
 
 	"bitbucket.org/go-mis/config"
 
+	"net/http"
+	"strings"
+
 	"bitbucket.org/go-mis/modules/cif"
 	email "bitbucket.org/go-mis/modules/email"
+	"bitbucket.org/go-mis/modules/investor"
 	"bitbucket.org/go-mis/modules/r"
 	va "bitbucket.org/go-mis/modules/virtual-account"
 	"bitbucket.org/go-mis/services"
 	iris "gopkg.in/kataras/iris.v4"
-	"strings"
-	"net/http"
-	"bitbucket.org/go-mis/modules/investor"
 )
 
 type totalData struct {
 	TotalRows int64 `gorm:"column:totalRows" json:"totalRows"`
 }
-
 
 // FetchDatatables -  fetch data based on parameters sent by datatables
 func FetchDatatables(ctx *iris.Context) {
@@ -83,7 +83,7 @@ func FetchDatatables(ctx *iris.Context) {
 }
 
 // Verify - verify the selected investor
-func Verify(ctx *iris.Context) {
+func Validate(ctx *iris.Context) {
 	id, _ := strconv.Atoi(ctx.Param("id"))
 	// status type: verified or declined
 	status := ctx.Param("status")
@@ -92,72 +92,64 @@ func Verify(ctx *iris.Context) {
 
 	if status == "validated" {
 		services.DBCPsql.Table("cif").Where("id = ?", id).Update("isValidated", true)
+		services.DBCPsql.Table("cif").Where("id = ?", id).Update("isVerified", true)
 
 		cifSchema := cif.Cif{}
 		services.DBCPsql.Table("cif").Where("id = ?", id).Scan(&cifSchema)
 
-	} else if status == "verified" {
-		cifSchema := cif.Cif{}
-    services.DBCPsql.Table("cif").Where("id = ?", id).Scan(&cifSchema)
-    if *cifSchema.IsValidated == true {
-      services.DBCPsql.Table("cif").Where("id = ?", id).Update("isVerified", true)
+		// get investor id
+		inv := &r.RCifInvestor{}
+		services.DBCPsql.Table("r_cif_investor").Where("\"cifId\" = ?", id).Scan(&inv)
 
-      // get investor id
-      inv := &r.RCifInvestor{}
-      services.DBCPsql.Table("r_cif_investor").Where("\"cifId\" = ?", id).Scan(&inv)
+		// get investor id
+		invNo := &InvestorNumber{}
+		services.DBCPsql.Raw(`select id,"investorNo" from investor where id = ?`, inv.InvestorId).Scan(invNo)
 
-      // get investor id
-      invNo := &InvestorNumber{}
-      services.DBCPsql.Raw(`select id,"investorNo" from investor where id = ?`,inv.InvestorId).Scan(invNo)
+		// get virtual account
+		rInvVa := []r.RInvestorVirtualAccount{}
+		services.DBCPsql.Table("r_investor_virtual_account").Where("\"investorId\" = ?", inv.InvestorId).Scan(&rInvVa)
 
-      // get virtual account
-      rInvVa := []r.RInvestorVirtualAccount{}
-      services.DBCPsql.Table("r_investor_virtual_account").Where("\"investorId\" = ?", inv.InvestorId).Scan(&rInvVa)
+		vaData := make(map[string]string)
 
-      vaData := make(map[string]string)
+		vaData["MANDIRI"] = "88000" + strconv.Itoa(invNo.InvestorNo)
+		vaData["MANDIRI_HOLDER"] = cifSchema.Name
 
-      vaData["MANDIRI"] = "88000"+strconv.Itoa(invNo.InvestorNo)
-      vaData["MANDIRI_HOLDER"] = cifSchema.Name
+		vaData["BCA"] = "10036" + strconv.Itoa(invNo.InvestorNo)
+		vaData["BCA_HOLDER"] = cifSchema.Name
 
-      vaData["BCA"]= "10036"+strconv.Itoa(invNo.InvestorNo)
-      vaData["BCA_HOLDER"] = cifSchema.Name
+		// get investor data
+		investorSchema := investor.Investor{}
+		services.DBCPsql.Table("investor").Where("id = ?", inv.InvestorId).Scan(&investorSchema)
 
-      // get investor data
-      investorSchema := investor.Investor{}
-      services.DBCPsql.Table("investor").Where("id = ?", inv.InvestorId).Scan(&investorSchema)
+		// send create BCA VA request
+		params := strings.NewReader(`{"investorNo":` + strconv.Itoa(invNo.InvestorNo) + `}`)
+		request, err := http.NewRequest("POST", config.GoBankingPath+`/bca/register-va`, params)
+		if err != nil {
+			fmt.Println(err)
+		}
 
-      // send create BCA VA request
-      params := strings.NewReader(`{"investorNo":` + strconv.Itoa(invNo.InvestorNo) + `}`)
-      request, err := http.NewRequest("POST", config.GoBankingPath + `/bca/register-va`, params)
-      if err != nil {
-        fmt.Println(err)
-      }
+		request.Header.Set("X-Auth-Token", "AMARTHA123")
 
-      request.Header.Set("X-Auth-Token", "AMARTHA123")
+		client := &http.Client{}
+		_, errResp := client.Do(request)
+		if errResp != nil {
+			fmt.Println(errResp)
+		}
 
-      client := &http.Client{}
-      _, errResp := client.Do(request)
-      if errResp != nil {
-        fmt.Println(errResp)
-      }
+		if cifSchema.Username != "" {
+			fmt.Println("Sending email..")
+			//go email.SendEmailVerificationSuccess(cifSchema.Username, cifSchema.Name, vaData["BCA"], vaData["BCA_HOLDER"], vaData["MANDIRI"], vaData["MANDIRI_HOLDER"])
+			go email.SendEmailVerificationSuccess(cifSchema.Username, cifSchema.Name, vaData["BCA"], vaData["BCA_HOLDER"], vaData["MANDIRI"], vaData["MANDIRI_HOLDER"])
+		}
 
-      if cifSchema.Username != "" {
-        fmt.Println("Sending email..")
-         //go email.SendEmailVerificationSuccess(cifSchema.Username, cifSchema.Name, vaData["BCA"], vaData["BCA_HOLDER"], vaData["MANDIRI"], vaData["MANDIRI_HOLDER"])
-        go email.SendEmailVerificationSuccess(cifSchema.Username, cifSchema.Name, vaData["BCA"], vaData["BCA_HOLDER"], vaData["MANDIRI"], vaData["MANDIRI_HOLDER"])
-      }
-
-      if cifSchema.PhoneNo != "" {
-        // send sms notification
-        fmt.Println("Sending sms ... ")
-        twilio := services.InitTwilio()
-        message := "Selamat data Anda sudah terverifikasi. Silakan login ke dashboard Anda dan mulai berinvestasi. www.amartha.com"
-        twilio.SetParam(cifSchema.PhoneNo, message)
-        // twilio.SetParam("+628992548716", message)
-        twilio.SendSMS()
-      }
-		} else {
-			status = "verification failed, user not validated"
+		if cifSchema.PhoneNo != "" {
+			// send sms notification
+			fmt.Println("Sending sms ... ")
+			twilio := services.InitTwilio()
+			message := "Selamat data Anda sudah terverifikasi. Silakan login ke dashboard Anda dan mulai berinvestasi. www.amartha.com"
+			twilio.SetParam(cifSchema.PhoneNo, message)
+			// twilio.SetParam("+628992548716", message)
+			twilio.SendSMS()
 		}
 
 	} else {
