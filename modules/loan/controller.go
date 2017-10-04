@@ -580,23 +580,26 @@ func AssignInvestorToLoan(ctx *iris.Context) {
 		return
 	}
 
+	fmt.Println("Insert r_loan_history")
 	rLoanHistorySchema := &r.RLoanHistory{LoanId: loanSchema.ID, LoanHistoryId: loanHistorySchema.ID}
 	err=transac.Table("r_loan_history").Create(rLoanHistorySchema).Error
+	fmt.Println("Insert r_loan_history_finish")
 	if err!=nil {
 		processErrorAndRollback(ctx,transac,err,"CREATE-R-LOAN-HISTORY")
 		return
 	}
 
-	err=transac.Table("loan").Where("id = ?", loanID).Update("stage", "INVESTOR").Error
+	fmt.Println("UpdateLoan",loanID)
+	err=transac.Exec(`update loan set stage='INVESTOR' where loan.id=?`,loanID).Error
+	fmt.Println("Finish update Loan")
 	if err!=nil {
 		processErrorAndRollback(ctx,transac,err,"UPDATE-STAGE-INVESTOR")
 		return
 	}
-
 	// Checking Function if investorId has a product pricing.
 	rInvestorProductPricing := r.RInvestorProductPricing{}
 	services.DBCPsql.Table("r_investor_product_pricing").Where("\"investorId\" = ?", investorId).Scan(&rInvestorProductPricing)
-
+	fmt.Println("ProductPricing")
 	if rInvestorProductPricing.ID == 0{
 		err=transac.Table("r_investor_product_pricing_loan").Where("\"loanId\" = ?", loanSchema.ID).UpdateColumn("investorId", rCifInvestorSchema.InvestorId).Error
 		if err!=nil {
@@ -615,6 +618,7 @@ func AssignInvestorToLoan(ctx *iris.Context) {
 			return
 		}
 	}
+	fmt.Println("ProductPricingFinish")
 
 	rAccountInvestorSchema := r.RAccountInvestor{}
 	services.DBCPsql.Table("r_account_investor").Where("\"investorId\" = ?", rCifInvestorSchema.InvestorId).Scan(&rAccountInvestorSchema)
@@ -683,6 +687,7 @@ select * from B`
 		processErrorAndRollback(ctx,transac,err,"REFERAL")
 		return
 	}
+	transac.Commit()
 
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"status": "success",
