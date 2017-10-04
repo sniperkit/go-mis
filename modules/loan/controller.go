@@ -598,7 +598,7 @@ func AssignInvestorToLoan(ctx *iris.Context) {
 	}
 	// Checking Function if investorId has a product pricing.
 	rInvestorProductPricing := r.RInvestorProductPricing{}
-	services.DBCPsql.Table("r_investor_product_pricing").Where("\"investorId\" = ?", investorId).Scan(&rInvestorProductPricing)
+	transac.Table("r_investor_product_pricing").Where("\"investorId\" = ?", investorId).Scan(&rInvestorProductPricing)
 	fmt.Println("ProductPricing")
 	if rInvestorProductPricing.ID == 0{
 		err=transac.Table("r_investor_product_pricing_loan").Where("\"loanId\" = ?", loanSchema.ID).UpdateColumn("investorId", rCifInvestorSchema.InvestorId).Error
@@ -621,7 +621,7 @@ func AssignInvestorToLoan(ctx *iris.Context) {
 	fmt.Println("ProductPricingFinish")
 
 	rAccountInvestorSchema := r.RAccountInvestor{}
-	services.DBCPsql.Table("r_account_investor").Where("\"investorId\" = ?", rCifInvestorSchema.InvestorId).Scan(&rAccountInvestorSchema)
+	transac.Table("r_account_investor").Where("\"investorId\" = ?", rCifInvestorSchema.InvestorId).Scan(&rAccountInvestorSchema)
 
 	accountTransactionCreditSchema := &accountTransactionCredit.AccountTransactionCredit{Type: "INVEST", TransactionDate: time.Now(), Amount: loanSchema.Plafond, Remark: "MANUAL ASSIGN"}
 	err=transac.Table("account_transaction_credit").Create(accountTransactionCreditSchema).Error
@@ -643,12 +643,13 @@ func AssignInvestorToLoan(ctx *iris.Context) {
 		return
 	}
 
-	totalDebit := accountTransactionDebit.GetTotalAccountTransactionDebit(rAccountInvestorSchema.AccountId)
-	totalCredit := accountTransactionCredit.GetTotalAccountTransactionCredit(rAccountInvestorSchema.AccountId)
+	totalDebit := accountTransactionDebit.GetTotalAccountTransactionDebitByTransac(transac,rAccountInvestorSchema.AccountId)
+	totalCredit := accountTransactionCredit.GetTotalAccountTransactionCreditByTransac(transac,rAccountInvestorSchema.AccountId)
 
 	totalBalance := totalDebit - totalCredit
 
-	err=transac.Table("account").Where("id = ?", rAccountInvestorSchema.AccountId).Updates(account.Account{TotalDebit: totalDebit, TotalCredit: totalCredit, TotalBalance: totalBalance}).Error
+	err=transac.Exec(`UPDATE "account" SET "totalDebit" = ?, "totalCredit" = ?, "totalBalance" = ?  WHERE (id = ?)`,totalDebit,totalCredit,totalBalance,rAccountInvestorSchema.AccountId).Error
+
 	if err!=nil {
 		processErrorAndRollback(ctx,transac,err,"ACCOUNT")
 		return

@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"bitbucket.org/go-mis/services"
+	"github.com/jinzhu/gorm"
 )
 
 type AccountTransactionDebit struct {
@@ -39,6 +40,19 @@ func GetTotalAccountTransactionDebit(accountID uint64) float64 {
 
 	totalSchema := Total{}
 	services.DBCPsql.Raw(query, accountID).Scan(&totalSchema)
+
+	return totalSchema.Amount
+}
+
+
+func GetTotalAccountTransactionDebitByTransac(transac *gorm.DB,accountID uint64) float64 {
+	query := "SELECT SUM(account_transaction_debit.amount) AS \"amount\" FROM account "
+	query += "JOIN r_account_transaction_debit ON r_account_transaction_debit.\"accountId\" = account.id "
+	query += "JOIN account_transaction_debit ON account_transaction_debit.id = r_account_transaction_debit.\"accountTransactionDebitId\" "
+	query += "WHERE account.id = ? AND account_transaction_debit.\"deletedAt\" IS NULL "
+
+	totalSchema := Total{}
+	transac.Raw(query, accountID).Scan(&totalSchema)
 
 	return totalSchema.Amount
 }
