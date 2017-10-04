@@ -21,10 +21,6 @@ type totalData struct {
 	TotalRows int64 `gorm:"column:totalRows" json:"totalRows"`
 }
 
-type InvestorNumber struct {
-  ID                  uint64     `gorm:"primary_key" gorm:"column:id" json:"id"`
-  InvestorNo           int     `gorm:"column:investorNo" json:"investorNo"`
-}
 
 // FetchDatatables -  fetch data based on parameters sent by datatables
 func FetchDatatables(ctx *iris.Context) {

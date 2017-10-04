@@ -206,11 +206,6 @@ func InitCustomApi() {
 		vRestrict.Any("/loan-order/accept/:orderNo", loanOrder.AcceptLoanOrder)
 	}
 
-	vRestrict := iris.Party(baseRestrictedURL, auth.EnsureIp)
-	{
-		vRestrict.Any("/loan-order/accept/:orderNo", loanOrder.AcceptLoanOrder)
-	}
-
 	iris.Get(baseURL+"/generate-topsheet/:group_id", topsheet.GenerateTopsheet)
 	iris.Any(baseURL+"/submit-topsheet", topsheet.SubmitTopsheet)
 	iris.Any(baseURL+"/submit-topsheet-1", topsheet.SubmitTopsheet)
