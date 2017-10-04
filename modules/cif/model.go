@@ -50,6 +50,8 @@ type Cif struct {
 	IsValidated         *bool      `gorm:"column:isValidated" json:"isValidated"`
 	IsVerified          *bool      `gorm:"column:isVerified" json:"isVerified"`
 	IsDeclined          *bool      `gorm:"column:isDeclined" json:"isDeclined"`
+	DeclinedDate        time.Time  `gorm:"column:declinedDate" json:"declinedDate"`
+	ActivationDate      time.Time  `gorm:"column:activationDate" json:"activationDate"`
 	CreatedAt           time.Time  `gorm:"column:createdAt" json:"createdAt"`
 	UpdatedAt           time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
 	DeletedAt           *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
