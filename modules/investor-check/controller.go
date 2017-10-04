@@ -2,13 +2,12 @@ package investorCheck
 
 import (
 	"fmt"
+	"net/http"
 	"strconv"
 
-	"bitbucket.org/go-mis/config"
-
-	"net/http"
 	"strings"
 
+	"bitbucket.org/go-mis/config"
 	"bitbucket.org/go-mis/modules/cif"
 	email "bitbucket.org/go-mis/modules/email"
 	"bitbucket.org/go-mis/modules/investor"
@@ -88,14 +87,13 @@ func Validate(ctx *iris.Context) {
 	// status type: verified or declined
 	status := ctx.Param("status")
 
-	fmt.Println(status)
+	cifSchema := cif.Cif{}
+	services.DBCPsql.Table("cif").Where("id = ?", id).Scan(&cifSchema)
 
 	if status == "validated" {
 		services.DBCPsql.Table("cif").Where("id = ?", id).Update("isValidated", true)
 		services.DBCPsql.Table("cif").Where("id = ?", id).Update("isVerified", true)
-
-		cifSchema := cif.Cif{}
-		services.DBCPsql.Table("cif").Where("id = ?", id).Scan(&cifSchema)
+		services.DBCPsql.Table("cif").Where("id = ?", id).Update("isDeclined", false)
 
 		// get investor id
 		inv := &r.RCifInvestor{}
@@ -153,15 +151,12 @@ func Validate(ctx *iris.Context) {
 		}
 
 	} else {
-		cifSchema := cif.Cif{}
-		services.DBCPsql.Table("cif").Where("id = ?", id).Scan(&cifSchema)
+		// set isDeclined true
+		services.DBCPsql.Table("cif").Where("id = ?", id).Update("isValidated", false)
+		services.DBCPsql.Table("cif").Where("id = ?", id).Update("isVerified", false)
+		services.DBCPsql.Table("cif").Where("id = ?", id).Update("isDeclined", true)
 
-		sendgrid := email.Sendgrid{}
-		sendgrid.SetFrom("Amartha", "no-reply@amartha.com")
-		sendgrid.SetTo(cifSchema.Name, cifSchema.Username)
-		sendgrid.SetSubject(cifSchema.Name + ", Verifikasi Data Anda Gagal")
-		sendgrid.SetVerificationBodyEmail("UNVERIFIED_DATA", cifSchema.Name, cifSchema.Name, cifSchema.Username, "")
-		sendgrid.SendEmail()
+		email.SendEmailVerificationFailed(cifSchema.Username, cifSchema.Name, "Declined")
 	}
 
 	ctx.JSON(iris.StatusOK, iris.Map{
