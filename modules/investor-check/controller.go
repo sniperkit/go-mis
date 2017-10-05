@@ -3,15 +3,12 @@ package investorCheck
 import (
 	"fmt"
 	"strconv"
+	"time"
 
-	"bitbucket.org/go-mis/config"
-
-	"net/http"
 	"strings"
 
 	"bitbucket.org/go-mis/modules/cif"
 	email "bitbucket.org/go-mis/modules/email"
-	"bitbucket.org/go-mis/modules/investor"
 	"bitbucket.org/go-mis/modules/r"
 	va "bitbucket.org/go-mis/modules/virtual-account"
 	"bitbucket.org/go-mis/services"
@@ -25,78 +22,133 @@ type totalData struct {
 // FetchDatatables -  fetch data based on parameters sent by datatables
 func FetchDatatables(ctx *iris.Context) {
 	investors := []InvestorCheck{}
-	totalData := totalData{}
+	limit := ctx.URLParam("limit")
+	page := ctx.URLParam("page")
+	search := ctx.URLParam("search")
+	orderBy := ctx.URLParam("orderBy")
 
-	query := "SELECT cif.\"id\", cif.\"name\", cif.\"phoneNo\", cif.\"idCardNo\", \"bankAccountName\", "
-	query += "cif.\"taxCardNo\", cif.\"idCardFilename\", cif.\"taxCardFilename\", cif.\"idCardNo\", cif.\"isValidated\", "
-	query += "cif.\"taxCardNo\", array_to_string(array_agg(virtual_account.\"bankName\"),',') as \"virtualAccountBankName\", "
-	query += "array_to_string(array_agg(virtual_account.\"virtualAccountNo\"),',') as \"virtualAccountNumber\", investor.\"investorNo\", investor.\"createdAt\" "
-	query += "FROM investor "
-	query += "LEFT JOIN r_investor_virtual_account ON r_investor_virtual_account.\"investorId\" = investor.id "
-	query += "LEFT JOIN virtual_account ON virtual_account.id = r_investor_virtual_account.\"vaId\" "
-	query += "JOIN r_cif_investor ON r_cif_investor.\"investorId\" = investor.id "
-	query += "JOIN cif ON cif.id = r_cif_investor.\"cifId\" "
-	// query += "where (cif.\"isVerified\" = false or cif.\"isVerified\" is NULL) " // borrower will included at list
-	query += "WHERE cif.\"isVerified\" = FALSE "
-	query += "AND cif.\"idCardFilename\" IS NOT NULL "
-	query += "and cif.\"isActivated\" = TRUE "
-	query += "AND cif.\"deletedAt\" IS null AND virtual_account.\"deletedAt\" IS null "
+	query := ` SELECT cif.id, cif."name", 
+					cif."phoneNo", 
+					cif."idCardNo", 
+					investor."bankAccountName",
+					cif."taxCardNo", 
+					cif."idCardFilename", 
+					cif."taxCardFilename", 
+					cif."idCardNo", 
+					cif."isValidated", 
+					cif."taxCardNo", 
+					array_to_string(array_agg(virtual_account."bankName"),',') as "virtualAccountBankName", 
+					array_to_string(array_agg(virtual_account."virtualAccountNo"),',') as "virtualAccountNumber", 
+					investor."investorNo", 
+					investor."createdAt",
+					cif."isActivated",
+					cif."isVerified",
+					cif."isDeclined",
+					cif."username",
+					cif."activationDate",
+					cif."declinedDate"
+					cif."username",
+					cif."activationDate",
+					cif."declinedDate"
+				FROM investor 
+					LEFT JOIN r_investor_virtual_account ON r_investor_virtual_account."investorId" = investor.id 
+					LEFT JOIN virtual_account ON virtual_account.id = r_investor_virtual_account."vaId" 
+					JOIN r_cif_investor ON r_cif_investor."investorId" = investor.id 
+					JOIN cif ON cif.id = r_cif_investor."cifId" 
+				WHERE cif."isVerified" = FALSE 
+				AND cif."idCardFilename" IS NOT NULL 
+				and cif."isActivated" = TRUE 
+				AND cif."deletedAt" isnull AND virtual_account."deletedAt" isnull `
 
-	// queryTotalData := "SELECT count(cif.*) as \"totalRows\" "
-	// queryTotalData += "FROM cif "
-	// queryTotalData += "WHERE \"isVerified\" = false "
-	// queryTotalData += "AND \"deletedAt\" IS NULL "
-
-	queryTotalData := "SELECT count(cif.*) as \"totalRows\" FROM cif WHERE cif.\"isVerified\" = false AND cif.\"isActivated\" = true "
+	if search != "" {
+		query += ` AND (cif.name ILIKE '%` + search + `%' OR investor."investorNo"::text ILIKE '%` + search + `%' OR cif."idCardNo" ILIKE '%` + search + `%' OR  
+					cif."taxCardNo" ILIKE '%` + search + `' OR cif."username" ILIKE '%` + search + `%') `
+	}
 
 	if ctx.URLParam("search") != "" {
 		query += "AND cif.name ~* '" + ctx.URLParam("search") + "' "
-		queryTotalData += "AND cif.name ~* '" + ctx.URLParam("search") + "' "
 	}
 
-	query += "group by cif.\"id\", cif.\"name\", cif.\"phoneNo\", cif.\"idCardNo\", \"bankAccountName\", cif.\"taxCardNo\", "
-	query += " cif.\"idCardNo\", cif.\"taxCardNo\", cif.\"idCardFilename\", cif.\"taxCardFilename\", cif.\"isValidated\", "
-	query += " investor.\"investorNo\", investor.\"createdAt\" "
+	groupedBy := ` group by cif."id", cif."name", cif."phoneNo", cif."idCardNo", "bankAccountName", cif."taxCardNo",
+	cif."idCardNo", cif."taxCardNo", cif."idCardFilename", cif."taxCardFilename", cif."isValidated",
+	investor."investorNo", investor."createdAt" `
+	query += groupedBy
 
-	if ctx.URLParam("limit") != "" {
-		query += "LIMIT " + ctx.URLParam("limit") + " "
-	} else {
-		query += "LIMIT 10 "
+	if len(strings.TrimSpace(orderBy)) > 0 {
+		// Split ordered
+		splOrd := strings.Split(orderBy, ",")
+		// splOrd[0] => field name
+		// splOrd[1] => orientation sorting, ASC / DESC
+		if len(splOrd) == 2 && (strings.ToUpper(splOrd[1]) == "ASC" || strings.ToUpper(splOrd[1]) == "DESC") {
+			field := splOrd[0]
+			orientation := splOrd[1]
+			switch strings.ToUpper(field) {
+			case "INVESTORNO":
+				query += ` ORDER BY investor."investorNo" ` + orientation
+			case "NAME":
+				query += ` ORDER BY cif."name" ` + orientation
+			case "IDCARDNO":
+				query += ` ORDER BY cif."idCardNo" ` + orientation
+			case "EMAIL":
+				query += `ORDER BY cif.username ` + orientation
+			case "ACTIVATIONDATE":
+				query += `ORDER BY cif."activationDate" ` + orientation
+			case "DECLINEDATE":
+				query += `ORDER BY cif."declinedDate" ` + orientation
+			case "REGISTRATIONDATE":
+				query += `ORDER BY investor."createdAt" ` + orientation
+			default:
+				query += ` ORDER BY cif."name" ASC`
+			}
+		}
 	}
 
-	if ctx.URLParam("page") != "" {
-		query += "OFFSET " + ctx.URLParam("page")
+	if len(strings.TrimSpace(limit)) == 0 {
+		query += ` LIMIT 10 `
 	} else {
-		query += "OFFSET 0 "
+		query += ` LIMIT ` + limit
+	}
+
+	if len(strings.TrimSpace(page)) == 0 {
+		query += ` OFFSET 0 `
+	} else {
+		query += ` OFFSET ` + page
 	}
 
 	services.DBCPsql.Raw(query).Scan(&investors)
-	services.DBCPsql.Raw(queryTotalData).Scan(&totalData)
 
-	services.DBCPsql.Raw(query).Scan(&investors)
+	for idx, val := range investors {
+		d := val.IsDeclined
+
+		if d != nil && *d {
+			investors[idx].Status = "declined"
+		} else {
+			investors[idx].Status = "activated"
+		}
+	}
 
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"status":    "success",
-		"totalRows": totalData.TotalRows,
 		"data":      investors,
+		"totalRows": len(investors),
 	})
 }
 
-// Verify - verify the selected investor
+// Validate - verify the selected investor
 func Validate(ctx *iris.Context) {
 	id, _ := strconv.Atoi(ctx.Param("id"))
 	// status type: verified or declined
 	status := ctx.Param("status")
 
-	fmt.Println(status)
+	cifSchema := cif.Cif{}
+	services.DBCPsql.Table("cif").Where("id = ?", id).Scan(&cifSchema)
 
 	if status == "validated" {
 		services.DBCPsql.Table("cif").Where("id = ?", id).Update("isValidated", true)
 		services.DBCPsql.Table("cif").Where("id = ?", id).Update("isVerified", true)
+		services.DBCPsql.Table("cif").Where("id = ?", id).Update("isDeclined", false)
 
-		cifSchema := cif.Cif{}
-		services.DBCPsql.Table("cif").Where("id = ?", id).Scan(&cifSchema)
-
+		/** FOR PRODUCTION, PLEASE UNCOMMENT
 		// get investor id
 		inv := &r.RCifInvestor{}
 		services.DBCPsql.Table("r_cif_investor").Where("\"cifId\" = ?", id).Scan(&inv)
@@ -151,17 +203,19 @@ func Validate(ctx *iris.Context) {
 			// twilio.SetParam("+628992548716", message)
 			twilio.SendSMS()
 		}
+		*/
 
 	} else {
-		cifSchema := cif.Cif{}
-		services.DBCPsql.Table("cif").Where("id = ?", id).Scan(&cifSchema)
+		// set isDeclined true
+		services.DBCPsql.Table("cif").Where("id = ?", id).Update("isValidated", false)
+		services.DBCPsql.Table("cif").Where("id = ?", id).Update("isVerified", false)
+		services.DBCPsql.Table("cif").Where("id = ?", id).Update("isDeclined", true)
 
-		sendgrid := email.Sendgrid{}
-		sendgrid.SetFrom("Amartha", "no-reply@amartha.com")
-		sendgrid.SetTo(cifSchema.Name, cifSchema.Username)
-		sendgrid.SetSubject(cifSchema.Name + ", Verifikasi Data Anda Gagal")
-		sendgrid.SetVerificationBodyEmail("UNVERIFIED_DATA", cifSchema.Name, cifSchema.Name, cifSchema.Username, "")
-		sendgrid.SendEmail()
+		services.DBCPsql.Table("cif").Where("id = ?", id).Update("declinedDate", time.Now())
+
+		/* FOR PROUDCTION, pleas uncomment
+		email.SendEmailVerificationFailed(cifSchema.Username, cifSchema.Name, "Declined")
+		*/
 	}
 
 	ctx.JSON(iris.StatusOK, iris.Map{
