@@ -147,6 +147,7 @@ func Validate(ctx *iris.Context) {
 		services.DBCPsql.Table("cif").Where("id = ?", id).Update("isValidated", true)
 		services.DBCPsql.Table("cif").Where("id = ?", id).Update("isVerified", true)
 		services.DBCPsql.Table("cif").Where("id = ?", id).Update("isDeclined", false)
+		services.DBCPsql.Table("cif").Where("id = ?", id).Update("validationDate", time.Now())
 
 		/** FOR PRODUCTION, PLEASE UNCOMMENT
 		// get investor id
