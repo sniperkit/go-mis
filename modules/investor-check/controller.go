@@ -210,12 +210,15 @@ func Validate(ctx *iris.Context) {
 		services.DBCPsql.Table("cif").Where("id = ?", id).Update("isValidated", false)
 		services.DBCPsql.Table("cif").Where("id = ?", id).Update("isVerified", false)
 		services.DBCPsql.Table("cif").Where("id = ?", id).Update("isDeclined", true)
-
 		services.DBCPsql.Table("cif").Where("id = ?", id).Update("declinedDate", time.Now())
 
-		/* FOR PROUDCTION, pleas uncomment
-		email.SendEmailVerificationFailed(cifSchema.Username, cifSchema.Name, "Declined")
-		*/
+		// Decline will send an email to investor
+		payload := struct {
+			Reasons []string `json:"reasons"`
+		}{}
+		ctx.ReadJSON(&payload)
+		go email.SendEmailVerificationFailed(cifSchema.Username, cifSchema.Name, payload.Reasons)
+
 	}
 
 	ctx.JSON(iris.StatusOK, iris.Map{
