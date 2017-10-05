@@ -23,8 +23,8 @@ func SendEmailVerificationSuccess(email string, name string, va_bca string, va_b
 // SendEmailVerificationFailed - Send email to investor because of his incomplete data
 func SendEmailVerificationFailed(email string, name string, reasons []string) {
 	var subs = map[string]interface{}{
-		"first_name": name,
-		"reason":     reasons,
+		"investor_name": name,
+		"reasons":       reasons,
 	}
 	mandrill := new(Mandrill)
 	mandrill.SetFrom("hello@amartha.com")

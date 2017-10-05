@@ -205,7 +205,7 @@ func Validate(ctx *iris.Context) {
 		}
 		*/
 
-	} else {
+	} else if strings.ToUpper(status) == "DECLINED" {
 		// set isDeclined true
 		services.DBCPsql.Table("cif").Where("id = ?", id).Update("isValidated", false)
 		services.DBCPsql.Table("cif").Where("id = ?", id).Update("isVerified", false)
@@ -218,7 +218,6 @@ func Validate(ctx *iris.Context) {
 		}{}
 		ctx.ReadJSON(&payload)
 		go email.SendEmailVerificationFailed(cifSchema.Username, cifSchema.Name, payload.Reasons)
-
 	}
 
 	ctx.JSON(iris.StatusOK, iris.Map{
