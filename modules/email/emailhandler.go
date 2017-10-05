@@ -30,7 +30,7 @@ func SendEmailVerificationFailed(email string, name string, reasons []string) {
 	mandrill.SetFrom("hello@amartha.com")
 	mandrill.SetTo(email)
 	mandrill.SetSubject("[Amartha] Verifikasi Data Anda Gagal ")
-	mandrill.SetTemplateAndRawBody("verification_failed", subs)
+	mandrill.SetTemplateAndRawBody("email_template_decline", subs)
 	mandrill.SendEmail()
 }
 
