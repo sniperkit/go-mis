@@ -281,10 +281,8 @@ func Verified(ctx *iris.Context) {
 		if cifSchema.PhoneNo != "" {
 			// send sms notification
 			fmt.Println("Sending sms ... ")
-			twilio := services.InitTwilio()
 			message := "Selamat data Anda sudah terverifikasi. Silakan login ke dashboard Anda dan mulai berinvestasi. www.amartha.com \n\nAmartha"
-			twilio.SetParam(cifSchema.PhoneNo, message)
-			twilio.SendSMS()
+			sendSMS(cifSchema.PhoneNo,message)
 		}
 
 		ctx.JSON(iris.StatusOK, iris.Map{
@@ -297,4 +295,29 @@ func Verified(ctx *iris.Context) {
 			"verificationStatus": "verification failed investor not validated",
 		})
 	}
+}
+
+func sendSMS(phoneNumber string,message string) {
+	if strings.HasPrefix(phoneNumber, "0"){
+		phoneNumber = strings.Replace(phoneNumber, "0", "+62", 1)
+	}
+	if strings.HasPrefix(phoneNumber, "+62811") || strings.HasPrefix(phoneNumber, "62811") ||
+		strings.HasPrefix(phoneNumber, "+62812") || strings.HasPrefix(phoneNumber, "62812") ||
+		strings.HasPrefix(phoneNumber, "+62813") || strings.HasPrefix(phoneNumber, "62813") ||
+		strings.HasPrefix(phoneNumber, "+62821") || strings.HasPrefix(phoneNumber, "62821") ||
+		strings.HasPrefix(phoneNumber, "+62822") || strings.HasPrefix(phoneNumber, "62822") ||
+		strings.HasPrefix(phoneNumber, "+62823") || strings.HasPrefix(phoneNumber, "62823") ||
+		strings.HasPrefix(phoneNumber, "+62852") || strings.HasPrefix(phoneNumber, "62852") ||
+		strings.HasPrefix(phoneNumber, "+62853") || strings.HasPrefix(phoneNumber, "62853") ||
+		strings.HasPrefix(phoneNumber, "+62851") || strings.HasPrefix(phoneNumber, "62851") {
+		nextmo := services.InitNEXMO()
+		nextmo.SetParam(phoneNumber, message)
+		nextmo.SendSMS()
+		return
+	}
+	fmt.Println("#phoneNumber",phoneNumber,"Sending sms",message)
+	twilio := services.InitTwilio()
+
+	twilio.SetParam(phoneNumber, message)
+	twilio.SendSMS()
 }
