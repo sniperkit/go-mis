@@ -3,9 +3,9 @@ package email
 func SendEmailVerificationSuccess(email string, name string, va_bca string, va_bca_name string, va_mandiri string, va_mandiri_name string) {
 
 	var subs = map[string]interface{}{
-		"first_name":  name,
-		"va_bca":      va_bca,
-		"va_bca_name": va_bca_name,
+		"first_name":      name,
+		"va_bca":          va_bca,
+		"va_bca_name":     va_bca_name,
 		"va_mandiri":      va_mandiri,
 		"va_mandiri_name": va_mandiri_name,
 	}
@@ -20,10 +20,11 @@ func SendEmailVerificationSuccess(email string, name string, va_bca string, va_b
 
 }
 
-func SendEmailVerificationFailed(email string, name string) {
+func SendEmailVerificationFailed(email string, name string, reason string) {
 
 	var subs = map[string]interface{}{
 		"first_name": name,
+		"reason":     reason,
 	}
 
 	mandrill := new(Mandrill)

@@ -21,6 +21,7 @@ type InvestorCheck struct {
 	IsActivated            *bool      `gorm:"column:isActivated" json:"isActivated"`
 	IsVerified             *bool      `gorm:"column:isVerified" json:"isVerified"`
 	IsDeclined             *bool      `gorm:"column:isDeclined" json:"isDeclined"`
+	Status                 string     `json:"status"`
 }
 
 type InvestorNumber struct {
