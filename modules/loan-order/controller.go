@@ -112,7 +112,7 @@ func AcceptLoanOrder(ctx *iris.Context) {
 	totalOrder, _ := calculateTotalPayment(orderNo, db)
 	totalBalance := (totalDebit + voucherAmount) - totalCredit - totalOrder
 
-	if totalBalance < 0 {
+	if totalBalance <= 0 {
 		ctx.JSON(iris.StatusOK, iris.Map{
 			"status":  "error",
 			"message": "totalBalance not enought",
