@@ -46,7 +46,7 @@ func FetchDatatables(ctx *iris.Context) {
 					cif."isDeclined",
 					cif."username",
 					cif."activationDate",
-					cif."declinedDate"
+					cif."declinedDate",
 					cif."username",
 					cif."activationDate",
 					cif."declinedDate"
