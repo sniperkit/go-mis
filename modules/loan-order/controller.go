@@ -107,13 +107,23 @@ func AcceptLoanOrder(ctx *iris.Context) {
 
 	db := services.DBCPsql.Begin()
 
+	exist,_:=existTotalOrder(orderNo,db)
+	if !exist{
+		ctx.JSON(iris.StatusBadRequest, iris.Map{
+			"status":  "error",
+			"message": orderNo+" Not exist",
+			"data":    iris.Map{},
+		})
+		return
+	}
+
 	totalDebit := accountTransactionDebit.GetTotalAccountTransactionDebit(accId.AccountId)
 	totalCredit := accountTransactionCredit.GetTotalAccountTransactionCredit(accId.AccountId)
 	totalOrder, _ := calculateTotalPayment(orderNo, db)
 	totalBalance := (totalDebit + voucherAmount) - totalCredit - totalOrder
 
-	if totalBalance <= 0 {
-		ctx.JSON(iris.StatusOK, iris.Map{
+	if totalBalance < 0 {
+		ctx.JSON(iris.StatusBadRequest, iris.Map{
 			"status":  "error",
 			"message": "totalBalance not enought",
 			"data":    iris.Map{},
@@ -325,6 +335,18 @@ func RejectLoanOrder(ctx *iris.Context) {
 		"status": "success",
 		"data":   iris.Map{},
 	})
+}
+
+func existTotalOrder(orderNo string, db *gorm.DB) (bool, error) {
+	query := `select COUNT(id) "total"
+	from loan_order lo
+	where lo."orderNo"=? AND lo."deletedAt" is null`
+
+	r := struct{ Total float64 }{}
+	if err := db.Raw(query, orderNo).Scan(&r).Error; err != nil {
+		return false, err
+	}
+	return r.Total>0, nil
 }
 
 func calculateTotalPayment(orderNo string, db *gorm.DB) (float64, error) {
