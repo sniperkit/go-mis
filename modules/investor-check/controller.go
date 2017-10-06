@@ -118,9 +118,9 @@ func FetchDatatables(ctx *iris.Context) {
 	services.DBCPsql.Raw(query).Scan(&investors)
 
 	for idx, val := range investors {
-		d := val.IsDeclined
+		declined := val.IsDeclined
 
-		if d != nil && *d {
+		if declined != nil && *declined {
 			investors[idx].Status = "declined"
 		} else {
 			investors[idx].Status = "activated"
@@ -217,6 +217,9 @@ func Validate(ctx *iris.Context) {
 			Reasons []string `json:"reasons"`
 		}{}
 		ctx.ReadJSON(&payload)
+		// this is just for testing purpose
+		// assign static email, in order to not sending email to investor
+		cifSchema.Username = "didi.yudha@amartha.com"
 		go email.SendEmailVerificationFailed(cifSchema.Username, cifSchema.Name, payload.Reasons)
 	}
 
