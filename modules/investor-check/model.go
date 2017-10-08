@@ -32,17 +32,18 @@ type (
 
 	DataTable struct {
 		Columns   []DataColumn `json:"columns"`
-		OrderInfo `json:"order"`
-		Start     uint64 `json:"start"`
-		Length    uint64 `json:"length"`
-		Search    `json:"search"`
+		OrderInfo []OrderInfo  `json:"order"`
+		Start     int          `json:"start"`
+		Length    int          `json:"length"`
+		Search    Search       `json:"search"`
+		Draw      int          `json:"draw"`
 	}
 
 	DataColumn struct {
 		Data       string `json:"data"`
 		Name       string `json:"name"`
 		Searchable bool   `json:"searchable"`
-		Orderable  bool   `json:"ordrable"`
+		Orderable  bool   `json:"orderable"`
 		Search     `json:"search"`
 	}
 
