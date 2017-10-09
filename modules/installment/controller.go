@@ -335,26 +335,28 @@ func SubmitInstallmentByGroupIDAndTransactionDateWithStatus(ctx *iris.Context) {
 		query += "JOIN branch ON branch.\"id\" = r_loan_branch.\"branchId\"  "
 		query += "JOIN r_loan_group ON r_loan_group.\"loanId\" = loan.\"id\" "
 		query += "JOIN \"group\" ON \"group\".\"id\" = r_loan_group.\"groupId\" "
-		db := services.DBCPsql.Begin()
+
 		installmentDetailSchema := []InstallmentDetail{}
 		if strings.ToLower(stageTo) == "success" {
 			query += "WHERE installment.\"stage\" = 'APPROVE' AND installment.\"deletedAt\" is null"
-			db.Raw(query).Scan(&installmentDetailSchema)
+			services.DBCPsql.Raw(query).Scan(&installmentDetailSchema)
 		} else {
 			query += "WHERE installment.\"createdAt\"::date = ? AND \"group\".\"id\" = ? AND installment.\"stage\" != 'APPROVE' AND installment.\"deletedAt\" is null"
-			db.Raw(query, transactionDate, groupID).Scan(&installmentDetailSchema)
+			services.DBCPsql.Raw(query, transactionDate, groupID).Scan(&installmentDetailSchema)
 		}
 
 		for _, item := range installmentDetailSchema {
+			db := services.DBCPsql.Begin()
 			// go StoreInstallment(item.InstallmentID, status)
 			err := StoreInstallment(db, item.InstallmentID, stageTo)
 			if err != nil {
 				fmt.Println(err)
 				ProcessErrorAndRollback(ctx, db, err.Error())
-				return
+			}else{
+				db.Commit()
 			}
 		}
-		db.Commit()
+
 
 		// write to go-log
 
