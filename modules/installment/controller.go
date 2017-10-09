@@ -228,7 +228,7 @@ func StoreInstallment(db *gorm.DB, installmentId uint64, status string) error {
 	db.Table("loan").Where("id = ?", loanInvestorAccountIDSchema.LoanID).Scan(&loanSchema)
 
 	// Recheck paidInstallment and update to END/END EARLY if true
-	if err := UpdateLoanStage(installmentSchema, loanSchema.ID, services.DBCPsql); err != nil {
+	if err := UpdateLoanStage(installmentSchema, loanSchema.ID, db); err != nil {
 		return fmt.Errorf("Error on Update Loan Stage. Error = %s\n", loanSchema.ID, err.Error())
 	}
 
@@ -250,8 +250,8 @@ func StoreInstallment(db *gorm.DB, installmentId uint64, status string) error {
 	rAccountTransactionDebitInstallmentData := r.RAccountTransactionDebitInstallment{InstallmentId: installmentId, AccountTransactionDebitId: accountTransactionDebitSchema.ID}
 	db.Table("r_account_transaction_debit_installment").Create(&rAccountTransactionDebitInstallmentData)
 
-	totalDebit := accountTransactionDebit.GetTotalAccountTransactionDebit(loanInvestorAccountIDSchema.AccountID)
-	totalCredit := accountTransactionCredit.GetTotalAccountTransactionCredit(loanInvestorAccountIDSchema.AccountID)
+	totalDebit := accountTransactionDebit.GetTotalAccountTransactionDebitByTransac(db,loanInvestorAccountIDSchema.AccountID)
+	totalCredit := accountTransactionCredit.GetTotalAccountTransactionCreditByTransac(db,loanInvestorAccountIDSchema.AccountID)
 
 	totalBalance := totalDebit - totalCredit
 	db.Table("account").Where("id = ?", loanInvestorAccountIDSchema.AccountID).Updates(account.Account{TotalDebit: totalDebit, TotalCredit: totalCredit, TotalBalance: totalBalance})
