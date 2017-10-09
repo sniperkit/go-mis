@@ -1,7 +1,9 @@
 package investorCheck
 
 import (
+	"encoding/json"
 	"fmt"
+	"net/url"
 	"strconv"
 	"time"
 
@@ -21,11 +23,25 @@ type totalData struct {
 
 // FetchDatatables -  fetch data based on parameters sent by datatables
 func FetchDatatables(ctx *iris.Context) {
+	var dtTables DataTable
 	investors := []InvestorCheck{}
 	limit := ctx.URLParam("limit")
 	page := ctx.URLParam("page")
-	search := ctx.URLParam("search")
-	orderBy := ctx.URLParam("orderBy")
+	filterBy := ctx.URLParam("filterBy")
+
+	// Get object data tables from url
+	dtTables = ParseDatatableURI(string(ctx.URI().FullURI()))
+
+	search := dtTables.Search.Value
+	orderBy := dtTables.Columns[dtTables.OrderInfo[0].Column].Data
+	orderDir := dtTables.OrderInfo[0].Dir
+
+	fmt.Println("Search: ", search)
+	fmt.Println("OrderBy: ", orderBy)
+	fmt.Println("OrderDir: ", orderDir)
+	fmt.Println("FilterBy: ", filterBy)
+	fmt.Println("Limit: ", limit)
+	fmt.Println("Page: ", page)
 
 	query := ` SELECT cif.id, cif."name", 
 					cif."phoneNo", 
@@ -46,7 +62,7 @@ func FetchDatatables(ctx *iris.Context) {
 					cif."isDeclined",
 					cif."username",
 					cif."activationDate",
-					cif."declinedDate"
+					cif."declinedDate",
 					cif."username",
 					cif."activationDate",
 					cif."declinedDate"
@@ -57,15 +73,26 @@ func FetchDatatables(ctx *iris.Context) {
 					JOIN cif ON cif.id = r_cif_investor."cifId" 
 				WHERE cif."isVerified" = FALSE 
 				AND cif."idCardFilename" IS NOT NULL 
-				and cif."isActivated" = TRUE 
+				
 				AND cif."deletedAt" isnull AND virtual_account."deletedAt" isnull `
+
+	if len(strings.TrimSpace(filterBy)) > 0 {
+		switch strings.ToUpper(filterBy) {
+		case "ACTIVATED":
+			query += ` AND cif."isActivated" = TRUE AND (cif."isDeclined" = FALSE OR cif."isDeclined" ISNULL) `
+		case "DECLINED":
+			query += ` AND cif."isActivated" = FALSE AND (cif."isDeclined" = TRUE OR cif."isDeclined" IS NOT NULL ) `
+		default:
+			query += ` AND cif."isActivated" = TRUE `
+		}
+	}
 
 	if search != "" {
 		query += ` AND (cif.name ILIKE '%` + search + `%' OR investor."investorNo"::text ILIKE '%` + search + `%' OR cif."idCardNo" ILIKE '%` + search + `%' OR  
 					cif."taxCardNo" ILIKE '%` + search + `' OR cif."username" ILIKE '%` + search + `%') `
 	}
 
-	if ctx.URLParam("search") != "" {
+	if search != "" {
 		query += "AND cif.name ~* '" + ctx.URLParam("search") + "' "
 	}
 
@@ -74,33 +101,26 @@ func FetchDatatables(ctx *iris.Context) {
 	investor."investorNo", investor."createdAt" `
 	query += groupedBy
 
-	if len(strings.TrimSpace(orderBy)) > 0 {
-		// Split ordered
-		splOrd := strings.Split(orderBy, ",")
-		// splOrd[0] => field name
-		// splOrd[1] => orientation sorting, ASC / DESC
-		if len(splOrd) == 2 && (strings.ToUpper(splOrd[1]) == "ASC" || strings.ToUpper(splOrd[1]) == "DESC") {
-			field := splOrd[0]
-			orientation := splOrd[1]
-			switch strings.ToUpper(field) {
-			case "INVESTORNO":
-				query += ` ORDER BY investor."investorNo" ` + orientation
-			case "NAME":
-				query += ` ORDER BY cif."name" ` + orientation
-			case "IDCARDNO":
-				query += ` ORDER BY cif."idCardNo" ` + orientation
-			case "EMAIL":
-				query += `ORDER BY cif.username ` + orientation
-			case "ACTIVATIONDATE":
-				query += `ORDER BY cif."activationDate" ` + orientation
-			case "DECLINEDATE":
-				query += `ORDER BY cif."declinedDate" ` + orientation
-			case "REGISTRATIONDATE":
-				query += `ORDER BY investor."createdAt" ` + orientation
-			default:
-				query += ` ORDER BY cif."name" ASC`
-			}
+	if len(strings.TrimSpace(orderBy)) > 0 && len(strings.TrimSpace(orderDir)) > 0 {
+		switch strings.ToUpper(orderBy) {
+		case "INVESTORNO":
+			query += ` ORDER BY investor."investorNo" ` + orderDir
+		case "NAME":
+			query += ` ORDER BY cif."name" ` + orderDir
+		case "IDCARDNO":
+			query += ` ORDER BY cif."idCardNo" ` + orderDir
+		case "EMAIL":
+			query += `ORDER BY cif.username ` + orderDir
+		case "ACTIVATIONDATE":
+			query += `ORDER BY cif."activationDate" ` + orderDir
+		case "DECLINEDATE":
+			query += `ORDER BY cif."declinedDate" ` + orderDir
+		case "REGISTRATIONDATE":
+			query += `ORDER BY investor."createdAt" ` + orderDir
+		default:
+			query += ` ORDER BY cif."name" ASC`
 		}
+
 	}
 
 	if len(strings.TrimSpace(limit)) == 0 {
@@ -302,4 +322,18 @@ func Verified(ctx *iris.Context) {
 			"verificationStatus": "verification failed investor not validated",
 		})
 	}
+}
+
+func ParseDatatableURI(fullURI string) DataTable {
+	var dtTables DataTable
+	u, _ := url.Parse(fullURI)
+	q := u.Query()
+	for k, v := range q {
+		if len(strings.TrimSpace(v[0])) == 0 {
+			if err := json.Unmarshal([]byte(k), &dtTables); err == nil {
+				return dtTables
+			}
+		}
+	}
+	return dtTables
 }

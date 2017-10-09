@@ -64,6 +64,8 @@ func InitCustomApi() {
 	iris.Any(baseURL+"/user-mis-login", auth.UserMisLogin)
 	iris.Any(baseURL+"/installment-approve-success/:stageFrom/:stageTo", installment.SubmitInstallmentByGroupIDAndTransactionDateWithStatus)
 	iris.Any(baseURL+"/installment-approve-success-custom-brooooo", installment.SubmitInstallmentByGroupIDAndTransactionDateWithStatusAndInstallmentId)
+	//iris.Any(baseURL+"/investor-check/view", investorCheck.FetchDatatables)
+
 	v2 := iris.Party(baseURL, auth.EnsureAuth)
 	{
 		v2.Any("/me-user-mis", auth.CurrentUserMis)
