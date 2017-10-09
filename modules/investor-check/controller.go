@@ -219,7 +219,7 @@ func Validate(ctx *iris.Context) {
 		ctx.ReadJSON(&payload)
 		// this is just for testing purpose
 		// assign static email, in order to not sending email to investor
-		cifSchema.Username = "didi.yudha@amartha.com"
+		cifSchema.Username = "afgan.halbana@amartha.com"
 		go email.SendEmailVerificationFailed(cifSchema.Username, cifSchema.Name, payload.Reasons)
 	}
 
