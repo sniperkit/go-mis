@@ -229,7 +229,9 @@ func StoreInstallment(db *gorm.DB, installmentId uint64, status string) error {
 
 	// Recheck paidInstallment and update to END/END EARLY if true
 	if err := UpdateLoanStage(installmentSchema, loanSchema.ID, db); err != nil {
-		return fmt.Errorf("Error on Update Loan Stage. Error = %s\n", loanSchema.ID, err.Error())
+		//DO NOT ROLLBACK
+		fmt.Errorf("Error on Update Loan Stage. Error = %s\n", loanSchema.ID, err.Error())
+		return nil
 	}
 
 	// accountTransactionDebitAmount := frequency * (plafond / tenor) + ((paidInstallment - (frequency * (plafond/tenor))) * pplROI);
