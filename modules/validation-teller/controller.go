@@ -481,7 +481,7 @@ func FindVTDetailByGroupAndDate(groupID uint64, date string) ([]RawInstallmentDe
 					join disbursement d on d.id = rld."disbursementId"
 				where l."deletedAt" is null and i."deletedAt" is null 
 				and coalesce(i."transactionDate",i."createdAt")::date = ? and
-				l.stage = 'INSTALLMENT' and g.id=? and i."deletedAt" is not null`
+				l.stage = 'INSTALLMENT' and g.id=? and i."deletedAt" is null`
 	err = services.DBCPsql.Raw(query, date, groupID).Scan(&installmentDetails).Error
 	if err != nil {
 		log.Println("#ERROR: ", err)
