@@ -172,7 +172,7 @@ func FindInstallmentByGroupIDAndTransactionDate(branchID interface{}, groupID, s
 				join r_loan_disbursement rld on rld."loanId" = l.id
 				join disbursement d on d.id = rld."disbursementId"
 			where l."deletedAt" isnull and b.id= ? and coalesce(i."transactionDate",i."createdAt")::date = ?
-			and l.stage = 'INSTALLMENT' and i.stage= ? and g.id=?
+			and l.stage = 'INSTALLMENT' and i.stage= ? and g.id=? and i."deletedAt" is null
 			group by l.id, i.id, bow.id, g.name, cif.name,i.type,i."paidInstallment", i.penalty, i.reserve, 
 			i.presence, i.frequency, i.stage, i.cash_on_hand, i.cash_on_reserve`
 	err = services.DBCPsql.Raw(query, branchID, transactionDate, stage, groupID).Scan(&installmentDetails).Error
