@@ -50,7 +50,7 @@ func (m *Mandrill) SetTemplateAndRawBody(template string, raw map[string]interfa
 func (m Mandrill) SendEmail() {
 	m.emailParam.SecretKey = "n0de-U>lo4d3r"
 	request := gorequest.New()
-	_, body, _ := request.Post(config.UploaderApiPath + "/email/send/mandrill").
+	_, body, _ := request.Post(config.UploaderApiPath + "email/send/mandrill").
 		Send(m.emailParam).
 		End()
 

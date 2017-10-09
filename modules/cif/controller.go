@@ -1,11 +1,12 @@
 package cif
 
 import (
-	"strconv"
-	"bitbucket.org/go-mis/services"
-	iris "gopkg.in/kataras/iris.v4"
 	"fmt"
+	"strconv"
+
+	"bitbucket.org/go-mis/services"
 	"github.com/jinzhu/gorm"
+	iris "gopkg.in/kataras/iris.v4"
 )
 
 func Init() {
@@ -109,7 +110,7 @@ func GetCifInvestorAccount(ctx *iris.Context) {
 	})
 }
 
-func GetCifBorrower (ctx *iris.Context){
+func GetCifBorrower(ctx *iris.Context) {
 	borrowerId := ctx.Get("id")
 
 	query := "SELECT borrower.\"id\" as \"borrowerId\", "
@@ -164,86 +165,86 @@ func GetCifBorrower (ctx *iris.Context){
 	})
 }
 
-
-func GetCifInvestor (ctx *iris.Context){
-	investorId := ctx.Get("id")
-
-	query := "SELECT investor.\"id\" as \"investorId\", "
-	query += " investor.\"isCheckedTerm\" as \"isCheckedTerm\", "
-	query += " investor.\"isCheckedPrivacy\" as \"isCheckedPrivacy\", "
-	query += " investor.\"investorNo\" as \"investorNo\", "
-	query += " investor.\"isInstitutional\" as \"isInstitutional\", "
-	query += " investor.\"bankName\" as \"bankName\", "
-	query += " investor.\"bankBranch\" as \"bankBranch\", "
-	query += " investor.\"bankAccountName\" as \"bankAccountName\", "
-	query += " investor.\"bankAccountNo\" as \"bankAccountNo\", "
-	query += " cif.\"id\" as \"cifId\", "
-	query += " cif.\"cifNumber\" as \"cifNumber\", "
-	query += " cif.\"username\" as \"username\", "
-	query += " cif.\"password\" as \"password\", "
-	query += " cif.\"name\" as \"name\", "
-	query += " cif.\"gender\" as \"gender\", "
-	query += " cif.\"placeOfBirth\" as \"placeOfBirth\", "
-	query += " cif.\"dateOfBirth\" as \"dateOfBirth\", "
-	query += " cif.\"idCardNo\" as \"idCardNo\", "
-	query += " cif.\"idCardValidDate\" as \"idCardValidDate\", "
-	query += " cif.\"idCardFilename\" as \"idCardFilename\", "
-	query += " cif.\"taxCardNo\" as \"taxCardNo\", "
-	query += " cif.\"taxCardFilename\" as \"taxCardFilename\", "
-	query += " cif.\"maritalStatus\" as \"maritalStatus\", "
-	query += " cif.\"mothersName\" as \"mothersName\", "
-	query += " cif.\"religion\" as \"religion\", "
-	query += " cif.\"address\" as \"address\", "
-	query += " cif.\"rt\" as \"rt\", "
-	query += " cif.\"rw\" as \"rw\", "
-	query += " cif.\"kelurahan\" as \"kelurahan\", "
-	query += " cif.\"kecamatan\" as \"kecamatan\", "
-	query += " cif.\"province\" as \"province\", "
-	query += " cif.\"nationality\" as \"nationality\", "
-	query += " cif.\"zipcode\" as \"zipcode\", "
-	query += " cif.\"phoneNo\" as \"phoneNo\", "
-	query += " cif.\"companyName\" as \"companyName\", "
-	query += " cif.\"companyAddress\" as \"companyAddress\", "
-	query += " cif.\"occupation\" as \"occupation\", "
-	query += " cif.\"income\" as \"income\", "
-	query += " cif.\"incomeSourceFund\" as \"incomeSourceFund\", "
-	query += " cif.\"incomeSourceCountry\" as \"incomeSourceCountry\", "
-	query += " cif.\"isActivated\" as \"isActivated\", "
-	query += " cif.\"isValidated\" as \"isValidated\", "
-	query += " cif.\"isVerified\" as \"isVerified\" "
-	query += "FROM investor "
-	query += "LEFT JOIN r_cif_investor rcb ON rcb.\"investorId\" = investor.\"id\" "
-	query += "LEFT JOIN cif ON cif.\"id\" = rcb.\"cifId\" "
-	query += "WHERE investor.\"id\" = ? "
-
-	investorAll := CifInvestor{}
-
-	services.DBCPsql.Raw(query, investorId).Scan(&investorAll)
+func GetCifInvestor(ctx *iris.Context) {
+	investorID := ctx.Get("id")
+	var InvestorAll CifInvestor
+	query := ` SELECT investor."id" as "investorId",   
+					investor."isCheckedTerm" as "isCheckedTerm",   
+					investor."isCheckedPrivacy" as "isCheckedPrivacy",   
+					investor."investorNo" as "investorNo",   
+					investor."isInstitutional" as "isInstitutional",   
+					investor."bankName" as "bankName",   
+					investor."bankBranch" as "bankBranch",   
+					investor."bankAccountName" as "bankAccountName",   
+					investor."bankAccountNo" as "bankAccountNo",   
+					cif."id" as "cifId",   
+					cif."cifNumber" as "cifNumber",   
+					cif."username" as "username",   
+					cif."password" as "password",   
+					cif."name" as "name",   
+					cif."gender" as "gender",   
+					cif."placeOfBirth" as "placeOfBirth",   
+					cif."dateOfBirth" as "dateOfBirth",   
+					cif."idCardNo" as "idCardNo",   
+					cif."idCardValidDate" as "idCardValidDate",   
+					cif."idCardFilename" as "idCardFilename",   
+					cif."taxCardNo" as "taxCardNo",   
+					cif."taxCardFilename" as "taxCardFilename",   
+					cif."maritalStatus" as "maritalStatus",   
+					cif."mothersName" as "mothersName",   
+					cif."religion" as "religion",   
+					cif."address" as "address",   
+					cif."rt" as "rt",   
+					cif."rw" as "rw",   
+					cif."kelurahan" as "kelurahan",   
+					cif."kecamatan" as "kecamatan",   
+					cif."province" as "province",   
+					cif."nationality" as "nationality",   
+					cif."zipcode" as "zipcode",   
+					cif."phoneNo" as "phoneNo",   
+					cif."companyName" as "companyName",   
+					cif."companyAddress" as "companyAddress",   
+					cif."occupation" as "occupation",   
+					cif."income" as "income",   
+					cif."incomeSourceFund" as "incomeSourceFund",   
+					cif."incomeSourceCountry" as "incomeSourceCountry",   
+					cif."isActivated" as "isActivated",   
+					cif."isValidated" as "isValidated",   
+					cif."isVerified" as "isVerified",
+					investor."createdAt" as "registrationDate",
+					cif."activationDate",
+					cif."validationDate",
+					cif."declinedDate"
+   				FROM investor
+				LEFT JOIN r_cif_investor rcb ON rcb."investorId" = investor."id"
+				LEFT JOIN cif ON cif."id" = rcb."cifId"
+   			WHERE investor."id" = ? `
+	services.DBCPsql.Raw(query, investorID).Scan(&InvestorAll)
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"status": "success",
-		"data":   investorAll,
+		"data":   InvestorAll,
 	})
 }
 
-func UpdateInvestorCif (ctx *iris.Context){
+func UpdateInvestorCif(ctx *iris.Context) {
 	investorId := ctx.Get("investorId")
 	cifId := ctx.Get("cifId")
 
-	data:=UpdateInvestor{}
+	data := UpdateInvestor{}
 	err := ctx.ReadJSON(&data)
 
-	if(err!=nil){
+	if err != nil {
 		fmt.Println("Error parsing json update investor")
 		fmt.Println(err.Error())
 		ctx.JSON(iris.StatusBadRequest, iris.Map{"status": "error", "message": err.Error()})
 		return
 	}
 	db := services.DBCPsql.Begin()
-	if err:=db.Table("investor").Where(" \"id\" = ?", investorId).Update(&data.Investor).Error;err!=nil{
+	if err := db.Table("investor").Where(" \"id\" = ?", investorId).Update(&data.Investor).Error; err != nil {
 		processErrorAndRollback(ctx, db, err, "Update Investor")
 		return
 	}
-	if err:=db.Table("cif").Where(" \"id\" = ?", cifId).Update(&data.Cif).Error;err!=nil{
+	if err := db.Table("cif").Where(" \"id\" = ?", cifId).Update(&data.Cif).Error; err != nil {
 		processErrorAndRollback(ctx, db, err, "Update Cif")
 		return
 	}
@@ -251,9 +252,7 @@ func UpdateInvestorCif (ctx *iris.Context){
 	ctx.JSON(iris.StatusOK, iris.Map{"status": "success", "data": data})
 }
 
-
 func processErrorAndRollback(ctx *iris.Context, db *gorm.DB, err error, process string) {
 	db.Rollback()
-	ctx.JSON(iris.StatusInternalServerError, iris.Map{"status": "error","error": "Error on " + process + " " + err.Error()})
+	ctx.JSON(iris.StatusInternalServerError, iris.Map{"status": "error", "error": "Error on " + process + " " + err.Error()})
 }
-

@@ -20,20 +20,18 @@ func SendEmailVerificationSuccess(email string, name string, va_bca string, va_b
 
 }
 
-func SendEmailVerificationFailed(email string, name string, reason string) {
-
+// SendEmailVerificationFailed - Send email to investor because of his incomplete data
+func SendEmailVerificationFailed(email string, name string, reasons []string) {
 	var subs = map[string]interface{}{
-		"first_name": name,
-		"reason":     reason,
+		"investor_name": name,
+		"reasons":       reasons,
 	}
-
 	mandrill := new(Mandrill)
 	mandrill.SetFrom("hello@amartha.com")
 	mandrill.SetTo(email)
 	mandrill.SetSubject("[Amartha] Verifikasi Data Anda Gagal ")
-	mandrill.SetTemplateAndRawBody("verification_failed", subs)
+	mandrill.SetTemplateAndRawBody("decline_v1", subs)
 	mandrill.SendEmail()
-
 }
 
 func SendEmailInvestmentSuccess(email string, name string, transferDate string, transferAmount string, transferDestination string) {
