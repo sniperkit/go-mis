@@ -171,11 +171,27 @@ func FindInstallmentByGroupIDAndTransactionDate(branchID interface{}, groupID, s
 				join installment i on i.id = rli."installmentId"
 				join r_loan_disbursement rld on rld."loanId" = l.id
 				join disbursement d on d.id = rld."disbursementId"
-			where l."deletedAt" isnull and b.id= ? and coalesce(i."transactionDate",i."createdAt")::date = ?
-			and l.stage = 'INSTALLMENT' and i.stage= ? and g.id=? and i."deletedAt" is null
-			group by l.id, i.id, bow.id, g.name, cif.name,i.type,i."paidInstallment", i.penalty, i.reserve, 
+			where
+			`
+
+	if stage == "IN-REVIEW" {
+		fmt.Println("REVIEW")
+		parseNow, _ := time.Parse("2006-01-02", transactionDate)
+		yesterday := parseNow.AddDate(0, 0, -1).Format("2006-01-02")
+		query += `l."deletedAt" isnull and b.id= ? and coalesce(i."transactionDate",i."createdAt")::date <= ? and coalesce(i."transactionDate",i."createdAt")::date >= ? `
+		query += `and l.stage = 'INSTALLMENT' and i.stage= ? and g.id=? and i."deletedAt" is null
+			group by l.id, i.id, bow.id, g.name, cif.name,i.type,i."paidInstallment", i.penalty, i.reserve,
 			i.presence, i.frequency, i.stage, i.cash_on_hand, i.cash_on_reserve`
-	err = services.DBCPsql.Raw(query, branchID, transactionDate, stage, groupID).Scan(&installmentDetails).Error
+		err = services.DBCPsql.Raw(query, branchID, transactionDate,yesterday, stage, groupID).Scan(&installmentDetails).Error
+	} else {
+		fmt.Println("NOR REVIEW")
+		query += `l."deletedAt" isnull and b.id= ? and coalesce(i."transactionDate",i."createdAt")::date = ? `
+		query += `and l.stage = 'INSTALLMENT' and i.stage= ? and g.id=? and i."deletedAt" is null
+			group by l.id, i.id, bow.id, g.name, cif.name,i.type,i."paidInstallment", i.penalty, i.reserve,
+			i.presence, i.frequency, i.stage, i.cash_on_hand, i.cash_on_reserve`
+		err = services.DBCPsql.Raw(query, branchID, transactionDate, stage, groupID).Scan(&installmentDetails).Error
+	}
+
 	if err != nil {
 		log.Println("#ERROR: ", err)
 		return installmentDetails, errors.New("Unable to retrieve Installment Detail data from DB")
@@ -912,13 +928,16 @@ func GetRawPendingInstallmentData(currentStage string, branchId uint64, now stri
 	if isApprove {
 		query += `and (i."stage" = 'APPROVE' or i."stage" = 'SUCCESS') `
 	}
+	fmt.Println("STAGE",currentStage)
 	if currentStage == "in-review" {
+		fmt.Println("REVIEW")
 		parseNow, _ := time.Parse("2006-01-02", now)
 		yesterday := parseNow.AddDate(0, 0, -1).Format("2006-01-02")
 		query += `and coalesce(i."transactionDate",i."createdAt")::date <= ? and coalesce(i."transactionDate",i."createdAt")::date >= ? `
 		query += `group by g.name, a.fullname, g.id, "totalCair", "totalGagalDropping" order by a.fullname`
 		services.DBCPsql.Raw(query, now, now, now, now, branchId, now, yesterday).Scan(&queryResult)
 	} else {
+		fmt.Println("NOR REVIEW")
 		query += `and coalesce(i."transactionDate",i."createdAt")::date = ? `
 		query += `group by g.name, a.fullname, g.id, "totalCair", "totalGagalDropping" order by a.fullname`
 		services.DBCPsql.Raw(query, now, now, now, now, branchId, now).Scan(&queryResult)
