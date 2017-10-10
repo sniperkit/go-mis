@@ -919,8 +919,8 @@ func GetRawPendingInstallmentData(currentStage string, branchId uint64, now stri
                                     join r_group_agent on r_group_agent."groupId"=r_loan_group."groupId"
                                     join agent on agent.id = r_group_agent."agentId"
                                     where d."disbursementDate"::date = ?
-                                    group by 1,2,"disbursementDate"
-                                    order by "disbursementDate" desc
+                                    group by 1,2,"disbursementDate"::date
+                                    order by "disbursementDate"::date desc
                                 ) foo on foo."agentId" = a.id and foo."groupId" = g.id
                         where l."deletedAt" is null
                         and i."deletedAt" is null and
