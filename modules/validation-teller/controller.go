@@ -347,7 +347,7 @@ func FindInstallmentData(branchID uint64, date string, isApprove bool) (Response
 	if err != nil {
 		return responseData, errors.New("Invalid Date parameter")
 	}
-	rawInstallmentData = MISInstallment.GetRawPendingInstallmentData("teller",branchID, date, isApprove)
+	rawInstallmentData = MISInstallment.GetRawPendingInstallmentData("teller", branchID, date, isApprove)
 	for _, val := range rawInstallmentData {
 		if agents[val.Fullname] == false {
 			agents[val.Fullname] = true
@@ -481,7 +481,8 @@ func FindVTDetailByGroupAndDate(groupID uint64, date string) ([]RawInstallmentDe
 					join disbursement d on d.id = rld."disbursementId"
 				where l."deletedAt" is null and i."deletedAt" is null 
 				and coalesce(i."transactionDate",i."createdAt")::date = ? and
-				l.stage = 'INSTALLMENT' and g.id=? and i."deletedAt" is null`
+				( UPPER(l.stage) = 'INSTALLMENT' OR UPPER(l.stage) = 'END' OR UPPER(l.stage) = 'END EARLY' OR UPPER(l.stage) = 'END-EARLY' OR UPPER(l.stage) = 'END-PENDING' )
+				and g.id = ? `
 	err = services.DBCPsql.Raw(query, date, groupID).Scan(&installmentDetails).Error
 	if err != nil {
 		log.Println("#ERROR: ", err)

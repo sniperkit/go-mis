@@ -182,7 +182,7 @@ func FindInstallmentByGroupIDAndTransactionDate(branchID interface{}, groupID, s
 		query += `and l.stage = 'INSTALLMENT' and i.stage= ? and g.id=? and i."deletedAt" is null
 			group by l.id, i.id, bow.id, g.name, cif.name,i.type,i."paidInstallment", i.penalty, i.reserve,
 			i.presence, i.frequency, i.stage, i.cash_on_hand, i.cash_on_reserve`
-		err = services.DBCPsql.Raw(query, branchID, transactionDate,yesterday, stage, groupID).Scan(&installmentDetails).Error
+		err = services.DBCPsql.Raw(query, branchID, transactionDate, yesterday, stage, groupID).Scan(&installmentDetails).Error
 	} else {
 		fmt.Println("NOR REVIEW")
 		query += `l."deletedAt" isnull and b.id= ? and coalesce(i."transactionDate",i."createdAt")::date = ? `
@@ -268,8 +268,8 @@ func StoreInstallment(db *gorm.DB, installmentId uint64, status string) error {
 	rAccountTransactionDebitInstallmentData := r.RAccountTransactionDebitInstallment{InstallmentId: installmentId, AccountTransactionDebitId: accountTransactionDebitSchema.ID}
 	db.Table("r_account_transaction_debit_installment").Create(&rAccountTransactionDebitInstallmentData)
 
-	totalDebit := accountTransactionDebit.GetTotalAccountTransactionDebitByTransac(db,loanInvestorAccountIDSchema.AccountID)
-	totalCredit := accountTransactionCredit.GetTotalAccountTransactionCreditByTransac(db,loanInvestorAccountIDSchema.AccountID)
+	totalDebit := accountTransactionDebit.GetTotalAccountTransactionDebitByTransac(db, loanInvestorAccountIDSchema.AccountID)
+	totalCredit := accountTransactionCredit.GetTotalAccountTransactionCreditByTransac(db, loanInvestorAccountIDSchema.AccountID)
 
 	totalBalance := totalDebit - totalCredit
 	db.Table("account").Where("id = ?", loanInvestorAccountIDSchema.AccountID).Updates(account.Account{TotalDebit: totalDebit, TotalCredit: totalCredit, TotalBalance: totalBalance})
@@ -339,7 +339,7 @@ func SubmitInstallmentByGroupIDAndTransactionDateWithStatus(ctx *iris.Context) {
 	transactionDate := ctx.Param("transaction_date")
 	stageTo := strings.ToUpper(ctx.Param("stageTo"))
 	stageFrom := ctx.Param("stageFrom")
-	fmt.Println(stageFrom,stageTo)
+	fmt.Println(stageFrom, stageTo)
 	if strings.ToLower(stageTo) == "agent" || strings.ToLower(stageTo) == "teller" || strings.ToLower(stageTo) == "pending" || strings.ToLower(stageTo) == "approve" || strings.ToLower(stageTo) == "reject" || strings.ToLower(stageTo) == "in-review" || strings.ToLower(stageTo) == "success" {
 		query := "SELECT "
 		query += "\"group\".\"id\" as \"groupId\", \"group\".\"name\" as \"groupName\","
@@ -368,11 +368,10 @@ func SubmitInstallmentByGroupIDAndTransactionDateWithStatus(ctx *iris.Context) {
 			if err != nil {
 				fmt.Println(err)
 				ProcessErrorAndRollback(ctx, db, err.Error())
-			}else{
+			} else {
 				db.Commit()
 			}
 		}
-
 
 		// write to go-log
 
@@ -865,70 +864,71 @@ func GetDataPendingInstallment(currentStage string, branchId uint64, now string)
 func GetRawPendingInstallmentData(currentStage string, branchId uint64, now string, isApprove bool) []RawInstallmentData {
 	queryResult := []RawInstallmentData{}
 	query := `select g.id as "groupId", a.fullname,g.name,
-                                sum(i."paidInstallment") "repayment",
-                                sum(i.reserve) "tabungan",
-                                sum(i."paidInstallment"+i.reserve) "total",
-                                sum(i.cash_on_hand) "cashOnHand",
-                                sum(i.cash_on_reserve) "cashOnReserve",
-                                coalesce(sum(
-                                case
-                                when frequency >= 3 then l.installment+((plafond/tenor)*(frequency-1))
-                                when frequency >0 then l.installment*frequency
-                                when frequency = 0 then 0
-                                end
-                                ),0) "projectionRepayment",
-                                coalesce(sum(
-                                case
-                                when plafond < 0 then 0
-                                when plafond <= 3000000 then 3000
-                                when plafond > 3000000 and plafond <= 5000000 then 4000
-                                when plafond > 5000000 and plafond <= 7000000 then 5000
-                                when plafond > 7000000 and plafond <= 9000000 then 6000
-                                when plafond > 9000000 and plafond <= 11000000 then 7000
-                                else 8000
-                                end
-                                ),0) "projectionTabungan",
-                                coalesce(sum(case
-                                when d."disbursementDate"::date = ? then plafond end
-                                ),0) "totalCairProj",
-                                coalesce("totalCair",0) "totalCair",
-                                coalesce("totalGagalDropping",0) "totalGagalDropping",
-                                split_part(string_agg(i.stage,'| '),'|',1) "status"
-                        from loan l join r_loan_group rlg on l.id = rlg."loanId"
-                                join "group" g on g.id = rlg."groupId"
-                                join r_group_agent rga on g.id = rga."groupId"
-                                join agent a on a.id = rga."agentId"
-                                join r_loan_branch rlb on rlb."loanId" = l.id
-                                join branch b on b.id = rlb."branchId"
-                                join r_loan_installment rli on rli."loanId" = l.id
-                                join installment i on i.id = rli."installmentId"
-                                join r_loan_disbursement rld on rld."loanId" = l.id
-                                join disbursement d on d.id = rld."disbursementId"
-                                left join (
-                                    select agent.id "agentId",r_loan_group."groupId" "groupId",
-                                    coalesce(sum(case
-                                    when d.stage = 'SUCCESS' and d."disbursementDate"::date = ? then plafond end
-                                    ),0) "totalCair",
-                                    coalesce(sum(case
-                                    when d.stage = 'FAILED'  and d."disbursementDate"::date = ? then plafond end
-                                    ),0) "totalGagalDropping"
-                                    from disbursement d
-                                    join r_loan_disbursement on r_loan_disbursement."disbursementId"=d.id
-                                    join r_loan_group on r_loan_group."loanId"=r_loan_disbursement."loanId"
-                                    join loan l on l.id = r_loan_group."loanId"
-                                    join r_group_agent on r_group_agent."groupId"=r_loan_group."groupId"
-                                    join agent on agent.id = r_group_agent."agentId"
-                                    where d."disbursementDate"::date = ?
-                                    group by 1,2,"disbursementDate"::date
-                                    order by "disbursementDate"::date desc
-                                ) foo on foo."agentId" = a.id and foo."groupId" = g.id
-                        where l."deletedAt" is null
-                        and i."deletedAt" is null and
-                        b.id= ? and l.stage = 'INSTALLMENT'  `
+				sum(i."paidInstallment") "repayment",
+				sum(i.reserve) "tabungan",
+				sum(i."paidInstallment"+i.reserve) "total",
+				sum(i.cash_on_hand) "cashOnHand",
+				sum(i.cash_on_reserve) "cashOnReserve",
+				coalesce(sum(
+				case
+				when frequency >= 3 then l.installment+((plafond/tenor)*(frequency-1))
+				when frequency >0 then l.installment*frequency
+				when frequency = 0 then 0
+				end
+				),0) "projectionRepayment",
+				coalesce(sum(
+				case
+				when plafond < 0 then 0
+				when plafond <= 3000000 then 3000
+				when plafond > 3000000 and plafond <= 5000000 then 4000
+				when plafond > 5000000 and plafond <= 7000000 then 5000
+				when plafond > 7000000 and plafond <= 9000000 then 6000
+				when plafond > 9000000 and plafond <= 11000000 then 7000
+				else 8000
+				end
+				),0) "projectionTabungan",
+				coalesce(sum(case
+				when d."disbursementDate"::date = ? then plafond end
+				),0) "totalCairProj",
+				coalesce("totalCair",0) "totalCair",
+				coalesce("totalGagalDropping",0) "totalGagalDropping",
+				split_part(string_agg(i.stage,'| '),'|',1) "status"
+			from loan l join r_loan_group rlg on l.id = rlg."loanId"
+				join "group" g on g.id = rlg."groupId"
+				join r_group_agent rga on g.id = rga."groupId"
+				join agent a on a.id = rga."agentId"
+				join r_loan_branch rlb on rlb."loanId" = l.id
+				join branch b on b.id = rlb."branchId"
+				join r_loan_installment rli on rli."loanId" = l.id
+				join installment i on i.id = rli."installmentId"
+				join r_loan_disbursement rld on rld."loanId" = l.id
+				join disbursement d on d.id = rld."disbursementId"
+				left join (
+					select agent.id "agentId",r_loan_group."groupId" "groupId",
+					coalesce(sum(case
+					when d.stage = 'SUCCESS' and d."disbursementDate"::date = ? then plafond end
+					),0) "totalCair",
+					coalesce(sum(case
+					when d.stage = 'FAILED'  and d."disbursementDate"::date = ? then plafond end
+					),0) "totalGagalDropping"
+					from disbursement d
+					join r_loan_disbursement on r_loan_disbursement."disbursementId"=d.id
+					join r_loan_group on r_loan_group."loanId"=r_loan_disbursement."loanId"
+					join loan l on l.id = r_loan_group."loanId"
+					join r_group_agent on r_group_agent."groupId"=r_loan_group."groupId"
+					join agent on agent.id = r_group_agent."agentId"
+					where d."disbursementDate"::date = ?
+					group by 1,2,"disbursementDate"::date
+					order by "disbursementDate"::date desc
+				) foo on foo."agentId" = a.id and foo."groupId" = g.id
+			where l."deletedAt" is null
+			and i."deletedAt" is null and
+			b.id= ? and 
+			( UPPER(l.stage) = 'INSTALLMENT' OR UPPER(l.stage) = 'END' OR UPPER(l.stage) = 'END EARLY' OR UPPER(l.stage) = 'END-EARLY' OR UPPER(l.stage) = 'END-PENDING') `
 	if isApprove {
 		query += `and (i."stage" = 'APPROVE' or i."stage" = 'SUCCESS') `
 	}
-	fmt.Println("STAGE",currentStage)
+	fmt.Println("STAGE", currentStage)
 	if currentStage == "in-review" {
 		fmt.Println("REVIEW")
 		parseNow, _ := time.Parse("2006-01-02", now)
