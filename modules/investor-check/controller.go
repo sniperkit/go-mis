@@ -36,10 +36,6 @@ func FetchDatatables(ctx *iris.Context) {
 	orderBy := "NAME"
 	orderDir := "ASC"
 
-	fmt.Println(dtTables.Columns)
-	fmt.Println("XXXXXX")
-	fmt.Println(dtTables.OrderInfo)
-
 	if len(dtTables.Columns) > 0 && len(dtTables.OrderInfo) > 0 {
 		orderBy = dtTables.Columns[dtTables.OrderInfo[0].Column].Data
 		orderDir = dtTables.OrderInfo[0].Dir
