@@ -2,10 +2,10 @@ package systemParameter
 
 import (
 	"errors"
+	"fmt"
 	"log"
 	"strings"
 
-	misUtility "bitbucket.org/go-mis/modules/utility"
 	"bitbucket.org/go-mis/services"
 )
 
@@ -39,11 +39,18 @@ func FindByKey(key string) (SystemParameter, error) {
 }
 
 // IsAllowedBackdate - Check if whether allow backdate or not
-func IsAllowedBackdate(dateParam string) bool {
+func IsAllowedBackdate() bool {
 	systemParams, _ := FindByKey(keyBackdate)
-	date, _ := misUtility.StringToDate(dateParam)
-	if misUtility.IsBeforeToday(date) && (systemParams.ID == 0 || systemParams.Value == "FALSE") {
+	/*
+		date, _ := misUtility.StringToDate(dateParam)
+		if misUtility.IsBeforeToday(date) && (systemParams.ID == 0 || systemParams.Value == "FALSE") {
+			return false
+		}
+	*/
+	if strings.ToUpper(systemParams.Value) == "FALSE" {
+		fmt.Println("Allow backdate: false")
 		return false
 	}
+	fmt.Println("Allow backdate: true")
 	return true
 }
