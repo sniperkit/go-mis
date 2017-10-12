@@ -33,8 +33,17 @@ func FetchDatatables(ctx *iris.Context) {
 	dtTables = ParseDatatableURI(string(ctx.URI().FullURI()))
 
 	search := dtTables.Search.Value
-	orderBy := dtTables.Columns[dtTables.OrderInfo[0].Column].Data
-	orderDir := dtTables.OrderInfo[0].Dir
+	orderBy := "NAME"
+	orderDir := "ASC"
+
+	fmt.Println(dtTables.Columns)
+	fmt.Println("XXXXXX")
+	fmt.Println(dtTables.OrderInfo)
+
+	if len(dtTables.Columns) > 0 && len(dtTables.OrderInfo) > 0 {
+		orderBy = dtTables.Columns[dtTables.OrderInfo[0].Column].Data
+		orderDir = dtTables.OrderInfo[0].Dir
+	}
 
 	fmt.Println("Search: ", search)
 	fmt.Println("OrderBy: ", orderBy)
@@ -329,11 +338,14 @@ func ParseDatatableURI(fullURI string) DataTable {
 	q := u.Query()
 	for k, v := range q {
 		if len(strings.TrimSpace(v[0])) == 0 {
-			if err := json.Unmarshal([]byte(k), &dtTables); err == nil {
+			err := json.Unmarshal([]byte(k), &dtTables)
+			if err == nil {
 				return dtTables
 			}
+
 		}
 	}
+
 	return dtTables
 }
 func sendSMS(phoneNumber string, message string) {
