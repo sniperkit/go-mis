@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"net/http"
 	"strconv"
 	"strings"
 	"time"
@@ -744,6 +745,7 @@ func GetPendingInstallmentNew(ctx *iris.Context) {
 	intBid, _ := strconv.Atoi(bId)
 	branchID := uint64(intBid)
 	dateParam := ctx.Param("date")
+	stage := ctx.Param("currentStage")
 	// Check branchID, if equal to 0 return error message to client
 	if branchID == 0 {
 		ctx.JSON(iris.StatusOK, iris.Map{
@@ -759,7 +761,22 @@ func GetPendingInstallmentNew(ctx *iris.Context) {
 		})
 		return
 	}
-	if !systemParameter.IsAllowedBackdate(dateParam) {
+	date, err := MISUtility.StringToDate(dateParam)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, iris.Map{
+			"message":      "Bad Request",
+			"errorMessage": "Invalid date",
+		})
+		return
+	}
+	t := time.Now()
+	now := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
+	yesterday := now.Add(-24 * time.Hour)
+	fmt.Println(date)
+	fmt.Println(now)
+	fmt.Println(yesterday)
+	if (!systemParameter.IsAllowedBackdate(dateParam) && date.Before(now)) ||
+		date.Before(yesterday) {
 		log.Println("#ERROR: Not Allowed back date")
 		ctx.JSON(405, iris.Map{
 			"message":      "Not Allowed",
@@ -767,7 +784,7 @@ func GetPendingInstallmentNew(ctx *iris.Context) {
 		})
 		return
 	}
-	res := GetDataPendingInstallment(ctx.Param("currentStage"), branchID, dateParam)
+	res := GetDataPendingInstallment(stage, branchID, dateParam)
 	notes, err := services.GetNotes(services.ConstructNotesGroupId(branchID, dateParam))
 	log.Println("Notes: ", notes)
 	if err == nil && len(notes) > 0 {
@@ -785,16 +802,16 @@ func GetPendingInstallmentNew(ctx *iris.Context) {
 func GetDataPendingInstallment(currentStage string, branchId uint64, now string) PendingInstallment {
 	var pendingInstallment PendingInstallment
 	queryResult := GetRawPendingInstallmentData(currentStage, branchId, now, false)
-	res := []PendingInstallmentData{}
+	res := make([]PendingInstallmentData, 0, len(queryResult))
 	agents := map[string]bool{"": false}
-	for _, val := range queryResult {
-		if agents[val.Fullname] == false {
-			agents[val.Fullname] = true
-			res = append(res, PendingInstallmentData{Agent: val.Fullname})
+	for iq := range queryResult {
+		if agents[queryResult[iq].Fullname] == false {
+			agents[queryResult[iq].Fullname] = true
+			res = append(res, PendingInstallmentData{Agent: queryResult[iq].Fullname})
 		}
 	}
 	majelisIDs := make([]MajelisId, len(res))
-	for idx, rval := range res {
+	for idx := range res {
 		var totalRepaymentAct float64
 		var totalRepaymentProj float64
 		var totalRepaymentCoh float64
@@ -807,39 +824,39 @@ func GetDataPendingInstallment(currentStage string, branchId uint64, now string)
 		var totalPencairanAgent float64
 		var totalPencairanProjAgent float64
 		var totalGagalDroppingAgent float64
-		m := []Majelis{}
-		for _, qrval := range queryResult {
-			if rval.Agent == qrval.Fullname {
+		m := make([]Majelis, 0, len(queryResult))
+		for i := range queryResult {
+			if res[idx].Agent == queryResult[i].Fullname {
 				m = append(m, Majelis{
-					GroupId:             qrval.GroupId,
-					Name:                qrval.Name,
-					Repayment:           qrval.Repayment,
-					Tabungan:            qrval.Tabungan,
-					TotalActual:         qrval.Total,
-					TotalProyeksi:       qrval.ProjectionRepayment + qrval.ProjectionTabungan,
-					TotalCoh:            qrval.CashOnHand + qrval.CashOnReserve,
-					TotalCair:           qrval.TotalCair,
-					TotalCairProj:       qrval.TotalCairProj,
-					TotalGagalDropping:  qrval.TotalGagalDropping,
-					Status:              qrval.Status,
-					CashOnHand:          qrval.CashOnHand,
-					CashOnReserve:       qrval.CashOnReserve,
-					ProjectionRepayment: qrval.ProjectionRepayment,
-					ProjectionTabungan:  qrval.ProjectionTabungan,
+					GroupId:             queryResult[i].GroupId,
+					Name:                queryResult[i].Name,
+					Repayment:           queryResult[i].Repayment,
+					Tabungan:            queryResult[i].Tabungan,
+					TotalActual:         queryResult[i].Total,
+					TotalProyeksi:       queryResult[i].ProjectionRepayment + queryResult[i].ProjectionTabungan,
+					TotalCoh:            queryResult[i].CashOnHand + queryResult[i].CashOnReserve,
+					TotalCair:           queryResult[i].TotalCair,
+					TotalCairProj:       queryResult[i].TotalCairProj,
+					TotalGagalDropping:  queryResult[i].TotalGagalDropping,
+					Status:              queryResult[i].Status,
+					CashOnHand:          queryResult[i].CashOnHand,
+					CashOnReserve:       queryResult[i].CashOnReserve,
+					ProjectionRepayment: queryResult[i].ProjectionRepayment,
+					ProjectionTabungan:  queryResult[i].ProjectionTabungan,
 				})
-				majelisIDs = append(majelisIDs, MajelisId{GroupId: qrval.GroupId, Name: qrval.Name})
-				totalRepaymentAct += qrval.Repayment
-				totalRepaymentProj += qrval.ProjectionRepayment
-				totalRepaymentCoh += qrval.CashOnHand
-				totalTabunganAct += qrval.Tabungan
-				totalTabunganProj += qrval.ProjectionTabungan
-				totalTabunganCoh += qrval.CashOnReserve
-				totalActualAgent += qrval.Total
-				totalProjectionAgent += qrval.ProjectionRepayment + qrval.ProjectionTabungan
-				totalCohAgent += qrval.CashOnHand + qrval.CashOnReserve
-				totalPencairanAgent += qrval.TotalCair
-				totalPencairanProjAgent += qrval.TotalCairProj
-				totalGagalDroppingAgent += qrval.TotalGagalDropping
+				majelisIDs = append(majelisIDs, MajelisId{GroupId: queryResult[i].GroupId, Name: queryResult[i].Name})
+				totalRepaymentAct += queryResult[i].Repayment
+				totalRepaymentProj += queryResult[i].ProjectionRepayment
+				totalRepaymentCoh += queryResult[i].CashOnHand
+				totalTabunganAct += queryResult[i].Tabungan
+				totalTabunganProj += queryResult[i].ProjectionTabungan
+				totalTabunganCoh += queryResult[i].CashOnReserve
+				totalActualAgent += queryResult[i].Total
+				totalProjectionAgent += queryResult[i].ProjectionRepayment + queryResult[i].ProjectionTabungan
+				totalCohAgent += queryResult[i].CashOnHand + queryResult[i].CashOnReserve
+				totalPencairanAgent += queryResult[i].TotalCair
+				totalPencairanProjAgent += queryResult[i].TotalCairProj
+				totalGagalDroppingAgent += queryResult[i].TotalGagalDropping
 			}
 		}
 		res[idx].Majelis = m
@@ -862,7 +879,7 @@ func GetDataPendingInstallment(currentStage string, branchId uint64, now string)
 }
 
 func GetRawPendingInstallmentData(currentStage string, branchId uint64, now string, isApprove bool) []RawInstallmentData {
-	queryResult := []RawInstallmentData{}
+	var queryResult []RawInstallmentData
 	query := `select g.id as "groupId", a.fullname,g.name,
 				sum(i."paidInstallment") "repayment",
 				sum(i.reserve) "tabungan",
@@ -929,18 +946,30 @@ func GetRawPendingInstallmentData(currentStage string, branchId uint64, now stri
 		query += `and (i."stage" = 'APPROVE' or i."stage" = 'SUCCESS') `
 	}
 	fmt.Println("STAGE", currentStage)
-	if currentStage == "in-review" {
-		fmt.Println("REVIEW")
-		parseNow, _ := time.Parse("2006-01-02", now)
-		yesterday := parseNow.AddDate(0, 0, -1).Format("2006-01-02")
-		query += `and coalesce(i."transactionDate",i."createdAt")::date <= ? and coalesce(i."transactionDate",i."createdAt")::date >= ? `
-		query += `group by g.name, a.fullname, g.id, "totalCair", "totalGagalDropping" order by a.fullname`
-		services.DBCPsql.Raw(query, now, now, now, now, branchId, now, yesterday).Scan(&queryResult)
-	} else {
-		fmt.Println("NOR REVIEW")
-		query += `and coalesce(i."transactionDate",i."createdAt")::date = ? `
-		query += `group by g.name, a.fullname, g.id, "totalCair", "totalGagalDropping" order by a.fullname`
-		services.DBCPsql.Raw(query, now, now, now, now, branchId, now).Scan(&queryResult)
-	}
+
+	/*
+		// - Commented by: Didi Yudha Perwira
+		// - reasons: because of changing requirement, when user access in-review installment page,
+		// - system will show current date data as default
+
+		if strings.ToUpper(currentStage) == "IN-REVIEW" {
+			fmt.Println("REVIEW")
+			// parseNow, _ := time.Parse("2006-01-02", now)
+			// yesterday := parseNow.AddDate(0, 0, -1).Format("2006-01-02")
+			// query += `and coalesce(i."transactionDate",i."createdAt")::date <= ? and coalesce(i."transactionDate",i."createdAt")::date >= ? `
+			query += ` and coalesce(i."transactionDate",i."createdAt")::date = ? `
+			query += ` group by g.name, a.fullname, g.id, "totalCair", "totalGagalDropping" order by a.fullname `
+			services.DBCPsql.Raw(query, now, now, now, now, branchId, now).Scan(&queryResult)
+		} else {
+			fmt.Println("NOR REVIEW")
+			query += `and coalesce(i."transactionDate",i."createdAt")::date = ? `
+			query += `group by g.name, a.fullname, g.id, "totalCair", "totalGagalDropping" order by a.fullname`
+			services.DBCPsql.Raw(query, now, now, now, now, branchId, now).Scan(&queryResult)
+		}
+	*/
+
+	query += ` group by g.name, a.fullname, g.id, "totalCair", "totalGagalDropping" order by a.fullname `
+	services.DBCPsql.Raw(query, now, now, now, now, branchId, now).Scan(&queryResult)
+	fmt.Println(queryResult)
 	return queryResult
 }
