@@ -951,7 +951,7 @@ func GetRawPendingInstallmentData(currentStage string, branchId uint64, now stri
 				) foo on foo."agentId" = a.id and foo."groupId" = g.id
 			where l."deletedAt" is null
 			and i."deletedAt" is null and
-			b.id= ? and 
+			b.id= ? and i."createdAt"::date='2017-10-12' and
 			( UPPER(l.stage) = 'INSTALLMENT' OR UPPER(l.stage) = 'END' OR UPPER(l.stage) = 'END EARLY' OR UPPER(l.stage) = 'END-EARLY' OR UPPER(l.stage) = 'END-PENDING') `
 	if isApprove {
 		query += `and (i."stage" = 'APPROVE' or i."stage" = 'SUCCESS') `
@@ -980,7 +980,7 @@ func GetRawPendingInstallmentData(currentStage string, branchId uint64, now stri
 	*/
 
 	query += ` group by g.name, a.fullname, g.id, "totalCair", "totalGagalDropping" order by a.fullname `
-	services.DBCPsql.Raw(query, now, now, now, now, branchId, now).Scan(&queryResult)
+	services.DBCPsql.Raw(query, now, now, now, now, branchId).Scan(&queryResult)
 	fmt.Println(queryResult)
 	return queryResult
 }
