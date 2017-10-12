@@ -39,7 +39,7 @@ func FindByKey(key string) (SystemParameter, error) {
 }
 
 // IsAllowedBackdate - Check if whether allow backdate or not
-func IsAllowedBackdate(dateParam string) bool {
+func IsAllowedBackdate() bool {
 	systemParams, _ := FindByKey(keyBackdate)
 	/*
 		date, _ := misUtility.StringToDate(dateParam)

@@ -42,7 +42,7 @@ func GetDataValidationTeller(ctx *iris.Context) {
 	}
 	log.Println("[INFO] Validation get data installment pass")
 
-	if !SystemParameter.IsAllowedBackdate(dateParam) {
+	if !SystemParameter.IsAllowedBackdate() {
 		log.Println("#ERROR: Not Allowed back date")
 		ctx.JSON(405, iris.Map{
 			"message":      "Not Allowed",

@@ -775,15 +775,29 @@ func GetPendingInstallmentNew(ctx *iris.Context) {
 	fmt.Println(date)
 	fmt.Println(now)
 	fmt.Println(yesterday)
-	if (!systemParameter.IsAllowedBackdate(dateParam) && date.Before(now)) ||
-		date.Before(yesterday) {
-		log.Println("#ERROR: Not Allowed back date")
-		ctx.JSON(405, iris.Map{
-			"message":      "Not Allowed",
-			"errorMessage": "View back date is not allowed",
-		})
-		return
+
+	if strings.ToUpper(stage) == "IN-REVIEW" && date.Before(yesterday) {
+		if !systemParameter.IsAllowedBackdate() && date.Before(now) {
+			log.Println("#ERROR: Not Allowed back date")
+			ctx.JSON(405, iris.Map{
+				"message":      "Not Allowed",
+				"errorMessage": "View back date is not allowed",
+			})
+			return
+		}
 	}
+
+	if strings.ToUpper(stage) != "IN-REVIEW" {
+		if !systemParameter.IsAllowedBackdate() && date.Before(now) {
+			log.Println("#ERROR: Not Allowed back date")
+			ctx.JSON(405, iris.Map{
+				"message":      "Not Allowed",
+				"errorMessage": "View back date is not allowed",
+			})
+			return
+		}
+	}
+
 	res := GetDataPendingInstallment(stage, branchID, dateParam)
 	notes, err := services.GetNotes(services.ConstructNotesGroupId(branchID, dateParam))
 	log.Println("Notes: ", notes)
