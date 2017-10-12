@@ -14,6 +14,8 @@ import (
 	SystemParameter "bitbucket.org/go-mis/modules/system-parameter"
 	MISUtility "bitbucket.org/go-mis/modules/utility"
 	"bitbucket.org/go-mis/services"
+	"time"
+	"net/http"
 )
 
 const (
@@ -42,7 +44,19 @@ func GetDataValidationTeller(ctx *iris.Context) {
 	}
 	log.Println("[INFO] Validation get data installment pass")
 
-	if !SystemParameter.IsAllowedBackdate() {
+	date, err := MISUtility.StringToDate(dateParam)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, iris.Map{
+			"message":      "Bad Request",
+			"errorMessage": "Invalid date",
+		})
+		return
+	}
+
+	t := time.Now()
+	now := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
+
+	if !SystemParameter.IsAllowedBackdate() && date.Before(now) {
 		log.Println("#ERROR: Not Allowed back date")
 		ctx.JSON(405, iris.Map{
 			"message":      "Not Allowed",

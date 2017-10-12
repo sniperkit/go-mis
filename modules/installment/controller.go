@@ -772,9 +772,6 @@ func GetPendingInstallmentNew(ctx *iris.Context) {
 	t := time.Now()
 	now := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
 	yesterday := now.Add(-24 * time.Hour)
-	fmt.Println(date)
-	fmt.Println(now)
-	fmt.Println(yesterday)
 
 	if strings.ToUpper(stage) == "IN-REVIEW" && date.Before(yesterday) {
 		if !systemParameter.IsAllowedBackdate() && date.Before(now) {
