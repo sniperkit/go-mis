@@ -70,7 +70,8 @@ func FetchDatatables(ctx *iris.Context) {
 					cif."declinedDate",
 					cif."username",
 					cif."activationDate",
-					cif."declinedDate"
+					cif."declinedDate",
+					count(*) OVER() AS full_count
 				FROM investor 
 					LEFT JOIN r_investor_virtual_account ON r_investor_virtual_account."investorId" = investor.id 
 					LEFT JOIN virtual_account ON virtual_account.id = r_investor_virtual_account."vaId" 
@@ -152,10 +153,12 @@ func FetchDatatables(ctx *iris.Context) {
 		}
 	}
 
+	totalRows := investors[0].RowsFullCount
+
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"status":    "success",
 		"data":      investors,
-		"totalRows": len(investors),
+		"totalRows": totalRows,
 	})
 }
 

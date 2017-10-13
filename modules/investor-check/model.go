@@ -26,6 +26,7 @@ type (
 		IsDeclined             *bool      `gorm:"column:isDeclined" json:"isDeclined"`
 		Status                 string     `json:"status"`
 		Username               string     `gorm:"column:username" json:"email"`
+		RowsFullCount          int        `gorm:"column:full_count"`
 	}
 
 	InvestorNumber struct {
