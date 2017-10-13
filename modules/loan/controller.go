@@ -243,6 +243,14 @@ func executeUpdateStage(id uint64, stage string) (string, error) {
 		services.DBCPsql.Table("r_investor_product_pricing_loan").Where(" \"loanId\" = ?", loanData.ID).Update("updatedAt", time.Now())
 		// services.DBCPsql.Table("r_investor_product_pricing_loan").Where(" \"loanId\" = ?", loanData.ID).Update("deletedAt", time.Now())
 	}
+	
+	// reset product pricing to retail 
+	// if stageTo is `PRIVATE` or `MARKETPLACE`
+	if stage == `PRIVATE` || stage == `MARKETPLACE` {
+		productPricingSchema := productPricing.ProductPricing{}
+		services.DBCPsql.Table(`product_pricing`).Where(`"isInstitutional" = false AND current_timestamp BETWEEN "startDate" AND "endDate"`).Scan(&productPricingSchema)
+		services.DBCPsql.Table("r_investor_product_pricing_loan").Where(" \"loanId\" = ?", loanData.ID).Update("productPricingId", productPricingSchema.ID)
+	}
 
 	return loanData.Stage, nil
 }
