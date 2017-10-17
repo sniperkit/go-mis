@@ -24,6 +24,7 @@ type totalData struct {
 // FetchDatatables -  fetch data based on parameters sent by datatables
 func FetchDatatables(ctx *iris.Context) {
 	var dtTables DataTable
+	var totalRows int
 	investors := []InvestorCheck{}
 	limit := ctx.URLParam("limit")
 	page := ctx.URLParam("page")
@@ -31,7 +32,6 @@ func FetchDatatables(ctx *iris.Context) {
 
 	// Get object data tables from url
 	dtTables = ParseDatatableURI(string(ctx.URI().FullURI()))
-
 	search := dtTables.Search.Value
 	orderBy := "NAME"
 	orderDir := "ASC"
@@ -40,14 +40,6 @@ func FetchDatatables(ctx *iris.Context) {
 		orderBy = dtTables.Columns[dtTables.OrderInfo[0].Column].Data
 		orderDir = dtTables.OrderInfo[0].Dir
 	}
-
-	fmt.Println("Search: ", search)
-	fmt.Println("OrderBy: ", orderBy)
-	fmt.Println("OrderDir: ", orderDir)
-	fmt.Println("FilterBy: ", filterBy)
-	fmt.Println("Limit: ", limit)
-	fmt.Println("Page: ", page)
-
 	query := ` SELECT cif.id, cif."name", 
 					cif."phoneNo", 
 					cif."idCardNo", 
@@ -92,21 +84,17 @@ func FetchDatatables(ctx *iris.Context) {
 			query += ` AND cif."isActivated" = TRUE `
 		}
 	}
-
 	if search != "" {
 		query += ` AND (cif.name ILIKE '%` + search + `%' OR investor."investorNo"::text ILIKE '%` + search + `%' OR cif."idCardNo" ILIKE '%` + search + `%' OR  
 					cif."taxCardNo" ILIKE '%` + search + `' OR cif."username" ILIKE '%` + search + `%') `
 	}
-
 	if search != "" {
 		query += "AND cif.name ~* '" + ctx.URLParam("search") + "' "
 	}
-
 	groupedBy := ` group by cif."id", cif."name", cif."phoneNo", cif."idCardNo", "bankAccountName", cif."taxCardNo",
 	cif."idCardNo", cif."taxCardNo", cif."idCardFilename", cif."taxCardFilename", cif."isValidated",
 	investor."investorNo", investor."createdAt" `
 	query += groupedBy
-
 	if len(strings.TrimSpace(orderBy)) > 0 && len(strings.TrimSpace(orderDir)) > 0 {
 		switch strings.ToUpper(orderBy) {
 		case "INVESTORNO":
@@ -126,35 +114,29 @@ func FetchDatatables(ctx *iris.Context) {
 		default:
 			query += ` ORDER BY cif."name" ASC`
 		}
-
 	}
-
 	if len(strings.TrimSpace(limit)) == 0 {
 		query += ` LIMIT 10 `
 	} else {
 		query += ` LIMIT ` + limit
 	}
-
 	if len(strings.TrimSpace(page)) == 0 {
 		query += ` OFFSET 0 `
 	} else {
 		query += ` OFFSET ` + page
 	}
-
 	services.DBCPsql.Raw(query).Scan(&investors)
-
-	for idx, val := range investors {
-		declined := val.IsDeclined
-
-		if declined != nil && *declined {
+	for idx := range investors {
+		declined := investors[idx].IsDeclined
+		if declined != nil && *investors[idx].IsDeclined {
 			investors[idx].Status = "declined"
 		} else {
 			investors[idx].Status = "activated"
 		}
 	}
-
-	totalRows := investors[0].RowsFullCount
-
+	if len(investors) > 0 {
+		totalRows = investors[0].RowsFullCount
+	}
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"status":    "success",
 		"data":      investors,
