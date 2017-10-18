@@ -13,6 +13,7 @@ import (
 	"bitbucket.org/go-mis/services"
 	"github.com/jinzhu/gorm"
 	"gopkg.in/kataras/iris.v4"
+	"bitbucket.org/go-mis/modules/email"
 )
 
 func Init() {
@@ -162,10 +163,21 @@ func AcceptLoanOrder(ctx *iris.Context) {
 	}
 
 	db.Commit()
-	/**
-		-TODO
-		- Send email and sms to investor
-	**/
+
+	investorDetail :=InvestorDetail{}
+
+	queryDetailInvestor := `	select r_investor_product_pricing_loan."investorId",cif."username",cif.name from loan_order
+	join r_loan_order on r_loan_order."loanOrderId"=loan_order.id
+	join r_investor_product_pricing_loan on r_investor_product_pricing_loan."loanId"=r_loan_order."loanId"
+	join r_cif_investor on r_cif_investor."investorId"=r_investor_product_pricing_loan."investorId"
+	join cif on cif.id=r_cif_investor."cifId"
+	where loan_order."orderNo"=?`
+	services.DBCPsql.Raw(queryDetailInvestor,orderNo).Scan(&investorDetail)
+	//go email.SendEmailIInvestmentSuccess(investorDetail.Name,investorDetail.Username,orderNo,investorDetail.InvestorId)
+	go email.SendEmailIInvestmentSuccess(investorDetail.Name,"bakti.pratama@amartha.com",orderNo,investorDetail.InvestorId)
+	//go services.SendSMS(investorDetail.PhoneNo,"<Amartha> Selamat investasi anda berhasil dengan nomor order "+orderNo)
+	go services.SendSMS("08992548716","<Amartha> Selamat investasi anda berhasil dengan nomor order "+orderNo)
+
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"status": "success",
 		"data":   "",
