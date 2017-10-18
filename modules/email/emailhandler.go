@@ -3,9 +3,11 @@ package email
 import (
 	"fmt"
 	"time"
+
 	"bitbucket.org/go-mis/services"
 	humanize "github.com/dustin/go-humanize"
 )
+
 type ClientInvestor struct {
 	ID               uint64    `json:"id" gorm:"column:id"`
 	CreditScoreGrade string    `json:"creditScoreGrade" gorm:"column:creditScoreGrade"`
@@ -73,8 +75,8 @@ func GetClientInvestor(InvestorID uint64, OrderNo string, Stage string) ([]Clien
 	return clientInvestors, resultsEmails, total
 }
 
-func SendEmailIInvestmentSuccess(name string,toEmail string, OrderNo string, investorId uint64) {
-	fmt.Println("#Email send investment success",toEmail)
+func SendEmailIInvestmentSuccess(name string, toEmail string, OrderNo string, investorId uint64) {
+	fmt.Println("#Email send investment success", toEmail)
 	_, clientInvestorsEmail, total := GetClientInvestor(investorId, OrderNo, "INVESTOR")
 
 	subs := map[string]interface{}{
@@ -125,6 +127,7 @@ func SendEmailVerificationFailed(email string, name string, reasons []string) {
 	mandrill.SetTo(email)
 	mandrill.SetSubject("[Amartha] Verifikasi Data Anda Gagal ")
 	mandrill.SetTemplateAndRawBody("decline_v1", subs)
+	mandrill.SetBucket(true)
 	mandrill.SendEmail()
 }
 

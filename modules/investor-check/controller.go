@@ -36,10 +36,14 @@ func FetchDatatables(ctx *iris.Context) {
 	orderBy := "NAME"
 	orderDir := "ASC"
 
+	fmt.Println("Search keyword: ", search)
+
 	if len(dtTables.Columns) > 0 && len(dtTables.OrderInfo) > 0 {
 		orderBy = dtTables.Columns[dtTables.OrderInfo[0].Column].Data
 		orderDir = dtTables.OrderInfo[0].Dir
 	}
+	fmt.Println("Orderby: ", orderBy)
+	fmt.Println("Orderdir: ", orderDir)
 	query := ` SELECT cif.id, cif."name", 
 					cif."phoneNo", 
 					cif."idCardNo", 
@@ -84,13 +88,14 @@ func FetchDatatables(ctx *iris.Context) {
 			query += ` AND cif."isActivated" = TRUE `
 		}
 	}
-	if search != "" {
-		query += ` AND (cif.name ILIKE '%` + search + `%' OR investor."investorNo"::text ILIKE '%` + search + `%' OR cif."idCardNo" ILIKE '%` + search + `%' OR  
-					cif."taxCardNo" ILIKE '%` + search + `' OR cif."username" ILIKE '%` + search + `%') `
+
+	if len(strings.TrimSpace(search)) > 0 {
+		query += ` AND (cif.name ~* '` + search + `' OR investor."investorNo"::text ~* '` + search + `' OR cif."idCardNo" ~* '` + search + `' OR  
+					cif."taxCardNo" ~* '` + search + `' OR cif."username"  ~* '` + search + `') `
+	} else {
+		query += "AND cif.name ~* '" + search + "' "
 	}
-	if search != "" {
-		query += "AND cif.name ~* '" + ctx.URLParam("search") + "' "
-	}
+
 	groupedBy := ` group by cif."id", cif."name", cif."phoneNo", cif."idCardNo", "bankAccountName", cif."taxCardNo",
 	cif."idCardNo", cif."taxCardNo", cif."idCardFilename", cif."taxCardFilename", cif."isValidated",
 	investor."investorNo", investor."createdAt" `
@@ -104,17 +109,23 @@ func FetchDatatables(ctx *iris.Context) {
 		case "IDCARDNO":
 			query += ` ORDER BY cif."idCardNo" ` + orderDir
 		case "EMAIL":
-			query += `ORDER BY cif.username ` + orderDir
+			query += ` ORDER BY cif.username ` + orderDir
 		case "ACTIVATIONDATE":
-			query += `ORDER BY cif."activationDate" ` + orderDir
-		case "DECLINEDATE":
-			query += `ORDER BY cif."declinedDate" ` + orderDir
-		case "REGISTRATIONDATE":
-			query += `ORDER BY investor."createdAt" ` + orderDir
+			query += ` ORDER BY cif."activationDate" ` + orderDir
+		case "DECLINEDDATE":
+			query += ` ORDER BY cif."declinedDate" ` + orderDir
 		case "STATUS":
-			query += `ORDER BY ( CASE WHEN cif."isDeclined" THEN 2 ELSE 1 END ) ` + orderDir
+			query += ` ORDER BY ( 
+							CASE
+								 WHEN cif."isDeclined" THEN 1 
+								 WHEN NOT cif."isDeclined" THEN 2
+								 ELSE 3
+							END 
+						) ` + orderDir
+		case "CREATEDAT":
+			query += ` ORDER BY investor."createdAt" ` + orderDir
 		default:
-			query += ` ORDER BY cif."name" ASC`
+			query += ` ORDER BY cif."name" ASC `
 		}
 	}
 	if len(strings.TrimSpace(limit)) == 0 {

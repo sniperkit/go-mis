@@ -2,6 +2,7 @@ package email
 
 import (
 	"fmt"
+	"log"
 
 	"bitbucket.org/go-mis/config"
 
@@ -61,6 +62,7 @@ func (m *Mandrill) SetTemplateAndRawBody(template string, raw map[string]interfa
 
 // SendEmail - send Notif
 func (m Mandrill) SendEmail() {
+	log.Println("node uploader link: ", config.UploaderApiPath+"/email/send/mandrill")
 	m.emailParam.SecretKey = "n0de-U>lo4d3r"
 	request := gorequest.New()
 	_, body, _ := request.Post(config.UploaderApiPath + "/email/send/mandrill").
