@@ -111,6 +111,8 @@ func FetchDatatables(ctx *iris.Context) {
 			query += `ORDER BY cif."declinedDate" ` + orderDir
 		case "REGISTRATIONDATE":
 			query += `ORDER BY investor."createdAt" ` + orderDir
+		case "STATUS":
+			query += `ORDER BY ( CASE WHEN cif."isDeclined" THEN 2 ELSE 1 END ) ` + orderDir
 		default:
 			query += ` ORDER BY cif."name" ASC`
 		}
