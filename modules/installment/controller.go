@@ -199,7 +199,12 @@ func StoreInstallment(db *gorm.DB, installmentId uint64, status string) error {
 		return errors.New("Current installment stage is NEITHER 'TELLER' NOR'PENDING' NOR 'IN-REVIEW' nor 'APPROVE'. System cannot continue to process your request. installmentId=" + convertedInstallmentId)
 	}
 
-	if strings.ToUpper(status) == "REJECT" || strings.ToUpper(status) == "IN-REVIEW" || strings.ToUpper(status) == "APPROVE" || strings.ToUpper(status) == "AGENT" || strings.ToUpper(status) == "TELLER" {
+	if strings.ToUpper(status) == "REJECT" ||
+		strings.ToUpper(status) == "PENDING" ||
+			strings.ToUpper(status) == "IN-REVIEW" ||
+				strings.ToUpper(status) == "APPROVE" ||
+					strings.ToUpper(status) == "AGENT" ||
+						strings.ToUpper(status) == "TELLER" {
 		log.Println("Installment data has been", status, ". Waiting worker. installmentId=", convertedInstallmentId)
 		UpdateStageInstallmentApproveOrReject(db, installmentId, installmentSchema.Stage, status)
 		return nil
