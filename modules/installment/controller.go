@@ -195,7 +195,12 @@ func StoreInstallment(db *gorm.DB, installmentId uint64, status string) error {
 	installmentSchema := Installment{}
 	db.Table("installment").Where("\"id\" = ?", installmentId).First(&installmentSchema)
 
-	if installmentSchema.Stage != "TELLER" && installmentSchema.Stage != "AGENT" && installmentSchema.Stage != "PENDING" && installmentSchema.Stage != "IN-REVIEW" && installmentSchema.Stage != "APPROVE" {
+	if installmentSchema.Stage != "TELLER" &&
+		installmentSchema.Stage != "AGENT" &&
+			installmentSchema.Stage != "PENDING" &&
+				installmentSchema.Stage != "IN-REVIEW" &&
+					installmentSchema.Stage != "APPROVE" &&
+						installmentSchema.Stage != "APPROVE-CP"{
 		return errors.New("Current installment stage is NEITHER 'TELLER' NOR'PENDING' NOR 'IN-REVIEW' nor 'APPROVE'. System cannot continue to process your request. installmentId=" + convertedInstallmentId)
 	}
 
@@ -349,7 +354,7 @@ func SubmitInstallmentByGroupIDAndTransactionDateWithStatus(ctx *iris.Context) {
 
 		installmentDetailSchema := []InstallmentDetail{}
 		if strings.ToLower(stageTo) == "success" {
-			query += "WHERE installment.\"stage\" = 'APPROVE' AND installment.\"deletedAt\" is null"
+			query += "WHERE (installment.\"stage\" = 'APPROVE' OR installment.\"stage\" = 'APPROVE-CP') AND installment.\"deletedAt\" is null"
 			services.DBCPsql.Raw(query).Scan(&installmentDetailSchema)
 		} else {
 			query += "WHERE installment.\"createdAt\"::date = ? AND \"group\".\"id\" = ? AND installment.\"stage\" != 'APPROVE' AND installment.\"deletedAt\" is null"
