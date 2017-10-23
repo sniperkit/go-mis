@@ -122,6 +122,7 @@ type RefundBase struct {
 	InvestorID uint64  `gorm:"column:investor_id"`
 	AccountID  uint64  `gorm:"column:account_id"`
 	Plafond    float64 `gorm:"column:plafond"`
+	IsInsurance bool `gorm:"column:isInsurance"`
 }
 
 type AccountSum struct {

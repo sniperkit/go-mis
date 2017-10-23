@@ -66,7 +66,7 @@ type Total struct {
   TotalFrequency uint64 `gorm:"column:totalFrequency"`
 }
 
-const refundRate float64 = 0.75
+const RefundRate float64 = 0.75
 
 func ApplyRefund (ctx *iris.Context) {
   loanID := ctx.Param("loan_id")
@@ -83,7 +83,7 @@ func ApplyRefund (ctx *iris.Context) {
   
   if totalSchema.TotalFrequency < tenor {
     totalFrequencyRefund := tenor - totalSchema.TotalFrequency
-    totalRefund := (installment * float64(totalFrequencyRefund)) * refundRate
+    totalRefund := (installment * float64(totalFrequencyRefund)) * RefundRate
     
     accountSchema := account.Account{}
     queryGetAccountInvestor := `SELECT * FROM account JOIN r_account_investor rai ON rai."accountId" = account.id JOIN r_investor_product_pricing_loan rippl on rippl."investorId" = rai."investorId" WHERE rippl."loanId" = ?`

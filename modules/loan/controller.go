@@ -467,7 +467,7 @@ func RefundAndChangeStageTo(ctx *iris.Context) {
 	// get loan_id, investor_id, account_id, plafond
 	refundBase := RefundBase{}
 	// ref: refund-base.sql
-	queryRefundBase := "SELECT loan.id AS loan_id, investor.id AS investor_id, account.id AS account_id, loan.plafond "
+	queryRefundBase := `SELECT loan.id AS loan_id, loan."isInsurance", investor.id AS investor_id, account.id AS account_id, loan.plafond `
 	queryRefundBase += "FROM loan "
 	queryRefundBase += "JOIN r_investor_product_pricing_loan ON r_investor_product_pricing_loan.\"loanId\" = loan.id "
 	queryRefundBase += "JOIN investor ON investor.id = r_investor_product_pricing_loan.\"investorId\" "
@@ -498,6 +498,35 @@ func RefundAndChangeStageTo(ctx *iris.Context) {
 		AccountTransactionDebitId: transaction.ID,
 	}
 	services.DBCPsql.Table("r_account_transaction_debit").Create(&rTransaction)
+	
+	// Check whether loan included insurance or NOT
+	// if yes, then refund the amount based on plafond * insurance-rate 
+	// insurance-rate = 1.5% = 0.015
+	if refundBase.IsInsurance {
+		insuranceRate := 0.015
+		
+		transactionInsurance := accountTransactionDebit.AccountTransactionDebit{
+			Type:            "REFUND-INSURANCE",
+			TransactionDate: time.Now(),
+			Amount:          refundBase.Plafond * insuranceRate,
+			Remark:          "Refund insurance",
+		}
+		services.DBCPsql.Table("account_transaction_debit").Create(&transactionInsurance)
+	
+		// add new account_transaction_debit_loan entry
+		transactionLoanInsurance := accountTransactionDebit.AccountTransactionDebitLoan{
+			AccountTransactionDebitID: transactionInsurance.ID,
+			LoanID: refundBase.LoanID,
+		}
+		services.DBCPsql.Table("r_account_transaction_debit_loan").Create(&transactionLoanInsurance)
+	
+		// connect the entry to investor account
+		rTransactionInsurance := r.RAccountTransactionDebit{
+			AccountId:                 refundBase.AccountID,
+			AccountTransactionDebitId: transactionInsurance.ID,
+		}
+		services.DBCPsql.Table("r_account_transaction_debit").Create(&rTransactionInsurance)
+	}
 
 	// calculate account balance and save it to account
 	queryTotalDebit := "SELECT SUM(account_transaction_debit.amount) "
