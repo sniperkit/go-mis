@@ -15,7 +15,7 @@ func SendEmailVerificationSuccess(email string, name string, va_bca string, va_b
 	mandrill.SetTo(email)
 	mandrill.SetBcc("investing@amartha.com")
 	mandrill.SetSubject("[Amartha] Selamat Data Anda Sudah Terverifikasi ")
-	mandrill.SetTemplateAndRawBody("verification_success", subs)
+	mandrill.SetTemplateAndRawBody("verification_success_v2", subs)
 	mandrill.SendEmail()
 
 }

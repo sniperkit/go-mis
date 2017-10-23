@@ -3,19 +3,23 @@ package installment
 import (
 	"errors"
 	"fmt"
+	"log"
+	"net/http"
 	"strconv"
 	"strings"
 	"time"
 
 	"bitbucket.org/go-mis/modules/account"
-	accountTransactionCredit "bitbucket.org/go-mis/modules/account-transaction-credit"
-	accountTransactionDebit "bitbucket.org/go-mis/modules/account-transaction-debit"
-	installmentHistory "bitbucket.org/go-mis/modules/installment-history"
-	loanHistory "bitbucket.org/go-mis/modules/loan-history"
+	"bitbucket.org/go-mis/modules/account-transaction-credit"
+	"bitbucket.org/go-mis/modules/account-transaction-debit"
+	"bitbucket.org/go-mis/modules/installment-history"
+	"bitbucket.org/go-mis/modules/loan-history"
 	"bitbucket.org/go-mis/modules/r"
+	"bitbucket.org/go-mis/modules/system-parameter"
+	MISUtility "bitbucket.org/go-mis/modules/utility"
 	"bitbucket.org/go-mis/services"
 	"github.com/jinzhu/gorm"
-	iris "gopkg.in/kataras/iris.v4"
+	"gopkg.in/kataras/iris.v4"
 )
 
 func Init() {
@@ -85,130 +89,132 @@ func GetInstallmentByGroupIDAndTransactionDate(ctx *iris.Context) {
 	groupID := ctx.Param("group_id")
 	stage := ctx.Param("stage")
 	transactionDate := ctx.Param("transaction_date")
-
-	query := `
-		SELECT 
-		"group".id as "groupId", 
-		"group".name as "groupName",
-		cif.name as "cifName",
-		borrower."borrowerNo",
-		loan.id "loanId",
-		installment."id" as "installmentId", 
-		installment.type, 
-		installment."paidInstallment", 
-		installment.penalty, 
-		installment.reserve, 
-		installment.presence, 
-		installment.frequency, 
-		installment.stage 
-
-		FROM installment 
-
-		JOIN r_loan_installment ON installment.id = r_loan_installment."installmentId"
-		JOIN loan               ON loan.id        = r_loan_installment."loanId"
-		JOIN r_loan_branch      ON loan.id        = r_loan_branch."loanId"
-		JOIN r_loan_group       ON loan.id        = r_loan_group."loanId"
-		JOIN "group"            ON "group".id     = r_loan_group."groupId"
-		JOIN r_loan_borrower    ON loan.id        = r_loan_borrower."loanId"
-		JOIN borrower           ON borrower.id    = r_loan_borrower."borrowerId"
-		JOIN r_cif_borrower     ON borrower.id    = r_cif_borrower."borrowerId"
-		JOIN cif                ON cif.id         = r_cif_borrower."cifId"
-
-		WHERE 
-
-		installment."createdAt"::date = ? 
-		AND r_loan_group."groupId" = ? 
-		AND r_loan_branch."branchId" = ?
-		AND installment."deletedAt" IS NULL
-		AND installment.stage=?
-	`
-
-	installmentDetailSchema := []InstallmentDetail{}
-	err := services.DBCPsql.Raw(query, transactionDate, groupID, branchID,stage).Scan(&installmentDetailSchema).Error
+	installmentDetails, err := FindInstallmentByGroupIDAndTransactionDate(branchID, groupID, stage, transactionDate)
 	if err != nil {
-		ctx.JSON(iris.StatusInternalServerError, iris.Map{"data": err})
+		ctx.JSON(iris.StatusInternalServerError, iris.Map{"data": err.Error()})
 		return
 	}
-
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"status": "success",
-		"data":   installmentDetailSchema,
+		"data":   installmentDetails,
 	})
 }
 
-type LoanInvestorAccountID struct {
-	LoanID     uint64  `gorm:"column:loanId" json:"loanId"`
-	InvestorID uint64  `gorm:"column:investorId" json:"investorId"`
-	AccountID  uint64  `gorm:"column:accountId" json:"accountId"`
-	PPLROI     float64 `gorm:"column:pplROI" json:"pplROI"`
+func FindInstallmentByGroupIDAndTransactionDate(branchID interface{}, groupID, stage, transactionDate string) ([]InstallmentDetail, error) {
+	var installmentDetails []InstallmentDetail
+	if branchID == nil {
+		return installmentDetails, errors.New("Branch ID can not be empty")
+	}
+	if len(strings.Trim(groupID, " ")) == 0 {
+		return installmentDetails, errors.New("Group ID can not be empty")
+	}
+	if len(strings.Trim(stage, " ")) == 0 {
+		return installmentDetails, errors.New("Stage can not be empty")
+	}
+	if len(strings.Trim(transactionDate, " ")) == 0 {
+		return installmentDetails, errors.New("Transaction date can not be empty")
+	}
+	_, err := MISUtility.StringToDate(transactionDate)
+	if err != nil {
+		return installmentDetails, errors.New("Invalid transaction date")
+	}
+	query := `select g.name,cif.name as "borrowerName", 
+				sum(i."paidInstallment") "repayment",sum(i.reserve) "tabungan",
+				sum(i."paidInstallment"+i.reserve) "total",
+				bow.id as "borrowerId",
+				i.id as "installmentId",
+				i.type,          
+				i."paidInstallment", 
+				i.penalty,       
+				i.reserve, 
+				i.presence, 
+				i.frequency, 
+				i.stage, 
+				i.cash_on_hand_note as "cashOnHandNote",
+				i.cash_on_reserve_note as "cashOnReserveNote",
+				sum(i.cash_on_hand) "cashOnHand",
+				sum(i.cash_on_reserve) "cashOnReserve",
+				coalesce(sum(
+					case
+					when frequency >= 3 then l.installment+((plafond/tenor)*(frequency-1))
+					when frequency >0 then l.installment*frequency
+					when frequency = 0 then 0
+					end
+					),0) "projectionRepayment",
+					coalesce(sum(
+					case
+					when plafond < 0 then 0
+					when plafond <= 3000000 then 3000
+					when plafond > 3000000 and plafond <= 5000000 then 4000
+					when plafond > 5000000 and plafond <= 7000000 then 5000
+					when plafond > 7000000 and plafond <= 9000000 then 6000
+					when plafond > 9000000 and plafond <= 11000000 then 7000
+					else 8000
+					end
+				),0) "projectionTabungan",
+				coalesce(sum(case
+					when d.stage = 'SUCCESS' then plafond end
+				),0) "totalCair",
+				coalesce(sum(case
+					when d.stage = 'FAILED' then plafond end
+				),0) "totalGagalDropping",
+				split_part(string_agg(i.stage,'| '),'|',1) "status"
+			from loan l join r_loan_group rlg on l.id = rlg."loanId"
+				join r_loan_borrower bow on bow."loanId"=l.id
+				join r_cif_borrower rcif using("borrowerId") 
+				join cif on cif.id = rcif."cifId"
+				join "group" g on g.id = rlg."groupId"
+				join r_group_agent rga on g.id = rga."groupId"
+				join agent a on a.id = rga."agentId"
+				join r_loan_branch rlb on rlb."loanId" = l.id
+				join branch b on b.id = rlb."branchId"
+				join r_loan_installment rli on rli."loanId" = l.id
+				join installment i on i.id = rli."installmentId"
+				join r_loan_disbursement rld on rld."loanId" = l.id
+				join disbursement d on d.id = rld."disbursementId"
+			where
+			`
+
+	fmt.Println("NOR REVIEW")
+	query += `l."deletedAt" isnull and b.id= ? and coalesce(i."transactionDate",i."createdAt")::date = ? `
+	query += `and l.stage = 'INSTALLMENT' and i.stage= ? and g.id=? and i."deletedAt" is null
+			group by l.id, i.id, bow.id, g.name, cif.name,i.type,i."paidInstallment", i.penalty, i.reserve,
+			i.presence, i.frequency, i.stage, i.cash_on_hand, i.cash_on_reserve`
+	err = services.DBCPsql.Raw(query, branchID, transactionDate, stage, groupID).Scan(&installmentDetails).Error
+
+	if err != nil {
+		log.Println("#ERROR: ", err)
+		return installmentDetails, errors.New("Unable to retrieve Installment Detail data from DB")
+	}
+	return installmentDetails, nil
 }
 
-type AccountTransactionDebitAndCredit struct {
-	TotalDebit  float64 `gorm:"column:totalDebit" json:"totalDebit"`
-	TotalCredit float64 `gorm:"column:totalCredit" json:"totalCredit"`
-}
-
-type LoanSchema struct {
-	ID                   uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
-	LoanPeriod           int64      `gorm:"column:loanPeriod" json:"loanPeriod"`
-	AgreementType        string     `gorm:"column:agreementType" json:"agreementType"`
-	Subgroup             string     `gorm:"column:subgroup" json:"subgrop"`
-	Purpose              string     `gorm:"column:purpose" json:"purpose"`
-	URLPic1              string     `gorm:"column:urlPic1" json:"urlPic1"`
-	URLPic2              string     `gorm:"column:urlPic2" json:"urlPic2"`
-	SubmittedLoanDate    string     `gorm:"column:submittedLoanDate" json:"submittedLoanDate"`
-	SubmittedPlafond     float64    `gorm:"column:submittedPlafond" json:"submittedPlafond"`
-	SubmittedTenor       int64      `gorm:"column:submittedTenor" json:"submittedTenor"`
-	SubmittedInstallment float64    `gorm:"column:submittedInstallment" json:"submittedInstallment"`
-	CreditScoreGrade     string     `gorm:"column:creditScoreGrade" json:"creditScoreGrade"`
-	CreditScoreValue     float64    `gorm:"column:creditScoreValue" json:"creditScoreValue"`
-	Tenor                uint64     `gorm:"column:tenor" json:"tenor"`
-	Rate                 float64    `gorm:"column:rate" json:"rate"`
-	Installment          float64    `gorm:"column:installment" json:"installment"`
-	Plafond              float64    `gorm:"column:plafond" json:"plafond"`
-	GroupReserve         float64    `gorm:"column:groupReserve" json:"groupReserve"`
-	Stage                string     `gorm:"column:stage" json:"stage"`
-	IsLWK                bool       `gorm:"column:isLWK" json:"isLWK" sql:"default:false"`
-	IsUPK                bool       `gorm:"column:isUPK" json:"IsUPK" sql:"default:false"`
-	CreatedAt            time.Time  `gorm:"column:createdAt" json:"createdAt"`
-	UpdatedAt            time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
-	DeletedAt            *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
-}
-
-func StoreInstallment(installmentId uint64, status string) {
+func StoreInstallment(db *gorm.DB, installmentId uint64, status string) error {
 	convertedInstallmentId := strconv.FormatUint(installmentId, 10)
 	fmt.Println("[INFO] Storing installment. installmentID=" + convertedInstallmentId + " status=" + status)
 	installmentSchema := Installment{}
-	services.DBCPsql.Table("installment").Where("\"id\" = ?", installmentId).First(&installmentSchema)
+	db.Table("installment").Where("\"id\" = ?", installmentId).First(&installmentSchema)
 
-	if installmentSchema.Stage != "PENDING" && installmentSchema.Stage != "IN-REVIEW" && installmentSchema.Stage != "APPROVE" {
-		fmt.Println("Current installment stage is NEITHER 'PENDING' NOR 'IN-REVIEW' nor 'APPROVE'. System cannot continue to process your request. installmentId=" + convertedInstallmentId)
-		return
+	if installmentSchema.Stage != "TELLER" && installmentSchema.Stage != "AGENT" && installmentSchema.Stage != "PENDING" && installmentSchema.Stage != "IN-REVIEW" && installmentSchema.Stage != "APPROVE" {
+		return errors.New("Current installment stage is NEITHER 'TELLER' NOR'PENDING' NOR 'IN-REVIEW' nor 'APPROVE'. System cannot continue to process your request. installmentId=" + convertedInstallmentId)
 	}
 
-	if status == "REJECT" {
-		UpdateStageInstallmentApproveOrReject(installmentId, installmentSchema.Stage, status)
-		fmt.Println("Installment data has been rejected. installmentId=" + convertedInstallmentId)
-		return
-	}
-
-	if status == "IN-REVIEW" {
-		UpdateStageInstallmentApproveOrReject(installmentId, installmentSchema.Stage, status)
-		fmt.Println("Installment data will be reviewed. installmentId=" + convertedInstallmentId)
-		return
-	}
-
-	if status == "APPROVE" {
-		UpdateStageInstallmentApproveOrReject(installmentId, installmentSchema.Stage, status)
-		fmt.Println("Installment data has been approved. Waiting worker. installmentId=" + convertedInstallmentId)
-		return
+	if strings.ToUpper(status) == "REJECT" ||
+		strings.ToUpper(status) == "PENDING" ||
+			strings.ToUpper(status) == "IN-REVIEW" ||
+				strings.ToUpper(status) == "APPROVE" ||
+					strings.ToUpper(status) == "AGENT" ||
+						strings.ToUpper(status) == "TELLER" {
+		log.Println("Installment data has been", status, ". Waiting worker. installmentId=", convertedInstallmentId)
+		UpdateStageInstallmentApproveOrReject(db, installmentId, installmentSchema.Stage, status)
+		return nil
 	}
 
 	/*
 	*		UPDATE STATUS TO `PROCESSING`, ONCE THE CALCULATION IS DONE, THEN UPDATE STATUS TO `SUCCESS`
 	 */
 
-	UpdateStageInstallmentApproveOrReject(installmentId, installmentSchema.Stage, "PROCESSING")
+	UpdateStageInstallmentApproveOrReject(db, installmentId, installmentSchema.Stage, "PROCESSING")
 
 	/*
 	*		START CALCULATION PROCESS
@@ -224,19 +230,19 @@ func StoreInstallment(installmentId uint64, status string) {
 	WHERE installment."id" = ?`
 
 	loanInvestorAccountIDSchema := LoanInvestorAccountID{}
-	er := services.DBCPsql.Raw(queryGetAccountInvestor, installmentId).Scan(&loanInvestorAccountIDSchema).Error
+	er := db.Raw(queryGetAccountInvestor, installmentId).Scan(&loanInvestorAccountIDSchema).Error
 	if er != nil {
-		fmt.Println(er)
-		return
+		return er
 	}
 
 	loanSchema := LoanSchema{}
-	services.DBCPsql.Table("loan").Where("id = ?", loanInvestorAccountIDSchema.LoanID).Scan(&loanSchema)
+	db.Table("loan").Where("id = ?", loanInvestorAccountIDSchema.LoanID).Scan(&loanSchema)
 
 	// Recheck paidInstallment and update to END/END EARLY if true
-	if err := UpdateLoanStage(installmentSchema, loanSchema.ID, services.DBCPsql); err != nil {
-		fmt.Printf("Error on Update Loan Stage. Error = %s\n", loanSchema.ID, err.Error())
-		return
+	if err := UpdateLoanStage(installmentSchema, loanSchema.ID, db); err != nil {
+		//DO NOT ROLLBACK
+		fmt.Errorf("Error on Update Loan Stage. Error = %s\n", loanSchema.ID, err.Error())
+		return nil
 	}
 
 	// accountTransactionDebitAmount := frequency * (plafond / tenor) + ((paidInstallment - (frequency * (plafond/tenor))) * pplROI);
@@ -249,19 +255,19 @@ func StoreInstallment(installmentId uint64, status string) {
 	accountTransactionDebitAmount := freq*(plafond/tenor) + ((paidInstallment - (freq * (plafond / tenor))) * pplROI)
 
 	accountTransactionDebitSchema := &accountTransactionDebit.AccountTransactionDebit{Type: "INSTALLMENT", TransactionDate: time.Now(), Amount: accountTransactionDebitAmount}
-	services.DBCPsql.Table("account_transaction_debit").Create(accountTransactionDebitSchema)
+	db.Table("account_transaction_debit").Create(accountTransactionDebitSchema)
 
 	rAccountTransactionDebit := &r.RAccountTransactionDebit{AccountId: loanInvestorAccountIDSchema.AccountID, AccountTransactionDebitId: accountTransactionDebitSchema.ID}
-	services.DBCPsql.Table("r_account_transaction_debit").Create(rAccountTransactionDebit)
+	db.Table("r_account_transaction_debit").Create(rAccountTransactionDebit)
 
 	rAccountTransactionDebitInstallmentData := r.RAccountTransactionDebitInstallment{InstallmentId: installmentId, AccountTransactionDebitId: accountTransactionDebitSchema.ID}
-	services.DBCPsql.Table("r_account_transaction_debit_installment").Create(&rAccountTransactionDebitInstallmentData)
+	db.Table("r_account_transaction_debit_installment").Create(&rAccountTransactionDebitInstallmentData)
 
-	totalDebit := accountTransactionDebit.GetTotalAccountTransactionDebit(loanInvestorAccountIDSchema.AccountID)
-	totalCredit := accountTransactionCredit.GetTotalAccountTransactionCredit(loanInvestorAccountIDSchema.AccountID)
+	totalDebit := accountTransactionDebit.GetTotalAccountTransactionDebitByTransac(db, loanInvestorAccountIDSchema.AccountID)
+	totalCredit := accountTransactionCredit.GetTotalAccountTransactionCreditByTransac(db, loanInvestorAccountIDSchema.AccountID)
 
 	totalBalance := totalDebit - totalCredit
-	services.DBCPsql.Table("account").Where("id = ?", loanInvestorAccountIDSchema.AccountID).Updates(account.Account{TotalDebit: totalDebit, TotalCredit: totalCredit, TotalBalance: totalBalance})
+	db.Table("account").Where("id = ?", loanInvestorAccountIDSchema.AccountID).Updates(account.Account{TotalDebit: totalDebit, TotalCredit: totalCredit, TotalBalance: totalBalance})
 
 	fmt.Println("Calculation process has been done. installmentId=" + convertedInstallmentId)
 
@@ -269,25 +275,34 @@ func StoreInstallment(installmentId uint64, status string) {
 	*		CALCULATION IS DONE, UPDATE INSTALLMENT STATUS FROM `PROCESSING` TO `SUCCESS`
 	 */
 
-	UpdateStageInstallmentApproveOrReject(installmentId, "PROCESSING", status)
+	UpdateStageInstallmentApproveOrReject(db, installmentId, "PROCESSING", status)
+	return nil
 }
 
 // UpdateStageInstallmentApproveOrReject - Update installment stage
-func UpdateStageInstallmentApproveOrReject(installmentId uint64, stageFrom string, status string) {
+func UpdateStageInstallmentApproveOrReject(db *gorm.DB, installmentId uint64, stageFrom string, status string) error {
+	var err error
 	convertedInstallmentID := strconv.FormatUint(installmentId, 10)
 	fmt.Println("Updating status to " + status + ". installmentId=" + convertedInstallmentID)
 
 	installmentHistorySchema := &installmentHistory.InstallmentHistory{StageFrom: stageFrom, StageTo: status}
-	services.DBCPsql.Table("installment_history").Create(installmentHistorySchema)
+	if err = db.Table("installment_history").Create(installmentHistorySchema).Error; err != nil {
+		return err
+	}
 
 	installmentHistoryID := installmentHistorySchema.ID
 
 	rInstallmentHistorySchema := &r.RInstallmentHistory{InstallmentId: installmentId, InstallmentHistoryId: installmentHistoryID}
-	services.DBCPsql.Table("r_installment_history").Create(rInstallmentHistorySchema)
+	if err = db.Table("r_installment_history").Create(rInstallmentHistorySchema).Error; err != nil {
+		return err
+	}
 
-	services.DBCPsql.Table("installment").Where("\"id\" = ?", installmentId).UpdateColumn("stage", status)
+	if err = db.Table("installment").Where("\"id\" = ?", installmentId).UpdateColumn("stage", status).Error; err != nil {
+		return err
+	}
 
 	fmt.Println("Done. Updated status to " + status + ". installmentId=" + convertedInstallmentID)
+	return nil
 }
 
 // SubmitInstallmentByInstallmentIDWithStatus - approve or reject installment by installment_id
@@ -295,7 +310,15 @@ func SubmitInstallmentByInstallmentIDWithStatus(ctx *iris.Context) {
 	installmentID, _ := strconv.ParseUint(ctx.Param("installment_id"), 10, 64)
 	status := strings.ToUpper(ctx.Param("status"))
 
-	go StoreInstallment(installmentID, status)
+	go func() {
+		db := services.DBCPsql.Begin()
+		err := StoreInstallment(db, installmentID, status)
+		if err != nil {
+			ProcessErrorAndRollback(ctx, db, err.Error())
+			return
+		}
+		db.Commit()
+	}()
 
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"status": "success",
@@ -309,12 +332,13 @@ func SubmitInstallmentByInstallmentIDWithStatus(ctx *iris.Context) {
 func SubmitInstallmentByGroupIDAndTransactionDateWithStatus(ctx *iris.Context) {
 	groupID := ctx.Param("group_id")
 	transactionDate := ctx.Param("transaction_date")
-	status := strings.ToUpper(ctx.Param("status"))
-
-	if strings.ToLower(ctx.Param("status")) == "approve" || strings.ToLower(ctx.Param("status")) == "reject" || strings.ToLower(ctx.Param("status")) == "in-review" || strings.ToLower(ctx.Param("status")) == "success" {
+	stageTo := strings.ToUpper(ctx.Param("stageTo"))
+	stageFrom := ctx.Param("stageFrom")
+	fmt.Println(stageFrom, stageTo)
+	if strings.ToLower(stageTo) == "agent" || strings.ToLower(stageTo) == "teller" || strings.ToLower(stageTo) == "pending" || strings.ToLower(stageTo) == "approve" || strings.ToLower(stageTo) == "reject" || strings.ToLower(stageTo) == "in-review" || strings.ToLower(stageTo) == "success" {
 		query := "SELECT "
 		query += "\"group\".\"id\" as \"groupId\", \"group\".\"name\" as \"groupName\","
-		query += "installment.\"id\" as \"installmentId\", installment.\"type\", installment.\"paidInstallment\", installment.\"penalty\", installment.\"reserve\", installment.\"presence\", installment.\"frequency\", installment.\"stage\" "
+		query += "installment.\"id\" as \"installmentId\", installment.\"type\", installment.\"paidInstallment\", installment.\"penalty\", installment.\"reserve\", installment.\"presence\", installment.\"frequency\", installment.\"stage\", branch.\"id\" "
 		query += "FROM installment "
 		query += "JOIN r_loan_installment ON r_loan_installment.\"installmentId\" = installment.\"id\" "
 		query += "JOIN loan ON loan.\"id\" = r_loan_installment.\"loanId\" "
@@ -324,18 +348,44 @@ func SubmitInstallmentByGroupIDAndTransactionDateWithStatus(ctx *iris.Context) {
 		query += "JOIN \"group\" ON \"group\".\"id\" = r_loan_group.\"groupId\" "
 
 		installmentDetailSchema := []InstallmentDetail{}
-		if strings.ToLower(ctx.Param("status")) == "success" {
-			query += "WHERE installment.\"stage\" = 'APPROVE'"
+		if strings.ToLower(stageTo) == "success" {
+			query += "WHERE installment.\"stage\" = 'APPROVE' AND installment.\"deletedAt\" is null"
 			services.DBCPsql.Raw(query).Scan(&installmentDetailSchema)
 		} else {
-			query += "WHERE installment.\"createdAt\"::date = ? AND \"group\".\"id\" = ? AND installment.\"stage\" != 'APPROVE'"
+			query += "WHERE installment.\"createdAt\"::date = ? AND \"group\".\"id\" = ? AND installment.\"stage\" != 'APPROVE' AND installment.\"deletedAt\" is null"
 			services.DBCPsql.Raw(query, transactionDate, groupID).Scan(&installmentDetailSchema)
 		}
 
 		for _, item := range installmentDetailSchema {
+			db := services.DBCPsql.Begin()
 			// go StoreInstallment(item.InstallmentID, status)
-			StoreInstallment(item.InstallmentID, status)
+			err := StoreInstallment(db, item.InstallmentID, stageTo)
+			if err != nil {
+				fmt.Println(err)
+				ProcessErrorAndRollback(ctx, db, err.Error())
+			} else {
+				db.Commit()
+			}
 		}
+
+		// write to go-log
+
+		tempGid, _ := strconv.Atoi(groupID)
+		gid := uint64(tempGid)
+		inst := struct {
+			GroupID     uint64
+			Date        string
+			StageFrom   string
+			StageTo     string
+			Installment []InstallmentDetail
+		}{
+			GroupID:     gid,
+			Date:        transactionDate,
+			StageFrom:   stageFrom,
+			StageTo:     stageTo,
+			Installment: installmentDetailSchema,
+		}
+		_ = services.PostToLog(services.GetLog(gid, inst, stageTo))
 
 		ctx.JSON(iris.StatusOK, iris.Map{
 			"status": "success",
@@ -353,7 +403,6 @@ func SubmitInstallmentByGroupIDAndTransactionDateWithStatus(ctx *iris.Context) {
 	}
 }
 
-//
 func SubmitInstallmentByGroupIDAndTransactionDateWithStatusAndInstallmentId(ctx *iris.Context) {
 	key := ctx.URLParam("ais")
 
@@ -366,7 +415,7 @@ func SubmitInstallmentByGroupIDAndTransactionDateWithStatusAndInstallmentId(ctx 
 		})
 		return
 	}
-
+	db := services.DBCPsql.Begin()
 	query := "SELECT  "
 	query += "\"group\".\"id\" as \"groupId\", \"group\".\"name\" as \"groupName\", "
 	query += "installment.\"id\" as \"installmentId\", installment.\"type\", installment.\"paidInstallment\", installment.\"penalty\", installment.\"reserve\", installment.\"presence\", installment.\"frequency\", installment.\"stage\"  "
@@ -380,13 +429,17 @@ func SubmitInstallmentByGroupIDAndTransactionDateWithStatusAndInstallmentId(ctx 
 	query += "WHERE installment.id = 979763 AND installment.stage = 'APPROVE' "
 
 	installmentDetailSchema := []InstallmentDetail{}
-	services.DBCPsql.Raw(query).Scan(&installmentDetailSchema)
+	db.Raw(query).Scan(&installmentDetailSchema)
 
 	for _, item := range installmentDetailSchema {
 		// go StoreInstallment(item.InstallmentID, status)
-		StoreInstallment(item.InstallmentID, "SUCCESS")
+		err := StoreInstallment(db, item.InstallmentID, "SUCCESS")
+		if err != nil {
+			ProcessErrorAndRollback(ctx, db, err.Error())
+			return
+		}
 	}
-
+	db.Commit()
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"status": "success",
 		"data": iris.Map{
@@ -532,7 +585,7 @@ func UpdateInstallmentByInstallmentID(ctx *iris.Context) {
 type SimpleLoan struct {
 	ID          string  `gorm:"column:id"`
 	Plafond     int32   `gorm:"column:plafond"`
-	Installment float64   `gorm:"column:installment"`
+	Installment float64 `gorm:"column:installment"`
 	Frequency   int32   `gorm:"column:frequency"`
 	Tenor       int32   `gorm:"column:tenor"`
 	Rate        float32 `gorm:"column:rate"`
@@ -627,4 +680,301 @@ func GetStageTo(installment Installment, loan SimpleLoan) (string, error) {
 	}
 
 	return "END-PENDING", errors.New("Calculation End or End Early not match")
+}
+
+// FindByBranchAndDate - Filter Installment by branch and date
+func FindByBranchAndDate(branchID uint64, transactionDate string) ([]Installment, error) {
+	if branchID < 0 {
+		return nil, errors.New("Branch ID can not be empty")
+	}
+	if len(strings.Trim(transactionDate, " ")) == 0 {
+		return nil, errors.New("Transaction date can not be empty")
+	}
+	installemnts := make([]Installment, 0)
+	query := `select installment.id,
+
+					installment.type,
+					installment.presence,
+					installment."paidInstallment",
+					installment.penalty,
+					installment.reserve,
+					installment.frequency,
+					installment.stage,
+					installment."transactionDate",
+					installment."createdAt"
+			FROM installment,
+					r_loan_installment,
+					loan,
+					branch,
+					r_loan_branch
+			WHERE installment.id = r_loan_installment."installmentId" AND
+			loan.id = r_loan_installment."loanId" AND
+			loan.id = r_loan_branch."loanId" AND
+			branch.id = r_loan_branch."branchId" AND
+			installment."deletedAt" is null AND
+			UPPER(installment.stage) = 'TELLER' AND
+			branch.id = ? AND
+			installment."createdAt"::date = ?`
+
+	if err := services.DBCPsql.Raw(query, branchID, transactionDate).Scan(&installemnts).Error; err != nil {
+		log.Println("#ERROR: ", err.Error())
+		return nil, errors.New("Unable to retrieve installments")
+	}
+	return installemnts, nil
+}
+
+func ProcessErrorAndRollback(ctx *iris.Context, db *gorm.DB, message string) {
+	log.Println("#Error", message)
+	db.Rollback()
+	ctx.JSON(iris.StatusInternalServerError, iris.Map{
+		"status":  "error",
+		"message": message,
+	})
+}
+
+// GetPendingInstallmentNew - Get data pending Installment
+// Route: /api/v2/installment-pending/get/:currentStage/:branchId/:date
+func GetPendingInstallmentNew(ctx *iris.Context) {
+	bId := ctx.Param("branchId")
+	intBid, _ := strconv.Atoi(bId)
+	branchID := uint64(intBid)
+	dateParam := ctx.Param("date")
+	stage := ctx.Param("currentStage")
+	// Check branchID, if equal to 0 return error message to client
+	if branchID == 0 {
+		ctx.JSON(iris.StatusOK, iris.Map{
+			"status":       iris.StatusBadRequest,
+			"errorMessage": "Invalid Branch ID",
+		})
+		return
+	}
+	if len(strings.Trim(dateParam, " ")) == 0 {
+		ctx.JSON(iris.StatusOK, iris.Map{
+			"status":       iris.StatusBadRequest,
+			"errorMessage": "Date can not be empty",
+		})
+		return
+	}
+	date, err := MISUtility.StringToDate(dateParam)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, iris.Map{
+			"message":      "Bad Request",
+			"errorMessage": "Invalid date",
+		})
+		return
+	}
+	t := time.Now()
+	now := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
+	yesterday := now.Add(-24 * time.Hour)
+
+	if strings.ToUpper(stage) == "IN-REVIEW" && date.Before(yesterday) {
+		if !systemParameter.IsAllowedBackdate() && date.Before(now) {
+			log.Println("#ERROR: Not Allowed back date")
+			ctx.JSON(405, iris.Map{
+				"message":      "Not Allowed",
+				"errorMessage": "View back date is not allowed",
+			})
+			return
+		}
+	}
+
+	if strings.ToUpper(stage) != "IN-REVIEW" {
+		if !systemParameter.IsAllowedBackdate() && date.Before(now) {
+			log.Println("#ERROR: Not Allowed back date")
+			ctx.JSON(405, iris.Map{
+				"message":      "Not Allowed",
+				"errorMessage": "View back date is not allowed",
+			})
+			return
+		}
+	}
+	fmt.Println(dateParam)
+	res := GetDataPendingInstallment(stage, branchID, dateParam)
+	notes, err := services.GetNotes(services.ConstructNotesGroupId(branchID, dateParam))
+	log.Println("Notes: ", notes)
+	if err == nil && len(notes) > 0 {
+		borrowerNotes := services.GetBorrowerNotes(notes)
+		majelisNotes := services.GetMajelisNotes(notes)
+		res.BorrowerNotes = borrowerNotes
+		res.MajelisNotes = majelisNotes
+	}
+	ctx.JSON(iris.StatusOK, iris.Map{
+		"status": "success",
+		"data":   res,
+	})
+}
+
+func GetDataPendingInstallment(currentStage string, branchId uint64, now string) PendingInstallment {
+	var pendingInstallment PendingInstallment
+	queryResult := GetRawPendingInstallmentData(currentStage, branchId, now, false)
+	res := make([]PendingInstallmentData, 0, len(queryResult))
+	agents := map[string]bool{"": false}
+	for iq := range queryResult {
+		if agents[queryResult[iq].Fullname] == false {
+			agents[queryResult[iq].Fullname] = true
+			res = append(res, PendingInstallmentData{Agent: queryResult[iq].Fullname})
+		}
+	}
+	majelisIDs := make([]MajelisId, len(res))
+	for idx := range res {
+		var totalRepaymentAct float64
+		var totalRepaymentProj float64
+		var totalRepaymentCoh float64
+		var totalTabunganAct float64
+		var totalTabunganProj float64
+		var totalTabunganCoh float64
+		var totalActualAgent float64
+		var totalProjectionAgent float64
+		var totalCohAgent float64
+		var totalPencairanAgent float64
+		var totalPencairanProjAgent float64
+		var totalGagalDroppingAgent float64
+		m := make([]Majelis, 0, len(queryResult))
+		for i := range queryResult {
+			if res[idx].Agent == queryResult[i].Fullname {
+				m = append(m, Majelis{
+					GroupId:             queryResult[i].GroupId,
+					Name:                queryResult[i].Name,
+					Repayment:           queryResult[i].Repayment,
+					Tabungan:            queryResult[i].Tabungan,
+					TotalActual:         queryResult[i].Total,
+					TotalProyeksi:       queryResult[i].ProjectionRepayment + queryResult[i].ProjectionTabungan,
+					TotalCoh:            queryResult[i].CashOnHand + queryResult[i].CashOnReserve,
+					TotalCair:           queryResult[i].TotalCair,
+					TotalCairProj:       queryResult[i].TotalCairProj,
+					TotalGagalDropping:  queryResult[i].TotalGagalDropping,
+					Status:              queryResult[i].Status,
+					CashOnHand:          queryResult[i].CashOnHand,
+					CashOnReserve:       queryResult[i].CashOnReserve,
+					ProjectionRepayment: queryResult[i].ProjectionRepayment,
+					ProjectionTabungan:  queryResult[i].ProjectionTabungan,
+				})
+				majelisIDs = append(majelisIDs, MajelisId{GroupId: queryResult[i].GroupId, Name: queryResult[i].Name})
+				totalRepaymentAct += queryResult[i].Repayment
+				totalRepaymentProj += queryResult[i].ProjectionRepayment
+				totalRepaymentCoh += queryResult[i].CashOnHand
+				totalTabunganAct += queryResult[i].Tabungan
+				totalTabunganProj += queryResult[i].ProjectionTabungan
+				totalTabunganCoh += queryResult[i].CashOnReserve
+				totalActualAgent += queryResult[i].Total
+				totalProjectionAgent += queryResult[i].ProjectionRepayment + queryResult[i].ProjectionTabungan
+				totalCohAgent += queryResult[i].CashOnHand + queryResult[i].CashOnReserve
+				totalPencairanAgent += queryResult[i].TotalCair
+				totalPencairanProjAgent += queryResult[i].TotalCairProj
+				totalGagalDroppingAgent += queryResult[i].TotalGagalDropping
+			}
+		}
+		res[idx].Majelis = m
+		res[idx].TotalActualRepayment = totalRepaymentAct
+		res[idx].TotalProjectionRepayment = totalRepaymentProj
+		res[idx].TotalCohRepayment = totalRepaymentCoh
+		res[idx].TotalActualTabungan = totalTabunganAct
+		res[idx].TotalProjectionTabungan = totalTabunganProj
+		res[idx].TotalCohTabungan = totalTabunganCoh
+		res[idx].TotalActualAgent = totalActualAgent
+		res[idx].TotalProjectionAgent = totalProjectionAgent
+		res[idx].TotalCohAgent = totalCohAgent
+		res[idx].TotalPencairanAgent = totalPencairanAgent
+		res[idx].TotalPencairanProjAgent = totalPencairanProjAgent
+		res[idx].TotalGagalDroppingAgent = totalGagalDroppingAgent
+	}
+	pendingInstallment.ListMajelis = majelisIDs
+	pendingInstallment.PendingInstallmentData = res
+	return pendingInstallment
+}
+
+func GetRawPendingInstallmentData(currentStage string, branchId uint64, now string, isApprove bool) []RawInstallmentData {
+	var queryResult []RawInstallmentData
+	query := `select g.id as "groupId", a.fullname,g.name,
+				sum(i."paidInstallment") "repayment",
+				sum(i.reserve) "tabungan",
+				sum(i."paidInstallment"+i.reserve) "total",
+				sum(i.cash_on_hand) "cashOnHand",
+				sum(i.cash_on_reserve) "cashOnReserve",
+				coalesce(sum(
+				case
+				when frequency >= 3 then l.installment+((plafond/tenor)*(frequency-1))
+				when frequency >0 then l.installment*frequency
+				when frequency = 0 then 0
+				end
+				),0) "projectionRepayment",
+				coalesce(sum(
+				case
+				when plafond < 0 then 0
+				when plafond <= 3000000 then 3000
+				when plafond > 3000000 and plafond <= 5000000 then 4000
+				when plafond > 5000000 and plafond <= 7000000 then 5000
+				when plafond > 7000000 and plafond <= 9000000 then 6000
+				when plafond > 9000000 and plafond <= 11000000 then 7000
+				else 8000
+				end
+				),0) "projectionTabungan",
+				coalesce(sum(case
+				when d."disbursementDate"::date = ? then plafond end
+				),0) "totalCairProj",
+				coalesce("totalCair",0) "totalCair",
+				coalesce("totalGagalDropping",0) "totalGagalDropping",
+				split_part(string_agg(i.stage,'| '),'|',1) "status"
+			from loan l join r_loan_group rlg on l.id = rlg."loanId"
+				join "group" g on g.id = rlg."groupId"
+				join r_group_agent rga on g.id = rga."groupId"
+				join agent a on a.id = rga."agentId"
+				join r_loan_branch rlb on rlb."loanId" = l.id
+				join branch b on b.id = rlb."branchId"
+				join r_loan_installment rli on rli."loanId" = l.id
+				join installment i on i.id = rli."installmentId"
+				join r_loan_disbursement rld on rld."loanId" = l.id
+				join disbursement d on d.id = rld."disbursementId"
+				left join (
+					select agent.id "agentId",r_loan_group."groupId" "groupId",
+					coalesce(sum(case
+					when d.stage = 'SUCCESS' and d."disbursementDate"::date = ? then plafond end
+					),0) "totalCair",
+					coalesce(sum(case
+					when d.stage = 'FAILED'  and d."disbursementDate"::date = ? then plafond end
+					),0) "totalGagalDropping"
+					from disbursement d
+					join r_loan_disbursement on r_loan_disbursement."disbursementId"=d.id
+					join r_loan_group on r_loan_group."loanId"=r_loan_disbursement."loanId"
+					join loan l on l.id = r_loan_group."loanId"
+					join r_group_agent on r_group_agent."groupId"=r_loan_group."groupId"
+					join agent on agent.id = r_group_agent."agentId"
+					where d."disbursementDate"::date = ?
+					group by 1,2,"disbursementDate"::date
+					order by "disbursementDate"::date desc
+				) foo on foo."agentId" = a.id and foo."groupId" = g.id
+			where l."deletedAt" is null
+			and i."deletedAt" is null and
+			b.id= ? and i."createdAt"::date=? and
+			( UPPER(l.stage) = 'INSTALLMENT' OR UPPER(l.stage) = 'END' OR UPPER(l.stage) = 'END EARLY' OR UPPER(l.stage) = 'END-EARLY' OR UPPER(l.stage) = 'END-PENDING') `
+	if isApprove {
+		query += `and (i."stage" = 'APPROVE' or i."stage" = 'SUCCESS') `
+	}
+	fmt.Println("STAGE", currentStage)
+
+	/*
+		// - Commented by: Didi Yudha Perwira
+		// - reasons: because of changing requirement, when user access in-review installment page,
+		// - system will show current date data as default
+
+		if strings.ToUpper(currentStage) == "IN-REVIEW" {
+			fmt.Println("REVIEW")
+			// parseNow, _ := time.Parse("2006-01-02", now)
+			// yesterday := parseNow.AddDate(0, 0, -1).Format("2006-01-02")
+			// query += `and coalesce(i."transactionDate",i."createdAt")::date <= ? and coalesce(i."transactionDate",i."createdAt")::date >= ? `
+			query += ` and coalesce(i."transactionDate",i."createdAt")::date = ? `
+			query += ` group by g.name, a.fullname, g.id, "totalCair", "totalGagalDropping" order by a.fullname `
+			services.DBCPsql.Raw(query, now, now, now, now, branchId, now).Scan(&queryResult)
+		} else {
+			fmt.Println("NOR REVIEW")
+			query += `and coalesce(i."transactionDate",i."createdAt")::date = ? `
+			query += `group by g.name, a.fullname, g.id, "totalCair", "totalGagalDropping" order by a.fullname`
+			services.DBCPsql.Raw(query, now, now, now, now, branchId, now).Scan(&queryResult)
+		}
+	*/
+
+	query += ` group by g.name, a.fullname, g.id, "totalCair", "totalGagalDropping" order by a.fullname `
+	services.DBCPsql.Raw(query, now, now, now, now, branchId, now).Scan(&queryResult)
+	fmt.Println(queryResult)
+	return queryResult
 }

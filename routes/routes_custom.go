@@ -11,6 +11,7 @@ import (
 	"bitbucket.org/go-mis/modules/branch"
 	"bitbucket.org/go-mis/modules/cashout"
 	"bitbucket.org/go-mis/modules/cif"
+	"bitbucket.org/go-mis/modules/data-transfer"
 	"bitbucket.org/go-mis/modules/disbursement"
 	"bitbucket.org/go-mis/modules/disbursement-report"
 	"bitbucket.org/go-mis/modules/emergency-loan"
@@ -24,6 +25,7 @@ import (
 	"bitbucket.org/go-mis/modules/loan-order"
 	"bitbucket.org/go-mis/modules/loan-raw"
 	"bitbucket.org/go-mis/modules/location"
+	mitramanagement "bitbucket.org/go-mis/modules/mitra-management"
 	"bitbucket.org/go-mis/modules/multi-loan"
 	"bitbucket.org/go-mis/modules/notification"
 	"bitbucket.org/go-mis/modules/product-pricing"
@@ -34,6 +36,7 @@ import (
 	"bitbucket.org/go-mis/modules/topsheet"
 	"bitbucket.org/go-mis/modules/transaction"
 	"bitbucket.org/go-mis/modules/user-mis"
+	"bitbucket.org/go-mis/modules/validation-teller"
 	"bitbucket.org/go-mis/modules/virtual-account-statement"
 	"bitbucket.org/go-mis/modules/voucher"
 	"gopkg.in/iris-contrib/middleware.v4/cors"
@@ -41,6 +44,7 @@ import (
 )
 
 var baseURL = "/api/v2"
+var baseRestrictedURL = "/api/restrict"
 
 // InitCustomApi - initialize custom api
 func InitCustomApi() {
@@ -59,9 +63,8 @@ func InitCustomApi() {
 		iris.Use(crs)
 	}
 	iris.Any(baseURL+"/user-mis-login", auth.UserMisLogin)
-	iris.Any(baseURL+"/installment-approve-success/:status", installment.SubmitInstallmentByGroupIDAndTransactionDateWithStatus)
+	iris.Any(baseURL+"/installment-approve-success/:stageFrom/:stageTo", installment.SubmitInstallmentByGroupIDAndTransactionDateWithStatus)
 	iris.Any(baseURL+"/installment-approve-success-custom-brooooo", installment.SubmitInstallmentByGroupIDAndTransactionDateWithStatusAndInstallmentId)
-
 	v2 := iris.Party(baseURL, auth.EnsureAuth)
 	{
 		v2.Any("/me-user-mis", auth.CurrentUserMis)
@@ -73,7 +76,7 @@ func InitCustomApi() {
 		v2.Any("/branch/delete/:id", branch.DeleteSingle)
 		v2.Any("/branch/detail/:id", branch.GetBranchById)
 		v2.Any("/branch/:id", branch.GetByID)
-		v2.Any("/branch/area/:id", branch.IrisGetByAreaId)
+		v2.Any("/branch/area/:id", branch.GetBranchAreaWithoutManager)
 		v2.Any("/area", area.FetchAll)
 		v2.Any("/area/detail/:id", area.GetByID)
 		v2.Any("/area/branch/:id", area.GetByBranch)
@@ -89,6 +92,7 @@ func InitCustomApi() {
 		v2.Any("/group/create", group.Create)
 		v2.Any("/group/set/:id", group.Update)
 		v2.Any("/group-borrower/set/:id", group.UpdateGroupBorrower)
+		v2.Any("/group/s/branch/:branchId/:searchStr", group.SearchGroup)
 		v2.Any("/loan", loan.FetchAll)
 		v2.Any("/loan/get/:id", loan.GetLoanDetail)
 		v2.Any("/loan/set/:id/stage/:stage", loan.UpdateStage)
@@ -104,7 +108,7 @@ func InitCustomApi() {
 		v2.Any("/installment", installment.FetchAll)
 		v2.Any("/installment-by-type/:type", installment.FetchByType)
 		v2.Any("/installment/group/:group_id/by-transaction-date/:transaction_date/stage/:stage", installment.GetInstallmentByGroupIDAndTransactionDate)
-		v2.Any("/installment/group/:group_id/by-transaction-date/:transaction_date/submit/:status", installment.SubmitInstallmentByGroupIDAndTransactionDateWithStatus)
+		v2.Any("/installment/group/:group_id/by-transaction-date/:transaction_date/submit/:stageFrom/:stageTo", installment.SubmitInstallmentByGroupIDAndTransactionDateWithStatus)
 		v2.Any("/installment/submit/:installment_id/status/:status", installment.SubmitInstallmentByInstallmentIDWithStatus)
 		v2.Any("/disbursement", disbursement.FetchAll)
 		v2.Any("/disbursement/set/:loan_id/stage/:stage", disbursement.UpdateDisbursementStage)
@@ -150,6 +154,7 @@ func InitCustomApi() {
 		v2.Any("/voucher", voucher.FetchAll)
 		v2.Any("/loan-order", loanOrder.FetchAll)
 		v2.Get("/loan-order/get/:id", loanOrder.FetchSingle)
+		// DAS-276
 		v2.Any("/loan-order/accept/:orderNo", loanOrder.AcceptLoanOrder)
 		v2.Any("/loan-order/reject/:orderNo", loanOrder.RejectLoanOrder)
 		v2.Any("/cif-investor-account", cif.GetCifInvestorAccount)
@@ -175,9 +180,35 @@ func InitCustomApi() {
 		v2.Any("/loan-raw/:id", loanRaw.GetLoanRawById)
 		v2.Any("/disbursement-weekly-report", disbursementReport.FetchAllActive)
 		v2.Any("/disbursement-weekly-report/:id/detail", disbursementReport.GetDetail)
-		
+
 		v2.Get("/multi-loan-undisbursed", multiloan.GetAllUndisbursedMultiLoan)
 		v2.Get("/multi-loan-update-disb-date/:loan_id/:last_disb_date/:next_disb_date", disbursement.UpdateDisbursementDate)
+		// Validation Teller
+		v2.Any("/validation-teller/save", validationTeller.SaveValidationTeller)
+		v2.Any("/validation-teller/getdata", validationTeller.GetDataValidationTeller)
+		v2.Any("/validation-teller/detail", validationTeller.GetValidationTellerDetail)
+		v2.Any("/validation-teller/detail/save", validationTeller.SaveValidationTellerDetail)
+		v2.Any("/installment-pending/get/:currentStage/:branchId/:date", installment.GetPendingInstallmentNew)
+
+		v2.Any("/validation-teller/borrower-notes/save", validationTeller.SaveValidationTellerDetail)
+		v2.Any("/reject-notes/:status/:stage/save", validationTeller.SaveRejectNotes)
+		v2.Any("/reject-notes/:status/:stage/get/:groupId/:date", validationTeller.GetRejectNotes)
+
+		v2.Any("/validation-teller/group-notes/:logType/save", validationTeller.SaveValidationTellerNotes)
+		v2.Any("/validation-teller/view/branch/:branchId/date/:date", validationTeller.GetDataValidationAndTransfer)
+		v2.Any("/data-transfer/save", dataTransfer.Save)
+
+		// Mitra Management
+		v2.Any("/mitra-management/borrower/:borrowerType/date/:date", mitramanagement.GetBorrowerByInstallmentTypeAndDate)
+		v2.Any("/mitra-management/borrower-details", mitramanagement.GetBorrowerDetailByInstallmentTypeAndDate)
+		v2.Any("/mitra-management/borrower-status/:statusId/reasons", mitramanagement.GetBorrowerStatusReason)
+		v2.Any("/mitra-management/status", mitramanagement.GetStatusAll)
+		v2.Any("/mitra-management/submit-reason", mitramanagement.SubmitReason)
+	}
+
+	vRestrict := iris.Party(baseRestrictedURL, auth.EnsureIp)
+	{
+		vRestrict.Any("/loan-order/accept/:orderNo", loanOrder.AcceptLoanOrder)
 	}
 
 	iris.Get(baseURL+"/generate-topsheet/:group_id", topsheet.GenerateTopsheet)
