@@ -1,6 +1,7 @@
 package cif
 
 import (
+	"encoding/json"
 	"fmt"
 	"strconv"
 
@@ -231,14 +232,15 @@ func UpdateInvestorCif(ctx *iris.Context) {
 	cifId := ctx.Get("cifId")
 
 	data := UpdateInvestor{}
-	err := ctx.ReadJSON(&data)
-
+	// err := ctx.ReadJSON(&data)
+	err := json.Unmarshal(ctx.Request.Body(), &data)
 	if err != nil {
 		fmt.Println("Error parsing json update investor")
 		fmt.Println(err.Error())
 		ctx.JSON(iris.StatusBadRequest, iris.Map{"status": "error", "message": err.Error()})
 		return
 	}
+	fmt.Println("Data CIF: ", data)
 	db := services.DBCPsql.Begin()
 	if err := db.Table("investor").Where(" \"id\" = ?", investorId).Update(&data.Investor).Error; err != nil {
 		processErrorAndRollback(ctx, db, err, "Update Investor")
@@ -249,7 +251,7 @@ func UpdateInvestorCif(ctx *iris.Context) {
 		return
 	}
 	db.Commit()
-	ctx.JSON(iris.StatusOK, iris.Map{"status": "success", "data": data})
+	ctx.JSON(iris.StatusOK, iris.Map{"status": "success", "data": nil})
 }
 
 func processErrorAndRollback(ctx *iris.Context, db *gorm.DB, err error, process string) {
