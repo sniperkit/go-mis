@@ -252,7 +252,7 @@ func GetDataValidationAndTransfer(ctx *iris.Context) {
 	branchID := uint64(intBranchID)
 	dateParam := ctx.Param("date")
 	date, _ := MISUtility.StringToDate(dateParam)
-	dateMin, _ := MISUtility.StringToDate("2017-09-09")
+	dateMin, _ := MISUtility.StringToDate("2017-10-09")
 	if date.Before(dateMin){
 		ctx.JSON(iris.StatusOK, iris.Map{
 			"status":       iris.StatusBadRequest,
