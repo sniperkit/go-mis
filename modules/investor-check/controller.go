@@ -12,9 +12,11 @@ import (
 	"bitbucket.org/go-mis/modules/cif"
 	email "bitbucket.org/go-mis/modules/email"
 	"bitbucket.org/go-mis/modules/r"
-	va "bitbucket.org/go-mis/modules/virtual-account"
 	"bitbucket.org/go-mis/services"
 	iris "gopkg.in/kataras/iris.v4"
+	"bitbucket.org/go-mis/modules/investor"
+	"net/http"
+	"bitbucket.org/go-mis/config"
 )
 
 type totalData struct {
@@ -172,7 +174,6 @@ func Validate(ctx *iris.Context) {
 		services.DBCPsql.Table("cif").Where("id = ?", id).Update("isDeclined", false)
 		services.DBCPsql.Table("cif").Where("id = ?", id).Update("validationDate", time.Now())
 
-		/** FOR PRODUCTION, PLEASE UNCOMMENT
 		// get investor id
 		inv := &r.RCifInvestor{}
 		services.DBCPsql.Table("r_cif_investor").Where("\"cifId\" = ?", id).Scan(&inv)
@@ -215,19 +216,16 @@ func Validate(ctx *iris.Context) {
 		if cifSchema.Username != "" {
 			fmt.Println("Sending email..")
 			//go email.SendEmailVerificationSuccess(cifSchema.Username, cifSchema.Name, vaData["BCA"], vaData["BCA_HOLDER"], vaData["MANDIRI"], vaData["MANDIRI_HOLDER"])
-			go email.SendEmailVerificationSuccess(cifSchema.Username, cifSchema.Name, vaData["BCA"], vaData["BCA_HOLDER"], vaData["MANDIRI"], vaData["MANDIRI_HOLDER"])
+			go email.SendEmailVerificationSuccess("wuri.wulandari@amartha.com", cifSchema.Name, vaData["BCA"], vaData["BCA_HOLDER"], vaData["MANDIRI"], vaData["MANDIRI_HOLDER"])
 		}
 
 		if cifSchema.PhoneNo != "" {
 			// send sms notification
 			fmt.Println("Sending sms ... ")
-			twilio := services.InitTwilio()
-			message := "Selamat data Anda sudah terverifikasi. Silakan login ke dashboard Anda dan mulai berinvestasi. www.amartha.com"
-			twilio.SetParam(cifSchema.PhoneNo, message)
-			// twilio.SetParam("+628992548716", message)
-			twilio.SendSMS()
+			message := "Selamat data Anda sudah terverifikasi. Silakan login ke dashboard Anda dan mulai berinvestasi. www.amartha.com \n\nAmartha"
+			//services.SendSMS(cifSchema.PhoneNo, message)
+			services.SendSMS("+628119780880", message)
 		}
-		*/
 
 	} else if strings.ToUpper(status) == "DECLINED" {
 		// set isDeclined true
@@ -241,11 +239,9 @@ func Validate(ctx *iris.Context) {
 			Reasons []string `json:"reasons"`
 		}{}
 		ctx.ReadJSON(&payload)
-		// this is just for testing purpose
-		// assign static email, in order to not sending email to investor
-		cifSchema.Username = "adi.suryo@amartha.com"
 		fmt.Println("Decline reasons: ", payload.Reasons)
-		go email.SendEmailVerificationFailed(cifSchema.Username, cifSchema.Name, payload.Reasons)
+		//go email.SendEmailVerificationFailed(cifSchema.Username, cifSchema.Name, payload.Reasons)
+		go email.SendEmailVerificationFailed("wuri.wulandari@amartha.com", cifSchema.Name, payload.Reasons)
 	}
 
 	ctx.JSON(iris.StatusOK, iris.Map{
@@ -259,72 +255,6 @@ func rightPad2Len(s string, padStr string, overallLen int) string {
 	padCountInt = 1 + ((overallLen - len(padStr)) / len(padStr))
 	var retStr = s + strings.Repeat(padStr, padCountInt)
 	return retStr[:overallLen] + padStr
-}
-
-// Verified - verify the selected investor
-func Verified(ctx *iris.Context) {
-	id, _ := strconv.Atoi(ctx.Param("id"))
-	// status type: verified or declined
-	cifSchema := cif.Cif{}
-	services.DBCPsql.Table("cif").Where("id = ?", id).Scan(&cifSchema)
-
-	if *cifSchema.IsValidated == true {
-		services.DBCPsql.Table("cif").Where("id = ?", id).Update("isVerified", true)
-
-		// get investor id
-		inv := &r.RCifInvestor{}
-		services.DBCPsql.Table("r_cif_investor").Where("\"cifId\" = ?", id).Scan(&inv)
-
-		// get virtual account
-		rInvVa := []r.RInvestorVirtualAccount{}
-		services.DBCPsql.Table("r_investor_virtual_account").Where("\"investorId\" = ?", inv.InvestorId).Scan(&rInvVa)
-
-		vaObj := &va.VirtualAccount{}
-		userVa := []va.VirtualAccount{}
-		for _, val := range rInvVa {
-			services.DBCPsql.Table("virtual_account").Where("\"id\" = ?", val.VirtualAccountId).Scan(&vaObj)
-			userVa = append(userVa, *vaObj)
-		}
-
-		vaData := make(map[string]string)
-		for _, val := range userVa {
-			if val.BankName == "BRI" {
-				vaData["BRI"] = val.VirtualAccountNo
-				vaData["BRI_HOLDER"] = val.VirtualAccountName
-			} else if val.BankName == "BCA" {
-				vaData["BCA"] = val.VirtualAccountNo
-				vaData["BCA_HOLDER"] = val.VirtualAccountName
-			}
-		}
-
-		if cifSchema.Username != "" {
-			fmt.Println("Sending email..")
-			go email.SendEmailVerificationSuccess(cifSchema.Username, cifSchema.Name, vaData["BCA"], vaData["BCA_HOLDER"], vaData["BRI"], vaData["BRI_HOLDER"])
-			// sendgrid := email.Sendgrid{}
-			// sendgrid.SetFrom("Amartha", "no-reply@amartha.com")
-			// sendgrid.SetTo(cifSchema.Name, cifSchema.Username)
-			// sendgrid.SetSubject(cifSchema.Name + ", Verifikasi Data Anda Berhasil")
-			// sendgrid.VerifiedBodyEmail("VERIFIED_DATA", cifSchema.Name, cifSchema.Username, vaData)
-			// sendgrid.SendEmail()
-		}
-
-		if cifSchema.PhoneNo != "" {
-			// send sms notification
-			fmt.Println("Sending sms ... ")
-			message := "Selamat data Anda sudah terverifikasi. Silakan login ke dashboard Anda dan mulai berinvestasi. www.amartha.com \n\nAmartha"
-			services.SendSMS(cifSchema.PhoneNo, message)
-		}
-
-		ctx.JSON(iris.StatusOK, iris.Map{
-			"status":             "success",
-			"verificationStatus": "verified",
-		})
-	} else {
-		ctx.JSON(iris.StatusOK, iris.Map{
-			"status":             "success",
-			"verificationStatus": "verification failed investor not validated",
-		})
-	}
 }
 
 func ParseDatatableURI(fullURI string) DataTable {
