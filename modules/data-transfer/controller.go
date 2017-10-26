@@ -11,8 +11,10 @@ func Init() {
 }
 
 func Save(ctx *iris.Context) {
-	m := DataTransfer{}
-	err := ctx.ReadJSON(&m)
+	var payload DataTransfer
+	var dt DataTransfer
+
+	err := ctx.ReadJSON(&payload)
 	if err != nil {
 		ctx.JSON(iris.StatusBadRequest, iris.Map{
 			"message":      "Bad Request",
@@ -20,12 +22,12 @@ func Save(ctx *iris.Context) {
 		})
 		return
 	}
-
-	dt := DataTransfer{}
-	services.DBCPsql.Where("validation_date = ?", m.ValidationDate).Find(&dt)
-
-	if (DataTransfer{}) != dt {
-		err := services.DBCPsql.Model(&m).Updates(&m).Error
+	// Find data transfer by validation date
+	services.DBCPsql.Where("validation_date = ?", payload.ValidationDate).Find(&dt)
+	if dt.ID > 0 {
+		// Update existing data transfer
+		payload.ID = dt.ID
+		err := services.DBCPsql.Save(&payload).Error
 		if err != nil {
 			ctx.JSON(iris.StatusBadRequest, iris.Map{
 				"message":      "Update Error",
@@ -34,8 +36,8 @@ func Save(ctx *iris.Context) {
 			return
 		}
 	} else {
-		err = services.DBCPsql.Create(&m).Error
-		if err != nil {
+		// Create new data transfer
+		if err := services.DBCPsql.Create(&payload).Error; err != nil {
 			ctx.JSON(iris.StatusBadRequest, iris.Map{
 				"message":      "Create Error",
 				"errorMessage": err.Error(),
@@ -43,7 +45,5 @@ func Save(ctx *iris.Context) {
 			return
 		}
 	}
-
-	ctx.JSON(iris.StatusOK, iris.Map{"status": "success", "data": m})
-
+	ctx.JSON(iris.StatusOK, iris.Map{"status": "success", "data": payload})
 }

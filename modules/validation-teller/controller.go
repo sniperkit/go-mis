@@ -14,6 +14,8 @@ import (
 	SystemParameter "bitbucket.org/go-mis/modules/system-parameter"
 	MISUtility "bitbucket.org/go-mis/modules/utility"
 	"bitbucket.org/go-mis/services"
+	"time"
+	"net/http"
 )
 
 const (
@@ -42,7 +44,19 @@ func GetDataValidationTeller(ctx *iris.Context) {
 	}
 	log.Println("[INFO] Validation get data installment pass")
 
-	if !SystemParameter.IsAllowedBackdate(dateParam) {
+	date, err := MISUtility.StringToDate(dateParam)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, iris.Map{
+			"message":      "Bad Request",
+			"errorMessage": "Invalid date",
+		})
+		return
+	}
+
+	t := time.Now()
+	now := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
+
+	if !SystemParameter.IsAllowedBackdate() && date.Before(now) {
 		log.Println("#ERROR: Not Allowed back date")
 		ctx.JSON(405, iris.Map{
 			"message":      "Not Allowed",
@@ -237,6 +251,15 @@ func GetDataValidationAndTransfer(ctx *iris.Context) {
 	intBranchID, _ := strconv.Atoi(branchParam)
 	branchID := uint64(intBranchID)
 	dateParam := ctx.Param("date")
+	date, _ := MISUtility.StringToDate(dateParam)
+	dateMin, _ := MISUtility.StringToDate("2017-10-09")
+	if date.Before(dateMin){
+		ctx.JSON(iris.StatusOK, iris.Map{
+			"status":       iris.StatusBadRequest,
+			"errorMessage": "Invalid Date",
+		})
+		return
+	}
 	// Check branchID, if equal to 0 return error message to client
 	if branchID == 0 {
 		ctx.JSON(iris.StatusOK, iris.Map{
@@ -347,7 +370,7 @@ func FindInstallmentData(branchID uint64, date string, isApprove bool) (Response
 	if err != nil {
 		return responseData, errors.New("Invalid Date parameter")
 	}
-	rawInstallmentData = MISInstallment.GetRawPendingInstallmentData("teller",branchID, date, isApprove)
+	rawInstallmentData = MISInstallment.GetRawPendingInstallmentData("teller", branchID, date, isApprove)
 	for _, val := range rawInstallmentData {
 		if agents[val.Fullname] == false {
 			agents[val.Fullname] = true
@@ -428,8 +451,10 @@ func FindDataTransfer(branchID uint64, date string) (DataTransfer, error) {
 				data_transfer.transfer_date,
 				data_transfer.repayment_id,
 				data_transfer.repayment_nominal,
+				data_transfer.repayment_note,
 				data_transfer.tabungan_id,
 				data_transfer.tabungan_nominal,
+				data_transfer.tabungan_note,
 				data_transfer.gagal_dropping_id,
 				data_transfer.gagal_dropping_nominal,
 				data_transfer.gagal_dropping_note,
@@ -481,7 +506,8 @@ func FindVTDetailByGroupAndDate(groupID uint64, date string) ([]RawInstallmentDe
 					join disbursement d on d.id = rld."disbursementId"
 				where l."deletedAt" is null and i."deletedAt" is null 
 				and coalesce(i."transactionDate",i."createdAt")::date = ? and
-				l.stage = 'INSTALLMENT' and g.id=?`
+				( UPPER(l.stage) = 'INSTALLMENT' OR UPPER(l.stage) = 'END' OR UPPER(l.stage) = 'END EARLY' OR UPPER(l.stage) = 'END-EARLY' OR UPPER(l.stage) = 'END-PENDING' )
+				and g.id = ? `
 	err = services.DBCPsql.Raw(query, date, groupID).Scan(&installmentDetails).Error
 	if err != nil {
 		log.Println("#ERROR: ", err)

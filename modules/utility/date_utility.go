@@ -48,3 +48,9 @@ func IsToday(dateParam time.Time) bool {
 	}
 	return !now.After(dateParam) && !now.Before(dateParam)
 }
+
+// IsYesterday - Check whether the date param is yesterday
+func IsYesterday(date time.Time) bool {
+	yesterday := time.Now().Add(-24 * time.Hour)
+	return date == yesterday
+}
