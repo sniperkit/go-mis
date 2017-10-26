@@ -232,7 +232,9 @@ func Validate(ctx *iris.Context) {
 		services.DBCPsql.Table("cif").Where("id = ?", id).Update("isValidated", false)
 		services.DBCPsql.Table("cif").Where("id = ?", id).Update("isVerified", false)
 		services.DBCPsql.Table("cif").Where("id = ?", id).Update("isDeclined", true)
-		services.DBCPsql.Table("cif").Where("id = ?", id).Update("declinedDate", time.Now())
+		date:=time.Now()
+		fmt.Println(date)
+		services.DBCPsql.Table("cif").Where("id = ?", id).Update("declinedDate", date)
 
 		// Decline will send an email to investor
 		payload := struct {
