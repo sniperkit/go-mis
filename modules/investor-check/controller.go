@@ -172,7 +172,7 @@ func Validate(ctx *iris.Context) {
 		services.DBCPsql.Table("cif").Where("id = ?", id).Update("isValidated", true)
 		services.DBCPsql.Table("cif").Where("id = ?", id).Update("isVerified", true)
 		services.DBCPsql.Table("cif").Where("id = ?", id).Update("isDeclined", false)
-		services.DBCPsql.Table("cif").Where("id = ?", id).Update("validationDate", time.Now())
+		services.DBCPsql.Exec(`update cif set "validationDate"=current_timestamp where id=?`,id)
 
 		// get investor id
 		inv := &r.RCifInvestor{}
@@ -234,7 +234,7 @@ func Validate(ctx *iris.Context) {
 		services.DBCPsql.Table("cif").Where("id = ?", id).Update("isDeclined", true)
 		date:=time.Now()
 		fmt.Println("DateInvestorCheck",date)
-		services.DBCPsql.Table("cif").Where("id = ?", id).Update("declinedDate", date)
+		services.DBCPsql.Exec(`update cif set "declinedDate"=current_timestamp where id=?`,id)
 
 		// Decline will send an email to investor
 		payload := struct {

@@ -20,7 +20,7 @@ type (
 		UpdatedAt              time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
 		DeletedAt              *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
 		ActivationDate         *time.Time `gorm:"column:activationDate" json:"activationDate"`
-		DeclinedDate           *time.Time `gorm:"column:declinedDate" json:"declinedDate"`
+		DeclinedDate           string `gorm:"column:declinedDate" json:"declinedDate"`
 		IsActivated            *bool      `gorm:"column:isActivated" json:"isActivated"`
 		IsVerified             *bool      `gorm:"column:isVerified" json:"isVerified"`
 		IsDeclined             *bool      `gorm:"column:isDeclined" json:"isDeclined"`
