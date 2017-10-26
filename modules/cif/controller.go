@@ -234,6 +234,9 @@ func UpdateInvestorCif(ctx *iris.Context) {
 	data := UpdateInvestor{}
 	// err := ctx.ReadJSON(&data)
 	err := json.Unmarshal(ctx.Request.Body(), &data)
+
+	fmt.Println("Data Date",data.Cif.DeclinedDate)
+
 	if err != nil {
 		fmt.Println("Error parsing json update investor")
 		fmt.Println(err.Error())
