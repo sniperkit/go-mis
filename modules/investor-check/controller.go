@@ -9,14 +9,15 @@ import (
 
 	"strings"
 
+	"net/http"
+
+	"bitbucket.org/go-mis/config"
 	"bitbucket.org/go-mis/modules/cif"
 	email "bitbucket.org/go-mis/modules/email"
+	"bitbucket.org/go-mis/modules/investor"
 	"bitbucket.org/go-mis/modules/r"
 	"bitbucket.org/go-mis/services"
 	iris "gopkg.in/kataras/iris.v4"
-	"bitbucket.org/go-mis/modules/investor"
-	"net/http"
-	"bitbucket.org/go-mis/config"
 )
 
 type totalData struct {
@@ -77,7 +78,6 @@ func FetchDatatables(ctx *iris.Context) {
 					JOIN cif ON cif.id = r_cif_investor."cifId" 
 				WHERE cif."isVerified" = FALSE 
 				AND cif."idCardFilename" IS NOT NULL 
-				
 				AND cif."deletedAt" isnull AND virtual_account."deletedAt" isnull `
 
 	if len(strings.TrimSpace(filterBy)) > 0 {
@@ -169,10 +169,20 @@ func Validate(ctx *iris.Context) {
 	services.DBCPsql.Table("cif").Where("id = ?", id).Scan(&cifSchema)
 
 	if status == "validated" {
-		services.DBCPsql.Table("cif").Where("id = ?", id).Update("isValidated", true)
-		services.DBCPsql.Table("cif").Where("id = ?", id).Update("isVerified", true)
-		services.DBCPsql.Table("cif").Where("id = ?", id).Update("isDeclined", false)
-		services.DBCPsql.Exec(`update cif set "validationDate"=current_timestamp where id=?`,id)
+		updatedFields := map[string]interface{}{
+			"isValidated":    true,
+			"isVerified":     true,
+			"isDeclined":     false,
+			"validationDate": time.Now(),
+		}
+		errs := services.DBCPsql.Table("cif").Where("id = ?", id).Updates(updatedFields).GetErrors()
+		if len(errs) > 0 {
+			ctx.JSON(iris.StatusInternalServerError, iris.Map{
+				"status":  "Error",
+				"message": "Internal Server Error",
+			})
+			return
+		}
 
 		// get investor id
 		inv := &r.RCifInvestor{}
@@ -228,24 +238,29 @@ func Validate(ctx *iris.Context) {
 		}
 
 	} else if strings.ToUpper(status) == "DECLINED" {
-		// set isDeclined true
-		services.DBCPsql.Table("cif").Where("id = ?", id).Update("isValidated", false)
-		services.DBCPsql.Table("cif").Where("id = ?", id).Update("isVerified", false)
-		services.DBCPsql.Table("cif").Where("id = ?", id).Update("isDeclined", true)
-		date:=time.Now()
-		fmt.Println("DateInvestorCheck",date)
-		services.DBCPsql.Exec(`update cif set "declinedDate"=current_timestamp where id=?`,id)
-
+		updatedFields := map[string]interface{}{
+			"isValidated":  false,
+			"isVerified":   false,
+			"isDeclined":   true,
+			"declinedDate": time.Now(),
+		}
+		errs := services.DBCPsql.Table("cif").Where("id = ?", id).Updates(updatedFields).GetErrors()
+		fmt.Println("Errors: ", errs)
+		if len(errs) > 0 {
+			ctx.JSON(iris.StatusInternalServerError, iris.Map{
+				"status":  "Error",
+				"message": "Internal Server Error",
+			})
+			return
+		}
 		// Decline will send an email to investor
 		payload := struct {
 			Reasons []string `json:"reasons"`
 		}{}
 		ctx.ReadJSON(&payload)
-		fmt.Println("Decline reasons: ", payload.Reasons)
 		//go email.SendEmailVerificationFailed(cifSchema.Username, cifSchema.Name, payload.Reasons)
 		go email.SendEmailVerificationFailed("wuri.wulandari@amartha.com", cifSchema.Name, payload.Reasons)
 	}
-
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"status":             "success",
 		"verificationStatus": status,
@@ -272,6 +287,5 @@ func ParseDatatableURI(fullURI string) DataTable {
 
 		}
 	}
-
 	return dtTables
 }
