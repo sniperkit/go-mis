@@ -97,7 +97,6 @@ func SendEmailIInvestmentSuccess(name string, toEmail string, OrderNo string, in
 }
 
 func SendEmailVerificationSuccess(email string, name string, va_bca string, va_bca_name string, va_mandiri string, va_mandiri_name string) {
-
 	var subs = map[string]interface{}{
 		"first_name":      name,
 		"va_bca":          va_bca,
@@ -105,15 +104,15 @@ func SendEmailVerificationSuccess(email string, name string, va_bca string, va_b
 		"va_mandiri":      va_mandiri,
 		"va_mandiri_name": va_mandiri_name,
 	}
-
+	fmt.Println("Subs email: ", subs)
 	mandrill := new(Mandrill)
 	mandrill.SetFrom("hello@amartha.com")
 	mandrill.SetTo(email)
 	mandrill.SetBcc("investing@amartha.com")
 	mandrill.SetSubject("[Amartha] Selamat Data Anda Sudah Terverifikasi ")
 	mandrill.SetTemplateAndRawBody("verification_success_v2", subs)
+	mandrill.SetBucket(true)
 	mandrill.SendEmail()
-
 }
 
 // SendEmailVerificationFailed - Send email to investor because of his incomplete data
