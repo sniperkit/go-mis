@@ -373,6 +373,12 @@ func CreateLoan(payload map[string]interface{}) (error, loan.Loan) {
 	newLoan.CreditScoreGrade = cpl["creditScoreGrade"]
 	newLoan.CreditScoreValue, _ = strconv.ParseFloat(cpl["creditScoreValue"], 64)
 	newLoan.Stage = "PRIVATE"
+	
+	// set loan type if exist
+	// otherwise, NORMAL will be set as default
+	if cpl["loanType"] != nil {
+		newLoan.LoanType = cpl["loanType"]	
+	}
 
 	borrowerId := payload["borrowerId"]
 
