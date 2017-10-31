@@ -376,7 +376,7 @@ func CreateLoan(payload map[string]interface{}) (error, loan.Loan) {
 	
 	// set loan type if exist
 	// otherwise, NORMAL will be set as default
-	if cpl["loanType"] != nil {
+	if cpl["loanType"] != "" {
 		newLoan.LoanType = cpl["loanType"]	
 	}
 

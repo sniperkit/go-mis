@@ -225,16 +225,16 @@ func Validate(ctx *iris.Context) {
 
 		if cifSchema.Username != "" {
 			fmt.Println("Sending email..")
-			//go email.SendEmailVerificationSuccess(cifSchema.Username, cifSchema.Name, vaData["BCA"], vaData["BCA_HOLDER"], vaData["MANDIRI"], vaData["MANDIRI_HOLDER"])
-			go email.SendEmailVerificationSuccess("wuri.wulandari@amartha.com", cifSchema.Name, vaData["BCA"], vaData["BCA_HOLDER"], vaData["MANDIRI"], vaData["MANDIRI_HOLDER"])
+			go email.SendEmailVerificationSuccess(cifSchema.Username, cifSchema.Name, vaData["BCA"], vaData["BCA_HOLDER"], vaData["MANDIRI"], vaData["MANDIRI_HOLDER"])
+			//go email.SendEmailVerificationSuccess("wuri.wulandari@amartha.com", cifSchema.Name, vaData["BCA"], vaData["BCA_HOLDER"], vaData["MANDIRI"], vaData["MANDIRI_HOLDER"])
 		}
 
 		if cifSchema.PhoneNo != "" {
 			// send sms notification
 			fmt.Println("Sending sms ... ")
 			message := "Selamat data Anda sudah terverifikasi. Silakan login ke dashboard Anda dan mulai berinvestasi. www.amartha.com \n\nAmartha"
-			//services.SendSMS(cifSchema.PhoneNo, message)
-			services.SendSMS("+628119780880", message)
+			services.SendSMS(cifSchema.PhoneNo, message)
+			//services.SendSMS("+628119780880", message)
 		}
 
 	} else if strings.ToUpper(status) == "DECLINED" {
@@ -258,8 +258,8 @@ func Validate(ctx *iris.Context) {
 			Reasons []string `json:"reasons"`
 		}{}
 		ctx.ReadJSON(&payload)
-		//go email.SendEmailVerificationFailed(cifSchema.Username, cifSchema.Name, payload.Reasons)
-		go email.SendEmailVerificationFailed("wuri.wulandari@amartha.com", cifSchema.Name, payload.Reasons)
+		go email.SendEmailVerificationFailed(cifSchema.Username, cifSchema.Name, payload.Reasons)
+		//go email.SendEmailVerificationFailed("wuri.wulandari@amartha.com", cifSchema.Name, payload.Reasons)
 	}
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"status":             "success",
