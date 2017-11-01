@@ -27,6 +27,7 @@ import (
 	mitramanagement "bitbucket.org/go-mis/modules/mitra-management"
 	"bitbucket.org/go-mis/modules/multi-loan"
 	"bitbucket.org/go-mis/modules/notification"
+	plottingBorrower "bitbucket.org/go-mis/modules/plotting-borrower"
 	"bitbucket.org/go-mis/modules/product-pricing"
 	prospectiveBorrower "bitbucket.org/go-mis/modules/prospective-borrower"
 	"bitbucket.org/go-mis/modules/reports"
@@ -201,6 +202,9 @@ func InitCustomApi() {
 		v2.Any("/mitra-management/borrower-status/:statusId/reasons", mitramanagement.GetBorrowerStatusReason)
 		v2.Any("/mitra-management/status", mitramanagement.GetStatusAll)
 		v2.Any("/mitra-management/submit-reason", mitramanagement.SubmitReason)
+
+		// Plotting Borrower
+		v2.Any("/plotting-borrower/plotting-params/save", plottingBorrower.SavePlottingParams)
 	}
 
 	vRestrict := iris.Party(baseRestrictedURL, auth.EnsureIp)
