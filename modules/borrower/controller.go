@@ -234,7 +234,7 @@ func setNewSurveyStatus(uuid string, status string, db *gorm.DB) error {
 }
 
 func GetOrCreateBorrowerId(payload map[string]interface{}, db *gorm.DB) (uint64, error) {
-	cifData := cif.Cif{}
+	cifData := cif.InsertCif{}
 	ktp := payload["client_ktp"].(string)
 	db.Table("cif").Where("\"idCardNo\" = ?", ktp).Scan(&cifData)
 
@@ -297,7 +297,7 @@ func UseProductPricing(investorId uint64, loanId uint64, db *gorm.DB) error {
 }
 
 // CreateCIF - create CIF object
-func CreateCIF(payload map[string]interface{}) cif.Cif {
+func CreateCIF(payload map[string]interface{}) cif.InsertCif {
 	// convert each payload  field into empty string
 	var cpl map[string]string
 	cpl = make(map[string]string)
@@ -310,7 +310,7 @@ func CreateCIF(payload map[string]interface{}) cif.Cif {
 	}
 
 	// map each payload field to it's respective cif field
-	newCif := cif.Cif{}
+	newCif := cif.InsertCif{}
 
 	wifeIncome, _ := strconv.ParseFloat(cpl["data_pendapatan_istri"], 64)
 	husbandIncome, _ := strconv.ParseFloat(cpl["data_pendapatan_suami"], 64)
