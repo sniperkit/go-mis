@@ -67,3 +67,30 @@ func SavePlottingParams(ctx *iris.Context) {
 	})
 
 }
+
+
+func FindEligbleInvestor(ctx *iris.Context) {
+	investorId := ctx.Param("investorId")
+
+	query :=`select investor.id,cif."name","investorNo","borrowerCriteria" from investor
+	join r_cif_investor on r_cif_investor."investorId"=investor.id
+	join cif on cif.id=r_cif_investor."cifId"
+	where investor.id=?`
+
+	investor := EligbleInvestor{}
+	services.DBCPsql.Raw(query,investorId).Scan(&investor)
+
+	if investor.BorrowerCriteria!="{}"{
+		ctx.JSON(iris.StatusOK, iris.Map{
+			"status": "error",
+			"message":"Investor already has criteria",
+		})
+		return
+	}
+
+	ctx.JSON(iris.StatusOK, iris.Map{
+		"status": "success",
+		"data":investor,
+	})
+
+}
