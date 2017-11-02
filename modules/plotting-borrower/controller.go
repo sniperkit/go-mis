@@ -100,13 +100,14 @@ func ListPlottingParams(ctx *iris.Context) {
 
 }
 
+// this functoin fetch list investor that eligble for create borrowerCriteria
 func FindEligbleInvestor(ctx *iris.Context) {
 	investorId := ctx.Param("investorId")
 
 	query := `select investor.id,cif."name","investorNo","borrowerCriteria" from investor
 	join r_cif_investor on r_cif_investor."investorId"=investor.id
 	join cif on cif.id=r_cif_investor."cifId"
-	where investor.id=?`
+	where investor.id=?  and investor."deletedAt" is null`
 
 	investor := EligbleInvestor{}
 	services.DBCPsql.Raw(query, investorId).Scan(&investor)
