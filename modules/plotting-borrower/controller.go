@@ -85,7 +85,7 @@ func ListPlottingParams(ctx *iris.Context) {
 	from investor
 	join r_cif_investor rci on rci."investorId" = investor.Id
 	join cif on cif.id = rci."cifId"
-	where "borrowerCriteria" <> '{}'`
+	where "borrowerCriteria" <> '{}' and investor."deletedAt" is null`
 	services.DBCPsql.Raw(query).Scan(&investors)
 	for _, _ = range investors {
 		totalRows += 1
