@@ -205,6 +205,7 @@ func InitCustomApi() {
 
 		// Plotting Borrower
 		v2.Any("/plotting-borrower/plotting-params/save", plottingBorrower.SavePlottingParams)
+		v2.Any("/plotting-borrower/plotting-params/all", plottingBorrower.ListPlottingParams)
 	}
 
 	vRestrict := iris.Party(baseRestrictedURL, auth.EnsureIp)
