@@ -1,6 +1,7 @@
 package plottingBorrower
 
 import (
+	"encoding/json"
 	"errors"
 	"strconv"
 	"strings"
@@ -68,29 +69,61 @@ func SavePlottingParams(ctx *iris.Context) {
 
 }
 
-
 func FindEligbleInvestor(ctx *iris.Context) {
 	investorId := ctx.Param("investorId")
 
-	query :=`select investor.id,cif."name","investorNo","borrowerCriteria" from investor
+	query := `select investor.id,cif."name","investorNo","borrowerCriteria" from investor
 	join r_cif_investor on r_cif_investor."investorId"=investor.id
 	join cif on cif.id=r_cif_investor."cifId"
 	where investor.id=?`
 
 	investor := EligbleInvestor{}
-	services.DBCPsql.Raw(query,investorId).Scan(&investor)
+	services.DBCPsql.Raw(query, investorId).Scan(&investor)
 
-	if investor.BorrowerCriteria!="{}"{
+	if investor.BorrowerCriteria != "{}" {
 		ctx.JSON(iris.StatusOK, iris.Map{
-			"status": "error",
-			"message":"Investor already has criteria",
+			"status":  "error",
+			"message": "Investor already has criteria",
 		})
 		return
 	}
 
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"status": "success",
-		"data":investor,
+		"data":   investor,
 	})
 
+}
+
+// this functoin fetch the detail of the plotting params
+func GetPlottingParamsDetail(ctx *iris.Context) {
+	investorId := ctx.Param("investorId")
+
+	plottingParams := struct {
+		ID                       uint64                 `gorm:"column:id" json:"id"`
+		InvestorNo               uint64                 `gorm:"column:investorNo" json:"investorNo"`
+		InvestorName             string                 `gorm:"column:name" json:"investorName"`
+		IsBorrowerCriteriaActive *bool                  `gorm:"column:isBorrowerCriteriaActive" json:"isBorrowerCriteriaActive"`
+		BorrowerCriteriaJSONB    string                 `gorm:"column:borrowerCriteria" sql:"type:JSONB NOT NULL DEFAULT '{}'::JSONB" json:"-"`
+		BorrowerCriteria         map[string]interface{} `json:"borrowerCriteria"`
+	}{}
+
+	query := `select investor.id, investor."investorNo", cif."name", investor."isBorrowerCriteriaActive", investor."borrowerCriteria" 
+        from investor
+        join r_cif_investor rci on rci."investorId" = investor.Id
+        join cif on cif.id = rci."cifId"
+        where investor.id = ?`
+	services.DBCPsql.Raw(query, investorId).Scan(&plottingParams)
+
+	// prepare json for borrowerCriteria
+	in := []byte(plottingParams.BorrowerCriteriaJSONB)
+	var raw map[string]interface{}
+	json.Unmarshal(in, &raw)
+	raw["count"] = 1
+	plottingParams.BorrowerCriteria = raw
+
+	ctx.JSON(iris.StatusOK, iris.Map{
+		"status": "success",
+		"data":   plottingParams,
+	})
 }
