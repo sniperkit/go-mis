@@ -16,7 +16,7 @@ func SavePlottingParams(ctx *iris.Context) {
 	// convert requestbody to string
 	pp := string(ctx.Request.Body())
 	if pp == "" {
-		err := errors.New("No Plotting Params were found in the request body.")
+		err := errors.New("ERROR: No Plotting Params were found in the request body.")
 		ctx.JSON(iris.StatusInternalServerError, iris.Map{
 			"status":  "error",
 			"message": err.Error(),
@@ -161,4 +161,31 @@ func GetPlottingParamsDetail(ctx *iris.Context) {
 		"status": "success",
 		"data":   plottingParams,
 	})
+}
+
+// this function toggles activation of plottingparams
+func TogglePlottingParamsActivation(ctx *iris.Context) {
+
+	payload := struct {
+		InvestorId uint64 `json:investorId`
+		Activate   bool   `json:activate`
+	}{}
+
+	if err := ctx.ReadJSON(&payload); err != nil {
+		ctx.JSON(iris.StatusInternalServerError, iris.Map{
+			"status":  "error",
+			"message": err.Error(),
+		})
+		return
+	}
+
+	inv := investor.Investor{
+		ID: payload.InvestorId,
+	}
+
+	services.DBCPsql.Model(&inv).Update("isBorrowerCriteriaActive", payload.Activate)
+	ctx.JSON(iris.StatusOK, iris.Map{
+		"status": "success",
+	})
+
 }
