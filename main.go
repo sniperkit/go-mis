@@ -37,7 +37,6 @@ func main() {
 
 	// Initialize custom routes
 	routes.InitCustomApi()
-
 	// Start app
 	iris.Listen(config.Port)
 }
