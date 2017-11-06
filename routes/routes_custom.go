@@ -64,6 +64,8 @@ func InitCustomApi() {
 	iris.Any(baseURL+"/user-mis-login", auth.UserMisLogin)
 	iris.Any(baseURL+"/installment-approve-success/:stageFrom/:stageTo", installment.SubmitInstallmentByGroupIDAndTransactionDateWithStatus)
 	iris.Any(baseURL+"/installment-approve-success-custom-brooooo", installment.SubmitInstallmentByGroupIDAndTransactionDateWithStatusAndInstallmentId)
+	//iris.Any(baseURL+"/investor-check/view", investorCheck.FetchDatatables)
+
 	v2 := iris.Party(baseURL, auth.EnsureAuth)
 	{
 		v2.Any("/me-user-mis", auth.CurrentUserMis)
@@ -133,7 +135,7 @@ func InitCustomApi() {
 		v2.Any("/agent/set/:id", agent.UpdateAgent)
 		v2.Any("/agent/update-password/:id", agent.UpdateAgentPasswordById)
 		v2.Any("/investor-check/datatables", investorCheck.FetchDatatables)
-		v2.Any("/investor-check/verify/:id/status/:status", investorCheck.Verify)
+		v2.Any("/investor-check/validate/:id/status/:status", investorCheck.Validate)
 		//v2.Any("/investor-check/verified/:id", investorCheck.Verified)
 		v2.Get("/dropping", loan.FetchDropping)
 		v2.Any("/dropping/refund/:loan_id/move-stage-to/:stage", loan.RefundAndChangeStageTo)

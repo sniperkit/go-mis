@@ -118,8 +118,10 @@ type (
 		TransferDate         string  `json:"transferDate"`
 		RepaymentID          string  `json:"repaymentId"`
 		RepaymentNominal     float64 `json:"repaymentNominal"`
+		RepaymentNote     string `json:"repaymentNote"`
 		TabunganID           string  `json:"tabunganId"`
 		TabunganNominal      float64 `json:"tabunganNominal"`
+		TabunganNote      string `json:"tabunganNote"`
 		GagalDroppingID      string  `json:"gagalDroppingId"`
 		GagalDroppingNominal float64 `json:"gagalDroppingNominal"`
 		GagalDroppingNote string `json:"gagalDroppingNote"`

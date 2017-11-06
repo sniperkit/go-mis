@@ -251,6 +251,15 @@ func GetDataValidationAndTransfer(ctx *iris.Context) {
 	intBranchID, _ := strconv.Atoi(branchParam)
 	branchID := uint64(intBranchID)
 	dateParam := ctx.Param("date")
+	date, _ := MISUtility.StringToDate(dateParam)
+	dateMin, _ := MISUtility.StringToDate("2017-10-09")
+	if date.Before(dateMin){
+		ctx.JSON(iris.StatusOK, iris.Map{
+			"status":       iris.StatusBadRequest,
+			"errorMessage": "Invalid Date",
+		})
+		return
+	}
 	// Check branchID, if equal to 0 return error message to client
 	if branchID == 0 {
 		ctx.JSON(iris.StatusOK, iris.Map{
@@ -442,8 +451,10 @@ func FindDataTransfer(branchID uint64, date string) (DataTransfer, error) {
 				data_transfer.transfer_date,
 				data_transfer.repayment_id,
 				data_transfer.repayment_nominal,
+				data_transfer.repayment_note,
 				data_transfer.tabungan_id,
 				data_transfer.tabungan_nominal,
+				data_transfer.tabungan_note,
 				data_transfer.gagal_dropping_id,
 				data_transfer.gagal_dropping_nominal,
 				data_transfer.gagal_dropping_note,

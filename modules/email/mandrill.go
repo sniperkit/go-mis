@@ -2,6 +2,7 @@ package email
 
 import (
 	"fmt"
+	"log"
 
 	"bitbucket.org/go-mis/config"
 
@@ -17,6 +18,7 @@ type Mandrill struct {
 		Template  string                 `json:"template" `
 		Subject   string                 `json:"subject" `
 		SecretKey string                 `json:"secretKey" `
+		Bucket    bool                   `json:"bucket"`
 		Subs      map[string]interface{} `json:"subs" `
 	}
 }
@@ -24,6 +26,18 @@ type Mandrill struct {
 // SetFrom - SetFrom Email
 func (m *Mandrill) SetFrom(email string) {
 	m.emailParam.From = email
+}
+
+// SetBCC - SetBCC Email
+func (m *Mandrill) SetBCC(email string) {
+	m.emailParam.Bcc = email
+}
+
+/* Bucket - for choose email template
+   if u bucket true  it use from CK
+               false it use from your local*/
+func (m *Mandrill) SetBucket(bucket bool) {
+	m.emailParam.Bucket = bucket
 }
 
 // SetTo - SetTo Email
@@ -48,6 +62,7 @@ func (m *Mandrill) SetTemplateAndRawBody(template string, raw map[string]interfa
 
 // SendEmail - send Notif
 func (m Mandrill) SendEmail() {
+	log.Println("node uploader link: ", config.UploaderApiPath+"/email/send/mandrill")
 	m.emailParam.SecretKey = "n0de-U>lo4d3r"
 	request := gorequest.New()
 	_, body, _ := request.Post(config.UploaderApiPath + "/email/send/mandrill").

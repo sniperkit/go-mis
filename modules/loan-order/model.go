@@ -11,6 +11,13 @@ type LoanOrder struct {
 	DeletedAt *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
 }
 
+type InvestorDetail struct {
+	InvestorId   uint64     `gorm:"column:investorId" json:"investorId"`
+	Username   string     `gorm:"column:username" json:"username"`
+	Name   string     `gorm:"column:name" json:"name"`
+	PhoneNo   string     `gorm:"column:phoneNo" json:"phoneNo"`
+}
+
 type LoanOrderInvestorPendingWaiting struct {
 	ID                     uint64  `gorm:"primary_key" gorm:"column:_id" json:"_id"`
 	OrderNo                string  `gorm:"column:orderNo" json:"orderNo"`

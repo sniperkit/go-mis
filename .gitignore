@@ -5,3 +5,4 @@ config.json
 httplog
 config-test.json
 config-prod.json
+*.http
