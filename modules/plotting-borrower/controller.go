@@ -8,6 +8,8 @@ import (
 	"bitbucket.org/go-mis/services"
 
 	"gopkg.in/kataras/iris.v4"
+	"strconv"
+	"fmt"
 )
 
 // This function saves potting paramaters as borrower criteria
@@ -188,4 +190,187 @@ func TogglePlottingParamsActivation(ctx *iris.Context) {
 		"status": "success",
 	})
 
+}
+
+//TODO move to go-loan
+// this functoin fetch all loan by criteria
+func FindRecomendedLoanByInvestorCriteria(ctx *iris.Context) {
+	investorId := ctx.Param("investorId")
+	disFrom := ctx.URLParam("disFrom")
+	disTo := ctx.URLParam("disTo")
+
+	loans := []struct {
+		LoanId                   uint64                 `gorm:"column:loanId" json:"loanId"`
+		BorrowerName             string                 `gorm:"column:borrowerName" json:"borrowerName"`
+		Group		             string                 `gorm:"column:group" json:"group"`
+		Branch		             string                 `gorm:"column:branch" json:"branch"`
+		DisbursementDate		 string                 `gorm:"column:disbursementDate" json:"disbursementDate"`
+		Plafond              	 float64    			`gorm:"column:plafond" json:"plafond"`
+		Rate                 	 float64    			`gorm:"column:rate" json:"rate"`
+		Tenor                	 uint64     			`gorm:"column:tenor" json:"tenor"`
+		CreditScoreGrade     	 string     			`gorm:"column:creditScoreGrade" json:"creditScoreGrade"`
+		Purpose              	 string     			`gorm:"column:purpose" json:"purpose"`
+	}{}
+
+	queryLoan :=`select loan.id as "loanId",cif."name" as "borrowerName","group"."name" as "group",
+	branch."name" as "branch",disbursement."disbursementDate"::date as "disbursementDate",loan.plafond,loan.rate,loan.tenor,loan."creditScoreGrade",loan.purpose from loan
+	join r_loan_group rlg on rlg."loanId"=loan.id
+	join "group" on "group".id = rlg."groupId"
+	join r_loan_borrower rlb on rlb."loanId"=loan.id
+	join r_cif_borrower rcb on rcb."borrowerId"=rlb."borrowerId"
+	join cif on cif.id=rcb."cifId"
+	join r_loan_branch rlbr on rlbr."loanId"=loan.id
+	join branch on branch.id=rlbr."branchId"
+	join r_loan_disbursement rld on rld."loanId"=loan.id
+	join disbursement on disbursement.id=rld."disbursementId"
+	join r_area_branch rab on rab."branchId"=branch.id
+	join r_loan_sector rls on rls."loanId"=loan.id
+	where loan.stage='PRIVATE' and loan."deletedAt" is null`
+
+	if disFrom != ""{
+		queryLoan+=` and disbursement."disbursementDate"::date >= '`+disFrom+`' `
+	}
+
+	if disTo != ""{
+		queryLoan+=` and disbursement."disbursementDate"::date <= '`+disTo+`' `
+	}
+	if investorId != "-1" {
+		plottingParams := struct {
+			ID                       uint64           `gorm:"column:id" json:"id"`
+			InvestorNo               uint64           `gorm:"column:investorNo" json:"investorNo"`
+			InvestorName             string           `gorm:"column:name" json:"investorName"`
+			IsBorrowerCriteriaActive *bool            `gorm:"column:isBorrowerCriteriaActive" json:"isBorrowerCriteriaActive"`
+			BorrowerCriteriaJSONB    string           `gorm:"column:borrowerCriteria" sql:"type:JSONB NOT NULL DEFAULT '{}'::JSONB" json:"-"`
+		}{}
+
+		query := `select investor.id, investor."investorNo", cif."name", investor."isBorrowerCriteriaActive", investor."borrowerCriteria"
+        from investor
+        join r_cif_investor rci on rci."investorId" = investor.Id
+        join cif on cif.id = rci."cifId"
+        where investor.id = ?`
+		services.DBCPsql.Raw(query, investorId).Scan(&plottingParams)
+
+		// prepare json for borrowerCriteria
+		in := []byte(plottingParams.BorrowerCriteriaJSONB)
+		var criteria BorrowerCriteria
+		json.Unmarshal(in, &criteria)
+
+		// Filter Tenor
+		filterTenor(criteria, &queryLoan)
+		//Filter Area
+		filterArea(criteria, &queryLoan)
+		//Filter CreditScoreGrade
+		filterCreditScoreGrade(criteria, &queryLoan)
+		//Filter Sector
+		filterSector(criteria, &queryLoan)
+		//Filter Plafond
+		filterPlafon(criteria, &queryLoan)
+		//Filter Rate
+		filterRate(criteria, &queryLoan)
+	}
+	services.DBCPsql.Raw(queryLoan).Scan(&loans)
+
+	ctx.JSON(iris.StatusOK, iris.Map{
+		"status": "success",
+		"data":   loans,
+	})
+}
+
+//TODO move to go-loan
+func filterPlafon(criteria BorrowerCriteria, queryLoan *string) {
+	fmt.Println("Plafon",criteria.Plafon)
+	if criteria.Plafon.OptionType==4 {
+		addedQuery := " and (loan.plafond >"+strconv.Itoa(criteria.Plafon.From)+" and loan.plafond <"+strconv.Itoa(criteria.Plafon.To)+")"
+		*queryLoan += addedQuery
+	}else {
+		operatorReference := struct {
+			Operator string `gorm:"column:operator" json:"operator"`
+		}{}
+
+		query := `select operator from plotting_borrower_operator_reference where id = ?`
+		services.DBCPsql.Raw(query, criteria.Plafon.OptionType).Scan(&operatorReference)
+		if operatorReference.Operator != "" {
+			addedQuery := " and loan.plafond " + operatorReference.Operator + " " + strconv.Itoa(criteria.Plafon.From)
+			*queryLoan += addedQuery
+		}
+	}
+}
+
+//TODO move to go-loan
+func filterRate(criteria BorrowerCriteria, queryLoan *string) {
+	if criteria.Rate.OptionType==4 {
+		addedQuery := " and (loan.rate >"+strconv.FormatFloat(criteria.Rate.From, 'f', -1, 64)+" and loan.rate <"+strconv.FormatFloat(criteria.Rate.To, 'E', -1, 64)+")"
+		*queryLoan += addedQuery
+	}else {
+		operatorReference := struct {
+			Operator string `gorm:"column:operator" json:"operator"`
+		}{}
+
+		query := `select operator from plotting_borrower_operator_reference where id = ?`
+		services.DBCPsql.Raw(query, criteria.Rate.OptionType).Scan(&operatorReference)
+		if operatorReference.Operator != "" {
+			addedQuery := " and loan.rate " + operatorReference.Operator + " " + strconv.FormatFloat(criteria.Rate.From, 'E', -1, 64)
+			*queryLoan += addedQuery
+		}
+	}
+}
+
+//TODO move to go-loan
+func filterTenor(criteria BorrowerCriteria, queryLoan *string) {
+	if len(criteria.Tenor) > 0 {
+		addedQuery := " and loan.tenor in ("
+		for i := 0; i < len(criteria.Tenor); i++ {
+			if i != 0 {
+				addedQuery += ","
+			}
+			addedQuery += strconv.Itoa(criteria.Tenor[i])
+		}
+		addedQuery += ")"
+		*queryLoan += addedQuery
+	}
+}
+
+//TODO move to go-loan
+func filterArea(criteria BorrowerCriteria, queryLoan *string) {
+	if len(criteria.Area) > 0 {
+		addedQuery := ` and rab."areaId" in (`
+		for i := 0; i < len(criteria.Area); i++ {
+			if i != 0 {
+				addedQuery += ","
+			}
+			addedQuery += strconv.Itoa(criteria.Area[i].ID)
+		}
+		addedQuery += ")"
+		*queryLoan += addedQuery
+	}
+}
+
+//TODO move to go-loan
+func filterCreditScoreGrade(criteria BorrowerCriteria, queryLoan *string)  {
+	if len(criteria.CreditScoreGrade) > 0 {
+		addedQuery := ` and loan."creditScoreGrade" in (`
+		for i := 0; i < len(criteria.CreditScoreGrade); i++ {
+			if i != 0 {
+				addedQuery += ","
+			}
+			addedQuery += `'`+criteria.CreditScoreGrade[i]+`'`
+		}
+		addedQuery += ")"
+		*queryLoan += addedQuery
+	}
+}
+
+//TODO move to go-loan
+func filterSector(criteria BorrowerCriteria, queryLoan *string)  {
+	if len(criteria.Sector) > 0 {
+		addedQuery := ` and rls."sectorId" in (`
+		for i := 0; i < len(criteria.Sector); i++ {
+			if i != 0 {
+				addedQuery += ","
+			}
+			addedQuery += strconv.Itoa(criteria.Sector[i].ID)
+		}
+		addedQuery += ")"
+		*queryLoan += addedQuery
+	}
 }
