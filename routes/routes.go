@@ -17,8 +17,10 @@ import (
 	"bitbucket.org/go-mis/modules/cashout"
 	"bitbucket.org/go-mis/modules/cashout-history"
 	"bitbucket.org/go-mis/modules/cif"
+	"bitbucket.org/go-mis/modules/data-transfer"
 	"bitbucket.org/go-mis/modules/disbursement"
 	"bitbucket.org/go-mis/modules/disbursement-history"
+	"bitbucket.org/go-mis/modules/disbursement-report"
 	"bitbucket.org/go-mis/modules/group"
 	"bitbucket.org/go-mis/modules/installment"
 	"bitbucket.org/go-mis/modules/installment-history"
@@ -27,6 +29,7 @@ import (
 	"bitbucket.org/go-mis/modules/loan-history"
 	"bitbucket.org/go-mis/modules/loan-monitoring"
 	"bitbucket.org/go-mis/modules/loan-order"
+	mitramanagement "bitbucket.org/go-mis/modules/mitra-management"
 	"bitbucket.org/go-mis/modules/notification"
 	"bitbucket.org/go-mis/modules/product-pricing"
 	"bitbucket.org/go-mis/modules/profit-and-loss"
@@ -34,17 +37,23 @@ import (
 	"bitbucket.org/go-mis/modules/role"
 	"bitbucket.org/go-mis/modules/sector"
 	"bitbucket.org/go-mis/modules/survey"
+	"bitbucket.org/go-mis/modules/system-parameter"
 	"bitbucket.org/go-mis/modules/user-mis"
 	"bitbucket.org/go-mis/modules/virtual-account"
 	"bitbucket.org/go-mis/modules/virtual-account-statement"
 	"bitbucket.org/go-mis/modules/voucher"
-	"bitbucket.org/go-mis/modules/disbursement-report"
 )
 
 // If domain is NOT specified,
 // then it will automatically initialize all domain
 func initializeAll() {
 	fmt.Println("[INFO] Initializing all domain")
+
+	config.Domain = "system-parameter"
+	systemParameter.Init()
+
+	config.Domain = "data-transfer"
+	dataTransfer.Init()
 
 	config.Domain = "access-token"
 	accessToken.Init()
@@ -147,12 +156,19 @@ func initializeAll() {
 	config.Domain = "disbursement-report"
 	disbursementReport.Init()
 
+	config.Domain = "mitra-management"
+	mitramanagement.Init()
+
 	fmt.Println("[INFO] All domain have been initialized")
 }
 
 // Init - Initialize routes
 func Init() {
 	switch config.Domain {
+	case "system-parameter":
+		systemParameter.Init()
+	case "data-transfer":
+		dataTransfer.Init()
 	case "access-token":
 		accessToken.Init()
 	case "account":
@@ -219,6 +235,8 @@ func Init() {
 		voucher.Init()
 	case "disbursementReport":
 		disbursementReport.Init()
+	case "mitramanagement":
+		mitramanagement.Init()
 	default:
 		initializeAll()
 	}

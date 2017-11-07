@@ -43,7 +43,7 @@ func GetDetail(ctx *iris.Context) {
 		return
 	}
 	//get json from node uploader
-	urlStr := config.UploaderApiPath + "disbursement"+disbursementReport.Filename+"?secretKey=n0de-U>lo4d3r"
+	urlStr := config.UploaderApiPath + "/disbursement"+disbursementReport.Filename+"?secretKey=n0de-U>lo4d3r"
 	request := gorequest.New()
 	_, resReportStr, errs := request.Get(urlStr).End()
 	disbursementReportDetail := DisbursementReportDetail{}

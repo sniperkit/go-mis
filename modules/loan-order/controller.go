@@ -13,6 +13,7 @@ import (
 	"bitbucket.org/go-mis/services"
 	"github.com/jinzhu/gorm"
 	"gopkg.in/kataras/iris.v4"
+	"bitbucket.org/go-mis/modules/email"
 )
 
 func Init() {
@@ -107,13 +108,23 @@ func AcceptLoanOrder(ctx *iris.Context) {
 
 	db := services.DBCPsql.Begin()
 
+	exist,_:=existTotalOrder(orderNo,db)
+	if !exist{
+		ctx.JSON(iris.StatusBadRequest, iris.Map{
+			"status":  "error",
+			"message": orderNo+" Not exist",
+			"data":    iris.Map{},
+		})
+		return
+	}
+
 	totalDebit := accountTransactionDebit.GetTotalAccountTransactionDebit(accId.AccountId)
 	totalCredit := accountTransactionCredit.GetTotalAccountTransactionCredit(accId.AccountId)
 	totalOrder, _ := calculateTotalPayment(orderNo, db)
 	totalBalance := (totalDebit + voucherAmount) - totalCredit - totalOrder
 
 	if totalBalance < 0 {
-		ctx.JSON(iris.StatusOK, iris.Map{
+		ctx.JSON(iris.StatusBadRequest, iris.Map{
 			"status":  "error",
 			"message": "totalBalance not enought",
 			"data":    iris.Map{},
@@ -162,6 +173,20 @@ func AcceptLoanOrder(ctx *iris.Context) {
 	}
 
 	db.Commit()
+
+	investorDetail :=InvestorDetail{}
+
+	queryDetailInvestor := `	select r_investor_product_pricing_loan."investorId",cif."username",cif.name from loan_order
+	join r_loan_order on r_loan_order."loanOrderId"=loan_order.id
+	join r_investor_product_pricing_loan on r_investor_product_pricing_loan."loanId"=r_loan_order."loanId"
+	join r_cif_investor on r_cif_investor."investorId"=r_investor_product_pricing_loan."investorId"
+	join cif on cif.id=r_cif_investor."cifId"
+	where loan_order."orderNo"=?`
+	services.DBCPsql.Raw(queryDetailInvestor,orderNo).Scan(&investorDetail)
+	go email.SendEmailIInvestmentSuccess(investorDetail.Name,investorDetail.Username,orderNo,investorDetail.InvestorId)
+	//go email.SendEmailIInvestmentSuccess(investorDetail.Name,"wuri.wulandari@amartha.com",orderNo,investorDetail.InvestorId)
+	go services.SendSMS(investorDetail.PhoneNo,"<Amartha> Selamat investasi anda berhasil dengan nomor order "+orderNo)
+	//go services.SendSMS("+628119780880","<Amartha> Selamat investasi anda berhasil dengan nomor order "+orderNo)
 
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"status": "success",
@@ -325,6 +350,18 @@ func RejectLoanOrder(ctx *iris.Context) {
 		"status": "success",
 		"data":   iris.Map{},
 	})
+}
+
+func existTotalOrder(orderNo string, db *gorm.DB) (bool, error) {
+	query := `select COUNT(id) "total"
+	from loan_order lo
+	where lo."orderNo"=? AND lo."deletedAt" is null`
+
+	r := struct{ Total float64 }{}
+	if err := db.Raw(query, orderNo).Scan(&r).Error; err != nil {
+		return false, err
+	}
+	return r.Total>0, nil
 }
 
 func calculateTotalPayment(orderNo string, db *gorm.DB) (float64, error) {

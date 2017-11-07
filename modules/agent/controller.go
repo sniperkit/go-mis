@@ -14,6 +14,7 @@ import (
 )
 
 type Cas struct {
+	UserId   string `json:"userId"`
 	Username string `json:"username"`
 	Password string `json:"password"`
 	UserType string `json:"userType"`
@@ -116,18 +117,6 @@ func CreateAgent(ctx *iris.Context) {
 
 	m := Payload{}
 	err := ctx.ReadJSON(&m)
-	//Register to Go-CAS
-	u := Cas{Username: m.Username, Password: m.Password, UserType: "APP"}
-	b := new(bytes.Buffer)
-	json.NewEncoder(b).Encode(u)
-	res, _ := http.Post(config.GoCasApiPath+"/api/v1/register", "application/json; charset=utf-8", b)
-	if res.StatusCode != 200 {
-		ctx.JSON(iris.StatusInternalServerError, iris.Map{
-			"status":  "error",
-			"message": "Error Create User in Go-CAS",
-		})
-		return
-	}
 	//Create Agent to Postgre
 	a := Agent{}
 	a.Username = m.Username;
@@ -157,6 +146,18 @@ func CreateAgent(ctx *iris.Context) {
 			processErrorAndRollback(ctx, db, err, "Create agent")
 			return
 
+		}
+		//Register to Go-CAS
+		u := Cas{UserId:strconv.FormatUint(a.ID,10),Username: m.Username, Password: m.Password, UserType: "APP"}
+		b := new(bytes.Buffer)
+		json.NewEncoder(b).Encode(u)
+		res, _ := http.Post(config.GoCasApiPath+"/api/v1/register", "application/json; charset=utf-8", b)
+		if res.StatusCode != 200 {
+			ctx.JSON(iris.StatusInternalServerError, iris.Map{
+				"status":  "error",
+				"message": "Error Create User in Go-CAS",
+			})
+			return
 		}
 		rba := r.RBranchAgent{}
 		rba.AgentId = a.ID;

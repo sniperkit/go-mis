@@ -4,6 +4,7 @@ import "time"
 
 type Loan struct {
 	ID                   uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
+	LoanType           string      `gorm:"column:loanType" json:"loanType" sql:"default:NORMAL"`
 	LoanPeriod           int64      `gorm:"column:loanPeriod" json:"loanPeriod"`
 	AgreementType        string     `gorm:"column:agreementType" json:"agreementType"`
 	Subgroup             string     `gorm:"column:subgroup" json:"subgrop"`
