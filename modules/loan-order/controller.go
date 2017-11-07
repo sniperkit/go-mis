@@ -119,7 +119,8 @@ func AcceptLoanOrder(ctx *iris.Context) {
 		})
 		return
 	}
-	isUsingInsurance,err := isUsingInsurance(orderNo,db)
+	isUsingInsurance,err := IsUsingInsurance(orderNo)
+	fmt.Println("IsInsurance",orderNo,isUsingInsurance)
 	if err!=nil{
 		ctx.JSON(iris.StatusInternalServerError, iris.Map{
 			"status":  "error",
@@ -161,7 +162,7 @@ func AcceptLoanOrder(ctx *iris.Context) {
 	}
 
 	if isUsingInsurance {
-		if err:=insertAtcInsurance(loans,totalOrder,accId.AccountId,db);err!=nil{
+		if err:=InsertAtcInsurance(loans,totalOrder,accId.AccountId,db);err!=nil{
 			processErrorAndRollback(ctx, orderNo, db, errUpdateCredit, "Insert insurace credit failed")
 			return
 		}
@@ -519,21 +520,23 @@ func CheckVoucherAndInsertToDebit(accountID uint64, orderNo string, db *gorm.DB)
 
 }
 
-func isUsingInsurance(orderNo string, db *gorm.DB) (bool, error) {
-	r := [] struct{ IsInsurance bool `gorm:"isInsurance"`}{}
-	query := `select l."isInsurance"
+func IsUsingInsurance(orderNo string) (bool, error) {
+	r := struct{
+		IsInsurance	bool	`gorm:"column:isInsurance"`
+		}{}
+	query := `select l."isInsurance" as "isInsurance"
 	from loan l join r_loan_order rlo on l.id = rlo."loanId"
 	join loan_order lo on lo.id = rlo."loanOrderId"
 	where lo."orderNo"=?`
 
-	error:=db.Raw(query, orderNo).Scan(&r).Error
+	error:=services.DBCPsql.Raw(query, orderNo).Scan(&r).Error
 	if error!=nil {
 		return false, error
 	}
-	return r[0].IsInsurance,nil
+	return r.IsInsurance,nil
 }
 
-func insertAtcInsurance(loans []int64,totalPayment float64, accountId uint64, db *gorm.DB) error {
+func InsertAtcInsurance(loans []int64,totalPayment float64, accountId uint64, db *gorm.DB) error {
 	totalAmountInsurance := totalPayment * InsuranceRate
 	accountTRCreditSchemaInsurance := &accountTransactionCredit.AccountTransactionCredit{Type: "INSURANCE", Amount: totalAmountInsurance, TransactionDate: time.Now()}
 	db.Table("account_transaction_credit").Create(accountTRCreditSchemaInsurance)
@@ -541,7 +544,7 @@ func insertAtcInsurance(loans []int64,totalPayment float64, accountId uint64, db
 	//Insert into r_account_transaction_credit
 	rAccountTRCreditSchema := &r.RAccountTransactionCredit{AccountId: accountId, AccountTransactionCreditId: accountTRCreditSchemaInsurance.ID}
 	db.Table("r_account_transaction_credit").Create(rAccountTRCreditSchema)
-	insuranceAtcID := rAccountTRCreditSchema.ID
+	insuranceAtcID := rAccountTRCreditSchema.AccountTransactionCreditId
 
 	for _, loanId := range loans {
 		insertRatclQuery := "INSERT INTO r_account_transaction_credit_loan(\"loanId\",\"accountTransactionCreditId\", \"createdAt\", \"updatedAt\") VALUES(?,?,current_timestamp,current_timestamp)"
