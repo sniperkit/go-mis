@@ -203,7 +203,7 @@ func AcceptLoanOrder(ctx *iris.Context) {
 	join cif on cif.id=r_cif_investor."cifId"
 	where loan_order."orderNo"=?`
 	services.DBCPsql.Raw(queryDetailInvestor,orderNo).Scan(&investorDetail)
-	go email.SendEmailIInvestmentSuccess(investorDetail.Name,investorDetail.Username,orderNo,investorDetail.InvestorId)
+	go email.SendEmailIInvestmentSuccess(investorDetail.Name,investorDetail.Username,orderNo,investorDetail.InvestorId,voucherAmount)
 	//go email.SendEmailIInvestmentSuccess(investorDetail.Name,"wuri.wulandari@amartha.com",orderNo,investorDetail.InvestorId)
 	go services.SendSMS(investorDetail.PhoneNo,"<Amartha> Selamat investasi anda berhasil dengan nomor order "+orderNo)
 	//go services.SendSMS("+628119780880","<Amartha> Selamat investasi anda berhasil dengan nomor order "+orderNo)
