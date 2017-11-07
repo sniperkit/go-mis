@@ -26,10 +26,10 @@ func GetLoanWithInsurance (ctx *iris.Context) {
   JOIN r_loan_borrower rlb ON rlb."loanId" = l.id
   JOIN r_cif_borrower rcb ON rcb."borrowerId" = rlb."borrowerId"
   JOIN cif ON cif.id = rcb."cifId"
-  JOIN r_loan_installment rli ON rli."loanId" = l.id
-  JOIN installment i ON i.id = rli."installmentId"
+  LEFT JOIN r_loan_installment rli ON rli."loanId" = l.id
+  LEFT JOIN installment i ON i.id = rli."installmentId"
   WHERE 
-  l.stage = 'INSTALLMENT'
+  l.stage IN ('INSTALLMENT', 'END')
   AND l."isInsurance" = TRUE
   GROUP BY l.id, cif.name limit 10`
   
@@ -66,7 +66,7 @@ type Total struct {
   TotalFrequency uint64 `gorm:"column:totalFrequency"`
 }
 
-const refundRate float64 = 0.75
+const RefundRate float64 = 0.75
 
 func ApplyRefund (ctx *iris.Context) {
   loanID := ctx.Param("loan_id")
@@ -83,7 +83,7 @@ func ApplyRefund (ctx *iris.Context) {
   
   if totalSchema.TotalFrequency < tenor {
     totalFrequencyRefund := tenor - totalSchema.TotalFrequency
-    totalRefund := (installment * float64(totalFrequencyRefund)) * refundRate
+    totalRefund := (installment * float64(totalFrequencyRefund)) * RefundRate
     
     accountSchema := account.Account{}
     queryGetAccountInvestor := `SELECT * FROM account JOIN r_account_investor rai ON rai."accountId" = account.id JOIN r_investor_product_pricing_loan rippl on rippl."investorId" = rai."investorId" WHERE rippl."loanId" = ?`
