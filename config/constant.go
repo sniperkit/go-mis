@@ -39,6 +39,7 @@ type Config struct {
 	EnableEmergencyLoan bool        `json:"enableEmergencyLoan"`
 	GoBankingPath       string      `json:"goBankingPath"`
 	GoLogPath           string      `json:"goLogPath"`
+	GoLoanPath          string      `json:"goLoanPath"`
 }
 
 type DbConfig struct {
@@ -94,14 +95,12 @@ func init() {
 	if e != nil {
 		panic(e)
 	}
-
 	// var c Config
 	err := json.Unmarshal(configFile, &Configuration)
 	if err != nil {
 		log.Println("[ERROR] Error when reading configuration file")
 		panic(err)
 	}
-	fmt.Printf("Configuration file: %+v", Configuration)
 	Configuration.ApiVersion = "2.2.0"
 	fmt.Println("Version:", Configuration.ApiVersion)
 	fmt.Println("------------------")

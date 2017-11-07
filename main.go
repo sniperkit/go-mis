@@ -17,6 +17,11 @@ import (
 	"bitbucket.org/go-mis/routes"
 )
 
+type User struct {
+	ID       uint64
+	Username string
+}
+
 func main() {
 
 	// Initialize recovery
@@ -37,6 +42,7 @@ func main() {
 
 	// Initialize custom routes
 	routes.InitCustomApi()
+
 	// Start app
 	iris.Listen(config.Port)
 }
