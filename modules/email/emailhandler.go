@@ -17,6 +17,7 @@ type ClientInvestor struct {
 	Purpose          string    `json:"purpose" gorm:"column:purpose"`
 	BorrowerName     string    `json:"borrowerName" gorm:"column:borrowerName"`
 	DisbursementDate time.Time `json:"disbursementDate" gorm:"column:disbursementDate"`
+	RevenueProjection float64   `json:"revenueProjection" gorm:"column:revenueProjection"`
 }
 
 type ClientInvestorEmailBody struct {
@@ -25,6 +26,7 @@ type ClientInvestorEmailBody struct {
 	Purpose          string `json:"purpose" `
 	BorrowerName     string `json:"borrowerName" `
 	DisbursementDate string `json:"disbursementDate"`
+	RevenueProjection string   `json:"revenueProjection" gorm:"column:revenueProjection"`
 }
 
 type Donations struct {
@@ -48,13 +50,15 @@ func GetClientInvestor(InvestorID uint64, OrderNo string, Stage string) ([]Clien
 				loan.purpose,
 				loan."isInsurance",
 				cif."name" as "borrowerName",
-				disbursement."disbursementDate"
+				disbursement."disbursementDate",
+				(loan.plafond + (loan.plafond * loan.rate * (pp."returnOfInvestment"))) "revenueProjection"
 			from loan
 				join r_loan_borrower ON r_loan_borrower."loanId" = loan.id
 				join borrower ON borrower.id = r_loan_borrower."borrowerId"
 				join r_cif_borrower ON r_cif_borrower."borrowerId" = borrower.id
 				join cif ON cif.id = r_cif_borrower."cifId"
 				join r_investor_product_pricing_loan ON r_investor_product_pricing_loan."loanId" = loan.id
+				join product_pricing pp on pp.id = r_investor_product_pricing_loan."productPricingId"
 				join r_loan_order rlo on rlo."loanId" = loan.id
 				join loan_order lo on lo.id  = rlo."loanOrderId"
 				join r_loan_disbursement on r_loan_disbursement."loanId" = loan.id
@@ -76,6 +80,7 @@ func GetClientInvestor(InvestorID uint64, OrderNo string, Stage string) ([]Clien
 		emailBody.Plafond = plafondStr
 		emailBody.Tenor = val.Tenor
 		emailBody.DisbursementDate = val.DisbursementDate.Format("02-01-2006")
+		emailBody.RevenueProjection = fmt.Sprintf("Rp %s", humanize.Commaf(val.RevenueProjection))
 		resultsEmails = append(resultsEmails, emailBody)
 
 		totalInsurance = totalInsurance + 1
@@ -96,6 +101,7 @@ func SendEmailIInvestmentSuccess(name string, toEmail string, OrderNo string, in
 		"donations":  []Donations{},
 		"totalInsuranceAmount":  fmt.Sprintf("Rp. %s", humanize.Commaf(totalInsuranceAmount)),
 		"voucherAmount":         voucherAmount,
+		"voucherAmountHumanize": fmt.Sprintf("Rp. %s", humanize.Commaf(voucherAmount)),
 	}
 
 	mandrill := &Mandrill{}
@@ -103,7 +109,11 @@ func SendEmailIInvestmentSuccess(name string, toEmail string, OrderNo string, in
 	mandrill.SetTo(toEmail)
 	mandrill.SetBCC("investing@amartha.com")
 	mandrill.SetSubject("[Amartha] Selamat, Transaksi Anda Berhasil")
-	mandrill.SetTemplateAndRawBody("investment_balance_success_v3_jamkrindo", subs)
+	if totalInsuranceAmount > 0 {
+		mandrill.SetTemplateAndRawBody("investment_balance_success_v3_jamkrindo", subs)
+	} else {
+		mandrill.SetTemplateAndRawBody("investment_balance_success_v3", subs)
+	}
 	mandrill.SetBucket(true)
 	mandrill.SendEmail()
 }
