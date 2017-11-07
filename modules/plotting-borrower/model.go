@@ -15,7 +15,19 @@ type BorrowerCriteria struct{
 	Plafon				Plafon		`json:"plafond"`
 	Sector				[]Sector		`json:"sector"`
 	CreditScoreGrade	[]string	`json:"creditScoreGrade"`
+}
 
+type RecommendedLoan struct{
+	LoanId                   uint64                 `gorm:"column:loanId" json:"loanId"`
+	BorrowerName             string                 `gorm:"column:borrowerName" json:"borrowerName"`
+	Group		             string                 `gorm:"column:group" json:"group"`
+	Branch		             string                 `gorm:"column:branch" json:"branch"`
+	DisbursementDate		 string                 `gorm:"column:disbursementDate" json:"disbursementDate"`
+	Plafond              	 float64    			`gorm:"column:plafond" json:"plafond"`
+	Rate                 	 float64    			`gorm:"column:rate" json:"rate"`
+	Tenor                	 uint64     			`gorm:"column:tenor" json:"tenor"`
+	CreditScoreGrade     	 string     			`gorm:"column:creditScoreGrade" json:"creditScoreGrade"`
+	Purpose              	 string     			`gorm:"column:purpose" json:"purpose"`
 }
 
 //TODO move to go-loan
