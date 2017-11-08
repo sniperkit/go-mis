@@ -201,7 +201,7 @@ func FindPlottingBorrower(ctx *iris.Context) {
 	stage:=""
 	if(stageParam == "investor") {
 		investorId, err := strconv.Atoi(investorIdParams)
-		if investorIdParams == "" || err != nil {
+		if investorId <= 0 || investorIdParams == "" || err != nil {
 			ctx.JSON(iris.StatusBadRequest, iris.Map{
 				"message":      "Bad Request",
 				"errorMessage": "Invalid User ID",
@@ -235,7 +235,7 @@ func FindPlottingBorrower(ctx *iris.Context) {
 	join r_area_branch rab on rab."branchId"=branch.id
 	join r_loan_sector rls on rls."loanId"=loan.id`
 
-	if investorId != "" {
+	if investorId > 0 {
 		query+= `
 		join r_cif_investor rcfi on rcfi."cifId" = cif.id 
 		join investor on investor.id = rcfi."investorId"
