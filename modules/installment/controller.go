@@ -928,6 +928,7 @@ func GetRawPendingInstallmentData(currentStage string, branchId uint64, now stri
 				join branch b on b.id = rlb."branchId"
 				join r_loan_installment rli on rli."loanId" = l.id
 				join installment i on i.id = rli."installmentId"
+				left join r_installment_cash_point ricp on ricp."installmentId"=i.id
 				join r_loan_disbursement rld on rld."loanId" = l.id
 				join disbursement d on d.id = rld."disbursementId"
 				left join (
@@ -949,6 +950,7 @@ func GetRawPendingInstallmentData(currentStage string, branchId uint64, now stri
 					order by "disbursementDate"::date desc
 				) foo on foo."agentId" = a.id and foo."groupId" = g.id
 			where l."deletedAt" is null
+			and ricp.id is null
 			and i."deletedAt" is null and
 			b.id= ? and i."createdAt"::date=? and
 			( UPPER(l.stage) = 'INSTALLMENT' OR UPPER(l.stage) = 'END' OR UPPER(l.stage) = 'END EARLY' OR UPPER(l.stage) = 'END-EARLY' OR UPPER(l.stage) = 'END-PENDING') `
