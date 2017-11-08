@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"bitbucket.org/go-mis/config"
@@ -195,14 +196,77 @@ func TogglePlottingParamsActivation(ctx *iris.Context) {
 
 }
 
-// FindRecomendedLoanByInvestorCriteria - this functoin fetch all loan by criteria
-func FindRecomendedLoanByInvestorCriteria(ctx *iris.Context) {
+// FindRecommendedLoanByInvestorCriteria - this functoin fetch all loan by criteria
+func FindPlottingBorrower(ctx *iris.Context) {
+
+	stageParam := ctx.Param("stage")
+	investorIdParams := ctx.URLParam("investorId")
+	investorId := 0
+
+	stage := ""
+	if stageParam == "investor" {
+		investorId, err := strconv.Atoi(investorIdParams)
+		if investorId <= 0 || investorIdParams == "" || err != nil {
+			ctx.JSON(iris.StatusBadRequest, iris.Map{
+				"message":      "Bad Request",
+				"errorMessage": "Invalid User ID",
+			})
+			return
+		}
+		stage = "PRIVATE-INVESTOR"
+	} else if stageParam == "marketplace" {
+		stage = "PRIVATE-MARKETPLACE"
+	} else {
+		ctx.JSON(iris.StatusBadRequest, iris.Map{
+			"message":      "Bad Request",
+			"errorMessage": "Invalid Stage",
+		})
+		return
+	}
+
+	loans := RecommendedLoan{}
+
+	query := `select loan.id as "loanId",cif."name" as "borrowerName","group"."name" as "group",
+	branch."name" as "branch",disbursement."disbursementDate"::date as "disbursementDate",loan.plafond,loan.rate,loan.tenor,loan."creditScoreGrade",loan.purpose from loan
+	join r_loan_group rlg on rlg."loanId"=loan.id
+	join "group" on "group".id = rlg."groupId"
+	join r_loan_borrower rlb on rlb."loanId"=loan.id
+	join r_cif_borrower rcb on rcb."borrowerId"=rlb."borrowerId"
+	join cif on cif.id=rcb."cifId"
+	join r_loan_branch rlbr on rlbr."loanId"=loan.id
+	join branch on branch.id=rlbr."branchId"
+	join r_loan_disbursement rld on rld."loanId"=loan.id
+	join disbursement on disbursement.id=rld."disbursementId"
+	join r_area_branch rab on rab."branchId"=branch.id
+	join r_loan_sector rls on rls."loanId"=loan.id`
+
+	if investorId > 0 {
+		query += `
+		join r_cif_investor rcfi on rcfi."cifId" = cif.id 
+		join investor on investor.id = rcfi."investorId"
+		where loan.stage=? and loan."deletedAt" is null and investor.id =? limit 3`
+		services.DBCPsql.Raw(query, stage, investorId).Scan(&loans)
+	} else {
+		query += `where loan.stage=? and loan."deletedAt" is null`
+		services.DBCPsql.Raw(query, stage).Scan(&loans)
+	}
+
+	ctx.JSON(iris.StatusOK, iris.Map{
+		"status": "success",
+		"data":   loans,
+	})
+
+}
+
+//TODO move to go-loan
+// this functoin fetch all loan by criteria
+func FindRecommendedLoanByInvestorCriteria(ctx *iris.Context) {
 	investorID := ctx.Param("investorId")
 	disFrom := ctx.URLParam("disFrom")
 	disTo := ctx.URLParam("disTo")
-	resultGoloan := make([]RecomendedLoan, 0)
+	resultGoloan := make([]RecommendedLoan, 0)
 
-	redisLoan, err := RetriveRecomendedLoanFromRedis(investorID)
+	redisLoan, err := RetriveRecommendedLoanFromRedis(investorID)
 	if err != nil {
 		log.Println("[ERROR] ", err)
 	}
@@ -213,7 +277,7 @@ func FindRecomendedLoanByInvestorCriteria(ctx *iris.Context) {
 		})
 		return
 	}
-	resultGoloan, err = RetrieveRecomendedLoanFromLoanService(disFrom, disTo, investorID)
+	resultGoloan, err = RetrieveRecommendedLoanFromLoanService(disFrom, disTo, investorID)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, iris.Map{
 			"status":  "Error",
@@ -227,8 +291,8 @@ func FindRecomendedLoanByInvestorCriteria(ctx *iris.Context) {
 	})
 }
 
-// RetrieveRecomendedLoanFromLoanService - get all data recomended loan from loan service
-func RetrieveRecomendedLoanFromLoanService(disFrom, disTo, investorID string) ([]RecomendedLoan, error) {
+// RetrieveRecommendedLoanFromLoanService - get all data recomended loan from loan service
+func RetrieveRecommendedLoanFromLoanService(disFrom, disTo, investorID string) ([]RecommendedLoan, error) {
 	var goloanResp GOLoanSuccessResponse
 	goLoanURI := config.Configuration.GoLoanPath + "/" + "loan/plotting-borrower/recomended-loan-investor/" + investorID + "?disFrom=" + disFrom + "&disTo=" + disTo
 	fmt.Println("GOLOAN URI: ", goLoanURI)
@@ -245,7 +309,7 @@ func RetrieveRecomendedLoanFromLoanService(disFrom, disTo, investorID string) ([
 	if goloanResp.Code != 200 && strings.ToUpper(goloanResp.Message) != "SUCCESS" {
 		return nil, errors.New("Unable to get recomended loan data from go loan service")
 	}
-	go func(data []RecomendedLoan) {
+	go func(data []RecommendedLoan) {
 		b, errMarshall := json.Marshal(&data)
 		redisClient, errRed := services.NewClientRedis()
 		if errMarshall != nil || errRed != nil {
@@ -261,23 +325,23 @@ func RetrieveRecomendedLoanFromLoanService(disFrom, disTo, investorID string) ([
 	return goloanResp.Data, nil
 }
 
-// RetriveRecomendedLoanFromRedis - get data recomened loan from redis
+// RetriveRecommendedLoanFromRedis - get data recomened loan from redis
 // wrapped wheter is all or specifig by investor id
-func RetriveRecomendedLoanFromRedis(investorID string) ([]RecomendedLoan, error) {
+func RetriveRecommendedLoanFromRedis(investorID string) ([]RecommendedLoan, error) {
 	var err error
-	loanRedis := make([]RecomendedLoan, 0)
+	loanRedis := make([]RecommendedLoan, 0)
 	switch strings.ToUpper(strings.TrimSpace(investorID)) {
 	case "ALL":
-		loanRedis, err = FindAllRecomendedLoanFromRedis()
+		loanRedis, err = FindAllRecommendedLoanFromRedis()
 	default:
-		loanRedis, err = FindRecomendedLoanFromRedis(investorID)
+		loanRedis, err = FindRecommendedLoanFromRedis(investorID)
 	}
 	return loanRedis, err
 }
 
-// FindAllRecomendedLoanFromRedis - find all recomended loan from redis
-func FindAllRecomendedLoanFromRedis() ([]RecomendedLoan, error) {
-	loans := make([]RecomendedLoan, 0)
+// FindAllRecommendedLoanFromRedis - find all recomended loan from redis
+func FindAllRecommendedLoanFromRedis() ([]RecommendedLoan, error) {
+	loans := make([]RecommendedLoan, 0)
 	redisClient, err := services.NewClientRedis()
 	if err != nil {
 		return nil, err
@@ -287,7 +351,7 @@ func FindAllRecomendedLoanFromRedis() ([]RecomendedLoan, error) {
 		return nil, err
 	}
 	for i := range strData {
-		var recLoan RecomendedLoan
+		var recLoan RecommendedLoan
 		err = json.Unmarshal([]byte(strData[i]), &recLoan)
 		if err != nil {
 			return nil, err
@@ -297,9 +361,9 @@ func FindAllRecomendedLoanFromRedis() ([]RecomendedLoan, error) {
 	return loans, nil
 }
 
-// FindRecomendedLoanFromRedis - find all recomended loan from redis by investor id
-func FindRecomendedLoanFromRedis(investorID string) ([]RecomendedLoan, error) {
-	loanRedis := make([]RecomendedLoan, 0)
+// FindRecommendedLoanFromRedis - find all recomended loan from redis by investor id
+func FindRecommendedLoanFromRedis(investorID string) ([]RecommendedLoan, error) {
+	loanRedis := make([]RecommendedLoan, 0)
 	redisClient, err := services.NewClientRedis()
 	if err != nil {
 		return nil, err
