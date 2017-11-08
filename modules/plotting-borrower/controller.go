@@ -195,11 +195,20 @@ func TogglePlottingParamsActivation(ctx *iris.Context) {
 func FindPlottingBorrower(ctx *iris.Context) {
 	
 	stageParam := ctx.Param("stage")
-	investorId := ctx.URLParam("investorId")
+	investorIdParams := ctx.URLParam("investorId")
+	investorId := 0
 
 	stage:=""
-	if(stageParam == "investor" && investorId != "") {
+	if(stageParam == "investor") {
+		investorId, err := strconv.Atoi(investorIdParams)
 		stage = "PRIVATE-INVESTOR"
+		if investorIdParams == "" || err != nil {
+			ctx.JSON(iris.StatusBadRequest, iris.Map{
+				"message":      "Bad Request",
+				"errorMessage": "Invalid User ID",
+			})
+			return	
+		}
 	} else if(stageParam == "marketplace") {
 		stage = "PRIVATE-MARKETPLACE"
 	}else {
