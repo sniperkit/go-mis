@@ -3,13 +3,17 @@ package plottingBorrower
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
+	"log"
+	"net/http"
+	"strconv"
+	"strings"
 
+	"bitbucket.org/go-mis/config"
 	"bitbucket.org/go-mis/modules/investor"
 	"bitbucket.org/go-mis/services"
 
 	"gopkg.in/kataras/iris.v4"
-	"strconv"
-	"fmt"
 )
 
 // This function saves potting paramaters as borrower criteria
@@ -192,36 +196,37 @@ func TogglePlottingParamsActivation(ctx *iris.Context) {
 
 }
 
+// FindRecommendedLoanByInvestorCriteria - this functoin fetch all loan by criteria
 func FindPlottingBorrower(ctx *iris.Context) {
-	
+
 	stageParam := ctx.Param("stage")
 	investorIdParams := ctx.URLParam("investorId")
 	investorId := 0
 
-	stage:=""
-	if(stageParam == "investor") {
+	stage := ""
+	if stageParam == "investor" {
 		investorId, err := strconv.Atoi(investorIdParams)
 		if investorId <= 0 || investorIdParams == "" || err != nil {
 			ctx.JSON(iris.StatusBadRequest, iris.Map{
 				"message":      "Bad Request",
 				"errorMessage": "Invalid User ID",
 			})
-			return	
+			return
 		}
 		stage = "PRIVATE-INVESTOR"
-	} else if(stageParam == "marketplace") {
+	} else if stageParam == "marketplace" {
 		stage = "PRIVATE-MARKETPLACE"
-	}else {
+	} else {
 		ctx.JSON(iris.StatusBadRequest, iris.Map{
 			"message":      "Bad Request",
 			"errorMessage": "Invalid Stage",
 		})
-		return	
+		return
 	}
 
 	loans := RecommendedLoan{}
 
-	query :=`select loan.id as "loanId",cif."name" as "borrowerName","group"."name" as "group",
+	query := `select loan.id as "loanId",cif."name" as "borrowerName","group"."name" as "group",
 	branch."name" as "branch",disbursement."disbursementDate"::date as "disbursementDate",loan.plafond,loan.rate,loan.tenor,loan."creditScoreGrade",loan.purpose from loan
 	join r_loan_group rlg on rlg."loanId"=loan.id
 	join "group" on "group".id = rlg."groupId"
@@ -236,16 +241,16 @@ func FindPlottingBorrower(ctx *iris.Context) {
 	join r_loan_sector rls on rls."loanId"=loan.id`
 
 	if investorId > 0 {
-		query+= `
+		query += `
 		join r_cif_investor rcfi on rcfi."cifId" = cif.id 
 		join investor on investor.id = rcfi."investorId"
-		where loan.stage=? and loan."deletedAt" is null and investor.id =? limit 3`;
+		where loan.stage=? and loan."deletedAt" is null and investor.id =? limit 3`
 		services.DBCPsql.Raw(query, stage, investorId).Scan(&loans)
-	}else {
-		query+= `where loan.stage=? and loan."deletedAt" is null`;
+	} else {
+		query += `where loan.stage=? and loan."deletedAt" is null`
 		services.DBCPsql.Raw(query, stage).Scan(&loans)
 	}
-	
+
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"status": "success",
 		"data":   loans,
@@ -255,183 +260,125 @@ func FindPlottingBorrower(ctx *iris.Context) {
 
 //TODO move to go-loan
 // this functoin fetch all loan by criteria
-func FindRecomendedLoanByInvestorCriteria(ctx *iris.Context) {
-	investorId := ctx.Param("investorId")
+func FindRecommendedLoanByInvestorCriteria(ctx *iris.Context) {
+	investorID := ctx.Param("investorId")
 	disFrom := ctx.URLParam("disFrom")
 	disTo := ctx.URLParam("disTo")
+	resultGoloan := make([]RecommendedLoan, 0)
 
-	loans := []struct {
-		LoanId                   uint64                 `gorm:"column:loanId" json:"loanId"`
-		BorrowerName             string                 `gorm:"column:borrowerName" json:"borrowerName"`
-		Group		             string                 `gorm:"column:group" json:"group"`
-		Branch		             string                 `gorm:"column:branch" json:"branch"`
-		DisbursementDate		 string                 `gorm:"column:disbursementDate" json:"disbursementDate"`
-		Plafond              	 float64    			`gorm:"column:plafond" json:"plafond"`
-		Rate                 	 float64    			`gorm:"column:rate" json:"rate"`
-		Tenor                	 uint64     			`gorm:"column:tenor" json:"tenor"`
-		CreditScoreGrade     	 string     			`gorm:"column:creditScoreGrade" json:"creditScoreGrade"`
-		Purpose              	 string     			`gorm:"column:purpose" json:"purpose"`
-	}{}
-
-	queryLoan :=`select loan.id as "loanId",cif."name" as "borrowerName","group"."name" as "group",
-	branch."name" as "branch",disbursement."disbursementDate"::date as "disbursementDate",loan.plafond,loan.rate,loan.tenor,loan."creditScoreGrade",loan.purpose from loan
-	join r_loan_group rlg on rlg."loanId"=loan.id
-	join "group" on "group".id = rlg."groupId"
-	join r_loan_borrower rlb on rlb."loanId"=loan.id
-	join r_cif_borrower rcb on rcb."borrowerId"=rlb."borrowerId"
-	join cif on cif.id=rcb."cifId"
-	join r_loan_branch rlbr on rlbr."loanId"=loan.id
-	join branch on branch.id=rlbr."branchId"
-	join r_loan_disbursement rld on rld."loanId"=loan.id
-	join disbursement on disbursement.id=rld."disbursementId"
-	join r_area_branch rab on rab."branchId"=branch.id
-	join r_loan_sector rls on rls."loanId"=loan.id
-	where loan.stage='PRIVATE' and loan."deletedAt" is null`
-
-	if disFrom != ""{
-		queryLoan+=` and disbursement."disbursementDate"::date >= '`+disFrom+`' `
+	redisLoan, err := RetriveRecommendedLoanFromRedis(investorID)
+	if err != nil {
+		log.Println("[ERROR] ", err)
 	}
-
-	if disTo != ""{
-		queryLoan+=` and disbursement."disbursementDate"::date <= '`+disTo+`' `
+	if len(redisLoan) > 0 {
+		ctx.JSON(http.StatusOK, iris.Map{
+			"status": "Success",
+			"data":   redisLoan,
+		})
+		return
 	}
-	if investorId != "-1" {
-		plottingParams := struct {
-			ID                       uint64           `gorm:"column:id" json:"id"`
-			InvestorNo               uint64           `gorm:"column:investorNo" json:"investorNo"`
-			InvestorName             string           `gorm:"column:name" json:"investorName"`
-			IsBorrowerCriteriaActive *bool            `gorm:"column:isBorrowerCriteriaActive" json:"isBorrowerCriteriaActive"`
-			BorrowerCriteriaJSONB    string           `gorm:"column:borrowerCriteria" sql:"type:JSONB NOT NULL DEFAULT '{}'::JSONB" json:"-"`
-		}{}
-
-		query := `select investor.id, investor."investorNo", cif."name", investor."isBorrowerCriteriaActive", investor."borrowerCriteria"
-        from investor
-        join r_cif_investor rci on rci."investorId" = investor.Id
-        join cif on cif.id = rci."cifId"
-        where investor.id = ?`
-		services.DBCPsql.Raw(query, investorId).Scan(&plottingParams)
-
-		// prepare json for borrowerCriteria
-		in := []byte(plottingParams.BorrowerCriteriaJSONB)
-		var criteria BorrowerCriteria
-		json.Unmarshal(in, &criteria)
-
-		// Filter Tenor
-		filterTenor(criteria, &queryLoan)
-		//Filter Area
-		filterArea(criteria, &queryLoan)
-		//Filter CreditScoreGrade
-		filterCreditScoreGrade(criteria, &queryLoan)
-		//Filter Sector
-		filterSector(criteria, &queryLoan)
-		//Filter Plafond
-		filterPlafon(criteria, &queryLoan)
-		//Filter Rate
-		filterRate(criteria, &queryLoan)
+	resultGoloan, err = RetrieveRecommendedLoanFromLoanService(disFrom, disTo, investorID)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, iris.Map{
+			"status":  "Error",
+			"message": err.Error(),
+		})
+		return
 	}
-	services.DBCPsql.Raw(queryLoan).Scan(&loans)
-
-	ctx.JSON(iris.StatusOK, iris.Map{
-		"status": "success",
-		"data":   loans,
+	ctx.JSON(http.StatusOK, iris.Map{
+		"status": "Success",
+		"data":   resultGoloan,
 	})
 }
 
-//TODO move to go-loan
-func filterPlafon(criteria BorrowerCriteria, queryLoan *string) {
-	fmt.Println("Plafon",criteria.Plafon)
-	if criteria.Plafon.OptionType==4 {
-		addedQuery := " and (loan.plafond >"+strconv.Itoa(criteria.Plafon.From)+" and loan.plafond <"+strconv.Itoa(criteria.Plafon.To)+")"
-		*queryLoan += addedQuery
-	}else {
-		operatorReference := struct {
-			Operator string `gorm:"column:operator" json:"operator"`
-		}{}
-
-		query := `select operator from plotting_borrower_operator_reference where id = ?`
-		services.DBCPsql.Raw(query, criteria.Plafon.OptionType).Scan(&operatorReference)
-		if operatorReference.Operator != "" {
-			addedQuery := " and loan.plafond " + operatorReference.Operator + " " + strconv.Itoa(criteria.Plafon.From)
-			*queryLoan += addedQuery
-		}
+// RetrieveRecommendedLoanFromLoanService - get all data recomended loan from loan service
+func RetrieveRecommendedLoanFromLoanService(disFrom, disTo, investorID string) ([]RecommendedLoan, error) {
+	var goloanResp GOLoanSuccessResponse
+	goLoanURI := config.Configuration.GoLoanPath + "/" + "loan/plotting-borrower/recomended-loan-investor/" + investorID + "?disFrom=" + disFrom + "&disTo=" + disTo
+	fmt.Println("GOLOAN URI: ", goLoanURI)
+	body, err := services.CircuitBreaker.Get(goLoanURI)
+	if err != nil {
+		log.Println("[ERROR] ", err)
+		return nil, err
 	}
-}
-
-//TODO move to go-loan
-func filterRate(criteria BorrowerCriteria, queryLoan *string) {
-	if criteria.Rate.OptionType==4 {
-		addedQuery := " and (loan.rate >"+strconv.FormatFloat(criteria.Rate.From, 'f', -1, 64)+" and loan.rate <"+strconv.FormatFloat(criteria.Rate.To, 'E', -1, 64)+")"
-		*queryLoan += addedQuery
-	}else {
-		operatorReference := struct {
-			Operator string `gorm:"column:operator" json:"operator"`
-		}{}
-
-		query := `select operator from plotting_borrower_operator_reference where id = ?`
-		services.DBCPsql.Raw(query, criteria.Rate.OptionType).Scan(&operatorReference)
-		if operatorReference.Operator != "" {
-			addedQuery := " and loan.rate " + operatorReference.Operator + " " + strconv.FormatFloat(criteria.Rate.From, 'E', -1, 64)
-			*queryLoan += addedQuery
-		}
+	err = json.Unmarshal(body, &goloanResp)
+	if err != nil {
+		log.Println("[ERROR] ", err)
+		return nil, err
 	}
-}
-
-//TODO move to go-loan
-func filterTenor(criteria BorrowerCriteria, queryLoan *string) {
-	if len(criteria.Tenor) > 0 {
-		addedQuery := " and loan.tenor in ("
-		for i := 0; i < len(criteria.Tenor); i++ {
-			if i != 0 {
-				addedQuery += ","
+	if goloanResp.Code != 200 && strings.ToUpper(goloanResp.Message) != "SUCCESS" {
+		return nil, errors.New("Unable to get recomended loan data from go loan service")
+	}
+	go func(data []RecommendedLoan) {
+		b, errMarshall := json.Marshal(&data)
+		redisClient, errRed := services.NewClientRedis()
+		if errMarshall != nil || errRed != nil {
+			log.Println("[ERROR]", errMarshall)
+			log.Println("[ERROR]", errRed)
+		} else {
+			err := redisClient.SaveRecomendedLoan(investorID, b)
+			if err != nil {
+				log.Println("[ERROR] ", err)
 			}
-			addedQuery += strconv.Itoa(criteria.Tenor[i])
 		}
-		addedQuery += ")"
-		*queryLoan += addedQuery
-	}
+	}(goloanResp.Data)
+	return goloanResp.Data, nil
 }
 
-//TODO move to go-loan
-func filterArea(criteria BorrowerCriteria, queryLoan *string) {
-	if len(criteria.Area) > 0 {
-		addedQuery := ` and rab."areaId" in (`
-		for i := 0; i < len(criteria.Area); i++ {
-			if i != 0 {
-				addedQuery += ","
-			}
-			addedQuery += strconv.Itoa(criteria.Area[i].ID)
-		}
-		addedQuery += ")"
-		*queryLoan += addedQuery
+// RetriveRecommendedLoanFromRedis - get data recomened loan from redis
+// wrapped wheter is all or specifig by investor id
+func RetriveRecommendedLoanFromRedis(investorID string) ([]RecommendedLoan, error) {
+	var err error
+	loanRedis := make([]RecommendedLoan, 0)
+	switch strings.ToUpper(strings.TrimSpace(investorID)) {
+	case "ALL":
+		loanRedis, err = FindAllRecommendedLoanFromRedis()
+	default:
+		loanRedis, err = FindRecommendedLoanFromRedis(investorID)
 	}
+	return loanRedis, err
 }
 
-//TODO move to go-loan
-func filterCreditScoreGrade(criteria BorrowerCriteria, queryLoan *string)  {
-	if len(criteria.CreditScoreGrade) > 0 {
-		addedQuery := ` and loan."creditScoreGrade" in (`
-		for i := 0; i < len(criteria.CreditScoreGrade); i++ {
-			if i != 0 {
-				addedQuery += ","
-			}
-			addedQuery += `'`+criteria.CreditScoreGrade[i]+`'`
-		}
-		addedQuery += ")"
-		*queryLoan += addedQuery
+// FindAllRecommendedLoanFromRedis - find all recomended loan from redis
+func FindAllRecommendedLoanFromRedis() ([]RecommendedLoan, error) {
+	loans := make([]RecommendedLoan, 0)
+	redisClient, err := services.NewClientRedis()
+	if err != nil {
+		return nil, err
 	}
+	strData, err := redisClient.GetAllRecomendedLoan()
+	if err != nil {
+		return nil, err
+	}
+	for i := range strData {
+		var recLoan RecommendedLoan
+		err = json.Unmarshal([]byte(strData[i]), &recLoan)
+		if err != nil {
+			return nil, err
+		}
+		loans = append(loans, recLoan)
+	}
+	return loans, nil
 }
 
-//TODO move to go-loan
-func filterSector(criteria BorrowerCriteria, queryLoan *string)  {
-	if len(criteria.Sector) > 0 {
-		addedQuery := ` and rls."sectorId" in (`
-		for i := 0; i < len(criteria.Sector); i++ {
-			if i != 0 {
-				addedQuery += ","
-			}
-			addedQuery += strconv.Itoa(criteria.Sector[i].ID)
-		}
-		addedQuery += ")"
-		*queryLoan += addedQuery
+// FindRecommendedLoanFromRedis - find all recomended loan from redis by investor id
+func FindRecommendedLoanFromRedis(investorID string) ([]RecommendedLoan, error) {
+	loanRedis := make([]RecommendedLoan, 0)
+	redisClient, err := services.NewClientRedis()
+	if err != nil {
+		return nil, err
 	}
+	key, err := redisClient.GetPRecomendedLoanKey(investorID)
+	if err != nil {
+		return nil, err
+	}
+	b, err := redisClient.GetRecomendedLoan(key)
+	if err != nil {
+		return nil, err
+	}
+	err = json.Unmarshal(b, &loanRedis)
+	if err != nil {
+		return nil, err
+	}
+	return loanRedis, nil
 }
