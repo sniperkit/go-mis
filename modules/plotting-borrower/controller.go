@@ -201,7 +201,6 @@ func FindPlottingBorrower(ctx *iris.Context) {
 	stage:=""
 	if(stageParam == "investor") {
 		investorId, err := strconv.Atoi(investorIdParams)
-		stage = "PRIVATE-INVESTOR"
 		if investorIdParams == "" || err != nil {
 			ctx.JSON(iris.StatusBadRequest, iris.Map{
 				"message":      "Bad Request",
@@ -209,6 +208,7 @@ func FindPlottingBorrower(ctx *iris.Context) {
 			})
 			return	
 		}
+		stage = "PRIVATE-INVESTOR"
 	} else if(stageParam == "marketplace") {
 		stage = "PRIVATE-MARKETPLACE"
 	}else {
