@@ -192,6 +192,67 @@ func TogglePlottingParamsActivation(ctx *iris.Context) {
 
 }
 
+func FindPlottingBorrower(ctx *iris.Context) {
+	
+	stageParam := ctx.Param("stage")
+	investorIdParams := ctx.URLParam("investorId")
+	investorId := 0
+
+	stage:=""
+	if(stageParam == "investor") {
+		investorId, err := strconv.Atoi(investorIdParams)
+		if investorId <= 0 || investorIdParams == "" || err != nil {
+			ctx.JSON(iris.StatusBadRequest, iris.Map{
+				"message":      "Bad Request",
+				"errorMessage": "Invalid User ID",
+			})
+			return	
+		}
+		stage = "PRIVATE-INVESTOR"
+	} else if(stageParam == "marketplace") {
+		stage = "PRIVATE-MARKETPLACE"
+	}else {
+		ctx.JSON(iris.StatusBadRequest, iris.Map{
+			"message":      "Bad Request",
+			"errorMessage": "Invalid Stage",
+		})
+		return	
+	}
+
+	loans := RecommendedLoan{}
+
+	query :=`select loan.id as "loanId",cif."name" as "borrowerName","group"."name" as "group",
+	branch."name" as "branch",disbursement."disbursementDate"::date as "disbursementDate",loan.plafond,loan.rate,loan.tenor,loan."creditScoreGrade",loan.purpose from loan
+	join r_loan_group rlg on rlg."loanId"=loan.id
+	join "group" on "group".id = rlg."groupId"
+	join r_loan_borrower rlb on rlb."loanId"=loan.id
+	join r_cif_borrower rcb on rcb."borrowerId"=rlb."borrowerId"
+	join cif on cif.id=rcb."cifId"
+	join r_loan_branch rlbr on rlbr."loanId"=loan.id
+	join branch on branch.id=rlbr."branchId"
+	join r_loan_disbursement rld on rld."loanId"=loan.id
+	join disbursement on disbursement.id=rld."disbursementId"
+	join r_area_branch rab on rab."branchId"=branch.id
+	join r_loan_sector rls on rls."loanId"=loan.id`
+
+	if investorId > 0 {
+		query+= `
+		join r_cif_investor rcfi on rcfi."cifId" = cif.id 
+		join investor on investor.id = rcfi."investorId"
+		where loan.stage=? and loan."deletedAt" is null and investor.id =? limit 3`;
+		services.DBCPsql.Raw(query, stage, investorId).Scan(&loans)
+	}else {
+		query+= `where loan.stage=? and loan."deletedAt" is null`;
+		services.DBCPsql.Raw(query, stage).Scan(&loans)
+	}
+	
+	ctx.JSON(iris.StatusOK, iris.Map{
+		"status": "success",
+		"data":   loans,
+	})
+
+}
+
 //TODO move to go-loan
 // this functoin fetch all loan by criteria
 func FindRecomendedLoanByInvestorCriteria(ctx *iris.Context) {
