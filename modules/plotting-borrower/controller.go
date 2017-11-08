@@ -207,8 +207,6 @@ func FindRecomendedLoanByInvestorCriteria(ctx *iris.Context) {
 		log.Println("[ERROR] ", err)
 	}
 	if len(redisLoan) > 0 {
-		fmt.Println("Data from redis")
-		fmt.Printf("Redis Loan: %+v", redisLoan)
 		ctx.JSON(http.StatusOK, iris.Map{
 			"status": "Success",
 			"data":   redisLoan,
@@ -219,11 +217,10 @@ func FindRecomendedLoanByInvestorCriteria(ctx *iris.Context) {
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, iris.Map{
 			"status":  "Error",
-			"message": "Internal Server Error",
+			"message": err.Error(),
 		})
 		return
 	}
-	fmt.Println("Result go loan: ", resultGoloan)
 	ctx.JSON(http.StatusOK, iris.Map{
 		"status": "Success",
 		"data":   resultGoloan,
