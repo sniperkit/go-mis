@@ -198,7 +198,7 @@ func FindPlottingBorrower(ctx *iris.Context) {
 	investorId := ctx.URLParam("investorId")
 
 	stage:=""
-	if(stageParam == "investor") {
+	if(stageParam == "investor" && investorId != "") {
 		stage = "PRIVATE-INVESTOR"
 	} else if(stageParam == "marketplace") {
 		stage = "PRIVATE-MARKETPLACE"
@@ -224,8 +224,7 @@ func FindPlottingBorrower(ctx *iris.Context) {
 	join r_loan_disbursement rld on rld."loanId"=loan.id
 	join disbursement on disbursement.id=rld."disbursementId"
 	join r_area_branch rab on rab."branchId"=branch.id
-	join r_loan_sector rls on rls."loanId"=loan.id
-	where loan.stage='PRIVATE' and loan."deletedAt" is null`
+	join r_loan_sector rls on rls."loanId"=loan.id`
 
 	if investorId != "" {
 		query+= `
