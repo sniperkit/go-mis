@@ -243,7 +243,7 @@ func FindPlottingBorrower(ctx *iris.Context) {
 		services.DBCPsql.Raw(query, stage, investorId).Scan(&loans)
 	}else {
 		query+= `where loan.stage=? and loan."deletedAt" is null`;
-		services.DBCPsql.Raw(query, stage, investorId).Scan(&loans)
+		services.DBCPsql.Raw(query, stage).Scan(&loans)
 	}
 	
 	ctx.JSON(iris.StatusOK, iris.Map{
