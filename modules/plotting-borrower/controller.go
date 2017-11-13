@@ -93,13 +93,24 @@ func ListPlottingParams(ctx *iris.Context) {
 	}{}
 
 	query := `select investor.id, investor."investorNo", cif."name", investor."isBorrowerCriteriaActive" 
-	from investor
-	join r_cif_investor rci on rci."investorId" = investor.Id
-	join cif on cif.id = rci."cifId"
-	where "borrowerCriteria" <> '{}' and investor."deletedAt" is null`
-	services.DBCPsql.Raw(query).Scan(&investors)
-	for _, _ = range investors {
-		totalRows += 1
+				from investor
+			join r_cif_investor rci on rci."investorId" = investor.Id
+			join cif on cif.id = rci."cifId"
+			where "borrowerCriteria" <> '{}' and 
+			investor."isBorrowerCriteriaActive" = true and
+			investor."deletedAt" is null`
+	if err := services.DBCPsql.Raw(query).Scan(&investors).Error; err != nil {
+		ctx.JSON(iris.StatusOK, iris.Map{
+			"status":  "Error",
+			"message": "Internal server error",
+		})
+		return
+	}
+
+	lenData := len(investors)
+
+	if lenData > 0 {
+		totalRows = lenData
 	}
 
 	ctx.JSON(iris.StatusOK, iris.Map{
@@ -117,7 +128,9 @@ func FindEligbleInvestor(ctx *iris.Context) {
 	query := `select investor.id,cif."name","investorNo","borrowerCriteria" from investor
 	join r_cif_investor on r_cif_investor."investorId"=investor.id
 	join cif on cif.id=r_cif_investor."cifId"
-	where investor.id=?  and investor."deletedAt" is null`
+	where investor.id=?  and 
+
+	investor."deletedAt" is null`
 
 	investor := EligbleInvestor{}
 	services.DBCPsql.Raw(query, investorId).Scan(&investor)
@@ -266,18 +279,19 @@ func FindRecommendedLoanByInvestorCriteria(ctx *iris.Context) {
 	disTo := ctx.URLParam("disTo")
 	resultGoloan := make([]RecommendedLoan, 0)
 
-	redisLoan, err := RetriveRecommendedLoanFromRedis(investorID)
-	if err != nil {
-		log.Println("[ERROR] ", err)
-	}
-	if len(redisLoan) > 0 {
-		ctx.JSON(http.StatusOK, iris.Map{
-			"status": "Success",
-			"data":   redisLoan,
-		})
-		return
-	}
-	resultGoloan, err = RetrieveRecommendedLoanFromLoanService(disFrom, disTo, investorID)
+	// redisLoan, err := RetriveRecommendedLoanFromRedis(investorID)
+	// if err != nil {
+	// 	log.Println("[ERROR] ", err)
+	// }
+	// if len(redisLoan) > 0 {
+	// 	ctx.JSON(http.StatusOK, iris.Map{
+	// 		"status": "Success",
+	// 		"data":   redisLoan,
+	// 	})
+	// 	return
+	// }
+
+	resultGoloan, err := RetrieveRecommendedLoanFromLoanService(disFrom, disTo, investorID)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, iris.Map{
 			"status":  "Error",
@@ -298,12 +312,12 @@ func RetrieveRecommendedLoanFromLoanService(disFrom, disTo, investorID string) (
 	fmt.Println("GOLOAN URI: ", goLoanURI)
 	body, err := services.CircuitBreaker.Get(goLoanURI)
 	if err != nil {
-		log.Println("[ERROR] ", err)
+		log.Println("[ERROR] Calling API to go-loan service", err)
 		return nil, err
 	}
 	err = json.Unmarshal(body, &goloanResp)
 	if err != nil {
-		log.Println("[ERROR] ", err)
+		log.Println("[ERROR] Json unmarshall", err)
 		return nil, err
 	}
 	if goloanResp.Code != 200 && strings.ToUpper(goloanResp.Message) != "SUCCESS" {
