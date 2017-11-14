@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"bitbucket.org/go-mis/config"
 	"bitbucket.org/go-mis/modules/investor"
@@ -279,19 +280,66 @@ func FindRecommendedLoanByInvestorCriteria(ctx *iris.Context) {
 	disTo := ctx.URLParam("disTo")
 	resultGoloan := make([]RecommendedLoan, 0)
 
-	// redisLoan, err := RetriveRecommendedLoanFromRedis(investorID)
-	// if err != nil {
-	// 	log.Println("[ERROR] ", err)
-	// }
-	// if len(redisLoan) > 0 {
-	// 	ctx.JSON(http.StatusOK, iris.Map{
-	// 		"status": "Success",
-	// 		"data":   redisLoan,
-	// 	})
-	// 	return
-	// }
+	redisLoan, err := RetriveRecommendedLoanFromRedis(investorID)
+	if err != nil {
+		log.Println("[ERROR] ", err)
+	}
 
-	resultGoloan, err := RetrieveRecommendedLoanFromLoanService(disFrom, disTo, investorID)
+	if len(redisLoan) > 0 {
+
+		if investorID != "-1" {
+			disToDate, errToDate := time.Parse("2006-01-02", disTo)
+			disFromDate, errFromDate := time.Parse("2006-01-02", disFrom)
+
+			if errToDate != nil {
+				ctx.JSON(http.StatusInternalServerError, iris.Map{
+					"status":  "Error",
+					"message": errToDate.Error(),
+				})
+				return
+			}
+
+			if errFromDate != nil {
+				ctx.JSON(http.StatusInternalServerError, iris.Map{
+					"status":  "Error",
+					"message": errFromDate.Error(),
+				})
+				return
+			}
+
+			resultGoloanByDate := make([]RecommendedLoan, len(redisLoan))
+
+			for _, loan := range redisLoan {
+				loandDate, errLoanDate := time.Parse("2006-01-02", loan.DisbursementDate)
+
+				if errLoanDate != nil {
+					ctx.JSON(http.StatusInternalServerError, iris.Map{
+						"status":  "Error",
+						"message": errLoanDate.Error(),
+					})
+					return
+				}
+
+				if !loandDate.Before(disFromDate) && !loandDate.After(disToDate) {
+					resultGoloanByDate = append(resultGoloanByDate, loan)
+				}
+
+				ctx.JSON(http.StatusOK, iris.Map{
+					"status": "Success",
+					"data":   resultGoloanByDate,
+				})
+				return
+			}
+		}
+
+		ctx.JSON(http.StatusOK, iris.Map{
+			"status": "Success",
+			"data":   redisLoan,
+		})
+		return
+	}
+
+	resultGoloan, err = RetrieveRecommendedLoanFromLoanService(disFrom, disTo, investorID)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, iris.Map{
 			"status":  "Error",
