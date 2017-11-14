@@ -21,6 +21,7 @@ import (
 	"bitbucket.org/go-mis/modules/investor"
 	"bitbucket.org/go-mis/modules/investor-check"
 	"bitbucket.org/go-mis/modules/loan"
+	loanInsurance "bitbucket.org/go-mis/modules/loan-insurance"
 	"bitbucket.org/go-mis/modules/loan-order"
 	"bitbucket.org/go-mis/modules/loan-raw"
 	"bitbucket.org/go-mis/modules/location"
@@ -99,6 +100,10 @@ func InitCustomApi() {
 		v2.Any("/loan/set/:id/stage/:stage", loan.UpdateStage)
 		v2.Any("/loan/akad/:id", loan.GetAkadData)
 		v2.Any("/loan-stage-history/:id", loan.GetLoanStageHistory)
+		v2.Any("/loan-insurance", loanInsurance.GetLoanWithInsurance)
+		v2.Any("/loan-insurance/get-finance-report", loanInsurance.GetFinanceReport)
+		v2.Any("/loan-insurance/request-refund/:loan_id", loanInsurance.RequestRefund)
+		v2.Any("/loan-insurance/apply-refund/:loan_id", loanInsurance.ApplyRefund)
 		//v2.Any("/loan-order/pending-waiting", loanOrder.FetchAllPendingWaiting)
 		//v2.Any("/loan-order/:orderNo/accept", loanOrder.Accept)
 		//v2.Any("/loan-order/:orderNo/reject", loanOrder.Reject)
