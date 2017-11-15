@@ -16,6 +16,8 @@ import (
 	"bitbucket.org/go-mis/modules/email"
 )
 
+var InsuranceRate float64 = 0.015
+
 func Init() {
 	services.DBCPsql.AutoMigrate(&LoanOrder{})
 	services.BaseCrudInit(LoanOrder{}, []LoanOrder{})
@@ -59,7 +61,7 @@ func FetchSingle(ctx *iris.Context) {
 	id, _ := strconv.Atoi(ctx.Param("id"))
 
 	query := `select acc.threshold as "threshold",i.id, camp.amount as "campaignAmount", c.username, c.name, lo."orderNo", l.id "loanId", l.purpose, acc."totalBalance", l.plafond, lo.remark,
-	case when rlov.id is not null then TRUE else FALSE end "usingVoucher", 
+	case when rlov.id is not null then TRUE else FALSE end "usingVoucher",
 	case when rlov.id is not null then v.amount else 0 end "voucherAmount",
 	case when rloc.id is not null then TRUE else FALSE end "participateCampaign",
 	case when rloc.id is not null then rloc.quantity else 0 end "quantityOfCampaignItem",
@@ -117,10 +119,21 @@ func AcceptLoanOrder(ctx *iris.Context) {
 		})
 		return
 	}
-
+	isUsingInsurance,err := IsUsingInsurance(orderNo)
+	fmt.Println("IsInsurance",orderNo,isUsingInsurance)
+	if err!=nil{
+		ctx.JSON(iris.StatusInternalServerError, iris.Map{
+			"status":  "error",
+			"message": err.Error(),
+		})
+		return
+	}
 	totalDebit := accountTransactionDebit.GetTotalAccountTransactionDebit(accId.AccountId)
 	totalCredit := accountTransactionCredit.GetTotalAccountTransactionCredit(accId.AccountId)
 	totalOrder, _ := calculateTotalPayment(orderNo, db)
+	if isUsingInsurance{
+		totalOrder += InsuranceRate*totalOrder
+	}
 	totalBalance := (totalDebit + voucherAmount) - totalCredit - totalOrder
 
 	if totalBalance < 0 {
@@ -146,6 +159,13 @@ func AcceptLoanOrder(ctx *iris.Context) {
 	if errUpdateCredit != nil {
 		processErrorAndRollback(ctx, orderNo, db, errUpdateCredit, "Update Credit")
 		return
+	}
+
+	if isUsingInsurance {
+		if err:=InsertAtcInsurance(loans,totalOrder,accId.AccountId,db);err!=nil{
+			processErrorAndRollback(ctx, orderNo, db, errUpdateCredit, "Insert insurace credit failed")
+			return
+		}
 	}
 
 	if err := UpdateAccountCredit(totalOrder, accId.AccountId, db); err != nil {
@@ -183,7 +203,7 @@ func AcceptLoanOrder(ctx *iris.Context) {
 	join cif on cif.id=r_cif_investor."cifId"
 	where loan_order."orderNo"=?`
 	services.DBCPsql.Raw(queryDetailInvestor,orderNo).Scan(&investorDetail)
-	go email.SendEmailIInvestmentSuccess(investorDetail.Name,investorDetail.Username,orderNo,investorDetail.InvestorId)
+	go email.SendEmailIInvestmentSuccess(investorDetail.Name,investorDetail.Username,orderNo,investorDetail.InvestorId,voucherAmount)
 	//go email.SendEmailIInvestmentSuccess(investorDetail.Name,"wuri.wulandari@amartha.com",orderNo,investorDetail.InvestorId)
 	go services.SendSMS(investorDetail.PhoneNo,"<Amartha> Selamat investasi anda berhasil dengan nomor order "+orderNo)
 	//go services.SendSMS("+628119780880","<Amartha> Selamat investasi anda berhasil dengan nomor order "+orderNo)
@@ -498,6 +518,41 @@ func CheckVoucherAndInsertToDebit(accountID uint64, orderNo string, db *gorm.DB)
 	query := `update account set "totalDebit" = "totalDebit"+?, "totalBalance" = "totalBalance"+? where account.id = ?`
 	return db.Exec(query, voucher_data.Amount, voucher_data.Amount, accountID).Error
 
+}
+
+func IsUsingInsurance(orderNo string) (bool, error) {
+	r := struct{
+		IsInsurance	bool	`gorm:"column:isInsurance"`
+		}{}
+	query := `select l."isInsurance" as "isInsurance"
+	from loan l join r_loan_order rlo on l.id = rlo."loanId"
+	join loan_order lo on lo.id = rlo."loanOrderId"
+	where lo."orderNo"=?`
+
+	error:=services.DBCPsql.Raw(query, orderNo).Scan(&r).Error
+	if error!=nil {
+		return false, error
+	}
+	return r.IsInsurance,nil
+}
+
+func InsertAtcInsurance(loans []int64,totalPayment float64, accountId uint64, db *gorm.DB) error {
+	totalAmountInsurance := totalPayment * InsuranceRate
+	accountTRCreditSchemaInsurance := &accountTransactionCredit.AccountTransactionCredit{Type: "INSURANCE", Amount: totalAmountInsurance, TransactionDate: time.Now()}
+	db.Table("account_transaction_credit").Create(accountTRCreditSchemaInsurance)
+
+	//Insert into r_account_transaction_credit
+	rAccountTRCreditSchema := &r.RAccountTransactionCredit{AccountId: accountId, AccountTransactionCreditId: accountTRCreditSchemaInsurance.ID}
+	db.Table("r_account_transaction_credit").Create(rAccountTRCreditSchema)
+	insuranceAtcID := rAccountTRCreditSchema.AccountTransactionCreditId
+
+	for _, loanId := range loans {
+		insertRatclQuery := "INSERT INTO r_account_transaction_credit_loan(\"loanId\",\"accountTransactionCreditId\", \"createdAt\", \"updatedAt\") VALUES(?,?,current_timestamp,current_timestamp)"
+		if err := db.Exec(insertRatclQuery, loanId, insuranceAtcID).Error; err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func CheckingCampaignAndProgressIntoAccountTransaction(accountID uint64, orderNo string, db *gorm.DB) error {
