@@ -131,6 +131,7 @@ func AcceptLoanOrder(ctx *iris.Context) {
 	totalDebit := accountTransactionDebit.GetTotalAccountTransactionDebit(accId.AccountId)
 	totalCredit := accountTransactionCredit.GetTotalAccountTransactionCredit(accId.AccountId)
 	totalOrder, _ := calculateTotalPayment(orderNo, db)
+	totalOrderBefore:=totalOrder+0
 	if isUsingInsurance{
 		totalOrder += InsuranceRate*totalOrder
 	}
@@ -155,7 +156,7 @@ func AcceptLoanOrder(ctx *iris.Context) {
 		return
 	}
 
-	accountTRCredit, errUpdateCredit := UpdateCredit(loans, totalOrder, accId.AccountId, db)
+	accountTRCredit, errUpdateCredit := UpdateCredit(loans, totalOrderBefore, accId.AccountId, db)
 	if errUpdateCredit != nil {
 		processErrorAndRollback(ctx, orderNo, db, errUpdateCredit, "Update Credit")
 		return
