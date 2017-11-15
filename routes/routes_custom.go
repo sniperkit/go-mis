@@ -28,6 +28,7 @@ import (
 	mitramanagement "bitbucket.org/go-mis/modules/mitra-management"
 	"bitbucket.org/go-mis/modules/multi-loan"
 	"bitbucket.org/go-mis/modules/notification"
+	plottingBorrower "bitbucket.org/go-mis/modules/plotting-borrower"
 	"bitbucket.org/go-mis/modules/product-pricing"
 	prospectiveBorrower "bitbucket.org/go-mis/modules/prospective-borrower"
 	"bitbucket.org/go-mis/modules/reports"
@@ -206,6 +207,15 @@ func InitCustomApi() {
 		v2.Any("/mitra-management/borrower-status/:statusId/reasons", mitramanagement.GetBorrowerStatusReason)
 		v2.Any("/mitra-management/status", mitramanagement.GetStatusAll)
 		v2.Any("/mitra-management/submit-reason", mitramanagement.SubmitReason)
+
+		// Plotting Borrower
+		v2.Any("/plotting-borrower/plotting-params/save", plottingBorrower.SavePlottingParams)
+		v2.Any("/plotting-borrower/plotting-params/all", plottingBorrower.ListPlottingParams)
+		v2.Any("/plotting-borrower/plotting-params/find-eligble-investor/:investorId", plottingBorrower.FindEligbleInvestor)
+		v2.Any("/plotting-borrower/plotting-params/detail/:investorId", plottingBorrower.GetPlottingParamsDetail)
+		v2.Any("/plotting-borrower/plotting-params/toggle-activation", plottingBorrower.TogglePlottingParamsActivation)
+		v2.Any("/plotting-borrower/recomended-loan-investor/:investorId", plottingBorrower.FindRecommendedLoanByInvestorCriteria)
+		v2.Any("/plotting-borrower/loan/:stage", plottingBorrower.FindPlottingBorrower)
 	}
 
 	vRestrict := iris.Party(baseRestrictedURL, auth.EnsureIp)

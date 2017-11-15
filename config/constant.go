@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
+	"log"
 )
 
 var (
@@ -18,24 +19,27 @@ var (
 	PsqlHostAddressSurvey     string
 	MysqlHostAddress          string
 	UploaderApiPath           string
-	WhiteList		 		string
-	GoCasPath			      string
-	EnableEmergencyLoan		  bool
-	GoBankingPath 			  string
-	GoLogPath				  string
+	WhiteList                 string
+	GoCasPath                 string
+	EnableEmergencyLoan       bool
+	GoBankingPath             string
+	GoLogPath                 string
+	Configuration             Config
 )
 
 type Config struct {
-	Psql         []DbConfig `json:"psql"`
-	Mysql        DbConfig   `json:"mysql"`
-	UploaderPath string     `json:"uploaderPath"`
-	GoCasPath		 string     `json:"goCasPath"`
-	WhiteList		 string     `json:"whiteList"`
-	SignString		 string     `json:"signString"`
-	ApiVersion   string     `json:"apiVersion"`
-	EnableEmergencyLoan bool `json:"enableEmergencyLoan"`
-	GoBankingPath	string		`json:"goBankingPath"`
-	GoLogPath string `json:"goLogPath"`
+	Psql                []DbConfig  `json:"psql"`
+	Mysql               DbConfig    `json:"mysql"`
+	Redis               RedisConfig `json:"redis"`
+	UploaderPath        string      `json:"uploaderPath"`
+	GoCasPath           string      `json:"goCasPath"`
+	WhiteList           string      `json:"whiteList"`
+	SignString          string      `json:"signString"`
+	ApiVersion          string      `json:"apiVersion"`
+	EnableEmergencyLoan bool        `json:"enableEmergencyLoan"`
+	GoBankingPath       string      `json:"goBankingPath"`
+	GoLogPath           string      `json:"goLogPath"`
+	GoLoanPath          string      `json:"goLoanPath"`
 }
 
 type DbConfig struct {
@@ -45,6 +49,14 @@ type DbConfig struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
 	SslMode  string `json:"ssl_mode"`
+}
+
+// RedisConfig - redis configuration
+type RedisConfig struct {
+	Address  string `json:"address"`
+	Port     int    `json:"port"`
+	Password string `json:"password"`
+	Db       int    `json:"db"`
 }
 
 var Version string
@@ -83,37 +95,39 @@ func init() {
 	if e != nil {
 		panic(e)
 	}
-
-	var c Config
-	json.Unmarshal(configFile, &c)
-	c.ApiVersion = "2.2.0"
-	fmt.Println("Version:", c.ApiVersion)
+	// var c Config
+	err := json.Unmarshal(configFile, &Configuration)
+	if err != nil {
+		log.Println("[ERROR] Error when reading configuration file")
+		panic(err)
+	}
+	Configuration.ApiVersion = "2.2.0"
+	fmt.Println("Version:", Configuration.ApiVersion)
 	fmt.Println("------------------")
+	Version = Configuration.ApiVersion
 
-	Version = c.ApiVersion
-
-	UploaderApiPath = c.UploaderPath
-	GoCasApiPath = c.GoCasPath
-	GoLogPath = c.GoLogPath
-	SignStringKey = c.SignString
-	GoBankingPath = c.GoBankingPath
-	EnableEmergencyLoan = c.EnableEmergencyLoan
-	WhiteList = c.WhiteList
+	UploaderApiPath = Configuration.UploaderPath
+	GoCasApiPath = Configuration.GoCasPath
+	GoLogPath = Configuration.GoLogPath
+	SignStringKey = Configuration.SignString
+	GoBankingPath = Configuration.GoBankingPath
+	EnableEmergencyLoan = Configuration.EnableEmergencyLoan
+	WhiteList = Configuration.WhiteList
 
 	// Postgresql Host Address
-	PsqlHostAddressMisAmartha = "host=" + c.Psql[0].Host + " port=" + c.Psql[0].Port + " user=" + c.Psql[0].Username + " dbname=" + c.Psql[0].Db + " sslmode=" + c.Psql[0].SslMode
-	if c.Psql[0].Password != "" {
-		PsqlHostAddressMisAmartha += " password=" + c.Psql[0].Password
+	PsqlHostAddressMisAmartha = "host=" + Configuration.Psql[0].Host + " port=" + Configuration.Psql[0].Port + " user=" + Configuration.Psql[0].Username + " dbname=" + Configuration.Psql[0].Db + " sslmode=" + Configuration.Psql[0].SslMode
+	if Configuration.Psql[0].Password != "" {
+		PsqlHostAddressMisAmartha += " password=" + Configuration.Psql[0].Password
 	}
 
-	PsqlHostAddressSurvey = "host=" + c.Psql[1].Host + " port=" + c.Psql[1].Port + " user=" + c.Psql[1].Username + " dbname=" + c.Psql[1].Db + " sslmode=" + c.Psql[1].SslMode
-	if c.Psql[1].Password != "" {
-		PsqlHostAddressSurvey += " password=" + c.Psql[1].Password
+	PsqlHostAddressSurvey = "host=" + Configuration.Psql[1].Host + " port=" + Configuration.Psql[1].Port + " user=" + Configuration.Psql[1].Username + " dbname=" + Configuration.Psql[1].Db + " sslmode=" + Configuration.Psql[1].SslMode
+	if Configuration.Psql[1].Password != "" {
+		PsqlHostAddressSurvey += " password=" + Configuration.Psql[1].Password
 	}
 
 	// Mysql Host Address
-	MysqlHostAddress = "host=" + c.Mysql.Host + " port=" + c.Mysql.Port + " user=" + c.Mysql.Username + " dbname=" + c.Mysql.Db + " sslmode=" + c.Mysql.SslMode
-	if c.Mysql.Password != "" {
-		MysqlHostAddress = MysqlHostAddress + " password=" + c.Mysql.Password
+	MysqlHostAddress = "host=" + Configuration.Mysql.Host + " port=" + Configuration.Mysql.Port + " user=" + Configuration.Mysql.Username + " dbname=" + Configuration.Mysql.Db + " sslmode=" + Configuration.Mysql.SslMode
+	if Configuration.Mysql.Password != "" {
+		MysqlHostAddress = MysqlHostAddress + " password=" + Configuration.Mysql.Password
 	}
 }
