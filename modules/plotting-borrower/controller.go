@@ -280,11 +280,11 @@ func FindRecommendedLoanByInvestorCriteria(ctx *iris.Context) {
 	disTo := ctx.URLParam("disTo")
 	resultGoloan := make([]RecommendedLoan, 0)
 
-	redisLoan, err := RetriveRecommendedLoanFromRedis(investorID)
-	if err != nil {
-		log.Println("[ERROR] ", err)
-	}
-
+	//redisLoan, err := RetriveRecommendedLoanFromRedis(investorID)
+	//if err != nil {
+	//	log.Println("[ERROR] ", err)
+	//}
+	redisLoan:= []RecommendedLoan{}
 	if len(redisLoan) > 0 {
 
 		if investorID != "-1" {
@@ -339,7 +339,7 @@ func FindRecommendedLoanByInvestorCriteria(ctx *iris.Context) {
 		return
 	}
 
-	resultGoloan, err = RetrieveRecommendedLoanFromLoanService(disFrom, disTo, investorID)
+	resultGoloan, err := RetrieveRecommendedLoanFromLoanService(disFrom, disTo, investorID)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, iris.Map{
 			"status":  "Error",
