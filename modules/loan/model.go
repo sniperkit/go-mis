@@ -25,6 +25,11 @@ type Loan struct {
 	Stage                string     `gorm:"column:stage" json:"stage"`
 	IsLWK                bool       `gorm:"column:isLWK" json:"isLWK" sql:"default:false"`
 	IsUPK                bool       `gorm:"column:isUPK" json:"IsUPK" sql:"default:false"`
+	IsInsurance					 bool				`gorm:"column:isInsurance" json:"isInsurance" sql:"default:false"`
+	IsInsuranceRequested bool 			`gorm:"column:isInsuranceRequested" json:"isInsuranceRequested" sql:"default:false"`
+	IsInsuranceRefund		 bool 			`gorm:"column:isInsuranceRefund" json:"isInsuranceRefund" sql:"default:false"`
+	InsuranceType				 string			`gorm:"column:insuranceType" json:"insuranceType"` // JAMKRINDO, ALLIANZ
+	EndType							 string     `gorm:"column:endType" json:"endType"` // EARLY, PENDING, PELDIN, INSURANCE
 	CreatedAt            time.Time  `gorm:"column:createdAt" json:"createdAt"`
 	UpdatedAt            time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
 	DeletedAt            *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
@@ -117,6 +122,7 @@ type RefundBase struct {
 	InvestorID uint64  `gorm:"column:investor_id"`
 	AccountID  uint64  `gorm:"column:account_id"`
 	Plafond    float64 `gorm:"column:plafond"`
+	IsInsurance bool `gorm:"column:isInsurance"`
 }
 
 type AccountSum struct {

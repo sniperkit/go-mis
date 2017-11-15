@@ -195,7 +195,12 @@ func StoreInstallment(db *gorm.DB, installmentId uint64, status string) error {
 	installmentSchema := Installment{}
 	db.Table("installment").Where("\"id\" = ?", installmentId).First(&installmentSchema)
 
-	if installmentSchema.Stage != "TELLER" && installmentSchema.Stage != "AGENT" && installmentSchema.Stage != "PENDING" && installmentSchema.Stage != "IN-REVIEW" && installmentSchema.Stage != "APPROVE" {
+	if installmentSchema.Stage != "TELLER" &&
+		installmentSchema.Stage != "AGENT" &&
+			installmentSchema.Stage != "PENDING" &&
+				installmentSchema.Stage != "IN-REVIEW" &&
+					installmentSchema.Stage != "APPROVE" &&
+						installmentSchema.Stage != "APPROVE-CP"{
 		return errors.New("Current installment stage is NEITHER 'TELLER' NOR'PENDING' NOR 'IN-REVIEW' nor 'APPROVE'. System cannot continue to process your request. installmentId=" + convertedInstallmentId)
 	}
 
@@ -349,7 +354,7 @@ func SubmitInstallmentByGroupIDAndTransactionDateWithStatus(ctx *iris.Context) {
 
 		installmentDetailSchema := []InstallmentDetail{}
 		if strings.ToLower(stageTo) == "success" {
-			query += "WHERE installment.\"stage\" = 'APPROVE' AND installment.\"deletedAt\" is null"
+			query += "WHERE (installment.\"stage\" = 'APPROVE' OR installment.\"stage\" = 'APPROVE-CP') AND installment.\"deletedAt\" is null"
 			services.DBCPsql.Raw(query).Scan(&installmentDetailSchema)
 		} else {
 			query += "WHERE installment.\"createdAt\"::date = ? AND \"group\".\"id\" = ? AND installment.\"stage\" != 'APPROVE' AND installment.\"deletedAt\" is null"
@@ -923,6 +928,7 @@ func GetRawPendingInstallmentData(currentStage string, branchId uint64, now stri
 				join branch b on b.id = rlb."branchId"
 				join r_loan_installment rli on rli."loanId" = l.id
 				join installment i on i.id = rli."installmentId"
+				left join r_installment_cash_point ricp on ricp."installmentId"=i.id
 				join r_loan_disbursement rld on rld."loanId" = l.id
 				join disbursement d on d.id = rld."disbursementId"
 				left join (
@@ -944,6 +950,7 @@ func GetRawPendingInstallmentData(currentStage string, branchId uint64, now stri
 					order by "disbursementDate"::date desc
 				) foo on foo."agentId" = a.id and foo."groupId" = g.id
 			where l."deletedAt" is null
+			and ricp.id is null
 			and i."deletedAt" is null and
 			b.id= ? and i."createdAt"::date=? and
 			( UPPER(l.stage) = 'INSTALLMENT' OR UPPER(l.stage) = 'END' OR UPPER(l.stage) = 'END EARLY' OR UPPER(l.stage) = 'END-EARLY' OR UPPER(l.stage) = 'END-PENDING') `
