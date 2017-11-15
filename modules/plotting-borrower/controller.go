@@ -284,7 +284,7 @@ func FindRecommendedLoanByInvestorCriteria(ctx *iris.Context) {
 	if err != nil {
 		log.Println("[ERROR] ", err)
 	}
-
+	log.Println("Investor ID: ", investorID)
 	if len(redisLoan) > 0 {
 
 		if investorID != "-1" {
@@ -292,6 +292,7 @@ func FindRecommendedLoanByInvestorCriteria(ctx *iris.Context) {
 			disFromDate, errFromDate := time.Parse("2006-01-02", disFrom)
 
 			if errToDate != nil {
+				log.Println("Error disto: ", errToDate)
 				ctx.JSON(http.StatusInternalServerError, iris.Map{
 					"status":  "Error",
 					"message": errToDate.Error(),
@@ -300,6 +301,7 @@ func FindRecommendedLoanByInvestorCriteria(ctx *iris.Context) {
 			}
 
 			if errFromDate != nil {
+				log.Println("Error disfrom: ", errFromDate)
 				ctx.JSON(http.StatusInternalServerError, iris.Map{
 					"status":  "Error",
 					"message": errFromDate.Error(),
@@ -307,12 +309,12 @@ func FindRecommendedLoanByInvestorCriteria(ctx *iris.Context) {
 				return
 			}
 
-			resultGoloanByDate := make([]RecommendedLoan, len(redisLoan))
+			resultGoloanByDate := make([]RecommendedLoan, 0, len(redisLoan))
 
 			for _, loan := range redisLoan {
-				loandDate, errLoanDate := time.Parse("2006-01-02", loan.DisbursementDate)
-
+				loandDate, errLoanDate := time.Parse("2006-01-02T15:04:05Z", loan.DisbursementDate)
 				if errLoanDate != nil {
+					log.Println("errLoanDate: ", errLoanDate)
 					ctx.JSON(http.StatusInternalServerError, iris.Map{
 						"status":  "Error",
 						"message": errLoanDate.Error(),
@@ -320,8 +322,12 @@ func FindRecommendedLoanByInvestorCriteria(ctx *iris.Context) {
 					return
 				}
 
-				if !loandDate.Before(disFromDate) && !loandDate.After(disToDate) {
-					resultGoloanByDate = append(resultGoloanByDate, loan)
+				if loandDate.After(disFromDate) && loandDate.Before(disToDate) {
+					log.Printf("disfrom %s to disto %s and loand date: %s , result: %t ", disFrom, disTo, loandDate, (loandDate.After(disFromDate) && loandDate.Before(disToDate)))
+					if loan.LoanId > 0 {
+						log.Println("Loan ID: ", loan.LoanId)
+						resultGoloanByDate = append(resultGoloanByDate, loan)
+					}
 				}
 
 				ctx.JSON(http.StatusOK, iris.Map{
@@ -330,13 +336,13 @@ func FindRecommendedLoanByInvestorCriteria(ctx *iris.Context) {
 				})
 				return
 			}
+		} else {
+			ctx.JSON(http.StatusOK, iris.Map{
+				"status": "Success",
+				"data":   redisLoan,
+			})
+			return
 		}
-
-		ctx.JSON(http.StatusOK, iris.Map{
-			"status": "Success",
-			"data":   redisLoan,
-		})
-		return
 	}
 
 	resultGoloan, err = RetrieveRecommendedLoanFromLoanService(disFrom, disTo, investorID)
@@ -393,7 +399,7 @@ func RetriveRecommendedLoanFromRedis(investorID string) ([]RecommendedLoan, erro
 	var err error
 	loanRedis := make([]RecommendedLoan, 0)
 	switch strings.ToUpper(strings.TrimSpace(investorID)) {
-	case "ALL":
+	case "-1":
 		loanRedis, err = FindAllRecommendedLoanFromRedis()
 	default:
 		loanRedis, err = FindRecommendedLoanFromRedis(investorID)
