@@ -85,6 +85,8 @@ func SavePlottingParams(ctx *iris.Context) {
 // This function get all investors which their borrowerCriteria is not null
 func ListPlottingParams(ctx *iris.Context) {
 
+	isActive := ctx.URLParam("isActive")
+
 	totalRows := 0
 	investors := []struct {
 		ID                       uint64 `gorm:"column:id" json:"id"`
@@ -98,8 +100,10 @@ func ListPlottingParams(ctx *iris.Context) {
 			join r_cif_investor rci on rci."investorId" = investor.Id
 			join cif on cif.id = rci."cifId"
 			where "borrowerCriteria" <> '{}' and 
-			investor."isBorrowerCriteriaActive" = true and
 			investor."deletedAt" is null`
+	if isActive=="true"{
+		query+=	` and "isBorrowerCriteriaActive" = true`
+	}
 	if err := services.DBCPsql.Raw(query).Scan(&investors).Error; err != nil {
 		ctx.JSON(iris.StatusOK, iris.Map{
 			"status":  "Error",
