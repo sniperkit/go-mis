@@ -14,6 +14,7 @@ type RecommendedLoan struct {
 	Branch           string  `gorm:"column:branch" json:"branch"`
 	DisbursementDate string  `gorm:"column:disbursementDate" json:"disbursementDate"`
 	Plafond          float64 `gorm:"column:plafond" json:"plafond"`
+	Projection       float64 `gorm:"column:projection" json:"projection"`
 	Rate             float64 `gorm:"column:rate" json:"rate"`
 	Tenor            uint64  `gorm:"column:tenor" json:"tenor"`
 	CreditScoreGrade string  `gorm:"column:creditScoreGrade" json:"creditScoreGrade"`
