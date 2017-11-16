@@ -341,7 +341,7 @@ func FetchAllPendingWaiting(ctx *iris.Context) {
 func RejectLoanOrder(ctx *iris.Context) {
 	orderNo := ctx.Param("orderNo")
 
-	queryUpdateLoanStage := "update loan set stage = 'PRIVATE' where id in (select l.id from loan l join r_loan_order rlo on l.id = rlo.\"loanId\" join loan_order lo on lo.id = rlo.\"loanOrderId\" where lo.\"orderNo\"='" + orderNo + "');"
+	queryUpdateLoanStage := "update loan set stage = 'PRIVATE', \"isInsurance\" = FALSE where id in (select l.id from loan l join r_loan_order rlo on l.id = rlo.\"loanId\" join loan_order lo on lo.id = rlo.\"loanOrderId\" where lo.\"orderNo\"='" + orderNo + "');"
 	services.DBCPsql.Exec(queryUpdateLoanStage)
 
 	queryInsertLoanHistory := `with ins as (INSERT INTO loan_history("stageFrom","stageTo","remark","createdAt","updatedAt")
