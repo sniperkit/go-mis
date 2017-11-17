@@ -220,10 +220,11 @@ func FindPlottingBorrower(ctx *iris.Context) {
 	stageParam := ctx.Param("stage")
 	investorIdParams := ctx.URLParam("investorId")
 	investorId := 0
+	var err error
 
 	stage := ""
 	if stageParam == "investor" {
-		investorId, err := strconv.Atoi(investorIdParams)
+		investorId, err = strconv.Atoi(investorIdParams)
 		if investorId <= 0 || investorIdParams == "" || err != nil {
 			ctx.JSON(iris.StatusBadRequest, iris.Map{
 				"message":      "Bad Request",
@@ -260,11 +261,14 @@ func FindPlottingBorrower(ctx *iris.Context) {
     join r_loan_sector rls on rls."loanId"=loan.id 
     join r_investor_product_pricing_loan rippl on rippl."loanId"=loan.id`
 
+	fmt.Printf("ancok %s %d %s ", stage, investorId, investorIdParams)
+	
 	if investorId > 0 {
 		query += `
 		join investor on investor.id = rippl."investorId"
 		where loan.stage=? and loan."deletedAt" is null and investor.id =?`
 		services.DBCPsql.Raw(query, stage, investorId).Scan(&loans)
+		fmt.Printf("bangsed %s %d", stage, investorId)
 	} else {
 		query += `where loan.stage=? and loan."deletedAt" is null`
 		services.DBCPsql.Raw(query, stage).Scan(&loans)
