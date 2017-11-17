@@ -242,7 +242,7 @@ func FindPlottingBorrower(ctx *iris.Context) {
 		return
 	}
 
-	loans := RecommendedLoan{}
+	loans := []RecommendedLoan{}
 
 	query := `select loan.id as "loanId",cif."name" as "borrowerName","group"."name" as "group",
 	branch."name" as "branch",disbursement."disbursementDate"::date as "disbursementDate",loan.plafond,loan.rate,loan.tenor,loan."creditScoreGrade",loan.purpose from loan
