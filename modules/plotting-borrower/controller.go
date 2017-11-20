@@ -264,13 +264,12 @@ func FindPlottingBorrower(ctx *iris.Context) {
 	fmt.Printf("ancok %s %d %s ", stage, investorId, investorIdParams)
 	
 	if investorId > 0 {
-		query += `
-		join investor on investor.id = rippl."investorId"
+		query += ` join investor on investor.id = rippl."investorId"
 		where loan.stage=? and loan."deletedAt" is null and investor.id =?`
 		services.DBCPsql.Raw(query, stage, investorId).Scan(&loans)
 		fmt.Printf("bangsed %s %d", stage, investorId)
 	} else {
-		query += `where loan.stage=? and loan."deletedAt" is null`
+		query += ` where loan.stage=? and loan."deletedAt" is null`
 		services.DBCPsql.Raw(query, stage).Scan(&loans)
 	}
 
