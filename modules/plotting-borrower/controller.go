@@ -101,8 +101,8 @@ func ListPlottingParams(ctx *iris.Context) {
 			join cif on cif.id = rci."cifId"
 			where "borrowerCriteria" <> '{}' and 
 			investor."deletedAt" is null`
-	if isActive=="true"{
-		query+=	` and "isBorrowerCriteriaActive" = true`
+	if isActive == "true" {
+		query += ` and "isBorrowerCriteriaActive" = true`
 	}
 	if err := services.DBCPsql.Raw(query).Scan(&investors).Error; err != nil {
 		ctx.JSON(iris.StatusOK, iris.Map{
@@ -262,7 +262,7 @@ func FindPlottingBorrower(ctx *iris.Context) {
     join r_investor_product_pricing_loan rippl on rippl."loanId"=loan.id`
 
 	fmt.Printf("ancok %s %d %s ", stage, investorId, investorIdParams)
-	
+
 	if investorId > 0 {
 		query += ` join investor on investor.id = rippl."investorId"
 		where loan.stage=? and loan."deletedAt" is null and investor.id =?`
@@ -280,10 +280,10 @@ func FindPlottingBorrower(ctx *iris.Context) {
 
 }
 
-func GetSchedulerHistory(ctx *iris.Context){
+func GetSchedulerHistory(ctx *iris.Context) {
 	date := ctx.Param("date")
 	loans := []SchedulerLoan{}
-	query :=`select loan.id as "loanId",cif."name" as "borrowerName","group"."name" as "group",
+	query := `select loan.id as "loanId",cif."name" as "borrowerName","group"."name" as "group",
         branch."name" as "branch",loan.plafond,loan.rate,loan."creditScoreGrade",loan_history."createdAt" as "schedulerTime" from loan
         join r_loan_history on r_loan_history."loanId"=loan.id
         join loan_history on loan_history.id=r_loan_history."loanHistoryId"
@@ -300,6 +300,89 @@ func GetSchedulerHistory(ctx *iris.Context){
 		"status": "success",
 		"data":   loans,
 	})
+}
+
+// UpdateLoanStageHandler - update loan stage handler
+func UpdateLoanStageHandler(ctx *iris.Context) {
+	log.Println("Here..")
+	loanResponse := struct {
+		Status  int64  `json:"status"`
+		Message string `json:"message"`
+	}{}
+	payload := struct {
+		LoanId     []uint64 `json:"loanId"`
+		InvestorId uint64   `json:"investorId"`
+		StageFrom  string   `json:"stageFrom"`
+		StageTo    string   `json:"stageTo"`
+	}{}
+	if err := ctx.ReadJSON(&payload); err != nil {
+		log.Println("Error here")
+		ctx.JSON(iris.StatusBadRequest, iris.Map{
+			"status":  "Error",
+			"message": "Invalid stage from",
+		})
+		return
+	}
+	log.Println("Payload: ", payload)
+	if !isValidStage(payload.StageFrom) {
+		ctx.JSON(iris.StatusBadRequest, iris.Map{
+			"status":  "Error",
+			"message": "Invalid stage from",
+		})
+		return
+	}
+	if !isValidStage(payload.StageTo) {
+		ctx.JSON(iris.StatusBadRequest, iris.Map{
+			"status":  "Error",
+			"message": "Invalid stage to",
+		})
+		return
+	}
+	if strings.ToUpper(payload.StageTo) != "PRIVATE INVESTOR" || strings.ToUpper(payload.StageTo) != "INVESTOR" {
+		payload.InvestorId = 0
+	}
+	goLoanURI := config.Configuration.GoLoanPath + "/" + "loan/plotting-borrower/update/loan-stage/"
+	bPayload, err := json.Marshal(&payload)
+	if err != nil {
+		ctx.JSON(iris.StatusBadRequest, iris.Map{
+			"status":  "Internal server error",
+			"message": "Invalid stage from",
+		})
+		return
+	}
+	loanPayload := strings.NewReader(string(bPayload))
+	respBytes, err := services.CircuitBreaker.Put(goLoanURI, loanPayload)
+	if err != nil {
+		ctx.JSON(iris.StatusBadRequest, iris.Map{
+			"status":  "Internal server error",
+			"message": "Invalid stage from",
+		})
+		return
+	}
+	err = json.Unmarshal(respBytes, &loanResponse)
+	log.Printf("Loan response %+v", loanResponse)
+	if err != nil {
+		ctx.JSON(iris.StatusBadRequest, iris.Map{
+			"status":  "Internal server error",
+			"message": "Invalid stage to",
+		})
+		return
+	}
+	ctx.JSON(iris.StatusBadRequest, iris.Map{
+		"status":  "Success",
+		"message": "Succeed: update loan stage from:" + payload.StageFrom + " to:" + payload.StageTo,
+	})
+}
+
+func isValidStage(stage string) bool {
+	log.Println("Stage: ", stage)
+	stages := []string{"PRIVATE", "PRIVATE-INVESTOR", "INVESTOR", "MARKETPLACE", "PRIVATE MARKETPLACE"}
+	for i := range stages {
+		if strings.ToUpper(stages[i]) == strings.ToUpper(stage) {
+			return true
+		}
+	}
+	return false
 }
 
 // this functoin fetch all loan by criteria
