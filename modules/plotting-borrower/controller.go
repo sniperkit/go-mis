@@ -338,7 +338,7 @@ func UpdateLoanStageHandler(ctx *iris.Context) {
 		})
 		return
 	}
-	if strings.ToUpper(payload.StageTo) != "PRIVATE INVESTOR" || strings.ToUpper(payload.StageTo) != "INVESTOR" {
+	if !isUsingInvestorID(payload.StageTo) {
 		payload.InvestorId = 0
 	}
 	goLoanURI := config.Configuration.GoLoanPath + "/" + "loan/plotting-borrower/update/loan-stage/"
@@ -379,6 +379,16 @@ func isValidStage(stage string) bool {
 	stages := []string{"PRIVATE", "PRIVATE-INVESTOR", "INVESTOR", "MARKETPLACE", "PRIVATE MARKETPLACE"}
 	for i := range stages {
 		if strings.ToUpper(stages[i]) == strings.ToUpper(stage) {
+			return true
+		}
+	}
+	return false
+}
+
+func isUsingInvestorID(stage string) bool {
+	invStages := []string{"PRIVATE-INVESTOR", "INVESTOR"}
+	for i := range invStages {
+		if strings.ToUpper(stage) == invStages[i] {
 			return true
 		}
 	}
