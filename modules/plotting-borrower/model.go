@@ -21,6 +21,18 @@ type RecommendedLoan struct {
 	Purpose          string  `gorm:"column:purpose" json:"purpose"`
 }
 
+
+type SchedulerLoan struct {
+	LoanId           uint64  `gorm:"column:loanId" json:"loanId"`
+	BorrowerName     string  `gorm:"column:borrowerName" json:"borrowerName"`
+	Group            string  `gorm:"column:group" json:"group"`
+	Branch           string  `gorm:"column:branch" json:"branch"`
+	Plafond          float64 `gorm:"column:plafond" json:"plafond"`
+	Rate             float64 `gorm:"column:rate" json:"rate"`
+	CreditScoreGrade string  `gorm:"column:creditScoreGrade" json:"creditScoreGrade"`
+	Purpose          string  `gorm:"column:schedulerTime" json:"schedulerTime"`
+}
+
 type GOLoanSuccessResponse struct {
 	Status  int               `json:"status"`
 	Code    int               `json:"code"`

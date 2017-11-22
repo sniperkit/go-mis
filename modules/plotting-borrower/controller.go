@@ -280,7 +280,28 @@ func FindPlottingBorrower(ctx *iris.Context) {
 
 }
 
-//TODO move to go-loan
+func GetSchedulerHistory(ctx *iris.Context){
+	date := ctx.Param("date")
+	loans := []SchedulerLoan{}
+	query :=`select loan.id as "loanId",cif."name" as "borrowerName","group"."name" as "group",
+        branch."name" as "branch",loan.plafond,loan.rate,loan."creditScoreGrade",loan_history."createdAt" as "schedulerTime" from loan
+        join r_loan_history on r_loan_history."loanId"=loan.id
+        join loan_history on loan_history.id=r_loan_history."loanHistoryId"
+        join r_loan_borrower rlb on rlb."loanId"=loan.id
+        join r_cif_borrower rcb on rcb."borrowerId"=rlb."borrowerId"
+        join cif on cif.id=rcb."cifId"
+        join r_loan_group rlg on rlg."loanId"=loan.id
+        join "group" on "group".id=rlg."groupId"
+        join r_loan_branch rlbr on rlbr."loanId"=loan.id
+        join branch on branch.id=rlbr."branchId"
+        where loan_history."stageFrom"='PRIVATE-MARKETPLACE' and loan_history."stageTo"='MARKETPLACE' and loan_history."createdAt"::date=?`
+	services.DBCPsql.Raw(query, date).Scan(&loans)
+	ctx.JSON(iris.StatusOK, iris.Map{
+		"status": "success",
+		"data":   loans,
+	})
+}
+
 // this functoin fetch all loan by criteria
 func FindRecommendedLoanByInvestorCriteria(ctx *iris.Context) {
 	investorID := ctx.Param("investorId")
