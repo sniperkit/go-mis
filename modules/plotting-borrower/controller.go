@@ -368,7 +368,7 @@ func UpdateLoanStageHandler(ctx *iris.Context) {
 		})
 		return
 	}
-	ctx.JSON(iris.StatusBadRequest, iris.Map{
+	ctx.JSON(iris.StatusOK, iris.Map{
 		"status":  "Success",
 		"message": "Succeed: update loan stage from:" + payload.StageFrom + " to:" + payload.StageTo,
 	})
