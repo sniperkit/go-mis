@@ -375,7 +375,7 @@ func UpdateLoanStageHandler(ctx *iris.Context) {
 
 func isValidStage(stage string) bool {
 	log.Println("Stage: ", stage)
-	stages := []string{"PRIVATE", "PRIVATE-INVESTOR", "INVESTOR", "MARKETPLACE", "PRIVATE MARKETPLACE"}
+	stages := []string{"PRIVATE", "PRIVATE-INVESTOR", "INVESTOR", "MARKETPLACE", "PRIVATE-MARKETPLACE"}
 	for i := range stages {
 		if strings.ToUpper(stages[i]) == strings.ToUpper(stage) {
 			return true
