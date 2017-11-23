@@ -304,7 +304,6 @@ func GetSchedulerHistory(ctx *iris.Context) {
 
 // UpdateLoanStageHandler - update loan stage handler
 func UpdateLoanStageHandler(ctx *iris.Context) {
-	log.Println("Here..")
 	loanResponse := struct {
 		Status  int64  `json:"status"`
 		Message string `json:"message"`
