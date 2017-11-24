@@ -6,6 +6,7 @@ import (
 
 	"bitbucket.org/go-mis/config"
 	"gopkg.in/kataras/iris.v4"
+	"fmt"
 )
 
 type Container struct {
@@ -122,7 +123,12 @@ func DeleteById(model interface{}) func(ctx *iris.Context) {
 
 // Chech Authentication
 func CheckAuth(ctx *iris.Context) {
-	if ctx.URLParam("apiKey") != config.ApiKey {
+	if !ctx.IsGet() && !ctx.IsDelete() && !ctx.IsPost() && !ctx.IsPut(){
+		ctx.JSON(iris.StatusOK, iris.Map{"message": "Options Allowed"})
+		return
+	}
+	fmt.Println("Header",ctx.RequestHeader("apiKey"))
+	if ctx.RequestHeader("apiKey") != config.ApiKey {
 		ctx.JSON(iris.StatusUnauthorized, iris.Map{"error": "Unauthorized access."})
 		return
 	}
@@ -132,6 +138,14 @@ func CheckAuth(ctx *iris.Context) {
 
 func CheckAuthForm(ctx *iris.Context) {
 	apiKey := ctx.FormValueString("apiKey")
+	if apiKey==""{
+		apiKey=ctx.RequestHeader("apiKey")
+	}
+	fmt.Println("Header",ctx.RequestHeader("apiKey"))
+	if !ctx.IsGet() && !ctx.IsDelete() && !ctx.IsPost() && !ctx.IsPut(){
+		ctx.JSON(iris.StatusOK, iris.Map{"message": "Options Allowed"})
+		return
+	}
 
 	if apiKey != config.ApiKey {
 		ctx.JSON(iris.StatusUnauthorized, iris.Map{"error": "Unauthorized access."})

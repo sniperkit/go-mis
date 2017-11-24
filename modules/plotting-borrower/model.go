@@ -1,5 +1,13 @@
 package plottingBorrower
 
+type UpdateStageRequest struct {
+	LoanId     []uint64 `json:"loanId"`
+	Amount 	   float64   `json:"amount"`
+	InvestorId uint64   `json:"investorId"`
+	StageFrom  string   `json:"stageFrom"`
+	StageTo    string   `json:"stageTo"`
+}
+
 type EligbleInvestor struct {
 	ID               uint64 `gorm:"primary_key" gorm:"column:_id" json:"_id"`
 	Name             string `gorm:"column:name" json:"name"`

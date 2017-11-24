@@ -14,6 +14,7 @@ import (
 	"github.com/jinzhu/gorm"
 	"gopkg.in/kataras/iris.v4"
 	"bitbucket.org/go-mis/modules/email"
+	"errors"
 )
 
 var InsuranceRate float64 = 0.015
@@ -97,6 +98,22 @@ func FetchSingle(ctx *iris.Context) {
 func AcceptLoanOrder(ctx *iris.Context) {
 	// seting order no
 	orderNo := ctx.Param("orderNo")
+
+	db := services.DBCPsql.Begin()
+	if err:=AcceptOrder(orderNo,true,db);err!=nil{
+		processErrorAndRollback(ctx,orderNo,db,err,"Accept Order")
+		return
+	}
+	db.Commit()
+
+	ctx.JSON(iris.StatusOK, iris.Map{
+		"status": "success",
+		"data":   "",
+	})
+
+}
+
+func AcceptOrder(orderNo string, isSendNotif bool,db *gorm.DB) error{
 	// get loanid
 	loans := GetLoans(orderNo)
 	// account
@@ -108,25 +125,14 @@ func AcceptLoanOrder(ctx *iris.Context) {
 		voucherAmount = voucherData.Amount
 	}
 
-	db := services.DBCPsql.Begin()
-
 	exist,_:=existTotalOrder(orderNo,db)
 	if !exist{
-		ctx.JSON(iris.StatusBadRequest, iris.Map{
-			"status":  "error",
-			"message": orderNo+" Not exist",
-			"data":    iris.Map{},
-		})
-		return
+		return errors.New("Order Not exist")
 	}
 	isUsingInsurance,err := IsUsingInsurance(orderNo)
 	fmt.Println("IsInsurance",orderNo,isUsingInsurance)
 	if err!=nil{
-		ctx.JSON(iris.StatusInternalServerError, iris.Map{
-			"status":  "error",
-			"message": err.Error(),
-		})
-		return
+		return err
 	}
 	totalDebit := accountTransactionDebit.GetTotalAccountTransactionDebit(accId.AccountId)
 	totalCredit := accountTransactionCredit.GetTotalAccountTransactionCredit(accId.AccountId)
@@ -138,62 +144,46 @@ func AcceptLoanOrder(ctx *iris.Context) {
 	totalBalance := (totalDebit + voucherAmount) - totalCredit - totalOrder
 
 	if totalBalance < 0 {
-		ctx.JSON(iris.StatusBadRequest, iris.Map{
-			"status":  "error",
-			"message": "totalBalance not enought",
-			"data":    iris.Map{},
-		})
-		return
+		return errors.New("totalBalance not enought")
 	}
 
 	if err := CheckVoucherAndInsertToDebit(accId.AccountId, orderNo, db); err != nil {
-		processErrorAndRollback(ctx, orderNo, db, err, "Check Voucher and Insert into Debit")
-		return
+		return errors.New("Check Voucher and Insert into Debit")
 	}
 
 	if err := CheckingCampaignAndProgressIntoAccountTransaction(accId.AccountId, orderNo, db); err != nil {
-		processErrorAndRollback(ctx, orderNo, db, err, "Check Campaign and Insert into Credit")
-		return
+		return errors.New("Check Campaign and Insert into Credit")
 	}
 
 	accountTRCredit, errUpdateCredit := UpdateCredit(loans, totalOrderBefore, accId.AccountId, db)
 	if errUpdateCredit != nil {
-		processErrorAndRollback(ctx, orderNo, db, errUpdateCredit, "Update Credit")
-		return
+		return errors.New("Update Credit")
 	}
 
 	if isUsingInsurance {
 		if err:=InsertAtcInsurance(loans,totalOrder,accId.AccountId,db);err!=nil{
-			processErrorAndRollback(ctx, orderNo, db, errUpdateCredit, "Insert insurace credit failed")
-			return
+			return errors.New("Insert insurace credit failed")
 		}
 	}
 
 	if err := UpdateAccountCredit(totalOrder, accId.AccountId, db); err != nil {
-		processErrorAndRollback(ctx, orderNo, db, err, "Update Account")
-		return
+		return errors.New("Update Account")
 	}
 
 	if err := CheckReferalAndEmptytreshold(accId.InvestorId, accountTRCredit.ID, orderNo, db); err != nil {
-		processErrorAndRollback(ctx, orderNo, db, err, "Check Referal and Empty Treshold")
-		return
+		return errors.New("Check Referal and Empty Treshold")
 	}
 
 	if err := UpdateSuccess(orderNo, db); err != nil {
-		processErrorAndRollback(ctx, orderNo, db, err, "Update Success")
-		return
+		return errors.New("Update Success")
 	}
 
 	if err := insertLoanHistoryAndRLoanHistory(orderNo, db); err != nil {
-		processErrorAndRollback(ctx, orderNo, db, err, "Insert Loan History")
-		return
+		return errors.New("Insert Loan History")
 	}
 	if err := updateLoanStageToInvestor(orderNo, db); err != nil {
-		processErrorAndRollback(ctx, orderNo, db, err, "Update Loan Stage")
-		return
+		return errors.New("Update Loan Stage")
 	}
-
-	db.Commit()
 
 	investorDetail :=InvestorDetail{}
 
@@ -204,16 +194,13 @@ func AcceptLoanOrder(ctx *iris.Context) {
 	join cif on cif.id=r_cif_investor."cifId"
 	where loan_order."orderNo"=?`
 	services.DBCPsql.Raw(queryDetailInvestor,orderNo).Scan(&investorDetail)
-	go email.SendEmailIInvestmentSuccess(investorDetail.Name,investorDetail.Username,orderNo,investorDetail.InvestorId,voucherAmount)
-	//go email.SendEmailIInvestmentSuccess(investorDetail.Name,"wuri.wulandari@amartha.com",orderNo,investorDetail.InvestorId)
-	go services.SendSMS(investorDetail.PhoneNo,"<Amartha> Selamat investasi anda berhasil dengan nomor order "+orderNo)
-	//go services.SendSMS("+628119780880","<Amartha> Selamat investasi anda berhasil dengan nomor order "+orderNo)
-
-	ctx.JSON(iris.StatusOK, iris.Map{
-		"status": "success",
-		"data":   "",
-	})
-
+	if isSendNotif {
+		go email.SendEmailIInvestmentSuccess(investorDetail.Name, investorDetail.Username, orderNo, investorDetail.InvestorId, voucherAmount)
+		//go email.SendEmailIInvestmentSuccess(investorDetail.Name,"wuri.wulandari@amartha.com",orderNo,investorDetail.InvestorId)
+		go services.SendSMS(investorDetail.PhoneNo, "<Amartha> Selamat investasi anda berhasil dengan nomor order "+orderNo)
+		//go services.SendSMS("+628119780880","<Amartha> Selamat investasi anda berhasil dengan nomor order "+orderNo)
+	}
+	return nil
 }
 
 func processErrorAndRollback(ctx *iris.Context, orderNo string, db *gorm.DB, err error, process string) {

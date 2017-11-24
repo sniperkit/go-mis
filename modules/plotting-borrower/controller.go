@@ -12,9 +12,14 @@ import (
 
 	"bitbucket.org/go-mis/config"
 	"bitbucket.org/go-mis/modules/investor"
+	"bitbucket.org/go-mis/modules/loan-history"
+	"bitbucket.org/go-mis/modules/loan-order"
+	"bitbucket.org/go-mis/modules/account"
+	"bitbucket.org/go-mis/modules/r"
 	"bitbucket.org/go-mis/services"
 
 	"gopkg.in/kataras/iris.v4"
+	"math/rand"
 )
 
 // This function saves potting paramaters as borrower criteria
@@ -308,12 +313,7 @@ func UpdateLoanStageHandler(ctx *iris.Context) {
 		Status  int64  `json:"status"`
 		Message string `json:"message"`
 	}{}
-	payload := struct {
-		LoanId     []uint64 `json:"loanId"`
-		InvestorId uint64   `json:"investorId"`
-		StageFrom  string   `json:"stageFrom"`
-		StageTo    string   `json:"stageTo"`
-	}{}
+	payload := UpdateStageRequest{}
 	if err := ctx.ReadJSON(&payload); err != nil {
 		log.Println("Error here")
 		ctx.JSON(iris.StatusBadRequest, iris.Map{
@@ -334,6 +334,19 @@ func UpdateLoanStageHandler(ctx *iris.Context) {
 		ctx.JSON(iris.StatusBadRequest, iris.Map{
 			"status":  "Error",
 			"message": "Invalid stage to",
+		})
+		return
+	}
+	if payload.StageTo=="INVESTOR"{
+		if err:=updateToInvestor(payload);err!=nil{
+			ctx.JSON(iris.StatusBadRequest, iris.Map{
+				"status":  "Error",
+				"message": err.Error(),
+			})
+		}
+		ctx.JSON(iris.StatusOK, iris.Map{
+			"status":  "Success",
+			"message": "Succeed: update loan stage from:" + payload.StageFrom + " to:" + payload.StageTo,
 		})
 		return
 	}
@@ -371,6 +384,77 @@ func UpdateLoanStageHandler(ctx *iris.Context) {
 		"status":  "Success",
 		"message": "Succeed: update loan stage from:" + payload.StageFrom + " to:" + payload.StageTo,
 	})
+}
+func updateToInvestor(payload UpdateStageRequest) error{
+	remarkFlag := "PENDING"
+	currentBalance := GetCurrentBalance(payload.InvestorId)
+	if currentBalance < payload.Amount {
+		return errors.New("Balance is not enough")
+	}
+	orderNo := generateOrderNumber(payload.InvestorId)
+	db := services.DBCPsql.Begin()
+	order := &loanOrder.LoanOrder{Remark: remarkFlag, OrderNo: orderNo}
+	db.Table("loan_order").Create(order)
+	updateStageQuery := `UPDATE loan SET "stage" = 'ORDERED' WHERE loan."id" IN ( ` + getStrLoanId(payload.LoanId) + ` )`
+	if err := db.Exec(updateStageQuery); err != nil && err.RowsAffected == 0 {
+		db.Rollback()
+		return errors.New("Error update loan stage to ordered")
+	}
+	for LoanID := range payload.LoanId {
+		// INSERT TO R LOAN ORDER
+		insertRloQuery := `INSERT INTO r_loan_order("loanId","loanOrderId", "createdAt", "updatedAt") VALUES(?,?,current_timestamp,current_timestamp)`
+		if err := db.Exec(insertRloQuery, LoanID, order.ID); err != nil && err.RowsAffected == 0 {
+			db.Rollback()
+			return errors.New("Error insert r_loan_order")
+		}
+		// INSERT TO LOAN HISTORY
+		investorID := strconv.FormatUint(payload.InvestorId, 10)
+		loanHistorySchema := &loanHistory.LoanHistory{StageFrom: "CART", StageTo: "ORDERED", Remark: "ORDERED loanId=" + fmt.Sprintf("%v", LoanID) + " investorId=" + investorID}
+		db.Table("loan_history").Create(loanHistorySchema)
+
+		// INSERT TO R_LOAN HISTORY
+		rLoanHistorySchema := &r.RLoanHistory{LoanId: uint64(LoanID), LoanHistoryId: loanHistorySchema.ID}
+		db.Table("r_loan_history").Create(rLoanHistorySchema)
+	}
+	if err:=loanOrder.AcceptOrder(orderNo,false,db);err!=nil{
+		db.Rollback()
+		return err
+	}
+	db.Commit()
+	return nil
+}
+
+
+func getStrLoanId(LoanId []uint64) string{
+	result:=""
+	for i:=0;i<len(LoanId);i++{
+		if i != 0 {
+			result += ","
+		}
+		result += strconv.FormatUint(LoanId[i],10)
+	}
+	return result
+}
+
+//Generate OrderId by [YMDHIS][XXX][INVESTORID]
+func generateOrderNumber(investorID uint64) string {
+	now := time.Now()
+	numRand := rand.Intn(999)
+	rand.Seed(time.Now().UTC().UnixNano())
+	timestamp := fmt.Sprintf("%d%d%d%d%d%d%d%d", now.Year(), now.Month(), now.Day(), now.Hour(), now.Minute(), now.Second(), numRand, investorID)
+	return timestamp[2:]
+}
+
+func GetCurrentBalance(InvestorID uint64) float64 {
+	account := account.Account{}
+	accountDb := services.DBCPsql.Table("account").Select("*")
+	accountDb = accountDb.Joins(`JOIN r_account_investor rai on rai."accountId" = account.id`)
+	accountDb = accountDb.Where(`rai."investorId" = ?`, InvestorID)
+	accountDb.First(&account)
+
+	totalBalance := account.TotalBalance
+	return totalBalance
+
 }
 
 func isValidStage(stage string) bool {
