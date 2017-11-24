@@ -166,7 +166,7 @@ func AcceptLoanOrder(ctx *iris.Context) {
 	}
 
 	if isUsingInsurance {
-		if err:=InsertAtcInsurance(loans,totalOrder,accId.AccountId,db);err!=nil{
+		if err:=InsertAtcInsurance(loans,totalOrderBefore,accId.AccountId,db);err!=nil{
 			processErrorAndRollback(ctx, orderNo, db, errUpdateCredit, "Insert insurace credit failed")
 			return
 		}
