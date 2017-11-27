@@ -343,6 +343,7 @@ func UpdateLoanStageHandler(ctx *iris.Context) {
 				"status":  "Error",
 				"message": err.Error(),
 			})
+			return
 		}
 		ctx.JSON(iris.StatusOK, iris.Map{
 			"status":  "Success",
@@ -389,6 +390,7 @@ func updateToInvestor(payload UpdateStageRequest) error{
 	remarkFlag := "PENDING"
 	currentBalance := GetCurrentBalance(payload.InvestorId)
 	if currentBalance < payload.Amount {
+		fmt.Println("#ERROR#Balance#notenough",payload)
 		return errors.New("Balance is not enough")
 	}
 	orderNo := generateOrderNumber(payload.InvestorId)
