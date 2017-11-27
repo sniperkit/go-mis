@@ -348,6 +348,7 @@ func UpdateLoanStageHandler(ctx *iris.Context) {
 		ctx.JSON(iris.StatusOK, iris.Map{
 			"status":  "Success",
 			"message": "Succeed: update loan stage from:" + payload.StageFrom + " to:" + payload.StageTo,
+			"data":true,
 		})
 		return
 	}
@@ -384,6 +385,7 @@ func UpdateLoanStageHandler(ctx *iris.Context) {
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"status":  "Success",
 		"message": "Succeed: update loan stage from:" + payload.StageFrom + " to:" + payload.StageTo,
+		"data":true,
 	})
 }
 func updateToInvestor(payload UpdateStageRequest) error{
