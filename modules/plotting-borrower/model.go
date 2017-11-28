@@ -2,7 +2,7 @@ package plottingBorrower
 
 type UpdateStageRequest struct {
 	LoanId     []uint64 `json:"loanId"`
-	Amount 	   float64   `json:"amount"`
+	Amount     float64  `json:"amount"`
 	InvestorId uint64   `json:"investorId"`
 	StageFrom  string   `json:"stageFrom"`
 	StageTo    string   `json:"stageTo"`
@@ -29,7 +29,6 @@ type RecommendedLoan struct {
 	Purpose          string  `gorm:"column:purpose" json:"purpose"`
 }
 
-
 type SchedulerLoan struct {
 	LoanId           uint64  `gorm:"column:loanId" json:"loanId"`
 	BorrowerName     string  `gorm:"column:borrowerName" json:"borrowerName"`
@@ -38,7 +37,9 @@ type SchedulerLoan struct {
 	Plafond          float64 `gorm:"column:plafond" json:"plafond"`
 	Rate             float64 `gorm:"column:rate" json:"rate"`
 	CreditScoreGrade string  `gorm:"column:creditScoreGrade" json:"creditScoreGrade"`
-	Purpose          string  `gorm:"column:schedulerTime" json:"schedulerTime"`
+	Purpose          string  `gorm:"column:purpose" json:"purpose"`
+	Tenor            int     `gorm:"column:tenor" json:"tenor"`
+	DisbursDate      string  `gorm:"column:ddate" json:"disbursementDate"`
 }
 
 type GOLoanSuccessResponse struct {
