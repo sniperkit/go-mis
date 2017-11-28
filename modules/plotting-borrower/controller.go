@@ -11,15 +11,16 @@ import (
 	"time"
 
 	"bitbucket.org/go-mis/config"
+	"bitbucket.org/go-mis/modules/account"
 	"bitbucket.org/go-mis/modules/investor"
 	"bitbucket.org/go-mis/modules/loan-history"
 	"bitbucket.org/go-mis/modules/loan-order"
-	"bitbucket.org/go-mis/modules/account"
 	"bitbucket.org/go-mis/modules/r"
 	"bitbucket.org/go-mis/services"
 
-	"gopkg.in/kataras/iris.v4"
 	"math/rand"
+
+	"gopkg.in/kataras/iris.v4"
 )
 
 // This function saves potting paramaters as borrower criteria
@@ -299,8 +300,13 @@ func GetSchedulerHistory(ctx *iris.Context) {
         join "group" on "group".id=rlg."groupId"
         join r_loan_branch rlbr on rlbr."loanId"=loan.id
         join branch on branch.id=rlbr."branchId"
-        where loan_history."stageFrom"='PRIVATE-MARKETPLACE' and loan_history."stageTo"='MARKETPLACE' and loan_history."createdAt"::date=?`
-	services.DBCPsql.Raw(query, date).Scan(&loans)
+        where upper(loan_history."stageFrom")='PRIVATE-MARKETPLACE' and upper(loan_history."stageTo")='MARKETPLACE' and loan_history."createdAt"::date=?`
+	err := services.DBCPsql.Raw(query, date).Scan(&loans).Error
+
+	if err != nil {
+		fmt.Println(err)
+	}
+
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"status": "success",
 		"data":   loans,
@@ -315,7 +321,7 @@ func UpdateLoanStageHandler(ctx *iris.Context) {
 	}{}
 	payload := UpdateStageRequest{}
 	if err := ctx.ReadJSON(&payload); err != nil {
-		log.Println("Error",err)
+		log.Println("Error", err)
 		ctx.JSON(iris.StatusInternalServerError, iris.Map{
 			"status":  "Error",
 			"message": "Invalid json",
@@ -337,8 +343,8 @@ func UpdateLoanStageHandler(ctx *iris.Context) {
 		})
 		return
 	}
-	if payload.StageTo=="INVESTOR"{
-		if err:=updateToInvestor(payload);err!=nil{
+	if payload.StageTo == "INVESTOR" {
+		if err := updateToInvestor(payload); err != nil {
 			ctx.JSON(iris.StatusBadRequest, iris.Map{
 				"status":  "Error",
 				"message": err.Error(),
@@ -348,7 +354,7 @@ func UpdateLoanStageHandler(ctx *iris.Context) {
 		ctx.JSON(iris.StatusOK, iris.Map{
 			"status":  "Success",
 			"message": "Succeed: update loan stage from:" + payload.StageFrom + " to:" + payload.StageTo,
-			"data":true,
+			"data":    true,
 		})
 		return
 	}
@@ -385,14 +391,14 @@ func UpdateLoanStageHandler(ctx *iris.Context) {
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"status":  "Success",
 		"message": "Succeed: update loan stage from:" + payload.StageFrom + " to:" + payload.StageTo,
-		"data":true,
+		"data":    true,
 	})
 }
-func updateToInvestor(payload UpdateStageRequest) error{
+func updateToInvestor(payload UpdateStageRequest) error {
 	remarkFlag := "PENDING"
 	currentBalance := GetCurrentBalance(payload.InvestorId)
 	if currentBalance < payload.Amount {
-		fmt.Println("#ERROR#Balance#notenough",payload)
+		fmt.Println("#ERROR#Balance#notenough", payload)
 		return errors.New("Balance is not enough")
 	}
 	orderNo := generateOrderNumber(payload.InvestorId)
@@ -404,7 +410,7 @@ func updateToInvestor(payload UpdateStageRequest) error{
 		db.Rollback()
 		return errors.New("Error update loan stage to ordered")
 	}
-	for _,loanId := range payload.LoanId {
+	for _, loanId := range payload.LoanId {
 		// INSERT TO R LOAN ORDER
 		insertRloQuery := `INSERT INTO r_loan_order("loanId","loanOrderId", "createdAt", "updatedAt") VALUES(?,?,current_timestamp,current_timestamp)`
 		if err := db.Exec(insertRloQuery, loanId, order.ID); err != nil && err.RowsAffected == 0 {
@@ -422,24 +428,23 @@ func updateToInvestor(payload UpdateStageRequest) error{
 	}
 	db.Commit()
 	//make new transaction so order still created no matter accept failed or success
-	newDb:=services.DBCPsql.Begin()
-	if err:=loanOrder.AcceptOrder(orderNo,false,newDb);err!=nil{
+	newDb := services.DBCPsql.Begin()
+	if err := loanOrder.AcceptOrder(orderNo, false, newDb); err != nil {
 		db.Rollback()
-		fmt.Println("ERROR-ACCEPT-ORDER",err)
+		fmt.Println("ERROR-ACCEPT-ORDER", err)
 		return err
 	}
 	newDb.Commit()
 	return nil
 }
 
-
-func getStrLoanId(LoanId []uint64) string{
-	result:=""
-	for i:=0;i<len(LoanId);i++{
+func getStrLoanId(LoanId []uint64) string {
+	result := ""
+	for i := 0; i < len(LoanId); i++ {
 		if i != 0 {
 			result += ","
 		}
-		result += strconv.FormatUint(LoanId[i],10)
+		result += strconv.FormatUint(LoanId[i], 10)
 	}
 	return result
 }
@@ -477,7 +482,7 @@ func isValidStage(stage string) bool {
 }
 
 func isUsingInvestorID(stage string) bool {
-	fmt.Println("STAGE",stage)
+	fmt.Println("STAGE", stage)
 	invStages := []string{"PRIVATE-INVESTOR", "INVESTOR"}
 	for i := range invStages {
 		if strings.ToUpper(stage) == invStages[i] {
