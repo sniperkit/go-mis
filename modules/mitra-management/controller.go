@@ -128,7 +128,7 @@ func FindBorrowerByInstallmentType(borrowers *[]MMBorrower, branchID interface{}
 	if err != nil {
 		return 0, err
 	}
-	expQuery += ` and installment."createdAt"::date = ? order by cif."name" ASC `
+	expQuery += ` and installment."createdAt"::date = ? and installment."deletedAt" is null order by cif."name" ASC `
 	log.Println("QUERY TO RUN: ", expQuery)
 	db := services.DBCPsql.Raw(expQuery, branchID, date).Scan(borrowers)
 	if db.Error != nil {

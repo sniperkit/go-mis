@@ -31,6 +31,7 @@ func FetchAll(ctx *iris.Context) {
 	case when rlov.id is not null then v.amount else 0 end "voucherAmount",
 	case when rloc.id is not null then TRUE else FALSE end "participateCampaign",
 	case when rloc.id is not null then rloc.quantity else 0 end "quantityOfCampaignItem",
+	case when true = bool_and(l."isInsurance") then 0.015*sum(l.plafond) else 0 end "insuranceAmount",
 	case when lo.remark = 'PENDING-REFERRAL' then TRUE else FALSE end "usingRefreal"
 	from loan l
 	join r_loan_order rlo on l.id = rlo."loanId"
@@ -66,6 +67,7 @@ func FetchSingle(ctx *iris.Context) {
 	case when rlov.id is not null then v.amount else 0 end "voucherAmount",
 	case when rloc.id is not null then TRUE else FALSE end "participateCampaign",
 	case when rloc.id is not null then rloc.quantity else 0 end "quantityOfCampaignItem",
+	case when true = bool_and(l."isInsurance") then 0.015*sum(l.plafond) else 0 end "insuranceAmount",
 	case when lo.remark = 'PENDING-REFERRAL' then TRUE else FALSE end "usingRefreal"
 	from investor i
 	join r_account_investor rai on i.id = rai."investorId"
@@ -80,7 +82,8 @@ func FetchSingle(ctx *iris.Context) {
 	left join campaign camp on rloc."campaignId" = camp.id
 	left join r_loan_order_voucher rlov on rlov."loanOrderId" = lo.id
 	left join voucher v on v.id = rlov."voucherId"
-	where (lo.remark = 'PENDING' or lo.remark = 'PENDING-REFERRAL' or lo.remark = 'PENDING-FIRST') and lo.id = ?`
+	where (lo.remark = 'PENDING' or lo.remark = 'PENDING-REFERRAL' or lo.remark = 'PENDING-FIRST') and lo.id = ?
+		group by acc.threshold ,i.id, camp.amount, c.username, c.name, lo."orderNo", l.id, l.purpose, acc."totalBalance", l.plafond, lo.remark,rlov.id,rloc.id,lo.remark,v.amount,rloc.quantity`
 
 	loanOrderSchema := []LoanOrderDetail{}
 	e := services.DBCPsql.Raw(query, id).Scan(&loanOrderSchema).Error
@@ -161,7 +164,7 @@ func AcceptOrder(orderNo string, isSendNotif bool,db *gorm.DB) error{
 	}
 
 	if isUsingInsurance {
-		if err:=InsertAtcInsurance(loans,totalOrder,accId.AccountId,db);err!=nil{
+		if err:=InsertAtcInsurance(loans,totalOrderBefore,accId.AccountId,db);err!=nil{
 			return errors.New("Insert insurace credit failed")
 		}
 	}
@@ -328,7 +331,7 @@ func FetchAllPendingWaiting(ctx *iris.Context) {
 func RejectLoanOrder(ctx *iris.Context) {
 	orderNo := ctx.Param("orderNo")
 
-	queryUpdateLoanStage := "update loan set stage = 'PRIVATE' where id in (select l.id from loan l join r_loan_order rlo on l.id = rlo.\"loanId\" join loan_order lo on lo.id = rlo.\"loanOrderId\" where lo.\"orderNo\"='" + orderNo + "');"
+	queryUpdateLoanStage := "update loan set stage = 'PRIVATE', \"isInsurance\" = FALSE where id in (select l.id from loan l join r_loan_order rlo on l.id = rlo.\"loanId\" join loan_order lo on lo.id = rlo.\"loanOrderId\" where lo.\"orderNo\"='" + orderNo + "');"
 	services.DBCPsql.Exec(queryUpdateLoanStage)
 
 	queryInsertLoanHistory := `with ins as (INSERT INTO loan_history("stageFrom","stageTo","remark","createdAt","updatedAt")

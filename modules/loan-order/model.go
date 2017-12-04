@@ -40,6 +40,7 @@ type LoanOrderList struct {
 	TotalPlafond           float64   `gorm:"column:totalPlafond" json:"totalPlafond"`
 	UsingVoucher           bool      `gorm:"column:usingVoucher" json:"usingVoucher"`
 	VoucherAmount          float64   `gorm:"column:voucherAmount" json:"voucherAmount"`
+	InsuranceAmount          float64 `gorm:"column:insuranceAmount" json:"insuranceAmount"`
 	ParticipateCampaign    bool      `gorm:"column:participateCampaign" json:"participateCampaign"`
 	QuantityOfCampaignItem uint64    `gorm:"column:quantityOfCampaignItem" json:"quantityOfCampaignItem"`
 	CampaignAmount         float64   `gorm:"column:campaignAmount" json:"campaignAmount"`
@@ -58,6 +59,7 @@ type LoanOrderDetail struct {
 	TotalBalance           float64 `gorm:"column:totalBalance" json:"totalBalance"`
 	UsingVoucher           bool    `gorm:"column:usingVoucher" json:"usingVoucher"`
 	VoucherAmount          float64 `gorm:"column:voucherAmount" json:"voucherAmount"`
+	InsuranceAmount          float64 `gorm:"column:insuranceAmount" json:"insuranceAmount"`
 	ParticipateCampaign    bool    `gorm:"column:participateCampaign" json:"participateCampaign"`
 	QuantityOfCampaignItem uint64  `gorm:"column:quantityOfCampaignItem" json:"quantityOfCampaignItem"`
 	CampaignAmount         float64 `gorm:"column:campaignAmount" json:"campaignAmount"`
