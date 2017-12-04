@@ -11,8 +11,14 @@ import (
 	"time"
 
 	"bitbucket.org/go-mis/config"
+	"bitbucket.org/go-mis/modules/account"
 	"bitbucket.org/go-mis/modules/investor"
+	"bitbucket.org/go-mis/modules/loan-history"
+	"bitbucket.org/go-mis/modules/loan-order"
+	"bitbucket.org/go-mis/modules/r"
 	"bitbucket.org/go-mis/services"
+
+	"math/rand"
 
 	"gopkg.in/kataras/iris.v4"
 )
@@ -85,6 +91,8 @@ func SavePlottingParams(ctx *iris.Context) {
 // This function get all investors which their borrowerCriteria is not null
 func ListPlottingParams(ctx *iris.Context) {
 
+	isActive := ctx.URLParam("isActive")
+
 	totalRows := 0
 	investors := []struct {
 		ID                       uint64 `gorm:"column:id" json:"id"`
@@ -98,8 +106,10 @@ func ListPlottingParams(ctx *iris.Context) {
 			join r_cif_investor rci on rci."investorId" = investor.Id
 			join cif on cif.id = rci."cifId"
 			where "borrowerCriteria" <> '{}' and 
-			investor."isBorrowerCriteriaActive" = true and
 			investor."deletedAt" is null`
+	if isActive == "true" {
+		query += ` and "isBorrowerCriteriaActive" = true`
+	}
 	if err := services.DBCPsql.Raw(query).Scan(&investors).Error; err != nil {
 		ctx.JSON(iris.StatusOK, iris.Map{
 			"status":  "Error",
@@ -216,10 +226,11 @@ func FindPlottingBorrower(ctx *iris.Context) {
 	stageParam := ctx.Param("stage")
 	investorIdParams := ctx.URLParam("investorId")
 	investorId := 0
+	var err error
 
 	stage := ""
 	if stageParam == "investor" {
-		investorId, err := strconv.Atoi(investorIdParams)
+		investorId, err = strconv.Atoi(investorIdParams)
 		if investorId <= 0 || investorIdParams == "" || err != nil {
 			ctx.JSON(iris.StatusBadRequest, iris.Map{
 				"message":      "Bad Request",
@@ -238,30 +249,33 @@ func FindPlottingBorrower(ctx *iris.Context) {
 		return
 	}
 
-	loans := RecommendedLoan{}
+	loans := []RecommendedLoan{}
 
 	query := `select loan.id as "loanId",cif."name" as "borrowerName","group"."name" as "group",
-	branch."name" as "branch",disbursement."disbursementDate"::date as "disbursementDate",loan.plafond,loan.rate,loan.tenor,loan."creditScoreGrade",loan.purpose from loan
-	join r_loan_group rlg on rlg."loanId"=loan.id
-	join "group" on "group".id = rlg."groupId"
-	join r_loan_borrower rlb on rlb."loanId"=loan.id
-	join r_cif_borrower rcb on rcb."borrowerId"=rlb."borrowerId"
-	join cif on cif.id=rcb."cifId"
-	join r_loan_branch rlbr on rlbr."loanId"=loan.id
-	join branch on branch.id=rlbr."branchId"
-	join r_loan_disbursement rld on rld."loanId"=loan.id
-	join disbursement on disbursement.id=rld."disbursementId"
-	join r_area_branch rab on rab."branchId"=branch.id
-	join r_loan_sector rls on rls."loanId"=loan.id`
+    branch."name" as "branch",disbursement."disbursementDate"::date as "disbursementDate",loan.plafond,loan.rate,loan.tenor,loan."creditScoreGrade",loan.purpose 
+    from loan
+    join r_loan_group rlg on rlg."loanId"=loan.id
+    join "group" on "group".id = rlg."groupId"
+    join r_loan_borrower rlb on rlb."loanId"=loan.id
+    join r_cif_borrower rcb on rcb."borrowerId"=rlb."borrowerId"
+    join cif on cif.id=rcb."cifId"
+    join r_loan_branch rlbr on rlbr."loanId"=loan.id
+    join branch on branch.id=rlbr."branchId"
+    join r_loan_disbursement rld on rld."loanId"=loan.id
+    join disbursement on disbursement.id=rld."disbursementId"
+    join r_area_branch rab on rab."branchId"=branch.id
+    join r_loan_sector rls on rls."loanId"=loan.id 
+    join r_investor_product_pricing_loan rippl on rippl."loanId"=loan.id`
+
+	fmt.Printf("ancok %s %d %s ", stage, investorId, investorIdParams)
 
 	if investorId > 0 {
-		query += `
-		join r_cif_investor rcfi on rcfi."cifId" = cif.id 
-		join investor on investor.id = rcfi."investorId"
-		where loan.stage=? and loan."deletedAt" is null and investor.id =? limit 3`
+		query += ` join investor on investor.id = rippl."investorId"
+		where loan.stage=? and loan."deletedAt" is null and investor.id =?`
 		services.DBCPsql.Raw(query, stage, investorId).Scan(&loans)
+		fmt.Printf("bangsed %s %d", stage, investorId)
 	} else {
-		query += `where loan.stage=? and loan."deletedAt" is null`
+		query += ` where loan.stage=? and loan."deletedAt" is null`
 		services.DBCPsql.Raw(query, stage).Scan(&loans)
 	}
 
@@ -272,7 +286,219 @@ func FindPlottingBorrower(ctx *iris.Context) {
 
 }
 
-//TODO move to go-loan
+func GetSchedulerHistory(ctx *iris.Context) {
+	date := ctx.Param("date")
+	loans := []SchedulerLoan{}
+	query := `select loan.id as "loanId",cif."name" as "borrowerName","group"."name" as "group",
+        branch."name" as "branch",loan.plafond,loan.rate,loan."creditScoreGrade",loan_history."createdAt" as "schedulerTime",
+        loan."tenor" as "tenor",
+        loan."purpose" as "purpose",
+        disbursement."disbursementDate" as "ddate"
+        from loan
+        join r_loan_history on r_loan_history."loanId"=loan.id
+        join loan_history on loan_history.id=r_loan_history."loanHistoryId"
+        join r_loan_borrower rlb on rlb."loanId"=loan.id
+        join r_cif_borrower rcb on rcb."borrowerId"=rlb."borrowerId"
+        join cif on cif.id=rcb."cifId"
+        join r_loan_group rlg on rlg."loanId"=loan.id
+        join "group" on "group".id=rlg."groupId"
+        join r_loan_branch rlbr on rlbr."loanId"=loan.id
+        join branch on branch.id=rlbr."branchId"
+        join r_loan_disbursement rld on rld."loanId" = loan.id
+        join disbursement on disbursement.id = rld."disbursementId"
+        where upper(loan_history."stageFrom")='PRIVATE-MARKETPLACE' and upper(loan_history."stageTo")='MARKETPLACE' and loan_history."createdAt"::date=?`
+
+	err := services.DBCPsql.Raw(query, date).Scan(&loans).Error
+
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	ctx.JSON(iris.StatusOK, iris.Map{
+		"status": "success",
+		"data":   loans,
+	})
+}
+
+// UpdateLoanStageHandler - update loan stage handler
+func UpdateLoanStageHandler(ctx *iris.Context) {
+	loanResponse := struct {
+		Status  int64  `json:"status"`
+		Message string `json:"message"`
+	}{}
+	payload := UpdateStageRequest{}
+	if err := ctx.ReadJSON(&payload); err != nil {
+		log.Println("Error", err)
+		ctx.JSON(iris.StatusInternalServerError, iris.Map{
+			"status":  "Error",
+			"message": "Invalid json",
+		})
+		return
+	}
+	log.Println("Payload: ", payload)
+	if !isValidStage(payload.StageFrom) {
+		ctx.JSON(iris.StatusBadRequest, iris.Map{
+			"status":  "Error",
+			"message": "Invalid stage from",
+		})
+		return
+	}
+	if !isValidStage(payload.StageTo) {
+		ctx.JSON(iris.StatusBadRequest, iris.Map{
+			"status":  "Error",
+			"message": "Invalid stage to",
+		})
+		return
+	}
+	if payload.StageTo == "INVESTOR" {
+		if err := updateToInvestor(payload); err != nil {
+			ctx.JSON(iris.StatusBadRequest, iris.Map{
+				"status":  "Error",
+				"message": err.Error(),
+			})
+			return
+		}
+		ctx.JSON(iris.StatusOK, iris.Map{
+			"status":  "Success",
+			"message": "Succeed: update loan stage from:" + payload.StageFrom + " to:" + payload.StageTo,
+			"data":    true,
+		})
+		return
+	}
+	if !isUsingInvestorID(payload.StageTo) {
+		payload.InvestorId = 0
+	}
+	goLoanURI := config.Configuration.GoLoanPath + "/" + "loan/plotting-borrower/update/loan-stage/"
+	bPayload, err := json.Marshal(&payload)
+	if err != nil {
+		ctx.JSON(iris.StatusBadRequest, iris.Map{
+			"status":  "Internal server error",
+			"message": "Invalid stage from",
+		})
+		return
+	}
+	loanPayload := strings.NewReader(string(bPayload))
+	respBytes, err := services.CircuitBreaker.Put(goLoanURI, loanPayload)
+	if err != nil {
+		ctx.JSON(iris.StatusBadRequest, iris.Map{
+			"status":  "Internal server error",
+			"message": "Invalid stage from",
+		})
+		return
+	}
+	err = json.Unmarshal(respBytes, &loanResponse)
+	log.Printf("Loan response %+v", loanResponse)
+	if err != nil {
+		ctx.JSON(iris.StatusBadRequest, iris.Map{
+			"status":  "Internal server error",
+			"message": "Invalid stage to",
+		})
+		return
+	}
+	ctx.JSON(iris.StatusOK, iris.Map{
+		"status":  "Success",
+		"message": "Succeed: update loan stage from:" + payload.StageFrom + " to:" + payload.StageTo,
+		"data":    true,
+	})
+}
+func updateToInvestor(payload UpdateStageRequest) error {
+	remarkFlag := "PENDING"
+	currentBalance := GetCurrentBalance(payload.InvestorId)
+	if currentBalance < payload.Amount {
+		fmt.Println("#ERROR#Balance#notenough", payload)
+		return errors.New("Balance is not enough")
+	}
+	orderNo := generateOrderNumber(payload.InvestorId)
+	db := services.DBCPsql.Begin()
+	order := &loanOrder.LoanOrder{Remark: remarkFlag, OrderNo: orderNo}
+	db.Table("loan_order").Create(order)
+	updateStageQuery := `UPDATE loan SET "stage" = 'ORDERED' WHERE loan."id" IN ( ` + getStrLoanId(payload.LoanId) + ` )`
+	if err := db.Exec(updateStageQuery); err != nil && err.RowsAffected == 0 {
+		db.Rollback()
+		return errors.New("Error update loan stage to ordered")
+	}
+	for _, loanId := range payload.LoanId {
+		// INSERT TO R LOAN ORDER
+		insertRloQuery := `INSERT INTO r_loan_order("loanId","loanOrderId", "createdAt", "updatedAt") VALUES(?,?,current_timestamp,current_timestamp)`
+		if err := db.Exec(insertRloQuery, loanId, order.ID); err != nil && err.RowsAffected == 0 {
+			db.Rollback()
+			return errors.New("Error insert r_loan_order")
+		}
+		// INSERT TO LOAN HISTORY
+		investorID := strconv.FormatUint(payload.InvestorId, 10)
+		loanHistorySchema := &loanHistory.LoanHistory{StageFrom: "CART", StageTo: "ORDERED", Remark: "ORDERED loanId=" + fmt.Sprintf("%v", loanId) + " investorId=" + investorID}
+		db.Table("loan_history").Create(loanHistorySchema)
+
+		// INSERT TO R_LOAN HISTORY
+		rLoanHistorySchema := &r.RLoanHistory{LoanId: uint64(loanId), LoanHistoryId: loanHistorySchema.ID}
+		db.Table("r_loan_history").Create(rLoanHistorySchema)
+	}
+	db.Commit()
+	//make new transaction so order still created no matter accept failed or success
+	newDb := services.DBCPsql.Begin()
+	if err := loanOrder.AcceptOrder(orderNo, false, newDb); err != nil {
+		db.Rollback()
+		fmt.Println("ERROR-ACCEPT-ORDER", err)
+		return err
+	}
+	newDb.Commit()
+	return nil
+}
+
+func getStrLoanId(LoanId []uint64) string {
+	result := ""
+	for i := 0; i < len(LoanId); i++ {
+		if i != 0 {
+			result += ","
+		}
+		result += strconv.FormatUint(LoanId[i], 10)
+	}
+	return result
+}
+
+//Generate OrderId by [YMDHIS][XXX][INVESTORID]
+func generateOrderNumber(investorID uint64) string {
+	now := time.Now()
+	numRand := rand.Intn(999)
+	rand.Seed(time.Now().UTC().UnixNano())
+	timestamp := fmt.Sprintf("%d%d%d%d%d%d%d%d", now.Year(), now.Month(), now.Day(), now.Hour(), now.Minute(), now.Second(), numRand, investorID)
+	return timestamp[2:]
+}
+
+func GetCurrentBalance(InvestorID uint64) float64 {
+	account := account.Account{}
+	accountDb := services.DBCPsql.Table("account").Select("*")
+	accountDb = accountDb.Joins(`JOIN r_account_investor rai on rai."accountId" = account.id`)
+	accountDb = accountDb.Where(`rai."investorId" = ?`, InvestorID)
+	accountDb.First(&account)
+
+	totalBalance := account.TotalBalance
+	return totalBalance
+
+}
+
+func isValidStage(stage string) bool {
+	log.Println("Stage: ", stage)
+	stages := []string{"PRIVATE", "PRIVATE-INVESTOR", "INVESTOR", "MARKETPLACE", "PRIVATE-MARKETPLACE"}
+	for i := range stages {
+		if strings.ToUpper(stages[i]) == strings.ToUpper(stage) {
+			return true
+		}
+	}
+	return false
+}
+
+func isUsingInvestorID(stage string) bool {
+	fmt.Println("STAGE", stage)
+	invStages := []string{"PRIVATE-INVESTOR", "INVESTOR"}
+	for i := range invStages {
+		if strings.ToUpper(stage) == invStages[i] {
+			return true
+		}
+	}
+	return false
+}
+
 // this functoin fetch all loan by criteria
 func FindRecommendedLoanByInvestorCriteria(ctx *iris.Context) {
 	investorID := ctx.Param("investorId")
@@ -280,72 +506,72 @@ func FindRecommendedLoanByInvestorCriteria(ctx *iris.Context) {
 	disTo := ctx.URLParam("disTo")
 	resultGoloan := make([]RecommendedLoan, 0)
 
-	redisLoan, err := RetriveRecommendedLoanFromRedis(investorID)
-	if err != nil {
-		log.Println("[ERROR] ", err)
-	}
-	log.Println("Investor ID: ", investorID)
-	if len(redisLoan) > 0 {
+	//redisLoan, err := RetriveRecommendedLoanFromRedis(investorID)
+	//if err != nil {
+	//	log.Println("[ERROR] ", err)
+	//}
+	//log.Println("Investor ID: ", investorID)
+	//if len(redisLoan) > 0 {
+	//
+	//	if investorID != "-1" {
+	//		disToDate, errToDate := time.Parse("2006-01-02", disTo)
+	//		disFromDate, errFromDate := time.Parse("2006-01-02", disFrom)
+	//
+	//		if errToDate != nil {
+	//			log.Println("Error disto: ", errToDate)
+	//			ctx.JSON(http.StatusInternalServerError, iris.Map{
+	//				"status":  "Error",
+	//				"message": errToDate.Error(),
+	//			})
+	//			return
+	//		}
+	//
+	//		if errFromDate != nil {
+	//			log.Println("Error disfrom: ", errFromDate)
+	//			ctx.JSON(http.StatusInternalServerError, iris.Map{
+	//				"status":  "Error",
+	//				"message": errFromDate.Error(),
+	//			})
+	//			return
+	//		}
+	//
+	//		resultGoloanByDate := make([]RecommendedLoan, 0, len(redisLoan))
+	//
+	//		for _, loan := range redisLoan {
+	//			loandDate, errLoanDate := time.Parse("2006-01-02T15:04:05Z", loan.DisbursementDate)
+	//			if errLoanDate != nil {
+	//				log.Println("errLoanDate: ", errLoanDate)
+	//				ctx.JSON(http.StatusInternalServerError, iris.Map{
+	//					"status":  "Error",
+	//					"message": errLoanDate.Error(),
+	//				})
+	//				return
+	//			}
+	//
+	//			if loandDate.After(disFromDate) && loandDate.Before(disToDate) {
+	//				log.Printf("disfrom %s to disto %s and loand date: %s , result: %t ", disFrom, disTo, loandDate, (loandDate.After(disFromDate) && loandDate.Before(disToDate)))
+	//				if loan.LoanId > 0 {
+	//					log.Println("Loan ID: ", loan.LoanId)
+	//					resultGoloanByDate = append(resultGoloanByDate, loan)
+	//				}
+	//			}
+	//
+	//			ctx.JSON(http.StatusOK, iris.Map{
+	//				"status": "Success",
+	//				"data":   resultGoloanByDate,
+	//			})
+	//			return
+	//		}
+	//	} else {
+	//		ctx.JSON(http.StatusOK, iris.Map{
+	//			"status": "Success",
+	//			"data":   redisLoan,
+	//		})
+	//		return
+	//	}
+	//}
 
-		if investorID != "-1" {
-			disToDate, errToDate := time.Parse("2006-01-02", disTo)
-			disFromDate, errFromDate := time.Parse("2006-01-02", disFrom)
-
-			if errToDate != nil {
-				log.Println("Error disto: ", errToDate)
-				ctx.JSON(http.StatusInternalServerError, iris.Map{
-					"status":  "Error",
-					"message": errToDate.Error(),
-				})
-				return
-			}
-
-			if errFromDate != nil {
-				log.Println("Error disfrom: ", errFromDate)
-				ctx.JSON(http.StatusInternalServerError, iris.Map{
-					"status":  "Error",
-					"message": errFromDate.Error(),
-				})
-				return
-			}
-
-			resultGoloanByDate := make([]RecommendedLoan, 0, len(redisLoan))
-
-			for _, loan := range redisLoan {
-				loandDate, errLoanDate := time.Parse("2006-01-02T15:04:05Z", loan.DisbursementDate)
-				if errLoanDate != nil {
-					log.Println("errLoanDate: ", errLoanDate)
-					ctx.JSON(http.StatusInternalServerError, iris.Map{
-						"status":  "Error",
-						"message": errLoanDate.Error(),
-					})
-					return
-				}
-
-				if loandDate.After(disFromDate) && loandDate.Before(disToDate) {
-					log.Printf("disfrom %s to disto %s and loand date: %s , result: %t ", disFrom, disTo, loandDate, (loandDate.After(disFromDate) && loandDate.Before(disToDate)))
-					if loan.LoanId > 0 {
-						log.Println("Loan ID: ", loan.LoanId)
-						resultGoloanByDate = append(resultGoloanByDate, loan)
-					}
-				}
-
-				ctx.JSON(http.StatusOK, iris.Map{
-					"status": "Success",
-					"data":   resultGoloanByDate,
-				})
-				return
-			}
-		} else {
-			ctx.JSON(http.StatusOK, iris.Map{
-				"status": "Success",
-				"data":   redisLoan,
-			})
-			return
-		}
-	}
-
-	resultGoloan, err = RetrieveRecommendedLoanFromLoanService(disFrom, disTo, investorID)
+	resultGoloan, err := RetrieveRecommendedLoanFromLoanService(disFrom, disTo, investorID)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, iris.Map{
 			"status":  "Error",

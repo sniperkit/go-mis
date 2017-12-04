@@ -2,7 +2,9 @@ package services
 
 import (
 	"errors"
+	"io"
 	"io/ioutil"
+	"log"
 	"net/http"
 
 	"github.com/sony/gobreaker"
@@ -37,6 +39,34 @@ func (m *MISCircuitBreaker) Get(url string) ([]byte, error) {
 		defer resp.Body.Close()
 		body, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
+			return nil, err
+		}
+		return body, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return body.([]byte), nil
+}
+
+// Put - put http to external service
+func (m *MISCircuitBreaker) Put(url string, data io.Reader) ([]byte, error) {
+	body, err := CircuitBreaker.Execute(func() (interface{}, error) {
+		client := &http.Client{}
+		req, err := http.NewRequest(http.MethodPut, url, data)
+		if err != nil {
+			log.Println("[ERROR] Circuit breakser-Put method ", err)
+			return nil, err
+		}
+		resp, err := client.Do(req)
+		if err != nil {
+			log.Println("[ERROR] Circuit breakser-Put method ", err)
+			return nil, err
+		}
+		defer resp.Body.Close()
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			log.Println("[ERROR] Circuit breakser-Put method ", err)
 			return nil, err
 		}
 		return body, nil
