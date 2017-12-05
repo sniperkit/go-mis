@@ -12,6 +12,7 @@ type Investor struct {
 	BankBranch               string     `gorm:"column:bankBranch" json:"bankBranch"`
 	BankAccountName          string     `gorm:"column:bankAccountName" json:"bankAccountName"`
 	BankAccountNo            string     `gorm:"column:bankAccountNo" json:"bankAccountNo"`
+	BankSwiftCode            string     `gorm:"column:bankSwiftCode" json:"bankSwiftCode"`
 	BorrowerCriteria         string     `gorm:"column:borrowerCriteria" sql:"type:JSONB NOT NULL DEFAULT '{}'::JSONB"`
 	IsBorrowerCriteriaActive *bool      `gorm:"column:isBorrowerCriteriaActive" json:"isBorrowerCriteriaActive"`
 	CreatedAt                time.Time  `gorm:"column:createdAt" json:"createdAt"`

@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"bitbucket.org/go-mis/services"
+	iris "gopkg.in/kataras/iris.v4"
 )
 
 const (
@@ -53,4 +54,19 @@ func IsAllowedBackdate() bool {
 	}
 	fmt.Println("Allow backdate: true")
 	return true
+}
+
+func GetSwift(ctx *iris.Context) {
+	dataSwift := []Swift{}
+	if err := services.DBCPsql.Table(`swift`).Find(&dataSwift).Error; err != nil {
+		ctx.JSON(iris.StatusOK, iris.Map{
+			"status": "error",
+			"data":   err.Error(),
+		})
+		return
+	}
+	ctx.JSON(iris.StatusOK, iris.Map{
+		"status": "success",
+		"data":   dataSwift,
+	})
 }

@@ -13,4 +13,11 @@ type (
 		UpdatedAt time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
 		DeletedAt *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
 	}
+	Swift struct {
+		Code   string `gorm:"column:code" json:"code"`
+		Bank   string `gorm:"column:bank" json:"bank"`
+		City   string `gorm:"column:city" json:"city"`
+		Branch string `gorm:"column:branch" json:"branch"`
+		Prefix string `gorm:"column:prefix" json:"prefix"`
+	}
 )
