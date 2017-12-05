@@ -56,20 +56,17 @@ func IsAllowedBackdate() bool {
 	return true
 }
 
-type Swift struct {
-	Code string `gorm:"column:code" json:"code"`
-	Bank string `gorm:"column:bank" json:"bank"`
-	City string `gorm:"column:city" json:"city"`
-	Branch string `gorm:"column:branch" json:"branch"`
-	Prefix string `gorm:"column:prefix" json:"prefix"`
-}
-
 func GetSwift(ctx *iris.Context) {
-		dataSwift := []Swift{}
-		services.DBCPsql.Table(`swift`).Find(&dataSwift)
-		
+	dataSwift := []Swift{}
+	if err := services.DBCPsql.Table(`swift`).Find(&dataSwift).Error; err != nil {
 		ctx.JSON(iris.StatusOK, iris.Map{
-		"status":    "success",
-		"data":      dataSwift,
+			"status": "error",
+			"data":   err.Error(),
+		})
+		return
+	}
+	ctx.JSON(iris.StatusOK, iris.Map{
+		"status": "success",
+		"data":   dataSwift,
 	})
 }
