@@ -151,6 +151,7 @@ type CifInvestor struct {
 	BankBranch          string  `gorm:"column:bankBranch" json:"bankBranch"`
 	BankAccountName     string  `gorm:"column:bankAccountName" json:"bankAccountName"`
 	BankAccountNo       string  `gorm:"column:bankAccountNo" json:"bankAccountNo"`
+	BankSwiftCode       string  `gorm:"column:bankSwiftCode" json:"bankSwiftCode"`
 	CifID               uint64  `gorm:"column:cifId" json:"cifId"`
 	CifNumber           uint64  `gorm:"column:cifNumber" json:"cifNumber"`
 	Username            string  `gorm:"column:username" json:"username"`
