@@ -16,6 +16,7 @@ import (
 	"fmt"
 	"encoding/json"
 	"bytes"
+	"strings"
 )
 
 func Init() {
@@ -30,7 +31,7 @@ type TotalData struct {
 // FetchAll - fetch cashout data
 func FetchAll(ctx *iris.Context) {
 	cashoutInvestors := []CashoutInvestor{}
-	// stage := ctx.URLParam("stage")
+	stage := ctx.URLParam("stage")
 
 	// query := "SELECT cashout.*, "
 	// query += "cif.\"name\" as \"investorName\", "
@@ -63,7 +64,12 @@ func FetchAll(ctx *iris.Context) {
 	queryTotalData += "JOIN r_account_investor ON r_account_investor.\"accountId\" = account.id "
 	queryTotalData += "JOIN r_cif_investor ON r_cif_investor.\"investorId\" = r_account_investor.\"investorId\" "
 	queryTotalData += "JOIN cif ON cif.id = r_cif_investor.\"cifId\" "
-
+	
+	if stage != "" {
+		query += strings.Replace("WHERE stage = '?'", "?", stage, -1)
+		queryTotalData += strings.Replace("WHERE stage = '?'", "?", stage, -1)
+	}
+ 
 	// if len(strings.TrimSpace(stage)) == 0 {
 	// 	services.DBCPsql.Raw(query).Find(&cashoutInvestors)
 	// } else {
