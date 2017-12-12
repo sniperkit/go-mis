@@ -293,7 +293,7 @@ func GetLoanDetail(ctx *iris.Context) {
 	queryInstallmentObj += "FROM installment "
 	queryInstallmentObj += "JOIN r_loan_installment ON r_loan_installment.\"installmentId\" = installment.\"id\" "
 	queryInstallmentObj += "JOIN loan ON loan.\"id\" = r_loan_installment.\"loanId\" "
-	queryInstallmentObj += "WHERE loan.\"id\" = ?"
+	queryInstallmentObj += "WHERE loan.\"id\" = ? and installment.\"deletedAt\" is null"
 
 	services.DBCPsql.Raw(queryInstallmentObj, loanId).Scan(&installmentObj)
 
