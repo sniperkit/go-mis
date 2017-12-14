@@ -32,6 +32,7 @@ type (
 		GroupName      string  `json:"groupName" gorm:"column:groupName"`
 		ReasonID       uint64  `json:"reasonId" gorm:"column:reasonId"`
 		Reason         string  `json:"reason" gorm:"column:reason"`
+		StatusID 			 uint64	 `json:"statusId" gorm:"column:status"`
 		Plafond        float64 `json:"plafond" gorm:"column:plafond"`
 		Tenor          uint64  `json:"tenor" gorm:"column:tenor"`
 		DODate         string  `json:"doDate" gorm:"column:doDate"`
