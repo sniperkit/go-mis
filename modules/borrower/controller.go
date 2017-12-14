@@ -350,8 +350,17 @@ func CreateLoan(payload map[string]interface{}) (error, loan.Loan) {
 			cpl[k] = v.(string)
 		}
 	}
-	if cpl["tenor"] == "" || cpl["plafond"] == "" || cpl["rate"] == "" || cpl["creditScoreGrade"] == "" || cpl["creditScoreValue"] == "" {
+	if cpl["tenor"] == "" ||
+		cpl["plafond"] == "" ||
+			cpl["rate"] == "" ||
+				cpl["creditScoreGrade"] == "" ||
+					cpl["creditScoreValue"] == ""{
 		return errors.New("CSTrip is required"), loan.Loan{}
+	}
+	if cpl["client_ktp_penanggung_jawab"] == "" ||
+		cpl["photo_ktp_penanggung_jawab"] == "" ||
+		cpl["photo_penanggung_jawab"] == "" {
+		return errors.New("Penanggung Jawab is required"), loan.Loan{}
 	}
 	// map each payload field to it's respective cif field
 	newLoan := loan.Loan{}
