@@ -19,6 +19,7 @@ type (
 		BorrowerNumber string `json:"borrowerNumber" gorm:"column:borrowerNumber"`
 		BorrowerName   string `json:"borrowerName" gorm:"column:borrowerName"`
 		GroupName      string `json:"groupName" gorm:"column:groupName"`
+		ReasonID       uint64 `json:"reasonId" gorm:"column:reasonId"`
 		Reason         string `json:"reason" gorm:"column:reason"`
 	}
 
@@ -26,9 +27,10 @@ type (
 		LoanID         uint64  `json:"loanId" gorm:"column:loanId"`
 		InstallmentID  uint64  `json:"installmentID" gorm:"column:installmentId"`
 		BorrowerNumber uint64  `json:"borrowerNumber" gorm:"column:borrowerNumber"`
-		BorrowerId uint64  `json:"borrowerId" gorm:"column:borrowerId"`
+		BorrowerId     uint64  `json:"borrowerId" gorm:"column:borrowerId"`
 		BorrowerName   string  `json:"borrowerName" gorm:"column:borrowerName"`
 		GroupName      string  `json:"groupName" gorm:"column:groupName"`
+		ReasonID       uint64  `json:"reasonId" gorm:"column:reasonId"`
 		Reason         string  `json:"reason" gorm:"column:reason"`
 		Plafond        float64 `json:"plafond" gorm:"column:plafond"`
 		Tenor          uint64  `json:"tenor" gorm:"column:tenor"`
@@ -41,9 +43,10 @@ type (
 		LoanID         uint64  `json:"loanId" gorm:"column:loanId"`
 		InstallmentID  uint64  `json:"installmentID" gorm:"column:installmentId"`
 		BorrowerNumber uint64  `json:"borrowerNumber" gorm:"column:borrowerNumber"`
-		BorrowerId uint64  `json:"borrowerId" gorm:"column:borrowerId"`
+		BorrowerId     uint64  `json:"borrowerId" gorm:"column:borrowerId"`
 		BorrowerName   string  `json:"borrowerName" gorm:"column:borrowerName"`
 		GroupName      string  `json:"groupName" gorm:"column:groupName"`
+		ReasonID       uint64  `json:"reasonId" gorm:"column:reasonId"`
 		Reason         string  `json:"reason" gorm:"column:reason"`
 		Nominal        float64 `json:"nominal" gorm:"column:nominal"`
 		PARDate        string  `json:"parDate" gorm:"column:parDate"`
@@ -54,9 +57,10 @@ type (
 		LoanID          uint64  `json:"loanId" gorm:"column:loanId"`
 		InstallmentID   uint64  `json:"installmentID" gorm:"column:installmentId"`
 		BorrowerNumber  uint64  `json:"borrowerNumber" gorm:"column:borrowerNumber"`
-		BorrowerId uint64  `json:"borrowerId" gorm:"column:borrowerId"`
+		BorrowerId      uint64  `json:"borrowerId" gorm:"column:borrowerId"`
 		BorrowerName    string  `json:"borrowerName" gorm:"column:borrowerName"`
 		GroupName       string  `json:"groupName" gorm:"column:groupName"`
+		ReasonID        uint64  `json:"reasonId" gorm:"column:reasonId"`
 		Reason          string  `json:"reason" gorm:"column:reason"`
 		Nominal         float64 `json:"nominal" gorm:"column:nominal"`
 		TRDate          string  `json:"trDate" gorm:"column:trDate"`

@@ -25,6 +25,7 @@ const (
 								cif."name" as "borrowerName",
 								"group"."name" as "groupName",
 								reason.description as "reason",
+								reason.id as "reasonId",
 								installment.id as "installmentId" `
 
 	selectDetailDO = ` , l.plafond as "plafond", l.tenor as "tenor",
