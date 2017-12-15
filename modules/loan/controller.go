@@ -439,6 +439,8 @@ func GetAkadData(ctx *iris.Context) {
 		"status": "success",
 		"data": iris.Map{
 			"_id":               data.ID,
+			"adminFee":			 data.adminFee,
+			"serviceFee":		 data.serviceFee,
 			"disbursementDate":  data.DisbursementDate,
 			"agreementType":     sentAgreementType,
 			"purpose":           data.Purpose,
