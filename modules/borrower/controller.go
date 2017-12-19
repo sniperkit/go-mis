@@ -135,7 +135,7 @@ func CreateBorrowerData(ctx *iris.Context, payload map[string]interface{}, sourc
 		ProcessErrorAndRollback(ctx, db, "Error Querying Loan Raw")
 		return 0
 	}
-	if existingLoanRaw.ID == 0 {
+	if existingLoanRaw.ID != 0 {
 		ProcessErrorAndRollback(ctx, db, "Loan has already been created")
 		return 0
 	}
