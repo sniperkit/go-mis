@@ -226,7 +226,7 @@ func Validate(ctx *iris.Context) {
 		if cifSchema.Username != "" {
 			fmt.Println("Sending email..")
 			// go email.SendEmailVerificationSuccess(cifSchema.Username, cifSchema.Name, vaData["BCA"], vaData["BCA_HOLDER"], vaData["MANDIRI"], vaData["MANDIRI_HOLDER"])
-			go email.SendEmailVerificationSuccess("wuri.wulandari@amartha.com", cifSchema.Name, vaData["BCA"], vaData["BCA_HOLDER"], vaData["MANDIRI"], vaData["MANDIRI_HOLDER"])
+			go email.SendEmailVerificationSuccess("nathania.purba@yahoo.com", cifSchema.Name, vaData["BCA"], vaData["BCA_HOLDER"], vaData["MANDIRI"], vaData["MANDIRI_HOLDER"])
 		}
 
 		if cifSchema.PhoneNo != "" {
@@ -259,7 +259,7 @@ func Validate(ctx *iris.Context) {
 		}{}
 		ctx.ReadJSON(&payload)
 		// go email.SendEmailVerificationFailed(cifSchema.Username, cifSchema.Name, payload.Reasons)
-		go email.SendEmailVerificationFailed("wuri.wulandari@amartha.com", cifSchema.Name, payload.Reasons)
+		go email.SendEmailVerificationFailed("nathania.purba@yahoo.com", cifSchema.Name, payload.Reasons)
 	}
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"status":             "success",
