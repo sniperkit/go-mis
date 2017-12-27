@@ -97,6 +97,7 @@ type Akad struct {
 	AdminitrationFee   float64 `gorm:"column:administrationFee" json:"administrationFee"`
 	ServiceFee         float64 `gorm:"column:serviceFee" json:"serviceFee"`
 	DisbursementDate   string  `gorm:"column:disbursementDate" json:"disbursementDate"`
+	OrderNo			   string  `gorm:"column:orderNo" json:"orderNo"`
 }
 
 type LoanDropping struct {
