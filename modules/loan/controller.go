@@ -483,7 +483,7 @@ func GetAkadData(ctx *iris.Context) {
 			"reserve":           reserve,
 			"borrower":          borrowerData,
 			"investorId":        data.InvestorID,
-			"investor":          investorData
+			"investor":          investorData,
 		},
 	})
 }
