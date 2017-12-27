@@ -369,7 +369,7 @@ func GetAkadData(ctx *iris.Context) {
 	FROM r_investor_product_pricing_loan
 	JOIN r_cif_investor ON r_cif_investor."investorId" = r_investor_product_pricing_loan."investorId"
 	JOIN cif ON cif.id = r_cif_investor."cifId"
-	WHERE r_investor_product_pricing_loan."loanId" = ? AND r_investor_product_pricing_loan."deletedAt" IS NULL LIMIT`
+	WHERE r_investor_product_pricing_loan."loanId" = ? AND r_investor_product_pricing_loan."deletedAt" IS NULL LIMIT 1`
 
 	investorData := cif.Cif{}
 
