@@ -341,7 +341,7 @@ type BorrowerObj struct {
 	NamaPenanggungJawab string `gorm:"column:nama_pj" json:"nama_pj"`
 	TempatLahirPenanggungJawab string `gorm:"column:pj_tempatlahir" json:"pj_tempatlahir"`
 	TglLahirPenanggungJawab string `gorm:"column:pj_tgllahir" json:"pj_tgllahir"`
-	HubPenanggungJawab string `gorm:"column:data_hubungan" json:"data_hubungan"`
+	HubPenanggungJawab string `gorm:"column:hubungan" json:"data_hubungan"`
 }
 
 // GetAkadData - Get data to be shown in Akad
