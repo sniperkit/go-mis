@@ -368,7 +368,7 @@ func GetAkadData(ctx *iris.Context) {
 	if errAkad != nil {
 		ctx.JSON(iris.StatusInternalServerError, iris.Map{
 			"status":  "Error",
-			"message": "Can't Find Akad Based On Loan ID given",
+			"message": "Can't Find Akad Based On Loan ID given. Error: " + errAkad.Error(),
 		})
 		return
 	}
@@ -386,16 +386,16 @@ func GetAkadData(ctx *iris.Context) {
 	if errCif != nil {
 		ctx.JSON(iris.StatusInternalServerError, iris.Map{
 			"status":  "Error",
-			"message": "Can't Find CIF Based On Loan ID given",
+			"message": "Can't Find CIF Based On Loan ID given. Error: " + errAkad.Error(),
 		})
 		return
 	}
 
 	queryGetBorrower := `SELECT cif."name", cif."address" as "address", cif."kelurahan" as "kelurahan", cif."kecamatan" as kecamatan, 
-	cif."idCardNo" as "idCardNo" ,borrower."borrowerNo", "group"."name" as "group", branch."name" as "branch", lr._raw::json -> 'client_birthplace' as "tempatLahir",
-	lr._raw::json -> 'client_birthdate' as "tanggalLahir", lr._raw::json -> 'client_desa' as "desa", lr._raw::json -> 'client_maritalstatus' as "status",
-	lr._raw::json -> 'data_suami' as "nama_pj", lr._raw::json -> 'data_suami_tempatlahir' as "pj_tempatlahir", lr._raw::json -> 'data_suami_tgllahir' as "pj_tgllahir", 
-	lr._raw::json -> 'data_hubungan' as "hubungan"
+	cif."idCardNo" as "idCardNo" ,borrower."borrowerNo", "group"."name" as "group", branch."name" as "branch", lr._raw::json ->> 'client_birthplace' as "tempatLahir",
+	lr._raw::json ->> 'client_birthdate' as "tanggalLahir", lr._raw::json ->> 'client_desa' as "desa", lr._raw::json ->> 'client_maritalstatus' as "status",
+	lr._raw::json ->> 'data_suami' as "nama_pj", lr._raw::json ->> 'data_suami_tempatlahir' as "pj_tempatlahir", lr._raw::json ->> 'data_suami_tgllahir' as "pj_tgllahir", 
+	lr._raw::json ->> 'data_hubungan' as "hubungan"
 	FROM loan
 	JOIN r_loan_borrower on r_loan_borrower."loanId" = loan.id
 	JOIN borrower ON borrower.id = r_loan_borrower."borrowerId"
@@ -415,7 +415,7 @@ func GetAkadData(ctx *iris.Context) {
 	if errBorrower != nil {
 		ctx.JSON(iris.StatusInternalServerError, iris.Map{
 			"status":  "Error",
-			"message": "Can't Find Borrower Based On Loan ID given",
+			"message": "Can't Find Borrower Based On Loan ID given. Error: " + errAkad.Error(),
 		})
 		return
 	}
