@@ -489,7 +489,7 @@ func GetAkadData(ctx *iris.Context) {
 			"installment":       data.Installment,
 			"rate": 			 data.Rate,
 			"returnOfInvestment": data.ReturnOfInvestment,
-			"orderNo":			 data.OrderNo,
+			"agreementNo":		data.AgreementNo,
 			"weeklyBase":        weeklyBase,
 			"weeklyMargin":      weeklyMargin,
 			"weeklyFeeBorrower": weeklyFeeBorrower,
