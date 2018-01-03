@@ -353,7 +353,7 @@ func GetAkadData(ctx *iris.Context) {
 
 	query := `SELECT loan.*, disbursement. "disbursementDate", product_pricing."returnOfInvestment", 
 	product_pricing."administrationFee", product_pricing."serviceFee", "group"."name" as "group", 
-	r_investor_product_pricing_loan."investorId", "orderNo"
+	r_investor_product_pricing_loan."investorId", "agreementNo"
 	FROM loan 
 	JOIN r_investor_product_pricing_loan ON r_investor_product_pricing_loan."loanId" = loan.id 
 	JOIN product_pricing ON product_pricing.id = r_investor_product_pricing_loan."productPricingId" 
