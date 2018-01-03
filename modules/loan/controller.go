@@ -349,6 +349,8 @@ func GetAkadData(ctx *iris.Context) {
 	loanID, _ := strconv.Atoi(ctx.Param("id"))
 	data := Akad{}
 
+	// DITAMBAH LEFT QUERY KARENA LOAN BELUM TENTU PUNYA LOAN ORDER
+
 	query := `SELECT loan.*, disbursement. "disbursementDate", product_pricing."returnOfInvestment", 
 	product_pricing."administrationFee", product_pricing."serviceFee", "group"."name" as "group", 
 	r_investor_product_pricing_loan."investorId", "orderNo"
@@ -359,8 +361,8 @@ func GetAkadData(ctx *iris.Context) {
 	JOIN disbursement ON disbursement.id = r_loan_disbursement."disbursementId" 
 	JOIN r_loan_group ON r_loan_group."loanId" = loan.id 
 	JOIN "group" ON "group".id = r_loan_group."groupId" 
-	JOIN "r_loan_order" ON "loan".id = r_loan_order."loanId" 
-	JOIN "loan_order" ON "r_loan_order"."loanOrderId" = loan_order."id" 
+	LEFT JOIN "r_loan_order" ON "loan".id = r_loan_order."loanId" 
+	LEFT JOIN "loan_order" ON "r_loan_order"."loanOrderId" = loan_order."id" 
 	WHERE loan.id = ? AND loan."deletedAt" IS NULL`
 
 	errAkad := services.DBCPsql.Raw(query, loanID).Scan(&data).Error
