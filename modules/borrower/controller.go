@@ -119,6 +119,27 @@ func CreateBorrowerData(ctx *iris.Context, payload map[string]interface{}, sourc
 		return 0
 	}
 
+	// check whether raw data has already exist
+	existingLoanRaw := loanRaw.LoanRaw{}
+	uuid, ok := payload["uuid"]
+	if !ok {
+		ProcessErrorAndRollback(ctx, db, "No UUID in payload")
+		return 0
+	}
+	uuidString, castingOk := uuid.(string)
+	if !castingOk {
+		ProcessErrorAndRollback(ctx, db, "Error when casting UUID")
+		return 0
+	}
+	if db.Table("loan_raw").Where(`"_raw"::json->>'uuid' = ?`, uuidString).First(&existingLoanRaw).Error != nil {
+		ProcessErrorAndRollback(ctx, db, "Error Querying Loan Raw")
+		return 0
+	}
+	if existingLoanRaw.ID != 0 {
+		ProcessErrorAndRollback(ctx, db, "Loan has already been created")
+		return 0
+	}
+
 	if db.Table("loan_raw").Create(&loanRaw.LoanRaw{Raw: dataRaw, LoanID: loan.ID}).Error != nil {
 		ProcessErrorAndRollback(ctx, db, "Error Create Loan Raw")
 		return 0
@@ -352,14 +373,14 @@ func CreateLoan(payload map[string]interface{}) (error, loan.Loan) {
 	}
 	if cpl["tenor"] == "" ||
 		cpl["plafond"] == "" ||
-			cpl["rate"] == "" ||
-				cpl["creditScoreGrade"] == "" ||
-					cpl["creditScoreValue"] == ""{
+		cpl["rate"] == "" ||
+		cpl["creditScoreGrade"] == "" ||
+		cpl["creditScoreValue"] == "" {
 		return errors.New("CSTrip is required"), loan.Loan{}
 	}
-	emptyPenanggungJawab:=cpl["client_ktp_penanggung_jawab"] == "" || cpl["photo_ktp_penanggung_jawab"] == "" || cpl["photo_penanggung_jawab"] == ""
+	emptyPenanggungJawab := cpl["client_ktp_penanggung_jawab"] == "" || cpl["photo_ktp_penanggung_jawab"] == "" || cpl["photo_penanggung_jawab"] == ""
 
-	if cpl["loanType"]!="AVARA"&& emptyPenanggungJawab{
+	if cpl["loanType"] != "AVARA" && emptyPenanggungJawab {
 		return errors.New("Penanggung Jawab is required"), loan.Loan{}
 	}
 	// map each payload field to it's respective cif field
@@ -382,11 +403,11 @@ func CreateLoan(payload map[string]interface{}) (error, loan.Loan) {
 	newLoan.CreditScoreGrade = cpl["creditScoreGrade"]
 	newLoan.CreditScoreValue, _ = strconv.ParseFloat(cpl["creditScoreValue"], 64)
 	newLoan.Stage = "PRIVATE"
-	
+
 	// set loan type if exist
 	// otherwise, NORMAL will be set as default
 	if cpl["loanType"] != "" {
-		newLoan.LoanType = cpl["loanType"]	
+		newLoan.LoanType = cpl["loanType"]
 	}
 
 	borrowerId := payload["borrowerId"]
