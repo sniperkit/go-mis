@@ -35,7 +35,7 @@ func FetchAll(ctx *iris.Context) {
 	query += "WHERE disbursement.stage IN ('PENDING', 'FAILED') "
 	query += "AND loan.\"submittedLoanDate\" IS NOT NULL "
 
-	query += "AND DATE(disbursement.\"disbursementDate\") >= now() "
+	query += "AND DATE(disbursement.\"disbursementDate\") >= 'now()' "
 	query += "AND branch.id = ? "
 	query += "GROUP BY \"group\".id, branch.id, branch.\"name\", loan.\"submittedLoanDate\", disbursement.\"disbursementDate\" "
 	query += "ORDER BY disbursement.\"disbursementDate\" ASC, \"group\".\"name\" ASC "
@@ -65,7 +65,7 @@ func GetDisbursementDetailByGroup(ctx *iris.Context) {
 	query += "WHERE disbursement.stage IN ('PENDING', 'FAILED') "
 	query += "AND loan.\"submittedLoanDate\" IS NOT NULL  "
 
-	query += "AND DATE(disbursement.\"disbursementDate\") >= now() "
+	query += "AND DATE(disbursement.\"disbursementDate\") >= 'now()' "
 	query += "AND branch.id = ? "
 	query += "AND \"group\".id = ? "
 	query += "AND disbursement.\"disbursementDate\"::date = ? "
@@ -226,15 +226,15 @@ func UpdateDisbursementDate(ctx *iris.Context) {
 	upd2 as (update disbursement set "disbursementDate"= foo."nextDisbursementDate" from ( select "disbursementId", "nextDisbursementDate" from upd ) foo where foo."disbursementId" = disbursement.id)
 	insert into r_disbursement_history ("disbursementId", "disbursementHistoryId", "createdAt", "updatedAt") select "disbursementId", id, current_timestamp, current_timestamp
 	from upd`
-	
+
 	loanId := ctx.Param("loan_id")
 	lastDisbursementDate := ctx.Param("last_disb_date") + " 00:00:00"
 	nextDisbursementDate := ctx.Param("next_disb_date") + " 00:00:00"
-	
+
 	services.DBCPsql.Exec(query, lastDisbursementDate, nextDisbursementDate, loanId)
-	
+
 	ctx.JSON(iris.StatusOK, iris.Map{
-		"status":    "success",
-		"data": iris.Map{},
+		"status": "success",
+		"data":   iris.Map{},
 	})
 }
