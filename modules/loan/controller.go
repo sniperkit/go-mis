@@ -413,13 +413,12 @@ func GetAkadData(ctx *iris.Context) {
 	WHERE loan.id = ? AND loan."deletedAt" IS NULL LIMIT 1`
 
 	borrowerData := BorrowerObj{}
-
 	errBorrower := services.DBCPsql.Raw(queryGetBorrower, loanID).Scan(&borrowerData).Error
 
 	if errBorrower != nil {
 		ctx.JSON(iris.StatusInternalServerError, iris.Map{
 			"status":  "Error",
-			"message": "Can't Find Borrower Based On Loan ID given. Error: " + errAkad.Error(),
+			"message": "Can't Find Borrower Based On Loan ID given. Error: " + errBorrower.Error(),
 		})
 		return
 	}
@@ -429,11 +428,9 @@ func GetAkadData(ctx *iris.Context) {
 	weeklyMargin := Round(data.Rate*data.Plafond*data.ReturnOfInvestment/floatTenor, 2)
 	weeklyFeeBorrower := Round(data.Rate*data.Plafond*data.AdminitrationFee/floatTenor, 2)
 	weeklyFeeInvestor := Round(data.Rate*data.Plafond*data.ServiceFee/floatTenor, 2)
-
 	noReserveTime, _ := time.Parse("2006-01-02", "2017-04-03")
 	augustTime, _ := time.Parse("2006-01-02", "2016-08-29")
 	submittedLoanTime, _ := time.Parse("2006-01-02T15:04:05-07:00", data.SubmittedLoanDate)
-
 	var reserve uint64
 	if submittedLoanTime.After(noReserveTime) {
 		reserve = 0
@@ -470,14 +467,12 @@ func GetAkadData(ctx *iris.Context) {
 			}
 		}
 	}
-
 	var sentAgreementType string
 	if data.AgreementType == "" {
 		sentAgreementType = "MBA"
 	} else {
 		sentAgreementType = data.AgreementType
 	}
-
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"status": "success",
 		"data": iris.Map{
