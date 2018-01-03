@@ -336,6 +336,7 @@ type BorrowerObj struct {
 	Group      	string `gorm:"column:group" json:"group"`
 	TempatLahir string `gorm:"column:tempatLahir" json:"tempatLahir"`
 	TanggalLahir string `gorm:"column:tanggalLahir" json:"tanggalLahir"`
+	City		string `gorm:"column::city" json:"city"`
 	Desa		string `gorm:"column::desa" json:"desa"`
 	Status		string `gorm:"column::status" json:"status"`
 	NamaPenanggungJawab string `gorm:"column:nama_pj" json:"nama_pj"`
@@ -361,7 +362,7 @@ func GetAkadData(ctx *iris.Context) {
 	JOIN disbursement ON disbursement.id = r_loan_disbursement."disbursementId" 
 	JOIN r_loan_group ON r_loan_group."loanId" = loan.id 
 	JOIN "group" ON "group".id = r_loan_group."groupId" 
-	LEFT JOIN "loan_agreement" ON loan_agreement."loanId" = loan.id 
+	LEFT JOIN "loan_agreement" ON loan_agreement."loanId" = loan.id
 	WHERE loan.id = ? AND loan."deletedAt" IS NULL`
 
 	errAkad := services.DBCPsql.Raw(query, loanID).Scan(&data).Error
@@ -396,7 +397,7 @@ func GetAkadData(ctx *iris.Context) {
 	cif."idCardNo" as "idCardNo" ,borrower."borrowerNo", "group"."name" as "group", branch."name" as "branch", lr._raw::json ->> 'client_birthplace' as "tempatLahir",
 	lr._raw::json ->> 'client_birthdate' as "tanggalLahir", lr._raw::json ->> 'client_desa' as "desa", lr._raw::json ->> 'client_maritalstatus' as "status",
 	lr._raw::json ->> 'data_suami' as "nama_pj", lr._raw::json ->> 'data_suami_tempatlahir' as "pj_tempatlahir", lr._raw::json ->> 'data_suami_tgllahir' as "pj_tgllahir", 
-	lr._raw::json ->> 'data_hubungan' as "hubungan"
+	lr._raw::json ->> 'data_hubungan' as "hubungan", inf_location.name as city
 	FROM loan
 	JOIN r_loan_borrower on r_loan_borrower."loanId" = loan.id
 	JOIN borrower ON borrower.id = r_loan_borrower."borrowerId"
@@ -405,8 +406,10 @@ func GetAkadData(ctx *iris.Context) {
 	JOIN loan_raw lr on lr."loanId" = loan.id
 	JOIN r_loan_group on r_loan_group."loanId" = loan.id
 	JOIN "group" on "group".id = r_loan_group."groupId"
-	JOIN r_group_branch ON r_group_branch."groupId" = "group"."id"
-	JOIN branch on branch."id" = r_group_branch."branchId"
+	JOIN r_group_branch ON r_group_branch."groupId" = "group".id
+	JOIN branch on branch.id = r_group_branch."branchId"
+	JOIN inf_location on inf_location.city = branch.city 
+	AND inf_location.province = branch.province and inf_location.kecamatan = '0'
 	WHERE loan.id = ? AND loan."deletedAt" IS NULL LIMIT 1`
 
 	borrowerData := BorrowerObj{}
