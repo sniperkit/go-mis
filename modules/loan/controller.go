@@ -334,6 +334,14 @@ type BorrowerObj struct {
 	Kelurahan		string `gorm:"column:kelurahan" json:"kelurahan"`
 	Kecamatan		string `gorm:"column:kecamatan " json:"kecamatan"`
 	Group      	string `gorm:"column:group" json:"group"`
+	TempatLahir string `gorm:"column:tempatLahir" json:"tempatLahir"`
+	TanggalLahir string `gorm:"column:tanggalLahir" json:"tanggalLahir"`
+	Desa		string `gorm:"column::desa" json:"desa"`
+	Status		string `gorm:"column::status" json:"status"`
+	NamaPenanggungJawab string `gorm:"column:nama_pj" json:"nama_pj"`
+	TempatLahirPenanggungJawab string `gorm:"column:pj_tempatlahir" json:"pj_tempatlahir"`
+	TglLahirPenanggungJawab string `gorm:"column:pj_tgllahir" json:"pj_tgllahir"`
+	HubPenanggungJawab string `gorm:"column:data_hubungan" json:"data_hubungan"`
 }
 
 // GetAkadData - Get data to be shown in Akad
@@ -383,12 +391,17 @@ func GetAkadData(ctx *iris.Context) {
 		return
 	}
 
-	queryGetBorrower := `SELECT cif."name", cif."address" as "address", cif."kelurahan" as "kelurahan", cif."kecamatan" as kecamatan, cif."idCardNo" as "idCardNo" ,borrower."borrowerNo", "group"."name" as "group", branch."name" as "branch"
+	queryGetBorrower := `SELECT cif."name", cif."address" as "address", cif."kelurahan" as "kelurahan", cif."kecamatan" as kecamatan, 
+	cif."idCardNo" as "idCardNo" ,borrower."borrowerNo", "group"."name" as "group", branch."name" as "branch", lr._raw::json -> 'client_birthplace' as "tempatLahir",
+	lr._raw::json -> 'client_birthdate' as "tanggalLahir", lr._raw::json -> 'client_desa' as "desa", lr._raw::json -> 'client_maritalstatus' as "status",
+	lr._raw::json -> 'data_suami' as "nama_pj", lr._raw::json -> 'data_suami_tempatlahir' as "pj_tempatlahir", lr._raw::json -> 'data_suami_tgllahir' as "pj_tgllahir", 
+	lr._raw::json -> 'data_hubungan' as "hubungan"
 	FROM loan
 	JOIN r_loan_borrower on r_loan_borrower."loanId" = loan.id
 	JOIN borrower ON borrower.id = r_loan_borrower."borrowerId"
 	JOIN r_cif_borrower ON r_cif_borrower."borrowerId" = borrower.id
 	JOIN cif ON cif.id = r_cif_borrower."cifId"
+	JOIN loan_raw lr on lr."loanId" = loan.id
 	JOIN r_loan_group on r_loan_group."loanId" = loan.id
 	JOIN "group" on "group".id = r_loan_group."groupId"
 	JOIN r_group_branch ON r_group_branch."groupId" = "group"."id"
