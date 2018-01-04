@@ -329,6 +329,7 @@ type BorrowerObj struct {
 	Fullname   string `gorm:"column:name" json:"name"`
 	BorrowerNo string `gorm:"column:borrowerNo" json:"borrowerNo"`
 	Branch 			string `gorm:"column:branch" json:"branch"`
+	BranchAddress	string `gorm:"column:addressDetail" json:"branchAddress"`
 	IdCardNo		string `gorm:"column:idCardNo" json:"idCardNo"`
 	Address		 	string `gorm:"column:address" json:"address"`
 	Kelurahan		string `gorm:"column:kelurahan" json:"kelurahan"`
@@ -394,7 +395,8 @@ func GetAkadData(ctx *iris.Context) {
 	}
 
 	queryGetBorrower := `SELECT cif."name", cif."address" as "address", cif."kelurahan" as "kelurahan", cif."kecamatan" as kecamatan, 
-	cif."idCardNo" as "idCardNo" ,borrower."borrowerNo", "group"."name" as "group", branch."name" as "branch", lr._raw::json ->> 'client_birthplace' as "tempatLahir",
+	cif."idCardNo" as "idCardNo" ,borrower."borrowerNo", "group"."name" as "group", branch."name" as "branch", branch."addressDetail", 
+	lr._raw::json ->> 'client_birthplace' as "tempatLahir",
 	lr._raw::json ->> 'client_birthdate' as "tanggalLahir", lr._raw::json ->> 'client_desa' as "desa", lr._raw::json ->> 'client_maritalstatus' as "status",
 	lr._raw::json ->> 'data_suami' as "nama_pj", lr._raw::json ->> 'data_suami_tempatlahir' as "pj_tempatlahir", lr._raw::json ->> 'data_suami_tgllahir' as "pj_tgllahir", 
 	lr._raw::json ->> 'data_hubungan' as "hubungan", inf_location.name as city
