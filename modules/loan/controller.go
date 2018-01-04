@@ -344,6 +344,7 @@ type BorrowerObj struct {
 	TempatLahirPenanggungJawab string `gorm:"column:pj_tempatlahir" json:"pj_tempatlahir"`
 	TglLahirPenanggungJawab string `gorm:"column:pj_tgllahir" json:"pj_tgllahir"`
 	HubPenanggungJawab string `gorm:"column:hubungan" json:"data_hubungan"`
+	AgentName		string `gorm:"column::agentName" json:"agentName"`
 }
 
 // GetAkadData - Get data to be shown in Akad
@@ -395,9 +396,11 @@ func GetAkadData(ctx *iris.Context) {
 	}
 
 	queryGetBorrower := `SELECT cif."name", cif."address" as "address", cif."kelurahan" as "kelurahan", cif."kecamatan" as kecamatan, 
-	cif."idCardNo" as "idCardNo" ,borrower."borrowerNo", "group"."name" as "group", branch."name" as "branch", branch."addressDetail", 
+	cif."idCardNo" as "idCardNo" ,borrower."borrowerNo", "group"."name" as "group", branch."name" as "branch", branch."addressDetail", agent.fullname as agentName
+	
 	lr._raw::json ->> 'client_birthplace' as "tempatLahir",
-	lr._raw::json ->> 'client_birthdate' as "tanggalLahir", lr._raw::json ->> 'client_desa' as "desa", lr._raw::json ->> 'client_maritalstatus' as "status",
+	lr._raw::json ->> 'client_birthdate' as "tanggalLahir", 
+	lr._raw::json ->> 'client_desa' as "desa", lr._raw::json ->> 'client_maritalstatus' as "status",
 	lr._raw::json ->> 'data_suami' as "nama_pj", lr._raw::json ->> 'data_suami_tempatlahir' as "pj_tempatlahir", lr._raw::json ->> 'data_suami_tgllahir' as "pj_tgllahir", 
 	lr._raw::json ->> 'data_hubungan' as "hubungan", inf_location.name as city
 	FROM loan
@@ -406,6 +409,7 @@ func GetAkadData(ctx *iris.Context) {
 	JOIN r_cif_borrower ON r_cif_borrower."borrowerId" = borrower.id
 	JOIN cif ON cif.id = r_cif_borrower."cifId"
 	JOIN loan_raw lr on lr."loanId" = loan.id
+	JOIN agent on agent.id = lr._raw::json ->> 'agentId'
 	JOIN r_loan_group on r_loan_group."loanId" = loan.id
 	JOIN "group" on "group".id = r_loan_group."groupId"
 	JOIN r_group_branch ON r_group_branch."groupId" = "group".id
