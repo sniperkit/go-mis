@@ -34,11 +34,8 @@ func FetchAll(ctx *iris.Context) {
 	query += "JOIN disbursement ON disbursement.id = r_loan_disbursement.\"disbursementId\" "
 	query += "WHERE disbursement.stage IN ('PENDING', 'FAILED') "
 	query += "AND loan.\"submittedLoanDate\" IS NOT NULL "
-	// query += "AND loan.\"submittedLoanDate\" != '1900-01-00'  "
-	// query += "AND loan.\"submittedLoanDate\" != '#N/A'  "
-	// query += "AND loan.\"submittedLoanDate\" != '' "
-	query += "AND to_char(DATE(loan.\"submittedLoanDate\"), 'YYYY') = to_char(DATE(now()), 'YYYY') "
-	query += "AND to_char(DATE(disbursement.\"disbursementDate\"), 'YYYY-MM-DD') >= to_char(DATE(now()), 'YYYY-MM-DD') "
+
+	query += "AND DATE(disbursement.\"disbursementDate\") >= 'now()' "
 	query += "AND branch.id = ? "
 	query += "GROUP BY \"group\".id, branch.id, branch.\"name\", loan.\"submittedLoanDate\", disbursement.\"disbursementDate\" "
 	query += "ORDER BY disbursement.\"disbursementDate\" ASC, \"group\".\"name\" ASC "
@@ -67,11 +64,8 @@ func GetDisbursementDetailByGroup(ctx *iris.Context) {
 	query += "LEFT JOIN investor ON investor.\"id\" = r_investor_product_pricing_loan.\"investorId\" "
 	query += "WHERE disbursement.stage IN ('PENDING', 'FAILED') "
 	query += "AND loan.\"submittedLoanDate\" IS NOT NULL  "
-	// query += "AND loan.\"submittedLoanDate\" != '1900-01-00'   "
-	// query += "AND loan.\"submittedLoanDate\" != '#N/A'   "
-	// query += "AND loan.\"submittedLoanDate\" != ''  "
-	query += "AND to_char(DATE(loan.\"submittedLoanDate\"), 'YYYY') = to_char(DATE(now()), 'YYYY')  "
-	query += "AND to_char(DATE(disbursement.\"disbursementDate\"), 'YYYY-MM-DD') >= to_char(DATE(now()), 'YYYY-MM-DD')  "
+
+	query += "AND DATE(disbursement.\"disbursementDate\") >= 'now()' "
 	query += "AND branch.id = ? "
 	query += "AND \"group\".id = ? "
 	query += "AND disbursement.\"disbursementDate\"::date = ? "
@@ -232,15 +226,15 @@ func UpdateDisbursementDate(ctx *iris.Context) {
 	upd2 as (update disbursement set "disbursementDate"= foo."nextDisbursementDate" from ( select "disbursementId", "nextDisbursementDate" from upd ) foo where foo."disbursementId" = disbursement.id)
 	insert into r_disbursement_history ("disbursementId", "disbursementHistoryId", "createdAt", "updatedAt") select "disbursementId", id, current_timestamp, current_timestamp
 	from upd`
-	
+
 	loanId := ctx.Param("loan_id")
 	lastDisbursementDate := ctx.Param("last_disb_date") + " 00:00:00"
 	nextDisbursementDate := ctx.Param("next_disb_date") + " 00:00:00"
-	
+
 	services.DBCPsql.Exec(query, lastDisbursementDate, nextDisbursementDate, loanId)
-	
+
 	ctx.JSON(iris.StatusOK, iris.Map{
-		"status":    "success",
-		"data": iris.Map{},
+		"status": "success",
+		"data":   iris.Map{},
 	})
 }

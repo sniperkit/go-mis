@@ -25,11 +25,13 @@ const (
 								cif."name" as "borrowerName",
 								"group"."name" as "groupName",
 								reason.description as "reason",
+								reason.id as "reasonId",
 								installment.id as "installmentId" `
 
 	selectDetailDO = ` , l.plafond as "plafond", l.tenor as "tenor",
 							installment."createdAt" as "doDate",
-							installment."type" as "type" `
+							installment."type" as "type",
+							status.id as "status" `
 	selectDetailPAR = `, installment."paidInstallment" as "nominal",
 							installment."createdAt" as "parDate",
 							agent.fullname as "agent" `
