@@ -5,7 +5,6 @@ import (
 	"math"
 	"strconv"
 	"time"
-
 	"errors"
 
 	"bitbucket.org/go-mis/modules/account"
@@ -333,7 +332,7 @@ type BorrowerObj struct {
 	IdCardNo		string `gorm:"column:idCardNo" json:"idCardNo"`
 	Address		 	string `gorm:"column:address" json:"address"`
 	Kelurahan		string `gorm:"column:kelurahan" json:"kelurahan"`
-	Kecamatan		string `gorm:"column:kecamatan " json:"kecamatan"`
+	Kecamatan		string `gorm:"column:kecamatan" json:"kecamatan"`
 	Group      	string `gorm:"column:group" json:"group"`
 	TempatLahir string `gorm:"column:tempatLahir" json:"tempatLahir"`
 	TanggalLahir string `gorm:"column:tanggalLahir" json:"tanggalLahir"`
@@ -395,7 +394,7 @@ func GetAkadData(ctx *iris.Context) {
 		return
 	}
 
-	queryGetBorrower := `SELECT cif."name", cif."address" as "address", cif."kelurahan" as "kelurahan", cif."kecamatan" as kecamatan, 
+	queryGetBorrower := `SELECT cif."name", cif."address" as "address", cif."kelurahan" as "kelurahan", cif."kecamatan" as "kecamatan", 
 	cif."idCardNo" as "idCardNo" ,borrower."borrowerNo", "group"."name" as "group", branch."name" as "branch", branch."addressDetail", a."fullname" as agentName,
 	lr._raw::json ->> 'client_birthplace' as "tempatLahir",
 	lr._raw::json ->> 'client_birthdate' as "tanggalLahir",
