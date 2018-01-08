@@ -120,7 +120,7 @@ func CreateBorrowerData(ctx *iris.Context, payload map[string]interface{}, sourc
 	}
 
 	// check whether raw data has already exist
-	existingLoanRaw := loanRaw.LoanRaw{}
+	existingLoanRaw := []loanRaw.LoanRaw{}
 	uuid, ok := payload["uuid"]
 	if !ok {
 		ProcessErrorAndRollback(ctx, db, "No UUID in payload")
@@ -131,11 +131,13 @@ func CreateBorrowerData(ctx *iris.Context, payload map[string]interface{}, sourc
 		ProcessErrorAndRollback(ctx, db, "Error when casting UUID")
 		return 0
 	}
-	if db.Table("loan_raw").Where(`"_raw"::json->>'uuid' = ?`, uuidString).First(&existingLoanRaw).Error != nil {
+	if err := db.Table("loan_raw").Where(`"_raw"::json->>'uuid' = ?`, uuidString).Scan(&existingLoanRaw).Error; err != nil {
+		fmt.Printf(err.Error())
 		ProcessErrorAndRollback(ctx, db, "Error Querying Loan Raw")
 		return 0
 	}
-	if existingLoanRaw.ID != 0 {
+
+	if len(existingLoanRaw) > 0 {
 		ProcessErrorAndRollback(ctx, db, "Loan has already been created")
 		return 0
 	}
