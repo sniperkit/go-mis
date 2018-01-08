@@ -422,7 +422,6 @@ func GetAkadData(ctx *iris.Context) {
 
 	borrowerData := BorrowerObj{}
 	errBorrower := services.DBCPsql.Raw(queryGetBorrower, loanID).Scan(&borrowerData).Error
-	log.Printf("%+v", borrowerData)
 	if errBorrower != nil {
 		ctx.JSON(iris.StatusInternalServerError, iris.Map{
 			"status":  "Error",
