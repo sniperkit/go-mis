@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"time"
 	"errors"
-
+	
 	"bitbucket.org/go-mis/modules/account"
 	accountTransactionCredit "bitbucket.org/go-mis/modules/account-transaction-credit"
 	accountTransactionDebit "bitbucket.org/go-mis/modules/account-transaction-debit"
@@ -415,7 +415,7 @@ func GetAkadData(ctx *iris.Context) {
 	JOIN "group" on "group".id = r_loan_group."groupId"
 	JOIN r_group_branch ON r_group_branch."groupId" = "group".id
 	JOIN branch on branch.id = r_group_branch."branchId"
-	JOIN inf_location on inf_location.city = branch.city 
+	JOIN inf_location on inf_location.city = '0' 
 	AND inf_location.province = branch.province and inf_location.kecamatan = '0'
 	WHERE loan.id = ? AND loan."deletedAt" IS NULL LIMIT 1`
 
