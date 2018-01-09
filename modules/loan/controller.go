@@ -336,7 +336,8 @@ type BorrowerObj struct {
 	Group      	string `gorm:"column:group" json:"group"`
 	TempatLahir string `gorm:"column:tempatLahir" json:"tempatLahir"`
 	TanggalLahir string `gorm:"column:tanggalLahir" json:"tanggalLahir"`
-	City		string `gorm:"column:city" json:"city"`
+	BranchCity		string `gorm:"column:branchCity" json:"branchCity"`
+	BranchProvince	string `gorm:"column:branchProvince" json:"branchProvince"`
 	Desa		string `gorm:"column:desa" json:"desa"`
 	Status		string `gorm:"column:status" json:"status"`
 	NamaPenanggungJawab string `gorm:"column:nama_pj" json:"nama_pj"`
@@ -401,7 +402,7 @@ func GetAkadData(ctx *iris.Context) {
 	lr._raw::json ->> 'client_kecamatan' as "borrowerKecamatan",
 	lr._raw::json ->> 'client_desa' as "desa", lr._raw::json ->> 'client_maritalstatus' as "status",
 	lr._raw::json ->> 'data_suami' as "nama_pj", lr._raw::json ->> 'data_suami_tempatlahir' as "pj_tempatlahir", lr._raw::json ->> 'data_suami_tgllahir' as "pj_tgllahir",
-	lr._raw::json ->> 'data_hubungan' as "hubungan", inf_location.name as city
+	lr._raw::json ->> 'data_hubungan' as "hubungan", ilc.name as "branchCity", ilp.name as "branchProvince"
 	FROM loan
 	JOIN r_loan_borrower on r_loan_borrower."loanId" = loan.id
 	JOIN borrower ON borrower.id = r_loan_borrower."borrowerId"
@@ -415,8 +416,10 @@ func GetAkadData(ctx *iris.Context) {
 	JOIN "group" on "group".id = r_loan_group."groupId"
 	JOIN r_group_branch ON r_group_branch."groupId" = "group".id
 	JOIN branch on branch.id = r_group_branch."branchId"
-	JOIN inf_location on inf_location.city = '0' 
-	AND inf_location.province = branch.province and inf_location.kecamatan = '0'
+	JOIN inf_location ilp on ilp.province = branch.province
+	and ilp.city = '0'
+	JOIN inf_location ilc on ilc.city = branch.city 
+	AND ilc.province = branch.province and ilc.kecamatan = '0'
 	WHERE loan.id = ? AND loan."deletedAt" IS NULL LIMIT 1`
 
 	borrowerData := BorrowerObj{}
