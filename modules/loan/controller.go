@@ -401,7 +401,7 @@ func GetAkadData(ctx *iris.Context) {
 	lr._raw::json ->> 'client_kecamatan' as "borrowerKecamatan",
 	lr._raw::json ->> 'client_desa' as "desa", lr._raw::json ->> 'client_maritalstatus' as "status",
 	lr._raw::json ->> 'data_suami' as "nama_pj", lr._raw::json ->> 'data_suami_tempatlahir' as "pj_tempatlahir", lr._raw::json ->> 'data_suami_tgllahir' as "pj_tgllahir",
-	lr._raw::json ->> 'data_hubungan' as "hubungan", inf_location.name as city
+	lr._raw::json ->> 'data_hubungan' as "hubungan", inf_location.name as city, a.name as agentName
 	FROM loan
 	JOIN r_loan_borrower on r_loan_borrower."loanId" = loan.id
 	JOIN borrower ON borrower.id = r_loan_borrower."borrowerId"
