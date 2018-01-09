@@ -336,14 +336,14 @@ type BorrowerObj struct {
 	Group      	string `gorm:"column:group" json:"group"`
 	TempatLahir string `gorm:"column:tempatLahir" json:"tempatLahir"`
 	TanggalLahir string `gorm:"column:tanggalLahir" json:"tanggalLahir"`
-	City		string `gorm:"column::city" json:"city"`
-	Desa		string `gorm:"column::desa" json:"desa"`
-	Status		string `gorm:"column::status" json:"status"`
+	City		string `gorm:"column:city" json:"city"`
+	Desa		string `gorm:"column:desa" json:"desa"`
+	Status		string `gorm:"column:status" json:"status"`
 	NamaPenanggungJawab string `gorm:"column:nama_pj" json:"nama_pj"`
 	TempatLahirPenanggungJawab string `gorm:"column:pj_tempatlahir" json:"pj_tempatlahir"`
 	TglLahirPenanggungJawab string `gorm:"column:pj_tgllahir" json:"pj_tgllahir"`
 	HubPenanggungJawab string `gorm:"column:hubungan" json:"data_hubungan"`
-	AgentName		string `gorm:"column::agentName" json:"agentName"`
+	AgentName		string `gorm:"column:agentName" json:"agentName"`
 }
 
 // GetAkadData - Get data to be shown in Akad
