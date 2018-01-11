@@ -197,19 +197,19 @@ func StoreInstallment(db *gorm.DB, installmentId uint64, status string) error {
 
 	if installmentSchema.Stage != "TELLER" &&
 		installmentSchema.Stage != "AGENT" &&
-			installmentSchema.Stage != "PENDING" &&
-				installmentSchema.Stage != "IN-REVIEW" &&
-					installmentSchema.Stage != "APPROVE" &&
-						installmentSchema.Stage != "APPROVE-CP"{
+		installmentSchema.Stage != "PENDING" &&
+		installmentSchema.Stage != "IN-REVIEW" &&
+		installmentSchema.Stage != "APPROVE" &&
+		installmentSchema.Stage != "APPROVE-CP" {
 		return errors.New("Current installment stage is NEITHER 'TELLER' NOR'PENDING' NOR 'IN-REVIEW' nor 'APPROVE'. System cannot continue to process your request. installmentId=" + convertedInstallmentId)
 	}
 
 	if strings.ToUpper(status) == "REJECT" ||
 		strings.ToUpper(status) == "PENDING" ||
-			strings.ToUpper(status) == "IN-REVIEW" ||
-				strings.ToUpper(status) == "APPROVE" ||
-					strings.ToUpper(status) == "AGENT" ||
-						strings.ToUpper(status) == "TELLER" {
+		strings.ToUpper(status) == "IN-REVIEW" ||
+		strings.ToUpper(status) == "APPROVE" ||
+		strings.ToUpper(status) == "AGENT" ||
+		strings.ToUpper(status) == "TELLER" {
 		log.Println("Installment data has been", status, ". Waiting worker. installmentId=", convertedInstallmentId)
 		UpdateStageInstallmentApproveOrReject(db, installmentId, installmentSchema.Stage, status)
 		return nil
@@ -952,8 +952,8 @@ func GetRawPendingInstallmentData(currentStage string, branchId uint64, now stri
 			where l."deletedAt" is null
 			and ricp.id is null
 			and i."deletedAt" is null and
-			b.id= ? and i."createdAt"::date=? and
-			( UPPER(l.stage) = 'INSTALLMENT' OR UPPER(l.stage) = 'END' OR UPPER(l.stage) = 'END EARLY' OR UPPER(l.stage) = 'END-EARLY' OR UPPER(l.stage) = 'END-PENDING') `
+			b.id= ? and i."createdAt"::date=? and UPPER(l.stage) = 'INSTALLMENT' `
+	// ( UPPER(l.stage) = 'INSTALLMENT' OR UPPER(l.stage) = 'END' OR UPPER(l.stage) = 'END EARLY' OR UPPER(l.stage) = 'END-EARLY' OR UPPER(l.stage) = 'END-PENDING')
 	if isApprove {
 		query += `and (i."stage" = 'APPROVE' or i."stage" = 'SUCCESS') `
 	}
