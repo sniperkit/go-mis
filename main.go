@@ -33,12 +33,12 @@ func main() {
 
 	// Check environment, if `dev` then let the CORS to `*`
 	if config.Env == "dev" || config.Env == "development" {
-		crs:=cors.New(cors.Options{
-			AllowedMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		crs := cors.New(cors.Options{
+			AllowedMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 			AllowedOrigins:     []string{"*"},
 			AllowedHeaders:     []string{"*"},
 			ExposedHeaders:     []string{"*"},
-			OptionsPassthrough: true,})
+			OptionsPassthrough: true})
 		iris.Use(crs)
 	}
 

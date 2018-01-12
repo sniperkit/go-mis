@@ -197,19 +197,19 @@ func StoreInstallment(db *gorm.DB, installmentId uint64, status string) error {
 
 	if installmentSchema.Stage != "TELLER" &&
 		installmentSchema.Stage != "AGENT" &&
-			installmentSchema.Stage != "PENDING" &&
-				installmentSchema.Stage != "IN-REVIEW" &&
-					installmentSchema.Stage != "APPROVE" &&
-						installmentSchema.Stage != "APPROVE-CP"{
+		installmentSchema.Stage != "PENDING" &&
+		installmentSchema.Stage != "IN-REVIEW" &&
+		installmentSchema.Stage != "APPROVE" &&
+		installmentSchema.Stage != "APPROVE-CP" {
 		return errors.New("Current installment stage is NEITHER 'TELLER' NOR'PENDING' NOR 'IN-REVIEW' nor 'APPROVE'. System cannot continue to process your request. installmentId=" + convertedInstallmentId)
 	}
 
 	if strings.ToUpper(status) == "REJECT" ||
 		strings.ToUpper(status) == "PENDING" ||
-			strings.ToUpper(status) == "IN-REVIEW" ||
-				strings.ToUpper(status) == "APPROVE" ||
-					strings.ToUpper(status) == "AGENT" ||
-						strings.ToUpper(status) == "TELLER" {
+		strings.ToUpper(status) == "IN-REVIEW" ||
+		strings.ToUpper(status) == "APPROVE" ||
+		strings.ToUpper(status) == "AGENT" ||
+		strings.ToUpper(status) == "TELLER" {
 		log.Println("Installment data has been", status, ". Waiting worker. installmentId=", convertedInstallmentId)
 		UpdateStageInstallmentApproveOrReject(db, installmentId, installmentSchema.Stage, status)
 		return nil
@@ -891,69 +891,69 @@ func GetDataPendingInstallment(currentStage string, branchId uint64, now string)
 func GetRawPendingInstallmentData(currentStage string, branchId uint64, now string, isApprove bool) []RawInstallmentData {
 	var queryResult []RawInstallmentData
 	query := `select g.id as "groupId", a.fullname,g.name,
-				sum(i."paidInstallment") "repayment",
-				sum(i.reserve) "tabungan",
-				sum(i."paidInstallment"+i.reserve) "total",
-				sum(i.cash_on_hand) "cashOnHand",
-				sum(i.cash_on_reserve) "cashOnReserve",
-				coalesce(sum(
-				case
-				when frequency >= 3 then l.installment+((plafond/tenor)*(frequency-1))
-				when frequency >0 then l.installment*frequency
-				when frequency = 0 then 0
-				end
-				),0) "projectionRepayment",
-				coalesce(sum(
-				case
-				when plafond < 0 then 0
-				when plafond <= 3000000 then 3000
-				when plafond > 3000000 and plafond <= 5000000 then 4000
-				when plafond > 5000000 and plafond <= 7000000 then 5000
-				when plafond > 7000000 and plafond <= 9000000 then 6000
-				when plafond > 9000000 and plafond <= 11000000 then 7000
-				else 8000
-				end
-				),0) "projectionTabungan",
+			sum(i."paidInstallment") "repayment",
+			sum(i.reserve) "tabungan",
+			sum(i."paidInstallment"+i.reserve) "total",
+			sum(i.cash_on_hand) "cashOnHand",
+			sum(i.cash_on_reserve) "cashOnReserve",
+			coalesce(sum(
+			case
+			when frequency >= 3 then l.installment+((plafond/tenor)*(frequency-1))
+			when frequency >0 then l.installment*frequency
+			when frequency = 0 then 0
+			end
+			),0) "projectionRepayment",
+			coalesce(sum(
+			case
+			when plafond < 0 then 0
+			when plafond <= 3000000 then 3000
+			when plafond > 3000000 and plafond <= 5000000 then 4000
+			when plafond > 5000000 and plafond <= 7000000 then 5000
+			when plafond > 7000000 and plafond <= 9000000 then 6000
+			when plafond > 9000000 and plafond <= 11000000 then 7000
+			else 8000
+			end
+			),0) "projectionTabungan",
+			coalesce(sum(case
+			when d."disbursementDate"::date = ? then plafond end
+			),0) "totalCairProj",
+			coalesce("totalCair",0) "totalCair",
+			coalesce("totalGagalDropping",0) "totalGagalDropping",
+			split_part(string_agg(i.stage,'| '),'|',1) "status"
+		from loan l join r_loan_group rlg on l.id = rlg."loanId"
+			join "group" g on g.id = rlg."groupId"
+			join r_group_agent rga on g.id = rga."groupId"
+			join agent a on a.id = rga."agentId"
+			join r_loan_branch rlb on rlb."loanId" = l.id
+			join branch b on b.id = rlb."branchId"
+			join r_loan_installment rli on rli."loanId" = l.id
+			join installment i on i.id = rli."installmentId"
+			left join r_installment_cash_point ricp on ricp."installmentId"=i.id
+			join r_loan_disbursement rld on rld."loanId" = l.id
+			join disbursement d on d.id = rld."disbursementId"
+			left join (
+				select agent.id "agentId",r_loan_group."groupId" "groupId",
 				coalesce(sum(case
-				when d."disbursementDate"::date = ? then plafond end
-				),0) "totalCairProj",
-				coalesce("totalCair",0) "totalCair",
-				coalesce("totalGagalDropping",0) "totalGagalDropping",
-				split_part(string_agg(i.stage,'| '),'|',1) "status"
-			from loan l join r_loan_group rlg on l.id = rlg."loanId"
-				join "group" g on g.id = rlg."groupId"
-				join r_group_agent rga on g.id = rga."groupId"
-				join agent a on a.id = rga."agentId"
-				join r_loan_branch rlb on rlb."loanId" = l.id
-				join branch b on b.id = rlb."branchId"
-				join r_loan_installment rli on rli."loanId" = l.id
-				join installment i on i.id = rli."installmentId"
-				left join r_installment_cash_point ricp on ricp."installmentId"=i.id
-				join r_loan_disbursement rld on rld."loanId" = l.id
-				join disbursement d on d.id = rld."disbursementId"
-				left join (
-					select agent.id "agentId",r_loan_group."groupId" "groupId",
-					coalesce(sum(case
-					when d.stage = 'SUCCESS' and d."disbursementDate"::date = ? then plafond end
-					),0) "totalCair",
-					coalesce(sum(case
-					when d.stage = 'FAILED'  and d."disbursementDate"::date = ? then plafond end
-					),0) "totalGagalDropping"
-					from disbursement d
-					join r_loan_disbursement on r_loan_disbursement."disbursementId"=d.id
-					join r_loan_group on r_loan_group."loanId"=r_loan_disbursement."loanId"
-					join loan l on l.id = r_loan_group."loanId"
-					join r_group_agent on r_group_agent."groupId"=r_loan_group."groupId"
-					join agent on agent.id = r_group_agent."agentId"
-					where d."disbursementDate"::date = ?
-					group by 1,2,"disbursementDate"::date
-					order by "disbursementDate"::date desc
-				) foo on foo."agentId" = a.id and foo."groupId" = g.id
-			where l."deletedAt" is null
-			and ricp.id is null
-			and i."deletedAt" is null and
-			b.id= ? and i."createdAt"::date=? and
-			( UPPER(l.stage) = 'INSTALLMENT' OR UPPER(l.stage) = 'END' OR UPPER(l.stage) = 'END EARLY' OR UPPER(l.stage) = 'END-EARLY' OR UPPER(l.stage) = 'END-PENDING') `
+				when d.stage = 'SUCCESS' and d."disbursementDate"::date = ? then plafond end
+				),0) "totalCair",
+				coalesce(sum(case
+				when d.stage = 'FAILED'  and d."disbursementDate"::date = ? then plafond end
+				),0) "totalGagalDropping"
+				from disbursement d
+				join r_loan_disbursement on r_loan_disbursement."disbursementId"=d.id
+				join r_loan_group on r_loan_group."loanId"=r_loan_disbursement."loanId"
+				join loan l on l.id = r_loan_group."loanId"
+				join r_group_agent on r_group_agent."groupId"=r_loan_group."groupId"
+				join agent on agent.id = r_group_agent."agentId"
+				where d."disbursementDate"::date = ?
+				group by 1,2,"disbursementDate"::date
+				order by "disbursementDate"::date desc
+			) foo on foo."agentId" = a.id and foo."groupId" = g.id
+		where l."deletedAt" is null
+		and ricp.id is null
+		and i."deletedAt" is null and
+		b.id= ? and i."createdAt"::date=? and
+		( UPPER(l.stage) = 'INSTALLMENT' OR UPPER(l.stage) = 'END' OR UPPER(l.stage) = 'END EARLY' OR UPPER(l.stage) = 'END-EARLY' OR UPPER(l.stage) = 'END-PENDING')`
 	if isApprove {
 		query += `and (i."stage" = 'APPROVE' or i."stage" = 'SUCCESS') `
 	}

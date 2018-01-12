@@ -225,16 +225,22 @@ func Validate(ctx *iris.Context) {
 
 		if cifSchema.Username != "" {
 			fmt.Println("Sending email..")
-			// go email.SendEmailVerificationSuccess(cifSchema.Username, cifSchema.Name, vaData["BCA"], vaData["BCA_HOLDER"], vaData["MANDIRI"], vaData["MANDIRI_HOLDER"])
-			go email.SendEmailVerificationSuccess("nathania.purba@yahoo.com", cifSchema.Name, vaData["BCA"], vaData["BCA_HOLDER"], vaData["MANDIRI"], vaData["MANDIRI_HOLDER"])
+			if config.Env == "dev" || config.Env == "development" || config.Env == "uat" {
+				go email.SendEmailVerificationSuccess("nathania.purba@yahoo.com", cifSchema.Name, vaData["BCA"], vaData["BCA_HOLDER"], vaData["MANDIRI"], vaData["MANDIRI_HOLDER"])
+			} else {
+				go email.SendEmailVerificationSuccess(cifSchema.Username, cifSchema.Name, vaData["BCA"], vaData["BCA_HOLDER"], vaData["MANDIRI"], vaData["MANDIRI_HOLDER"])
+			}
 		}
 
 		if cifSchema.PhoneNo != "" {
 			// send sms notification
 			fmt.Println("Sending sms ... ")
 			message := "Selamat data Anda sudah terverifikasi. Silakan login ke dashboard Anda dan mulai berinvestasi. www.amartha.com \n\nAmartha"
-			// services.SendSMS(cifSchema.PhoneNo, message)
-			services.SendSMS("+6281276149768", message)
+			if config.Env == "dev" || config.Env == "development" || config.Env == "uat" {
+				services.SendSMS("+6281276149768", message)
+			} else {
+				services.SendSMS(cifSchema.PhoneNo, message)
+			}
 		}
 
 	} else if strings.ToUpper(status) == "DECLINED" {
@@ -258,8 +264,12 @@ func Validate(ctx *iris.Context) {
 			Reasons []string `json:"reasons"`
 		}{}
 		ctx.ReadJSON(&payload)
-		// go email.SendEmailVerificationFailed(cifSchema.Username, cifSchema.Name, payload.Reasons)
-		go email.SendEmailVerificationFailed("nathania.purba@yahoo.com", cifSchema.Name, payload.Reasons)
+
+		if config.Env == "dev" || config.Env == "development" || config.Env == "uat" {
+			go email.SendEmailVerificationFailed("nathania.purba@yahoo.com", cifSchema.Name, payload.Reasons)
+		} else {
+			go email.SendEmailVerificationFailed(cifSchema.Username, cifSchema.Name, payload.Reasons)
+		}
 	}
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"status":             "success",
