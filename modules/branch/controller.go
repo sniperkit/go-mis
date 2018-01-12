@@ -53,7 +53,7 @@ func FetchAll(ctx *iris.Context) {
 
 func GetBranchById(ctx *iris.Context) {
 
-	query := "SELECT branch.\"id\", branch.\"name\" AS \"name\", branch.\"province\", branch.\"city\" ,user_mis.\"fullname\" AS \"manager\", role.\"name\" AS \"role\", area.\"name\" AS \"area\" "
+	query := "SELECT branch.\"id\", branch.\"name\" AS \"name\", branch.\"province\", branch.\"city\" ,user_mis.\"fullname\" AS \"manager\", role.\"name\" AS \"role\", area.\"name\" AS \"area\", branch.\"addressDetail\" AS \"addressDetail\" "
 	query += "FROM branch "
 	query += "LEFT JOIN r_branch_user_mis ON r_branch_user_mis.\"branchId\" = branch.\"id\" "
 	query += "LEFT JOIN user_mis ON user_mis.\"id\" = r_branch_user_mis.\"userMisId\" "

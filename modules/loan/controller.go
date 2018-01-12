@@ -5,9 +5,8 @@ import (
 	"math"
 	"strconv"
 	"time"
-
 	"errors"
-
+	
 	"bitbucket.org/go-mis/modules/account"
 	accountTransactionCredit "bitbucket.org/go-mis/modules/account-transaction-credit"
 	accountTransactionDebit "bitbucket.org/go-mis/modules/account-transaction-debit"
@@ -329,11 +328,23 @@ type BorrowerObj struct {
 	Fullname   string `gorm:"column:name" json:"name"`
 	BorrowerNo string `gorm:"column:borrowerNo" json:"borrowerNo"`
 	Branch 			string `gorm:"column:branch" json:"branch"`
+	BranchAddress	string `gorm:"column:addressDetail" json:"branchAddress"`
 	IdCardNo		string `gorm:"column:idCardNo" json:"idCardNo"`
 	Address		 	string `gorm:"column:address" json:"address"`
 	Kelurahan		string `gorm:"column:kelurahan" json:"kelurahan"`
-	Kecamatan		string `gorm:"column:kecamatan " json:"kecamatan"`
+	Kecamatan		string `gorm:"column:kecamatan" json:"kecamatan"`
 	Group      	string `gorm:"column:group" json:"group"`
+	TempatLahir string `gorm:"column:tempatLahir" json:"tempatLahir"`
+	TanggalLahir string `gorm:"column:tanggalLahir" json:"tanggalLahir"`
+	BranchCity		string `gorm:"column:branchCity" json:"branchCity"`
+	BranchProvince	string `gorm:"column:branchProvince" json:"branchProvince"`
+	Desa		string `gorm:"column:desa" json:"desa"`
+	Status		string `gorm:"column:status" json:"status"`
+	NamaPenanggungJawab string `gorm:"column:nama_pj" json:"nama_pj"`
+	TempatLahirPenanggungJawab string `gorm:"column:pj_tempatlahir" json:"pj_tempatlahir"`
+	TglLahirPenanggungJawab string `gorm:"column:pj_tgllahir" json:"pj_tgllahir"`
+	HubPenanggungJawab string `gorm:"column:hubungan" json:"data_hubungan"`
+	AgentName		string `gorm:"column:agentName" json:"agentName"`
 }
 
 // GetAkadData - Get data to be shown in Akad
@@ -341,56 +352,94 @@ func GetAkadData(ctx *iris.Context) {
 	loanID, _ := strconv.Atoi(ctx.Param("id"))
 	data := Akad{}
 
-	query := "SELECT loan.*, disbursement.\"disbursementDate\", product_pricing.\"returnOfInvestment\", "
-	query += "product_pricing.\"administrationFee\", product_pricing.\"serviceFee\", \"group\".\"name\" as \"group\", "
-	query += "r_investor_product_pricing_loan.\"investorId\" "
-	query += "FROM loan "
-	query += "JOIN r_investor_product_pricing_loan ON r_investor_product_pricing_loan.\"loanId\" = loan.id "
-	query += "JOIN product_pricing ON product_pricing.id = r_investor_product_pricing_loan.\"productPricingId\" "
-	query += "JOIN r_loan_disbursement ON r_loan_disbursement.\"loanId\" = loan.id "
-	query += "JOIN disbursement ON disbursement.id = r_loan_disbursement.\"disbursementId\" "
-	query += "JOIN r_loan_group ON r_loan_group.\"loanId\" = loan.id "
-	query += "JOIN \"group\" ON \"group\".id = r_loan_group.\"groupId\" "
-	query += "WHERE loan.id = ? AND loan.\"deletedAt\" IS NULL "
+	// DITAMBAH LEFT QUERY KARENA LOAN BELUM TENTU PUNYA LOAN ORDER
 
-	services.DBCPsql.Raw(query, loanID).Scan(&data)
+	query := `SELECT loan.*, disbursement. "disbursementDate", product_pricing."returnOfInvestment", 
+	product_pricing."administrationFee", product_pricing."serviceFee", "group"."name" as "group", 
+	r_investor_product_pricing_loan."investorId", "agreementNo"
+	FROM loan 
+	JOIN r_investor_product_pricing_loan ON r_investor_product_pricing_loan."loanId" = loan.id 
+	JOIN product_pricing ON product_pricing.id = r_investor_product_pricing_loan."productPricingId" 
+	JOIN r_loan_disbursement ON r_loan_disbursement."loanId" = loan.id 
+	JOIN disbursement ON disbursement.id = r_loan_disbursement."disbursementId" 
+	JOIN r_loan_group ON r_loan_group."loanId" = loan.id 
+	JOIN "group" ON "group".id = r_loan_group."groupId" 
+	LEFT JOIN "loan_agreement" ON loan_agreement."loanId" = loan.id
+	WHERE loan.id = ? AND loan."deletedAt" IS NULL`
 
-	queryGetInvestor := "SELECT cif.* "
-	queryGetInvestor += "FROM r_investor_product_pricing_loan "
-	queryGetInvestor += "JOIN r_cif_investor ON r_cif_investor.\"investorId\" = r_investor_product_pricing_loan.\"investorId\" "
-	queryGetInvestor += "JOIN cif ON cif.id = r_cif_investor.\"cifId\" "
-	queryGetInvestor += "WHERE r_investor_product_pricing_loan.\"loanId\" = ? AND r_investor_product_pricing_loan.\"deletedAt\" IS NULL LIMIT 1 "
+	errAkad := services.DBCPsql.Raw(query, loanID).Scan(&data).Error
+
+	if errAkad != nil {
+		ctx.JSON(iris.StatusInternalServerError, iris.Map{
+			"status":  "Error",
+			"message": "Can't Find Akad Based On Loan ID given. Error: " + errAkad.Error(),
+		})
+		return
+	}
+
+	queryGetInvestor := `SELECT cif.*
+	FROM r_investor_product_pricing_loan
+	JOIN r_cif_investor ON r_cif_investor."investorId" = r_investor_product_pricing_loan."investorId"
+	JOIN cif ON cif.id = r_cif_investor."cifId"
+	WHERE r_investor_product_pricing_loan."loanId" = ? AND r_investor_product_pricing_loan."deletedAt" IS NULL LIMIT 1`
 
 	investorData := cif.Cif{}
 
-	services.DBCPsql.Raw(queryGetInvestor, loanID).Scan(&investorData)
+	errCif := services.DBCPsql.Raw(queryGetInvestor, loanID).Scan(&investorData).Error
 
-	queryGetBorrower := "SELECT cif.\"name\", cif.\"address\" as \"address\", cif.\"kelurahan\" as \"kelurahan\", cif.\"kecamatan\" as kecamatan, cif.\"idCardNo\" as \"idCardNo\" ,borrower.\"borrowerNo\", \"group\".\"name\" as \"group\", branch.\"name\" as \"branch\" "
-	queryGetBorrower += "FROM loan "
-	queryGetBorrower += "JOIN r_loan_borrower on r_loan_borrower.\"loanId\" = loan.id "
-	queryGetBorrower += "JOIN borrower ON borrower.id = r_loan_borrower.\"borrowerId\" "
-	queryGetBorrower += "JOIN r_cif_borrower ON r_cif_borrower.\"borrowerId\" = borrower.id "
-	queryGetBorrower += "JOIN cif ON cif.id = r_cif_borrower.\"cifId\" "
-	queryGetBorrower += "JOIN r_loan_group on r_loan_group.\"loanId\" = loan.id "
-	queryGetBorrower += "JOIN \"group\" on \"group\".id = r_loan_group.\"groupId\" "
-	queryGetBorrower += "JOIN r_group_branch ON r_group_branch.\"groupId\" = \"group\".\"id\" "
-	queryGetBorrower += "JOIN branch on branch.\"id\" = r_group_branch.\"branchId\" "
-	queryGetBorrower += "WHERE loan.id = ? AND loan.\"deletedAt\" IS NULL LIMIT 1 "
+	if errCif != nil {
+		ctx.JSON(iris.StatusInternalServerError, iris.Map{
+			"status":  "Error",
+			"message": "Can't Find CIF Based On Loan ID given. Error: " + errAkad.Error(),
+		})
+		return
+	}
+
+	queryGetBorrower := `SELECT cif."name", cif."address" as "address", cif."kelurahan" as "kelurahan", cif."kecamatan" as "kecamatan", 
+	cif."idCardNo" as "idCardNo" ,borrower."borrowerNo", "group"."name" as "group", branch."name" as "branch", branch."addressDetail", a."fullname" as "agentName",
+	lr._raw::json ->> 'client_birthplace' as "tempatLahir",
+	lr._raw::json ->> 'client_birthdate' as "tanggalLahir",
+	lr._raw::json ->> 'client_kecamatan' as "borrowerKecamatan",
+	lr._raw::json ->> 'client_desa' as "desa", lr._raw::json ->> 'client_maritalstatus' as "status",
+	lr._raw::json ->> 'data_suami' as "nama_pj", lr._raw::json ->> 'data_suami_tempatlahir' as "pj_tempatlahir", lr._raw::json ->> 'data_suami_tgllahir' as "pj_tgllahir",
+	lr._raw::json ->> 'data_hubungan' as "hubungan", ilc.name as "branchCity", ilp.name as "branchProvince"
+	FROM loan
+	JOIN r_loan_borrower on r_loan_borrower."loanId" = loan.id
+	JOIN borrower ON borrower.id = r_loan_borrower."borrowerId"
+	JOIN r_cif_borrower ON r_cif_borrower."borrowerId" = borrower.id
+	JOIN cif ON cif.id = r_cif_borrower."cifId"
+	JOIN loan_raw lr on lr."loanId" = loan.id
+	JOIN r_loan_group rlg ON rlg."loanId" = lr."loanId"
+    JOIN r_group_agent rga using("groupId")
+    JOIN agent a ON a.id = rga."agentId"
+	JOIN r_loan_group on r_loan_group."loanId" = loan.id
+	JOIN "group" on "group".id = r_loan_group."groupId"
+	JOIN r_group_branch ON r_group_branch."groupId" = "group".id
+	JOIN branch on branch.id = r_group_branch."branchId"
+	JOIN inf_location ilp on ilp.province = branch.province
+	and ilp.city = '0'
+	JOIN inf_location ilc on ilc.city = branch.city 
+	AND ilc.province = branch.province and ilc.kecamatan = '0'
+	WHERE loan.id = ? AND loan."deletedAt" IS NULL LIMIT 1`
 
 	borrowerData := BorrowerObj{}
-
-	services.DBCPsql.Raw(queryGetBorrower, loanID).Scan(&borrowerData)
-
+	errBorrower := services.DBCPsql.Raw(queryGetBorrower, loanID).Scan(&borrowerData).Error
+	if errBorrower != nil {
+		ctx.JSON(iris.StatusInternalServerError, iris.Map{
+			"status":  "Error",
+			"message": "Can't Find Borrower Based On Loan ID given. Error: " + errBorrower.Error(),
+		})
+		return
+	}
+	
 	floatTenor := float64(data.Tenor)
 	weeklyBase := Round(data.Plafond/floatTenor, 2)
 	weeklyMargin := Round(data.Rate*data.Plafond*data.ReturnOfInvestment/floatTenor, 2)
 	weeklyFeeBorrower := Round(data.Rate*data.Plafond*data.AdminitrationFee/floatTenor, 2)
 	weeklyFeeInvestor := Round(data.Rate*data.Plafond*data.ServiceFee/floatTenor, 2)
-
 	noReserveTime, _ := time.Parse("2006-01-02", "2017-04-03")
 	augustTime, _ := time.Parse("2006-01-02", "2016-08-29")
 	submittedLoanTime, _ := time.Parse("2006-01-02T15:04:05-07:00", data.SubmittedLoanDate)
-
 	var reserve uint64
 	if submittedLoanTime.After(noReserveTime) {
 		reserve = 0
@@ -427,26 +476,27 @@ func GetAkadData(ctx *iris.Context) {
 			}
 		}
 	}
-
 	var sentAgreementType string
 	if data.AgreementType == "" {
 		sentAgreementType = "MBA"
 	} else {
 		sentAgreementType = data.AgreementType
 	}
-
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"status": "success",
 		"data": iris.Map{
 			"_id":               data.ID,
+			"adminFee":			 data.AdminitrationFee,
+			"serviceFee":		 data.ServiceFee,
 			"disbursementDate":  data.DisbursementDate,
 			"agreementType":     sentAgreementType,
 			"purpose":           data.Purpose,
 			"plafond":           data.Plafond,
 			"tenor":             data.Tenor,
 			"installment":       data.Installment,
-			"rate": data.Rate,
+			"rate": 			 data.Rate,
 			"returnOfInvestment": data.ReturnOfInvestment,
+			"agreementNo":		data.AgreementNo,
 			"weeklyBase":        weeklyBase,
 			"weeklyMargin":      weeklyMargin,
 			"weeklyFeeBorrower": weeklyFeeBorrower,
