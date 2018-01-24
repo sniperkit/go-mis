@@ -5,16 +5,17 @@ import (
 	"strconv"
 	"time"
 
+	"errors"
+
 	"bitbucket.org/go-mis/modules/account-transaction-credit"
 	"bitbucket.org/go-mis/modules/account-transaction-debit"
 	"bitbucket.org/go-mis/modules/campaign"
+	"bitbucket.org/go-mis/modules/email"
 	"bitbucket.org/go-mis/modules/r"
 	"bitbucket.org/go-mis/modules/voucher"
 	"bitbucket.org/go-mis/services"
 	"github.com/jinzhu/gorm"
 	"gopkg.in/kataras/iris.v4"
-	"bitbucket.org/go-mis/modules/email"
-	"errors"
 )
 
 var InsuranceRate float64 = 0.015
@@ -103,8 +104,8 @@ func AcceptLoanOrder(ctx *iris.Context) {
 	orderNo := ctx.Param("orderNo")
 
 	db := services.DBCPsql.Begin()
-	if err:=AcceptOrder(orderNo,true,db);err!=nil{
-		processErrorAndRollback(ctx,orderNo,db,err,"Accept Order")
+	if err := AcceptOrder(orderNo, true, db); err != nil {
+		processErrorAndRollback(ctx, orderNo, db, err, "Accept Order")
 		return
 	}
 	db.Commit()
@@ -116,7 +117,7 @@ func AcceptLoanOrder(ctx *iris.Context) {
 
 }
 
-func AcceptOrder(orderNo string, isSendNotif bool,db *gorm.DB) error{
+func AcceptOrder(orderNo string, isSendNotif bool, db *gorm.DB) error {
 	// get loanid
 	loans := GetLoans(orderNo)
 	// account
@@ -128,21 +129,21 @@ func AcceptOrder(orderNo string, isSendNotif bool,db *gorm.DB) error{
 		voucherAmount = voucherData.Amount
 	}
 
-	exist,_:=existTotalOrder(orderNo,db)
-	if !exist{
+	exist, _ := existTotalOrder(orderNo, db)
+	if !exist {
 		return errors.New("Order Not exist")
 	}
-	isUsingInsurance,err := IsUsingInsurance(orderNo)
-	fmt.Println("IsInsurance",orderNo,isUsingInsurance)
-	if err!=nil{
+	isUsingInsurance, err := IsUsingInsurance(orderNo)
+	fmt.Println("IsInsurance", orderNo, isUsingInsurance)
+	if err != nil {
 		return err
 	}
 	totalDebit := accountTransactionDebit.GetTotalAccountTransactionDebit(accId.AccountId)
 	totalCredit := accountTransactionCredit.GetTotalAccountTransactionCredit(accId.AccountId)
 	totalOrder, _ := calculateTotalPayment(orderNo, db)
-	totalOrderBefore:=totalOrder+0
-	if isUsingInsurance{
-		totalOrder += InsuranceRate*totalOrder
+	totalOrderBefore := totalOrder + 0
+	if isUsingInsurance {
+		totalOrder += InsuranceRate * totalOrder
 	}
 	totalBalance := (totalDebit + voucherAmount) - totalCredit - totalOrder
 
@@ -164,7 +165,7 @@ func AcceptOrder(orderNo string, isSendNotif bool,db *gorm.DB) error{
 	}
 
 	if isUsingInsurance {
-		if err:=InsertAtcInsurance(loans,totalOrderBefore,accId.AccountId,db);err!=nil{
+		if err := InsertAtcInsurance(loans, totalOrderBefore, accId.AccountId, db); err != nil {
 			return errors.New("Insert insurace credit failed")
 		}
 	}
@@ -174,6 +175,9 @@ func AcceptOrder(orderNo string, isSendNotif bool,db *gorm.DB) error{
 	}
 
 	if err := CheckReferalAndEmptytreshold(accId.InvestorId, accountTRCredit.ID, orderNo, db); err != nil {
+		//please fix this one later it's just for quick fix because on this function didnt found any query for reset account threshold
+		db.Table(`account`).Where(`id = ?`, accId.AccountId).UpdateColumn(`threshold`, 0)
+		// end of reset threshold
 		return errors.New("Check Referal and Empty Treshold")
 	}
 
@@ -188,7 +192,7 @@ func AcceptOrder(orderNo string, isSendNotif bool,db *gorm.DB) error{
 		return errors.New("Update Loan Stage")
 	}
 
-	investorDetail :=InvestorDetail{}
+	investorDetail := InvestorDetail{}
 
 	queryDetailInvestor := `	select r_investor_product_pricing_loan."investorId",cif."username",cif.name from loan_order
 	join r_loan_order on r_loan_order."loanOrderId"=loan_order.id
@@ -196,7 +200,7 @@ func AcceptOrder(orderNo string, isSendNotif bool,db *gorm.DB) error{
 	join r_cif_investor on r_cif_investor."investorId"=r_investor_product_pricing_loan."investorId"
 	join cif on cif.id=r_cif_investor."cifId"
 	where loan_order."orderNo"=?`
-	services.DBCPsql.Raw(queryDetailInvestor,orderNo).Scan(&investorDetail)
+	services.DBCPsql.Raw(queryDetailInvestor, orderNo).Scan(&investorDetail)
 	if isSendNotif {
 		go email.SendEmailIInvestmentSuccess(investorDetail.Name, investorDetail.Username, orderNo, investorDetail.InvestorId, voucherAmount)
 		//go email.SendEmailIInvestmentSuccess(investorDetail.Name,"wuri.wulandari@amartha.com",orderNo,investorDetail.InvestorId)
@@ -372,7 +376,7 @@ func existTotalOrder(orderNo string, db *gorm.DB) (bool, error) {
 	if err := db.Raw(query, orderNo).Scan(&r).Error; err != nil {
 		return false, err
 	}
-	return r.Total>0, nil
+	return r.Total > 0, nil
 }
 
 func calculateTotalPayment(orderNo string, db *gorm.DB) (float64, error) {
@@ -512,22 +516,22 @@ func CheckVoucherAndInsertToDebit(accountID uint64, orderNo string, db *gorm.DB)
 }
 
 func IsUsingInsurance(orderNo string) (bool, error) {
-	r := struct{
-		IsInsurance	bool	`gorm:"column:isInsurance"`
-		}{}
+	r := struct {
+		IsInsurance bool `gorm:"column:isInsurance"`
+	}{}
 	query := `select l."isInsurance" as "isInsurance"
 	from loan l join r_loan_order rlo on l.id = rlo."loanId"
 	join loan_order lo on lo.id = rlo."loanOrderId"
 	where lo."orderNo"=?`
 
-	error:=services.DBCPsql.Raw(query, orderNo).Scan(&r).Error
-	if error!=nil {
+	error := services.DBCPsql.Raw(query, orderNo).Scan(&r).Error
+	if error != nil {
 		return false, error
 	}
-	return r.IsInsurance,nil
+	return r.IsInsurance, nil
 }
 
-func InsertAtcInsurance(loans []int64,totalPayment float64, accountId uint64, db *gorm.DB) error {
+func InsertAtcInsurance(loans []int64, totalPayment float64, accountId uint64, db *gorm.DB) error {
 	totalAmountInsurance := totalPayment * InsuranceRate
 	accountTRCreditSchemaInsurance := &accountTransactionCredit.AccountTransactionCredit{Type: "INSURANCE", Amount: totalAmountInsurance, TransactionDate: time.Now()}
 	db.Table("account_transaction_credit").Create(accountTRCreditSchemaInsurance)
