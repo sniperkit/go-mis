@@ -2,11 +2,13 @@ package loanOrder
 
 import (
 	"fmt"
+	"log"
 	"strconv"
 	"time"
 
 	"errors"
 
+	"bitbucket.org/Amartha/go-mis/config"
 	"bitbucket.org/go-mis/modules/account-transaction-credit"
 	"bitbucket.org/go-mis/modules/account-transaction-debit"
 	"bitbucket.org/go-mis/modules/campaign"
@@ -15,6 +17,7 @@ import (
 	"bitbucket.org/go-mis/modules/voucher"
 	"bitbucket.org/go-mis/services"
 	"github.com/jinzhu/gorm"
+	"github.com/parnurzeal/gorequest"
 	"gopkg.in/kataras/iris.v4"
 )
 
@@ -98,6 +101,25 @@ func FetchSingle(ctx *iris.Context) {
 	})
 }
 
+//GetInvestorAndFlushTempData - get investor id and flush caching data at redis
+func GetInvestorAndFlushTempData(investorID uint64) {
+	// investor := investor.Investor{}
+
+	// queryGetInvestorFromAccountID := `select i.* from investor i
+	// 	join r_account_investor rai ON rai."investorId" = i.id
+	// 	join account a on a.id = rai."accountId"
+	// 	where a.id = ? and a."deletedAt" isnull
+	// 	and rai."deletedAt" isnull and i."deletedAt" isnull`
+
+	// services.DBCPsql.Raw(queryGetInvestorFromAccountID, accountID).Scan(&investor)
+
+	p2pFlushDataEndpoint := config.P2pPath + "/flush-investor-data/" + fmt.Sprintf("%v", investorID) + "?secretKey=p2p4wesom3"
+
+	log.Println("try to reach node p2p link: " + p2pFlushDataEndpoint)
+	request := gorequest.New()
+	request.Get(p2pFlushDataEndpoint).End()
+}
+
 // fungsi-fungsi dewa
 func AcceptLoanOrder(ctx *iris.Context) {
 	// seting order no
@@ -109,6 +131,10 @@ func AcceptLoanOrder(ctx *iris.Context) {
 		return
 	}
 	db.Commit()
+
+	//flush data after complete process accept loan order
+	accID := GetAccountId(orderNo)
+	go GetInvestorAndFlushTempData(accID.InvestorId)
 
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"status": "success",
