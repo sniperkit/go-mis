@@ -113,7 +113,7 @@ func GetInvestorAndFlushTempData(investorID uint64) {
 
 	// services.DBCPsql.Raw(queryGetInvestorFromAccountID, accountID).Scan(&investor)
 
-	p2pFlushDataEndpoint := config.P2pPath + "/flush-investor-data/" + fmt.Sprintf("%v", investorID) + "?secretKey=p2p4wesom3"
+	p2pFlushDataEndpoint := config.P2pPath + "/v2/flush-investor-data/" + fmt.Sprintf("%v", investorID) + "?secretKey=p2p4wesom3"
 
 	log.Println("try to reach node p2p link: " + p2pFlushDataEndpoint)
 	request := gorequest.New()
