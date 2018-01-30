@@ -13,7 +13,9 @@ import (
 	"bitbucket.org/go-mis/modules/account-transaction-credit"
 	"bitbucket.org/go-mis/modules/account-transaction-debit"
 	"bitbucket.org/go-mis/modules/installment-history"
+	"bitbucket.org/go-mis/modules/investor"
 	"bitbucket.org/go-mis/modules/loan-history"
+	"bitbucket.org/go-mis/modules/loan-order"
 	"bitbucket.org/go-mis/modules/r"
 	"bitbucket.org/go-mis/modules/system-parameter"
 	MISUtility "bitbucket.org/go-mis/modules/utility"
@@ -281,7 +283,21 @@ func StoreInstallment(db *gorm.DB, installmentId uint64, status string) error {
 	 */
 
 	UpdateStageInstallmentApproveOrReject(db, installmentId, "PROCESSING", status)
+	FlushInvestorData(db, loanInvestorAccountIDSchema.AccountID)
 	return nil
+}
+
+func FlushInvestorData(db *gorm.DB, accountID uint64) {
+	investor := investor.Investor{}
+	queryGetInvestorFromAccountID := `select i.* from investor i
+		join r_account_investor rai ON rai."investorId" = i.id
+		join account a on a.id = rai."accountId"
+		where a.id = ? and a."deletedAt" isnull
+		and rai."deletedAt" isnull and i."deletedAt" isnull`
+	if err := db.Raw(queryGetInvestorFromAccountID, accountID).Scan(&investor).Error; err != nil {
+		return
+	}
+	go loanOrder.GetInvestorAndFlushTempData(investor.ID)
 }
 
 // UpdateStageInstallmentApproveOrReject - Update installment stage
