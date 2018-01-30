@@ -19,6 +19,7 @@ var (
 	PsqlHostAddressSurvey     string
 	MysqlHostAddress          string
 	UploaderApiPath           string
+	P2pPath                   string
 	WhiteList                 string
 	GoCasPath                 string
 	EnableEmergencyLoan       bool
@@ -32,6 +33,7 @@ type Config struct {
 	Mysql               DbConfig    `json:"mysql"`
 	Redis               RedisConfig `json:"redis"`
 	UploaderPath        string      `json:"uploaderPath"`
+	P2pPath             string      `json:"p2pPath"`
 	GoCasPath           string      `json:"goCasPath"`
 	WhiteList           string      `json:"whiteList"`
 	SignString          string      `json:"signString"`
@@ -107,6 +109,7 @@ func init() {
 	Version = Configuration.ApiVersion
 
 	UploaderApiPath = Configuration.UploaderPath
+	P2pPath = Configuration.P2pPath
 	GoCasApiPath = Configuration.GoCasPath
 	GoLogPath = Configuration.GoLogPath
 	SignStringKey = Configuration.SignString
