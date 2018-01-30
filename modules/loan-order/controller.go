@@ -6,9 +6,11 @@ import (
 	"strconv"
 	"time"
 
+	"gopkg.in/kataras/iris.v4"
+
 	"errors"
 
-	"bitbucket.org/Amartha/go-mis/config"
+	"bitbucket.org/go-mis/config"
 	"bitbucket.org/go-mis/modules/account-transaction-credit"
 	"bitbucket.org/go-mis/modules/account-transaction-debit"
 	"bitbucket.org/go-mis/modules/campaign"
@@ -18,7 +20,6 @@ import (
 	"bitbucket.org/go-mis/services"
 	"github.com/jinzhu/gorm"
 	"github.com/parnurzeal/gorequest"
-	"gopkg.in/kataras/iris.v4"
 )
 
 var InsuranceRate float64 = 0.015
