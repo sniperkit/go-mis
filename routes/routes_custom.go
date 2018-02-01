@@ -34,6 +34,7 @@ import (
 	"bitbucket.org/go-mis/modules/reports"
 	"bitbucket.org/go-mis/modules/sector"
 	"bitbucket.org/go-mis/modules/survey"
+	systemParameter "bitbucket.org/go-mis/modules/system-parameter"
 	"bitbucket.org/go-mis/modules/topsheet"
 	"bitbucket.org/go-mis/modules/transaction"
 	"bitbucket.org/go-mis/modules/user-mis"
@@ -42,7 +43,6 @@ import (
 	"bitbucket.org/go-mis/modules/voucher"
 	"gopkg.in/iris-contrib/middleware.v4/cors"
 	"gopkg.in/kataras/iris.v4"
-	systemParameter "bitbucket.org/go-mis/modules/system-parameter"
 )
 
 var baseURL = "/api/v2"
@@ -115,6 +115,7 @@ func InitCustomApi() {
 		v2.Any("/installment/group/:group_id/by-transaction-date/:transaction_date/submit/:stageFrom/:stageTo", installment.SubmitInstallmentByGroupIDAndTransactionDateWithStatus)
 		v2.Any("/installment/submit/:installment_id/status/:status", installment.SubmitInstallmentByInstallmentIDWithStatus)
 		v2.Any("/disbursement", disbursement.FetchAll)
+		v2.Any("/disbursement/setDate/lwkUpkDate", disbursement.SetLWKUPKDate)
 		v2.Any("/disbursement/set/:loan_id/stage/:stage", disbursement.UpdateDisbursementStage)
 		v2.Any("/disbursement/get/branch/:branch_id/group/:group_id/disbursement-date/:disbursement_date", disbursement.GetDisbursementDetailByGroup)
 		v2.Any("/user-mis", userMis.FetchUserMisAreaBranchRole)
@@ -235,6 +236,6 @@ func InitCustomApi() {
 	iris.Post(baseURL+"/location/translate", location.TranslateLoc)
 	iris.Get(baseURL+"/location/:location_code", location.GetLocationById)
 	iris.Get(baseURL+"/healthycheck", healthycheck.Checking)
-	
+
 	iris.Get(baseURL+"/swift", systemParameter.GetSwift)
 }
