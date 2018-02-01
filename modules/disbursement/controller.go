@@ -65,7 +65,7 @@ func GetDisbursementDetailByGroup(ctx *iris.Context) {
 	query += "JOIN r_investor_product_pricing_loan ON r_investor_product_pricing_loan.\"loanId\" = loan.id "
 	query += "LEFT JOIN investor ON investor.\"id\" = r_investor_product_pricing_loan.\"investorId\" "
 	query += "WHERE disbursement.stage IN ('PENDING', 'FAILED') "
-	query += "WHERE loan.\"submittedLoanDate\" IS NOT NULL  "
+	query += "AND loan.\"submittedLoanDate\" IS NOT NULL  "
 
 	query += "AND DATE(disbursement.\"disbursementDate\") >= 'now()' "
 	query += "AND branch.id = ? "
