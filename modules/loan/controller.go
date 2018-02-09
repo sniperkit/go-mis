@@ -490,6 +490,7 @@ func GetAkadData(ctx *iris.Context) {
 			"serviceFee":		 data.ServiceFee,
 			"disbursementDate":  data.DisbursementDate,
 			"agreementType":     sentAgreementType,
+			"majelisName":		 data.Group,
 			"purpose":           data.Purpose,
 			"plafond":           data.Plafond,
 			"tenor":             data.Tenor,
