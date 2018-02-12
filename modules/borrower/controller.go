@@ -109,6 +109,7 @@ func CreateBorrowerData(ctx *iris.Context, payload map[string]interface{}, sourc
 	}
 
 	// reserve one loan record for this new borrower
+	payload["borrowerId"] = borrowerId
 	errLoan, loan := CreateLoan(payload)
 	if errLoan != nil {
 		ProcessErrorAndRollback(ctx, db, "Error Create object loan "+errLoan.Error())
