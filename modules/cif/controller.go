@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
-
+	"time"
 	"bitbucket.org/go-mis/services"
 	"github.com/jinzhu/gorm"
 	iris "gopkg.in/kataras/iris.v4"
@@ -247,8 +247,8 @@ func UpdateInvestorCif(ctx *iris.Context) {
 	fmt.Println("Data CIF: ", data)
 	db := services.DBCPsql.Begin()
 	
-	if data.Cif.isVerified {
-		data.Cif.verficationDate = time.Now()
+	if *data.Cif.IsVerified {
+		data.Cif.VerificationDate = time.Now().String()
 	}
 
 	if err := db.Table("investor").Where(" \"id\" = ?", investorId).Update(&data.Investor).Error; err != nil {
