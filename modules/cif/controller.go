@@ -246,6 +246,11 @@ func UpdateInvestorCif(ctx *iris.Context) {
 	}
 	fmt.Println("Data CIF: ", data)
 	db := services.DBCPsql.Begin()
+	
+	if data.Cif.isVerified {
+		data.Cif.verficationDate = time.Now()
+	}
+
 	if err := db.Table("investor").Where(" \"id\" = ?", investorId).Update(&data.Investor).Error; err != nil {
 		processErrorAndRollback(ctx, db, err, "Update Investor")
 		return
