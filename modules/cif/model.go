@@ -97,6 +97,7 @@ type Cif struct {
 	UpdatedAt           string     `gorm:"column:updatedAt" json:"updatedAt"`
 	DeletedAt           *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
 	ValidationDate      string     `gorm:"column:validationDate" json:"validationDate"`
+	VerificationDate      string     `gorm:"column:verificationDate" json:"verificationDate"`
 }
 
 type CifBorrower struct {
