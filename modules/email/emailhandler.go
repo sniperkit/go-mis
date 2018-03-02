@@ -70,23 +70,29 @@ func GetClientInvestor(InvestorID uint64, OrderNo string, Stage string) ([]Clien
 	services.DBCPsql.Raw(query, InvestorID, Stage, OrderNo).Scan(&clientInvestors)
 
 	totalInsurance = 0
-	total = 0
-	for _, val := range clientInvestors {
-		total += val.Plafond
-		var emailBody ClientInvestorEmailBody
-		emailBody.BorrowerName = val.BorrowerName
-		emailBody.Purpose = val.Purpose
-		plafondStr := fmt.Sprintf("Rp %s", humanize.Commaf(val.Plafond))
-		emailBody.Plafond = plafondStr
-		emailBody.Tenor = val.Tenor
-		emailBody.DisbursementDate = val.DisbursementDate.Format("02-01-2006")
-		emailBody.RevenueProjection = fmt.Sprintf("Rp %s", humanize.Commaf(val.RevenueProjection))
-		resultsEmails = append(resultsEmails, emailBody)
+    total = 0
+    for _, val := range clientInvestors {
+        total += val.Plafond
+        var emailBody ClientInvestorEmailBody
+        emailBody.BorrowerName = val.BorrowerName
+        emailBody.Purpose = val.Purpose
+        plafondStr := fmt.Sprintf("Rp %s", humanize.Commaf(val.Plafond))
+        emailBody.Plafond = plafondStr
+        emailBody.Tenor = val.Tenor
+        emailBody.DisbursementDate = val.DisbursementDate.Format("02-01-2006")
+        emailBody.RevenueProjection = fmt.Sprintf("Rp %s", humanize.Commaf(val.RevenueProjection))
+        resultsEmails = append(resultsEmails, emailBody)
+    
+        if val.IsInsurance == true {
+            totalInsurance = totalInsurance + 1    
+        }
+    }
 
-		totalInsurance = totalInsurance + 1
-	}
-	totalInsuranceAmount = (total * (totalInsurance * InsuranceRate))
-		total = total + totalInsuranceAmount
+    // totalInsuranceAmount = (total * (totalInsurance * InsuranceRate))
+    totalInsuranceAmount = total * InsuranceRate
+    if totalInsurance > 0 {
+        total = total + totalInsuranceAmount
+    }
 	return clientInvestors, resultsEmails, total, totalInsuranceAmount
 }
 
