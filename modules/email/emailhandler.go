@@ -36,7 +36,7 @@ type Donations struct {
 }
 
 //GetClientInvestor get all investor data for email notification
-func GetClientInvestor(InvestorID uint64, OrderNo string, Stage string) ([]ClientInvestor, []ClientInvestorEmailBody, float64, float64) {
+func GetClientInvestor(InvestorID uint64, OrderNo string, Stage string) ([]ClientInvestor, []ClientInvestorEmailBody, float64, float64, float64) {
 	var InsuranceRate float64 = 0.015
 	clientInvestors := []ClientInvestor{}
 	var resultsEmails []ClientInvestorEmailBody
@@ -93,12 +93,12 @@ func GetClientInvestor(InvestorID uint64, OrderNo string, Stage string) ([]Clien
     if totalInsurance > 0 {
         total = total + totalInsuranceAmount
     }
-	return clientInvestors, resultsEmails, total, totalInsuranceAmount
+	return clientInvestors, resultsEmails, total, totalInsuranceAmount, totalInsurance
 }
 
 func SendEmailIInvestmentSuccess(name string, toEmail string, OrderNo string, investorId uint64, voucherAmount float64) {
 	fmt.Println("#Email send investment success", toEmail)
-	_, clientInvestorsEmail, total, totalInsuranceAmount := GetClientInvestor(investorId, OrderNo, "INVESTOR")
+	_, clientInvestorsEmail, total, totalInsuranceAmount, totalInsurance := GetClientInvestor(investorId, OrderNo, "INVESTOR")
 
 	subs := map[string]interface{}{
 		"first_name": name,
@@ -115,11 +115,13 @@ func SendEmailIInvestmentSuccess(name string, toEmail string, OrderNo string, in
 	mandrill.SetTo(toEmail)
 	mandrill.SetBCC("investing@amartha.com")
 	mandrill.SetSubject("[Amartha] Selamat, Transaksi Anda Berhasil")
-	if totalInsuranceAmount > 0 {
+
+	if totalInsurance > 0 {
 		mandrill.SetTemplateAndRawBody("investment_balance_success_v3_jamkrindo", subs)
 	} else {
 		mandrill.SetTemplateAndRawBody("investment_balance_success_v3", subs)
 	}
+	
 	mandrill.SetBucket(true)
 	mandrill.SendEmail()
 }
