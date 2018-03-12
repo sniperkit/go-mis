@@ -36,7 +36,7 @@ type Donations struct {
 }
 
 //GetClientInvestor get all investor data for email notification
-func GetClientInvestor(InvestorID uint64, OrderNo string, Stage string) ([]ClientInvestor, []ClientInvestorEmailBody, float64, float64) {
+func GetClientInvestor(InvestorID uint64, OrderNo string, Stage string) ([]ClientInvestor, []ClientInvestorEmailBody, float64, float64, float64) {
 	var InsuranceRate float64 = 0.015
 	clientInvestors := []ClientInvestor{}
 	var resultsEmails []ClientInvestorEmailBody
