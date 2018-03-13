@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
-	"time"
 
 	"bitbucket.org/go-mis/services"
 	"github.com/jinzhu/gorm"
@@ -249,9 +248,11 @@ func UpdateInvestorCif(ctx *iris.Context) {
 	fmt.Println("Data CIF: ", data)
 	db := services.DBCPsql.Begin()
 
-	if *data.Cif.IsVerified {
-		data.Cif.VerificationDate = time.Now()
-	}
+	/*
+		if *data.Cif.IsVerified {
+			data.Cif.VerificationDate = time.Now()
+		}
+	*/
 
 	if err := db.Table("investor").Where(" \"id\" = ?", investorId).Update(&data.Investor).Error; err != nil {
 		processErrorAndRollback(ctx, db, err, "Update Investor")
@@ -262,6 +263,7 @@ func UpdateInvestorCif(ctx *iris.Context) {
 		return
 	}
 	db.Commit()
+
 	ctx.JSON(iris.StatusOK, iris.Map{"status": "success", "data": nil})
 }
 
