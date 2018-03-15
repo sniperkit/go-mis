@@ -388,25 +388,13 @@ func SubmitInstallmentByGroupIDAndTransactionDateWithStatus(ctx *iris.Context) {
 			services.DBCPsql.Raw(query, transactionDate, groupID).Scan(&installmentDetailSchema)
 		}
 
+		// start time
 		// we ned to log, startTime, number of data will be proceed, and endTime
-		// logfilename
-		filename := "InstallmentApproval.log"
+		startTime := time.Now()
+		succeeded := 0
+		failed := 0
 		// jumlah data yang akan diproses
 		willbeProceed := len(installmentDetailSchema)
-		// start date
-		startTime := time.Now()
-		// write log.
-		t := fmt.Sprintf("Process: installment approval. Start time: %v, Numbers of Data to be proceed: %d. ", startTime, willbeProceed)
-		f, err := os.OpenFile(filename, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
-		if err != nil {
-			fmt.Println(err)
-		}
-		defer f.Close()
-
-		_, err = f.WriteString(t)
-		if err != nil {
-			fmt.Println(err)
-		}
 
 		for _, item := range installmentDetailSchema {
 			db := services.DBCPsql.Begin()
@@ -415,13 +403,25 @@ func SubmitInstallmentByGroupIDAndTransactionDateWithStatus(ctx *iris.Context) {
 			if err != nil {
 				fmt.Println(err)
 				ProcessErrorAndRollback(ctx, db, err.Error())
+				failed += 1
 			} else {
 				db.Commit()
+				succeeded += 1
 			}
 		}
-		// end date
+
+		// end time
 		endTime := time.Now()
-		t = fmt.Sprintf(" End time: %v.\n", endTime)
+		// logfilename
+		filename := "InstallmentApproval.log"
+		// write log.
+		t := fmt.Sprintf("Process: installment-approve-success. Numbers of Data to be proceed: %d, success: %d, failed: %d, Start time: %v, End time: %v.\n", willbeProceed, succeeded, failed, startTime, endTime)
+		f, err := os.OpenFile(filename, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
+		if err != nil {
+			fmt.Println(err)
+		}
+		defer f.Close()
+
 		_, err = f.WriteString(t)
 		if err != nil {
 			fmt.Println(err)
