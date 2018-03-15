@@ -36,4 +36,5 @@ type CashoutInvestor struct {
 	TransactionDate *time.Time `gorm:"column:transactionDate" json:"transactionDate"`
 	Remark          string     `gorm:"column:remark" json:"remark"`
 	Stage           string     `gorm:"column:stage" json:"stage"`
+	RowsFullCount   int        `gorm:"column:full_count"`
 }
