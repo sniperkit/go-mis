@@ -413,7 +413,7 @@ func SubmitInstallmentByGroupIDAndTransactionDateWithStatus(ctx *iris.Context) {
 		// end time
 		endTime := time.Now()
 		// logfilename
-		filename := "InstallmentApproval.log"
+		filename := "./InstallmentApproval.log"
 		// write log.
 		t := fmt.Sprintf("Process: installment-approve-success. Numbers of Data to be proceed: %d, success: %d, failed: %d, Start time: %v, End time: %v.\n", willbeProceed, succeeded, failed, startTime, endTime)
 		f, err := os.OpenFile(filename, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
