@@ -5,9 +5,12 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"time"
+
+	"gopkg.in/kataras/iris.v4"
 
 	"bitbucket.org/go-mis/modules/account"
 	"bitbucket.org/go-mis/modules/account-transaction-credit"
@@ -21,7 +24,6 @@ import (
 	MISUtility "bitbucket.org/go-mis/modules/utility"
 	"bitbucket.org/go-mis/services"
 	"github.com/jinzhu/gorm"
-	"gopkg.in/kataras/iris.v4"
 )
 
 func Init() {
@@ -351,6 +353,12 @@ func SubmitInstallmentByInstallmentIDWithStatus(ctx *iris.Context) {
 
 // SubmitInstallmentByGroupIDAndTransactionDateWithStatus - approve or reject installment per group
 func SubmitInstallmentByGroupIDAndTransactionDateWithStatus(ctx *iris.Context) {
+	// get limit query param if any
+	loopLimit := ""
+	if ctx.FormValue("limit") != nil {
+		loopLimit = string(ctx.FormValue("limit"))
+	}
+
 	groupID := ctx.Param("group_id")
 	transactionDate := ctx.Param("transaction_date")
 	stageTo := strings.ToUpper(ctx.Param("stageTo"))
@@ -371,10 +379,33 @@ func SubmitInstallmentByGroupIDAndTransactionDateWithStatus(ctx *iris.Context) {
 		installmentDetailSchema := []InstallmentDetail{}
 		if strings.ToLower(stageTo) == "success" {
 			query += "WHERE (installment.\"stage\" = 'APPROVE' OR installment.\"stage\" = 'APPROVE-CP') AND installment.\"deletedAt\" is null"
+			if loopLimit != "" {
+				query += " limit " + loopLimit
+			}
 			services.DBCPsql.Raw(query).Scan(&installmentDetailSchema)
 		} else {
 			query += "WHERE installment.\"createdAt\"::date = ? AND \"group\".\"id\" = ? AND installment.\"stage\" != 'APPROVE' AND installment.\"deletedAt\" is null"
 			services.DBCPsql.Raw(query, transactionDate, groupID).Scan(&installmentDetailSchema)
+		}
+
+		// we ned to log, startTime, number of data will be proceed, and endTime
+		// logfilename
+		filename := "InstallmentApproval.log"
+		// jumlah data yang akan diproses
+		willbeProceed := len(installmentDetailSchema)
+		// start date
+		startTime := time.Now()
+		// write log.
+		t := fmt.Sprintf("Process: installment approval. Start time: %v, Numbers of Data to be proceed: %d. ", startTime, willbeProceed)
+		f, err := os.OpenFile(filename, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
+		if err != nil {
+			fmt.Println(err)
+		}
+		defer f.Close()
+
+		_, err = f.WriteString(t)
+		if err != nil {
+			fmt.Println(err)
 		}
 
 		for _, item := range installmentDetailSchema {
@@ -387,6 +418,13 @@ func SubmitInstallmentByGroupIDAndTransactionDateWithStatus(ctx *iris.Context) {
 			} else {
 				db.Commit()
 			}
+		}
+		// end date
+		endTime := time.Now()
+		t = fmt.Sprintf(" End time: %v.\n", endTime)
+		_, err = f.WriteString(t)
+		if err != nil {
+			fmt.Println(err)
 		}
 
 		// write to go-log
