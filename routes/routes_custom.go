@@ -34,6 +34,7 @@ import (
 	"bitbucket.org/go-mis/modules/reports"
 	"bitbucket.org/go-mis/modules/sector"
 	"bitbucket.org/go-mis/modules/survey"
+	systemParameter "bitbucket.org/go-mis/modules/system-parameter"
 	"bitbucket.org/go-mis/modules/topsheet"
 	"bitbucket.org/go-mis/modules/transaction"
 	"bitbucket.org/go-mis/modules/user-mis"
@@ -42,7 +43,6 @@ import (
 	"bitbucket.org/go-mis/modules/voucher"
 	"gopkg.in/iris-contrib/middleware.v4/cors"
 	"gopkg.in/kataras/iris.v4"
-	systemParameter "bitbucket.org/go-mis/modules/system-parameter"
 )
 
 var baseURL = "/api/v2"
@@ -235,6 +235,6 @@ func InitCustomApi() {
 	iris.Post(baseURL+"/location/translate", location.TranslateLoc)
 	iris.Get(baseURL+"/location/:location_code", location.GetLocationById)
 	iris.Get(baseURL+"/healthycheck", healthycheck.Checking)
-	
+
 	iris.Get(baseURL+"/swift", systemParameter.GetSwift)
 }
