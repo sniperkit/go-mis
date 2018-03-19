@@ -64,8 +64,21 @@ func FetchDatatables(ctx *iris.Context) {
 		JOIN r_cif_investor ON r_cif_investor."investorId" = r_account_investor."investorId"
 		JOIN cif ON cif.id = r_cif_investor."cifId" 
 	`
-	if stage != "" {
+
+	if stage == "" {
+		query += "where stage not like 'SUCCESS'"	
+	} else if stage != "" && stage != "ALL" {
 		query += strings.Replace("WHERE stage ='?'","?", stage, -1)
+	}  
+
+	if len(strings.TrimSpace(search)) > 0 {
+		query += ` AND (cif.name ~* '` + search + `' OR investor."investorNo"::text ~* '` + search + `' OR cif."idCardNo" ~* '` + search + `' OR  
+					cif."taxCardNo" ~* '` + search + `' OR cif."username"  ~* '` + search + `') `
+	}
+
+	if len(investorName) > 0 && len(stageId) > 0 && len(dateSendToMandiri) > 0 {
+		query += ` AND (cif.name ~* '` + investorName + `' AND cashout."stage" ~* '` + 
+			stageId + `' AND account_transaction_credit."transactionDate" ~* '` + dateSendToMandiri + `') `
 	}
 
 	if len(strings.TrimSpace(orderBy)) > 0 && len(strings.TrimSpace(orderDir)) > 0 {
@@ -91,16 +104,6 @@ func FetchDatatables(ctx *iris.Context) {
 		default:
 			query += ``
 		}
-	}
-
-	if len(strings.TrimSpace(search)) > 0 {
-		query += ` AND (cif.name ~* '` + search + `' OR investor."investorNo"::text ~* '` + search + `' OR cif."idCardNo" ~* '` + search + `' OR  
-					cif."taxCardNo" ~* '` + search + `' OR cif."username"  ~* '` + search + `') `
-	}
-
-	if len(investorName) > 0 && len(stageId) > 0 && len(dateSendToMandiri) > 0 {
-		query += ` AND (cif.name ~* '` + investorName + `' AND cashout."stage" ~* '` + 
-			stageId + `' AND account_transaction_credit."transactionDate" ~* '` + dateSendToMandiri + `') `
 	}
 
 	if len(strings.TrimSpace(limit)) == 0 {
