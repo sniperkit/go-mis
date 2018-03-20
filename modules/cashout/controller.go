@@ -48,7 +48,7 @@ func FetchAll(ctx *iris.Context) {
 
 	query := "SELECT r_cif_investor.\"cifId\", r_cif_investor.\"investorId\", r_account_transaction_credit_cashout.\"cashoutId\", r_account_investor.\"accountId\", cif.name AS \"investorName\", cashout.\"cashoutId\" AS \"cashoutNo\", cashout.amount, account.\"totalDebit\", account.\"totalCredit\", account.\"totalBalance\", account_transaction_credit.\"type\",  account_transaction_credit.\"transactionDate\", account_transaction_credit.remark, cashout.stage "
 	query += "FROM cashout "
-	query += "JOIN r_account_transaction_credit_cashout ON r_account_transaction_credit_cashout.\"cashoutId\" = cashout.id  and r_account_transaction_credit_cashout.\"cashoutId\" = 232547 "
+	query += "JOIN r_account_transaction_credit_cashout ON r_account_transaction_credit_cashout.\"cashoutId\" = cashout.id "
 	query += "JOIN r_account_transaction_credit ON r_account_transaction_credit.\"accountTransactionCreditId\" = r_account_transaction_credit_cashout.\"accountTransactionCreditId\" "
 	query += "JOIN account_transaction_credit ON account_transaction_credit.id = r_account_transaction_credit_cashout.\"accountTransactionCreditId\" "
 	query += "JOIN account ON account.id = r_account_transaction_credit.\"accountId\" "
@@ -67,23 +67,15 @@ func FetchAll(ctx *iris.Context) {
 	queryTotalData += "JOIN cif ON cif.id = r_cif_investor.\"cifId\" "
 
 	if stage != "" {
-		query += strings.Replace(" WHERE stage = '?'", "?", stage, -1)
+		query += strings.Replace("WHERE stage = '?'", "?", stage, -1)
 		queryTotalData += strings.Replace("WHERE stage = '?'", "?", stage, -1)
 	}
-
-	// if len(strings.TrimSpace(stage)) == 0 {
-	// 	services.DBCPsql.Raw(query).Find(&cashoutInvestors)
-	// } else {
-	// 	query += "WHERE cashout.\"stage\" = ? "
-	// 	services.DBCPsql.Raw(query, stage).Find(&cashoutInvestors)
-	// }
 
 	totalData := TotalData{}
 
 	if err := services.DBCPsql.Raw(query).Find(&cashoutInvestors).Error; err != nil {
 		log.Println(err)
 	}
-	log.Printf("%+v", cashoutInvestors)
 	if err := services.DBCPsql.Raw(queryTotalData).Find(&totalData).Error; err != nil {
 		log.Println(err)
 	}
