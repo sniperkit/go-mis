@@ -134,7 +134,7 @@ func UpdateStage(ctx *iris.Context) {
 			fmt.Println("GO-BANKING-ERROR:", err)
 			ctx.JSON(iris.StatusInternalServerError, iris.Map{
 				"status":  "error",
-				"message": "Failed to process request.",
+				"message": err.Error(),
 				"data":    iris.Map{},
 			})
 			return
