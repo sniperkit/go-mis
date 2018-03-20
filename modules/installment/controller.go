@@ -354,12 +354,10 @@ func SubmitInstallmentByInstallmentIDWithStatus(ctx *iris.Context) {
 // SubmitInstallmentByGroupIDAndTransactionDateWithStatus - approve or reject installment per group
 func SubmitInstallmentByGroupIDAndTransactionDateWithStatus(ctx *iris.Context) {
 	// get limit query param if any
-	/*
-		loopLimit := ""
-		if ctx.FormValue("limit") != nil {
-			loopLimit = string(ctx.FormValue("limit"))
-		}
-		limit, err := strconv.ParseUint(loopLimit, 10, 64)
+	loopLimit := ""
+	if ctx.FormValue("limit") != nil {
+		loopLimit = string(ctx.FormValue("limit"))
+		_, err := strconv.ParseUint(loopLimit, 10, 64)
 		if err != nil {
 			ctx.JSON(iris.StatusBadRequest, iris.Map{
 				"status": "error",
@@ -369,7 +367,7 @@ func SubmitInstallmentByGroupIDAndTransactionDateWithStatus(ctx *iris.Context) {
 			})
 			return
 		}
-	*/
+	}
 
 	groupID := ctx.Param("group_id")
 	transactionDate := ctx.Param("transaction_date")
@@ -391,8 +389,8 @@ func SubmitInstallmentByGroupIDAndTransactionDateWithStatus(ctx *iris.Context) {
 		installmentDetailSchema := []InstallmentDetail{}
 		if strings.ToLower(stageTo) == "success" {
 			query += "WHERE (installment.\"stage\" = 'APPROVE' OR installment.\"stage\" = 'APPROVE-CP') AND installment.\"deletedAt\" is null"
-			if ctx.FormValue("limit") != "" {
-				query += " limit " + ctx.FormValue("limit")
+			if loopLimit != "" {
+				query += " limit " + loopLimit
 			}
 			services.DBCPsql.Raw(query).Scan(&installmentDetailSchema)
 		} else {
