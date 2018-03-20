@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -47,7 +48,7 @@ func FetchAll(ctx *iris.Context) {
 
 	query := "SELECT r_cif_investor.\"cifId\", r_cif_investor.\"investorId\", r_account_transaction_credit_cashout.\"cashoutId\", r_account_investor.\"accountId\", cif.name AS \"investorName\", cashout.\"cashoutId\" AS \"cashoutNo\", cashout.amount, account.\"totalDebit\", account.\"totalCredit\", account.\"totalBalance\", account_transaction_credit.\"type\",  account_transaction_credit.\"transactionDate\", account_transaction_credit.remark, cashout.stage "
 	query += "FROM cashout "
-	query += "JOIN r_account_transaction_credit_cashout ON r_account_transaction_credit_cashout.\"cashoutId\" = cashout.id "
+	query += "JOIN r_account_transaction_credit_cashout ON r_account_transaction_credit_cashout.\"cashoutId\" = cashout.id  and r_account_transaction_credit_cashout.\"cashoutId\" = 232547 "
 	query += "JOIN r_account_transaction_credit ON r_account_transaction_credit.\"accountTransactionCreditId\" = r_account_transaction_credit_cashout.\"accountTransactionCreditId\" "
 	query += "JOIN account_transaction_credit ON account_transaction_credit.id = r_account_transaction_credit_cashout.\"accountTransactionCreditId\" "
 	query += "JOIN account ON account.id = r_account_transaction_credit.\"accountId\" "
@@ -66,7 +67,7 @@ func FetchAll(ctx *iris.Context) {
 	queryTotalData += "JOIN cif ON cif.id = r_cif_investor.\"cifId\" "
 
 	if stage != "" {
-		query += strings.Replace("WHERE stage = '?'", "?", stage, -1)
+		query += strings.Replace(" WHERE stage = '?'", "?", stage, -1)
 		queryTotalData += strings.Replace("WHERE stage = '?'", "?", stage, -1)
 	}
 
@@ -79,8 +80,13 @@ func FetchAll(ctx *iris.Context) {
 
 	totalData := TotalData{}
 
-	services.DBCPsql.Raw(query).Find(&cashoutInvestors)
-	services.DBCPsql.Raw(queryTotalData).Find(&totalData)
+	if err := services.DBCPsql.Raw(query).Find(&cashoutInvestors).Error; err != nil {
+		log.Println(err)
+	}
+	log.Printf("%+v", cashoutInvestors)
+	if err := services.DBCPsql.Raw(queryTotalData).Find(&totalData).Error; err != nil {
+		log.Println(err)
+	}
 
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"status":    "success",
@@ -112,7 +118,7 @@ func UpdateStage(ctx *iris.Context) {
 
 	services.DBCPsql.Table("cashout").Where("cashout.\"id\" = ?", cashoutID).UpdateColumn("stage", stage)
 
-	cashoutNo := strconv.FormatUint(cashoutInvestorSchema.CashoutNo, 10)
+	cashoutNo := cashoutInvestorSchema.CashoutNo
 
 	if stage == "SEND-TO-MANDIRI" {
 		cashoutSchema := Cashout{}
