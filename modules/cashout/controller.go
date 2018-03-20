@@ -1,8 +1,14 @@
 package cashout
 
 import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"net/http"
 	"strconv"
+	"strings"
 	"time"
+
 	"bitbucket.org/go-mis/config"
 	"bitbucket.org/go-mis/modules/account"
 	accountTransactionCredit "bitbucket.org/go-mis/modules/account-transaction-credit"
@@ -11,11 +17,6 @@ import (
 	"bitbucket.org/go-mis/modules/r"
 	"bitbucket.org/go-mis/services"
 	iris "gopkg.in/kataras/iris.v4"
-	"net/http"
-	"fmt"
-	"encoding/json"
-	"bytes"
-	"strings"
 )
 
 func Init() {
@@ -63,12 +64,12 @@ func FetchAll(ctx *iris.Context) {
 	queryTotalData += "JOIN r_account_investor ON r_account_investor.\"accountId\" = account.id "
 	queryTotalData += "JOIN r_cif_investor ON r_cif_investor.\"investorId\" = r_account_investor.\"investorId\" "
 	queryTotalData += "JOIN cif ON cif.id = r_cif_investor.\"cifId\" "
-	
+
 	if stage != "" {
 		query += strings.Replace("WHERE stage = '?'", "?", stage, -1)
 		queryTotalData += strings.Replace("WHERE stage = '?'", "?", stage, -1)
 	}
- 
+
 	// if len(strings.TrimSpace(stage)) == 0 {
 	// 	services.DBCPsql.Raw(query).Find(&cashoutInvestors)
 	// } else {
@@ -120,30 +121,30 @@ func UpdateStage(ctx *iris.Context) {
 		params := map[string]string{"cashoutId": cashoutSchema.CashoutID}
 
 		b := new(bytes.Buffer)
-    json.NewEncoder(b).Encode(params)
+		json.NewEncoder(b).Encode(params)
 
-    var url string = config.GoBankingPath + `/mandiri/payment`
-    req, err := http.NewRequest("POST", url, b)
-    req.Header.Set("X-Auth-Token", "AMARTHA123")
-    req.Header.Set("Content-Type", "application/json")
+		var url string = config.GoBankingPath + `/mandiri/payment`
+		req, err := http.NewRequest("POST", url, b)
+		req.Header.Set("X-Auth-Token", "AMARTHA123")
+		req.Header.Set("Content-Type", "application/json")
 
-    client := &http.Client{}
-    resp, err := client.Do(req)
-    if err != nil {
-      fmt.Println(err)
-      ctx.JSON(iris.StatusInternalServerError, iris.Map{
-				"status": "error",
+		client := &http.Client{}
+		resp, err := client.Do(req)
+		if err != nil {
+			fmt.Println("GO-BANKING-ERROR:", err)
+			ctx.JSON(iris.StatusInternalServerError, iris.Map{
+				"status":  "error",
 				"message": "Failed to process request.",
-				"data":   iris.Map{},
+				"data":    iris.Map{},
 			})
-      return
-    }
-    defer resp.Body.Close()
+			return
+		}
+		defer resp.Body.Close()
 
-    var body struct {
-    	Success bool `json:"success"`
-    }
-    fmt.Println(resp)
+		var body struct {
+			Success bool `json:"success"`
+		}
+		fmt.Println(resp)
 
 		json.NewDecoder(resp.Body).Decode(&body)
 
@@ -159,9 +160,9 @@ func UpdateStage(ctx *iris.Context) {
 
 			services.DBCPsql.Table("cashout").Where("cashout.\"id\" = ?", cashoutID).UpdateColumn("stage", "FAILED-PROCESS-MANDIRI")
 			ctx.JSON(iris.StatusInternalServerError, iris.Map{
-				"status": "error",
+				"status":  "error",
 				"message": "Failed to process request.",
-				"data":   iris.Map{},
+				"data":    iris.Map{},
 			})
 			return
 		}
