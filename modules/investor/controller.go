@@ -116,7 +116,6 @@ func FetchDetail(ctx *iris.Context) {
 			}
 
 			listStringId := Payload{}
-			fmt.Println("babi")
 			if err := ctx.ReadJSON(&listStringId); err != nil {
 				ctx.JSON(iris.StatusBadRequest, iris.Map{"status": "error", "message": err.Error()})
 				return
@@ -132,7 +131,6 @@ func FetchDetail(ctx *iris.Context) {
 						listInvestor = append(listInvestor, investor)
 					}
 				}
-				fmt.Println(listInvestor)
 			}
 		}
 	}
