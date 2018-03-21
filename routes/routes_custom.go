@@ -34,6 +34,7 @@ import (
 	"bitbucket.org/go-mis/modules/reports"
 	"bitbucket.org/go-mis/modules/sector"
 	"bitbucket.org/go-mis/modules/survey"
+	systemParameter "bitbucket.org/go-mis/modules/system-parameter"
 	"bitbucket.org/go-mis/modules/topsheet"
 	"bitbucket.org/go-mis/modules/transaction"
 	"bitbucket.org/go-mis/modules/user-mis"
@@ -42,7 +43,6 @@ import (
 	"bitbucket.org/go-mis/modules/voucher"
 	"gopkg.in/iris-contrib/middleware.v4/cors"
 	"gopkg.in/kataras/iris.v4"
-	systemParameter "bitbucket.org/go-mis/modules/system-parameter"
 )
 
 var baseURL = "/api/v2"
@@ -89,6 +89,7 @@ func InitCustomApi() {
 		v2.Any("/cif/borrower/:id", cif.GetCifBorrower)
 		v2.Any("/cif/investor/:id", cif.GetCifInvestor)
 		v2.Any("/investor/list_detail", investor.FetchDetail)
+		v2.Any("/investor/:swiftCode", investor.CheckInvestorSwiftCode)
 		v2.Any("/investor/set/:investorId/cif/:cifId", cif.UpdateInvestorCif)
 		v2.Any("/cif/get/summary", cif.GetCifSummary)
 		v2.Any("/group", group.FetchAll)
@@ -237,6 +238,6 @@ func InitCustomApi() {
 	iris.Post(baseURL+"/location/translate", location.TranslateLoc)
 	iris.Get(baseURL+"/location/:location_code", location.GetLocationById)
 	iris.Get(baseURL+"/healthycheck", healthycheck.Checking)
-	
+
 	iris.Get(baseURL+"/swift", systemParameter.GetSwift)
 }

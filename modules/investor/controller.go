@@ -4,11 +4,23 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"encoding/json"
+	"net/http"
+	"bytes"
+
+	"bitbucket.org/go-mis/config"
 	"bitbucket.org/go-mis/modules/r"
 	"bitbucket.org/go-mis/modules/virtual-account"
 	"bitbucket.org/go-mis/services"
 	iris "gopkg.in/kataras/iris.v4"
 )
+
+type Response struct {
+	Status  string      `json:"status"`
+	Message string      `json:"message"`
+	Data    interface{} `json:"data"`
+	Success bool        `json:"success"`
+}
 
 func Init() {
 	services.DBCPsql.AutoMigrate(&Investor{})
@@ -21,6 +33,39 @@ func GetInvestorDetailById(id uint64) Investor {
 		queryDetailInvestorByID += strings.Replace("WHERE id = ?", "?", strconv.Itoa(int(id)), -1)
 	services.DBCPsql.Raw(queryDetailInvestorByID).Scan(&investor)
 	return investor
+}
+
+func CheckInvestorSwiftCode(ctx *iris.Context) {
+	swiftCode := ctx.Param("swiftCode")
+
+	type Body struct {
+		SwiftCode string `json:"username"`
+	}
+
+	body := Body {
+		SwiftCode: swiftCode,
+	}
+
+	b := new(bytes.Buffer)
+	json.NewEncoder(b).Encode(body) 
+
+	res, _ := http.Post(config.GoWithDrawalApiPath+"/api/v1/cashout/swiftcode-check", "application/json; charset=utf-8", b)
+
+	resp := Response{}
+	
+	json.NewDecoder(res.Body).Decode(&resp)
+
+	if resp.Status == "404 Not Found." {
+		ctx.JSON(iris.StatusOK, iris.Map{
+			"status":    "success",
+			"data":      false,
+		})
+	} else {
+		ctx.JSON(iris.StatusOK, iris.Map{
+			"status":    "success",
+			"data":      true,
+		})
+	}
 }
 
 func FetchDetail(ctx *iris.Context) {

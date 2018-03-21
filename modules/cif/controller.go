@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
-	"time"
+
 	"bitbucket.org/go-mis/services"
 	"github.com/jinzhu/gorm"
 	iris "gopkg.in/kataras/iris.v4"
@@ -234,9 +234,10 @@ func UpdateInvestorCif(ctx *iris.Context) {
 
 	data := UpdateInvestor{}
 	// err := ctx.ReadJSON(&data)
+	fmt.Println(ctx.Request.Body)
 	err := json.Unmarshal(ctx.Request.Body(), &data)
 
-	fmt.Println("Data Date",data.Cif.DeclinedDate)
+	// fmt.Println("Data Date", data.Cif.DeclinedDate)
 
 	if err != nil {
 		fmt.Println("Error parsing json update investor")
@@ -246,10 +247,12 @@ func UpdateInvestorCif(ctx *iris.Context) {
 	}
 	fmt.Println("Data CIF: ", data)
 	db := services.DBCPsql.Begin()
-	
-	if *data.Cif.IsVerified {
-		data.Cif.VerificationDate = time.Now().String()
-	}
+
+	/*
+		if *data.Cif.IsVerified {
+			data.Cif.VerificationDate = time.Now()
+		}
+	*/
 
 	if err := db.Table("investor").Where(" \"id\" = ?", investorId).Update(&data.Investor).Error; err != nil {
 		processErrorAndRollback(ctx, db, err, "Update Investor")
@@ -260,6 +263,7 @@ func UpdateInvestorCif(ctx *iris.Context) {
 		return
 	}
 	db.Commit()
+
 	ctx.JSON(iris.StatusOK, iris.Map{"status": "success", "data": nil})
 }
 
