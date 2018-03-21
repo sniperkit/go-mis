@@ -3,8 +3,10 @@ package cashout
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -94,6 +96,7 @@ func UpdateStage(ctx *iris.Context) {
 	cashoutInvestorSchema := CashoutInvestor{}
 
 	if err := ctx.ReadJSON(&cashoutInvestorSchema); err != nil {
+		ErrorLogger("ReadJSON Error:", err)
 		ctx.JSON(iris.StatusInternalServerError, iris.Map{
 			"status":  "error",
 			"message": "Failed to read param",
@@ -115,6 +118,7 @@ func UpdateStage(ctx *iris.Context) {
 	cashoutNo := strconv.FormatUint(cashoutInvestorSchema.CashoutNo, 10)
 
 	if stage == "SEND-TO-MANDIRI" {
+		fmt.Println("send to mandiri")
 		cashoutSchema := Cashout{}
 		services.DBCPsql.Table("cashout").Where("cashout.\"id\" = ?", cashoutID).Scan(&cashoutSchema)
 
@@ -131,7 +135,7 @@ func UpdateStage(ctx *iris.Context) {
 		client := &http.Client{}
 		resp, err := client.Do(req)
 		if err != nil {
-			fmt.Println("GO-BANKING-ERROR:", err)
+			ErrorLogger("Call Go-Banking. HTTP REQUEST ERROR.", err)
 			ctx.JSON(iris.StatusInternalServerError, iris.Map{
 				"status":  "error",
 				"message": err.Error(),
@@ -159,6 +163,7 @@ func UpdateStage(ctx *iris.Context) {
 			services.DBCPsql.Create(rCashoutHistoryObj)
 
 			services.DBCPsql.Table("cashout").Where("cashout.\"id\" = ?", cashoutID).UpdateColumn("stage", "FAILED-PROCESS-MANDIRI")
+			ErrorLogger("Return From Go-Banking. Failed to process request", errors.New("Body.Success == false"))
 			ctx.JSON(iris.StatusInternalServerError, iris.Map{
 				"status":  "error",
 				"message": "Failed to process request.",
@@ -200,10 +205,31 @@ func UpdateStage(ctx *iris.Context) {
 			"data":   iris.Map{},
 		})
 	} else {
+
+		ErrorLogger("ERROR", errors.New("Bad Request"))
 		ctx.JSON(iris.StatusBadRequest, iris.Map{
 			"status":  "error",
 			"message": "Bad request.",
 		})
 		return
+	}
+}
+
+// emergency error logger
+func ErrorLogger(desc string, logError error) {
+	startTime := time.Now()
+	// logfilename
+	filename := "./Go-Banking-Error.log"
+	// write log.
+	t := fmt.Sprintf("Process: %s. Time: %v, Error: %v.\n", desc, startTime, logError)
+	f, err := os.OpenFile(filename, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
+	if err != nil {
+		fmt.Println(err)
+	}
+	defer f.Close()
+
+	_, err = f.WriteString(t)
+	if err != nil {
+		fmt.Println(err)
 	}
 }
