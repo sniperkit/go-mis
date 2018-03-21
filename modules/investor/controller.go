@@ -27,12 +27,14 @@ func Init() {
 	services.BaseCrudInit(Investor{}, []Investor{})
 }
 
-func GetInvestorDetailById(id uint64) Investor {
-	investor := Investor{}
+func GetInvestorDetailById(id uint64) (investor Investor, err error) {
+	investor = Investor{}
 	queryDetailInvestorByID := `select * from investor `;
 		queryDetailInvestorByID += strings.Replace("WHERE id = ?", "?", strconv.Itoa(int(id)), -1)
-	services.DBCPsql.Raw(queryDetailInvestorByID).Scan(&investor)
-	return investor
+	if err:= services.DBCPsql.Raw(queryDetailInvestorByID).Scan(&investor).Error ; err != nil {
+		return investor, err
+	}
+	return investor, nil
 }
 
 func CheckInvestorSwiftCode(ctx *iris.Context) {
@@ -101,8 +103,12 @@ func FetchDetail(ctx *iris.Context) {
 			}
 			services.DBCPsql.Raw(queryPendingInvestorID).Find(&listIdCashoutInvestors)
 			for _, v := range listIdCashoutInvestors {
-				investor := GetInvestorDetailById(v.Id)
-				listInvestor = append(listInvestor, investor)
+				if investor, err := GetInvestorDetailById(v.Id); err != nil {
+					ctx.JSON(iris.StatusBadRequest, iris.Map{"status": "error", "message": err.Error()})
+					return
+				} else {
+					listInvestor = append(listInvestor, investor)
+				}
 			}
 		} else {
 			type Payload struct {
@@ -110,16 +116,23 @@ func FetchDetail(ctx *iris.Context) {
 			}
 
 			listStringId := Payload{}
-			err := ctx.ReadJSON(&listStringId)
-
-			if err != nil {
+			fmt.Println("babi")
+			if err := ctx.ReadJSON(&listStringId); err != nil {
 				ctx.JSON(iris.StatusBadRequest, iris.Map{"status": "error", "message": err.Error()})
 				return
-			} else {
+			} else if len(listStringId.Id) == 0 {
+				ctx.JSON(iris.StatusBadRequest, iris.Map{"status": "error", "message": "Request payload can't be empty"})
+				return
+			}else {
 				for _, v := range listStringId.Id {
-					investor := GetInvestorDetailById(v)
-					listInvestor = append(listInvestor, investor)
+					if investor, err := GetInvestorDetailById(v); err != nil {
+						ctx.JSON(iris.StatusBadRequest, iris.Map{"status": "error", "message": err.Error()})
+						return
+					} else {
+						listInvestor = append(listInvestor, investor)
+					}
 				}
+				fmt.Println(listInvestor)
 			}
 		}
 	}
