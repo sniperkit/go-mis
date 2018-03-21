@@ -27,7 +27,7 @@ type CashoutInvestor struct {
 	CashoutID       uint64     `gorm:"column:cashoutId" json:"cashoutId"`
 	AccountID       uint64     `gorm:"column:accountId" json:"accountId"`
 	InvestorName    string     `gorm:"column:investorName" json:"investorName"`
-	CashoutNo       uint64     `gorm:"column:cashoutNo" json:"cashoutNo"`
+	CashoutNo       string     `gorm:"column:cashoutNo" json:"cashoutNo"`
 	Amount          float64    `gorm:"column:amount" json:"amount"`
 	TotalDebit      float64    `gorm:"column:totalDebit" json:"totalDebit"`
 	TotalCredit     float64    `gorm:"column:totalCredit" json:"totalCredit"`

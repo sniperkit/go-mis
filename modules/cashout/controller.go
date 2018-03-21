@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"strconv"
@@ -72,17 +73,14 @@ func FetchAll(ctx *iris.Context) {
 		queryTotalData += strings.Replace("WHERE stage = '?'", "?", stage, -1)
 	}
 
-	// if len(strings.TrimSpace(stage)) == 0 {
-	// 	services.DBCPsql.Raw(query).Find(&cashoutInvestors)
-	// } else {
-	// 	query += "WHERE cashout.\"stage\" = ? "
-	// 	services.DBCPsql.Raw(query, stage).Find(&cashoutInvestors)
-	// }
-
 	totalData := TotalData{}
 
-	services.DBCPsql.Raw(query).Find(&cashoutInvestors)
-	services.DBCPsql.Raw(queryTotalData).Find(&totalData)
+	if err := services.DBCPsql.Raw(query).Find(&cashoutInvestors).Error; err != nil {
+		log.Println(err)
+	}
+	if err := services.DBCPsql.Raw(queryTotalData).Find(&totalData).Error; err != nil {
+		log.Println(err)
+	}
 
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"status":    "success",
@@ -115,7 +113,7 @@ func UpdateStage(ctx *iris.Context) {
 
 	services.DBCPsql.Table("cashout").Where("cashout.\"id\" = ?", cashoutID).UpdateColumn("stage", stage)
 
-	cashoutNo := strconv.FormatUint(cashoutInvestorSchema.CashoutNo, 10)
+	cashoutNo := cashoutInvestorSchema.CashoutNo
 
 	if stage == "SEND-TO-MANDIRI" {
 		fmt.Println("send to mandiri")
