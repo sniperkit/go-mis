@@ -49,7 +49,7 @@ func CheckInvestorSwiftCode(ctx *iris.Context) {
 	b := new(bytes.Buffer)
 	json.NewEncoder(b).Encode(body) 
 
-	res, _ := http.Post(config.GoWithDrawalApiPath+"/api/v1/cashout/swiftcode-check", "application/json; charset=utf-8", b)
+	res, _ := http.Post(config.GoWithDrawalPath+"/api/v1/cashout/swiftcode-check", "application/json; charset=utf-8", b)
 
 	resp := Response{}
 	

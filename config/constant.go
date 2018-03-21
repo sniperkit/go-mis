@@ -25,6 +25,7 @@ var (
 	EnableEmergencyLoan       bool
 	GoBankingPath             string
 	GoLogPath                 string
+	GoWithDrawalPath		  string
 	Configuration             Config
 )
 
@@ -39,6 +40,7 @@ type Config struct {
 	SignString          string      `json:"signString"`
 	ApiVersion          string      `json:"apiVersion"`
 	EnableEmergencyLoan bool        `json:"enableEmergencyLoan"`
+	GoWithDrawalPath    string      `json:"goWithDrawalPath"`
 	GoBankingPath       string      `json:"goBankingPath"`
 	GoLogPath           string      `json:"goLogPath"`
 	GoLoanPath          string      `json:"goLoanPath"`
@@ -114,6 +116,7 @@ func init() {
 	GoLogPath = Configuration.GoLogPath
 	SignStringKey = Configuration.SignString
 	GoBankingPath = Configuration.GoBankingPath
+	GoWithDrawalPath = Configuration.GoWithDrawalPath
 	EnableEmergencyLoan = Configuration.EnableEmergencyLoan
 	WhiteList = Configuration.WhiteList
 
