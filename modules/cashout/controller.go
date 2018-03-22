@@ -248,6 +248,16 @@ func UpdateStage(ctx *iris.Context) {
 		return
 	}
 
+	// failed send request to mandiri
+	ss := strings.Split(body.Message, " ")
+	if ss[len(ss)-1] == "FAILED_SEND_REQUEST_TO_MANDIRI" {
+		ctx.JSON(iris.StatusOK, iris.Map{
+			"status":  "error",
+			"message": "Failed send request to mandiri. " + body.Message,
+		})
+		return
+	}
+
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"status": "success",
 		"data":   body.Message,
