@@ -8,20 +8,14 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"time"
 
 	"bitbucket.org/go-mis/config"
-	"bitbucket.org/go-mis/modules/account"
-	accountTransactionCredit "bitbucket.org/go-mis/modules/account-transaction-credit"
-	accountTransactionDebit "bitbucket.org/go-mis/modules/account-transaction-debit"
-	cashoutHistory "bitbucket.org/go-mis/modules/cashout-history"
-	"bitbucket.org/go-mis/modules/r"
 	"bitbucket.org/go-mis/services"
 	iris "gopkg.in/kataras/iris.v4"
 )
 
 func Init() {
-	services.DBCPsql.AutoMigrate(&Cashout{}) 		
+	services.DBCPsql.AutoMigrate(&Cashout{})
 	services.BaseCrudInit(Cashout{}, []Cashout{})
 }
 
@@ -68,10 +62,10 @@ func FetchDatatables(ctx *iris.Context) {
 	`
 
 	if stage == "" {
-		query += "where stage not like 'SUCCESS'"	
+		query += "where stage not like 'SUCCESS'"
 	} else if stage != "" && stage != "ALL" {
-		query += strings.Replace("WHERE stage ='?'","?", stage, -1)
-	}  
+		query += strings.Replace("WHERE stage ='?'", "?", stage, -1)
+	}
 
 	if len(strings.TrimSpace(search)) > 0 {
 		query += ` AND (cif.name ~* '` + search + `' OR investor."investorNo"::text ~* '` + search + `' OR cif."idCardNo" ~* '` + search + `' OR  
@@ -79,7 +73,7 @@ func FetchDatatables(ctx *iris.Context) {
 	}
 
 	if len(investorName) > 0 && len(stageId) > 0 && len(dateSendToMandiri) > 0 {
-		query += ` AND (cif.name ~* '` + investorName + `' AND cashout."stage" ~* '` + 
+		query += ` AND (cif.name ~* '` + investorName + `' AND cashout."stage" ~* '` +
 			stageId + `' AND account_transaction_credit."transactionDate" ~* '` + dateSendToMandiri + `') `
 	}
 
@@ -121,7 +115,7 @@ func FetchDatatables(ctx *iris.Context) {
 	}
 
 	services.DBCPsql.Raw(query).Find(&cashoutInvestors)
-	
+
 	if len(cashoutInvestors) > 0 {
 		totalRows = cashoutInvestors[0].RowsFullCount
 	}
@@ -203,110 +197,164 @@ func UpdateStage(ctx *iris.Context) {
 		return
 	}
 
-	cashoutID, _ := strconv.ParseUint(ctx.Param("cashout_id"), 10, 64)
-	stage := ctx.Param("stage")
-
-	cashoutHistoryObj := &cashoutHistory.CashoutHistory{StageFrom: "PENDING", StageTo: stage}
-	services.DBCPsql.Create(cashoutHistoryObj)
-
-	rCashoutHistoryObj := &r.RCashoutHistory{CashoutId: cashoutID, CashoutHistoryId: cashoutHistoryObj.ID}
-	services.DBCPsql.Create(rCashoutHistoryObj)
-
-	services.DBCPsql.Table("cashout").Where("cashout.\"id\" = ?", cashoutID).UpdateColumn("stage", stage)
-
-	cashoutNo := cashoutInvestorSchema.CashoutNo
-
-	if stage == "SEND-TO-MANDIRI" {
-		cashoutSchema := Cashout{}
-		services.DBCPsql.Table("cashout").Where("cashout.\"id\" = ?", cashoutID).Scan(&cashoutSchema)
-
-		params := map[string]string{"cashoutId": cashoutSchema.CashoutID}
-
-		b := new(bytes.Buffer)
-		json.NewEncoder(b).Encode(params)
-
-		var url string = config.GoBankingPath + `/mandiri/payment`
-		req, err := http.NewRequest("POST", url, b)
-		req.Header.Set("X-Auth-Token", "AMARTHA123")
-		req.Header.Set("Content-Type", "application/json")
-
-		client := &http.Client{}
-		resp, err := client.Do(req)
-		if err != nil {
-			fmt.Println("GO-BANKING-ERROR:", err)
-			ctx.JSON(iris.StatusInternalServerError, iris.Map{
-				"status":  "error",
-				"message": err.Error(),
-				"data":    iris.Map{},
-			})
-			return
-		}
-		defer resp.Body.Close()
-
-		var body struct {
-			Success bool `json:"success"`
-		}
-		fmt.Println(resp)
-
-		json.NewDecoder(resp.Body).Decode(&body)
-
-		fmt.Println("---------")
-		fmt.Printf("%+v", body)
-
-		if body.Success == false {
-			cashoutHistoryObj := &cashoutHistory.CashoutHistory{StageFrom: "SEND-TO-MANDIRI", StageTo: "FAILED-PROCESS-MANDIRI"}
-			services.DBCPsql.Create(cashoutHistoryObj)
-
-			rCashoutHistoryObj := &r.RCashoutHistory{CashoutId: cashoutID, CashoutHistoryId: cashoutHistoryObj.ID}
-			services.DBCPsql.Create(rCashoutHistoryObj)
-
-			services.DBCPsql.Table("cashout").Where("cashout.\"id\" = ?", cashoutID).UpdateColumn("stage", "FAILED-PROCESS-MANDIRI")
-			ctx.JSON(iris.StatusInternalServerError, iris.Map{
-				"status":  "error",
-				"message": "Failed to process request.",
-				"data":    iris.Map{},
-			})
-			return
-		}
-
-		services.DBCPsql.Table("account_transaction_credit").Where("remark = ?", cashoutInvestorSchema.Remark).Update("remark", "CASHOUT #"+cashoutNo+" HAS BEEN SUBMITTED.")
-
-		ctx.JSON(iris.StatusOK, iris.Map{
-			"status": "success",
-			"data":   iris.Map{},
-		})
-	} else if stage == "SUCCESS" {
-		services.DBCPsql.Table("account_transaction_credit").Where("remark = ?", cashoutInvestorSchema.Remark).Update("remark", "CASHOUT #"+cashoutNo+" SUCCESS")
-		ctx.JSON(iris.StatusOK, iris.Map{
-			"status": "success",
-			"data":   iris.Map{},
-		})
-	} else if stage == "CANCEL" {
-		services.DBCPsql.Table("account_transaction_credit").Where("remark = ?", cashoutInvestorSchema.Remark).Update("remark", "CASHOUT #"+cashoutNo+" CANCEL")
-
-		accountTransactionDebitSchema := &accountTransactionDebit.AccountTransactionDebit{Type: "REFUND", Remark: "REFUND CASHOUT #" + cashoutNo, Amount: cashoutInvestorSchema.Amount, TransactionDate: time.Now()}
-		services.DBCPsql.Table("account_transaction_debit").Create(accountTransactionDebitSchema)
-
-		rAccountTransactionDebitSchema := &r.RAccountTransactionDebit{AccountId: cashoutInvestorSchema.AccountID, AccountTransactionDebitId: accountTransactionDebitSchema.ID}
-		services.DBCPsql.Table("r_account_transaction_debit").Create(rAccountTransactionDebitSchema)
-
-		totalDebit := accountTransactionDebit.GetTotalAccountTransactionDebit(cashoutInvestorSchema.AccountID)
-		totalCredit := accountTransactionCredit.GetTotalAccountTransactionCredit(cashoutInvestorSchema.AccountID)
-
-		totalBalance := totalDebit - totalCredit
-
-		services.DBCPsql.Table("account").Where("id = ?", cashoutInvestorSchema.AccountID).Updates(account.Account{TotalDebit: totalDebit, TotalCredit: totalCredit, TotalBalance: totalBalance})
-
-		ctx.JSON(iris.StatusOK, iris.Map{
-			"status": "success",
-			"data":   iris.Map{},
-		})
-	} else {
-		ctx.JSON(iris.StatusBadRequest, iris.Map{
+	_, err := strconv.ParseUint(ctx.Param("cashout_id"), 10, 64)
+	if err != nil {
+		ctx.JSON(iris.StatusInternalServerError, iris.Map{
 			"status":  "error",
-			"message": "Bad request.",
+			"message": "Invalid cashout ID",
 		})
 		return
 	}
-}
+	stage := ctx.Param("stage")
 
+	params := map[string]string{"cashoutId": ctx.Param("cashout_id")}
+
+	b := new(bytes.Buffer)
+	json.NewEncoder(b).Encode(params)
+
+	var url string = config.GoWithdrawalPath + "/api/v1/cashout/update/" + ctx.Param("cashout_id") + "/stage/" + stage
+
+	req, err := http.NewRequest("PUT", url, b)
+	// req.Header.Set("X-Auth-Token", "AMARTHA123")
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		ctx.JSON(iris.StatusInternalServerError, iris.Map{
+			"status":  "error",
+			"message": err.Error(),
+			"data":    iris.Map{},
+		})
+		return
+	}
+	defer resp.Body.Close()
+
+	var body struct {
+		Status  string      `json:"status"`
+		Message string      `json:"message"`
+		Data    interface{} `json:"data"`
+		Success bool        `json:"success"`
+	}
+
+	json.NewDecoder(resp.Body).Decode(&body)
+	fmt.Println(body)
+
+	if !body.Success {
+		ctx.JSON(iris.StatusOK, iris.Map{
+			"status":  "error",
+			"message": body.Message,
+		})
+		return
+	}
+
+	ctx.JSON(iris.StatusOK, iris.Map{
+		"status": "success",
+		"data":   body.Message,
+	})
+	return
+	/*
+		cashoutHistoryObj := &cashoutHistory.CashoutHistory{StageFrom: "PENDING", StageTo: stage}
+		services.DBCPsql.Create(cashoutHistoryObj)
+
+		rCashoutHistoryObj := &r.RCashoutHistory{CashoutId: cashoutID, CashoutHistoryId: cashoutHistoryObj.ID}
+		services.DBCPsql.Create(rCashoutHistoryObj)
+
+		services.DBCPsql.Table("cashout").Where("cashout.\"id\" = ?", cashoutID).UpdateColumn("stage", stage)
+
+		cashoutNo := cashoutInvestorSchema.CashoutNo
+
+		if stage == "SEND-TO-MANDIRI" {
+			cashoutSchema := Cashout{}
+			services.DBCPsql.Table("cashout").Where("cashout.\"id\" = ?", cashoutID).Scan(&cashoutSchema)
+
+			params := map[string]string{"cashoutId": cashoutSchema.CashoutID}
+
+			b := new(bytes.Buffer)
+			json.NewEncoder(b).Encode(params)
+
+			var url string = config.GoBankingPath + `/mandiri/payment`
+			req, err := http.NewRequest("POST", url, b)
+			req.Header.Set("X-Auth-Token", "AMARTHA123")
+			req.Header.Set("Content-Type", "application/json")
+
+			client := &http.Client{}
+			resp, err := client.Do(req)
+			if err != nil {
+				fmt.Println("GO-BANKING-ERROR:", err)
+				ctx.JSON(iris.StatusInternalServerError, iris.Map{
+					"status":  "error",
+					"message": err.Error(),
+					"data":    iris.Map{},
+				})
+				return
+			}
+			defer resp.Body.Close()
+
+			var body struct {
+				Success bool `json:"success"`
+			}
+			fmt.Println(resp)
+
+			json.NewDecoder(resp.Body).Decode(&body)
+
+			fmt.Println("---------")
+			fmt.Printf("%+v", body)
+
+			if body.Success == false {
+				cashoutHistoryObj := &cashoutHistory.CashoutHistory{StageFrom: "SEND-TO-MANDIRI", StageTo: "FAILED-PROCESS-MANDIRI"}
+				services.DBCPsql.Create(cashoutHistoryObj)
+
+				rCashoutHistoryObj := &r.RCashoutHistory{CashoutId: cashoutID, CashoutHistoryId: cashoutHistoryObj.ID}
+				services.DBCPsql.Create(rCashoutHistoryObj)
+
+				services.DBCPsql.Table("cashout").Where("cashout.\"id\" = ?", cashoutID).UpdateColumn("stage", "FAILED-PROCESS-MANDIRI")
+				ctx.JSON(iris.StatusInternalServerError, iris.Map{
+					"status":  "error",
+					"message": "Failed to process request.",
+					"data":    iris.Map{},
+				})
+				return
+			}
+
+			services.DBCPsql.Table("account_transaction_credit").Where("remark = ?", cashoutInvestorSchema.Remark).Update("remark", "CASHOUT #"+cashoutNo+" HAS BEEN SUBMITTED.")
+
+			ctx.JSON(iris.StatusOK, iris.Map{
+				"status": "success",
+				"data":   iris.Map{},
+			})
+		} else if stage == "SUCCESS" {
+			services.DBCPsql.Table("account_transaction_credit").Where("remark = ?", cashoutInvestorSchema.Remark).Update("remark", "CASHOUT #"+cashoutNo+" SUCCESS")
+			ctx.JSON(iris.StatusOK, iris.Map{
+				"status": "success",
+				"data":   iris.Map{},
+			})
+		} else if stage == "CANCEL" {
+			services.DBCPsql.Table("account_transaction_credit").Where("remark = ?", cashoutInvestorSchema.Remark).Update("remark", "CASHOUT #"+cashoutNo+" CANCEL")
+
+			accountTransactionDebitSchema := &accountTransactionDebit.AccountTransactionDebit{Type: "REFUND", Remark: "REFUND CASHOUT #" + cashoutNo, Amount: cashoutInvestorSchema.Amount, TransactionDate: time.Now()}
+			services.DBCPsql.Table("account_transaction_debit").Create(accountTransactionDebitSchema)
+
+			rAccountTransactionDebitSchema := &r.RAccountTransactionDebit{AccountId: cashoutInvestorSchema.AccountID, AccountTransactionDebitId: accountTransactionDebitSchema.ID}
+			services.DBCPsql.Table("r_account_transaction_debit").Create(rAccountTransactionDebitSchema)
+
+			totalDebit := accountTransactionDebit.GetTotalAccountTransactionDebit(cashoutInvestorSchema.AccountID)
+			totalCredit := accountTransactionCredit.GetTotalAccountTransactionCredit(cashoutInvestorSchema.AccountID)
+
+			totalBalance := totalDebit - totalCredit
+
+			services.DBCPsql.Table("account").Where("id = ?", cashoutInvestorSchema.AccountID).Updates(account.Account{TotalDebit: totalDebit, TotalCredit: totalCredit, TotalBalance: totalBalance})
+
+			ctx.JSON(iris.StatusOK, iris.Map{
+				"status": "success",
+				"data":   iris.Map{},
+			})
+		} else {
+			ctx.JSON(iris.StatusBadRequest, iris.Map{
+				"status":  "error",
+				"message": "Bad request.",
+			})
+			return
+		}
+	*/
+}

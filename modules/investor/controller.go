@@ -1,12 +1,12 @@
 package investor
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"net/http"
 	"strconv"
 	"strings"
-	"encoding/json"
-	"net/http"
-	"bytes"
 
 	"bitbucket.org/go-mis/config"
 	"bitbucket.org/go-mis/modules/r"
@@ -29,9 +29,9 @@ func Init() {
 
 func GetInvestorDetailById(id uint64) (investor Investor, err error) {
 	investor = Investor{}
-	queryDetailInvestorByID := `select * from investor `;
-		queryDetailInvestorByID += strings.Replace("WHERE id = ?", "?", strconv.Itoa(int(id)), -1)
-	if err:= services.DBCPsql.Raw(queryDetailInvestorByID).Scan(&investor).Error ; err != nil {
+	queryDetailInvestorByID := `select * from investor `
+	queryDetailInvestorByID += strings.Replace("WHERE id = ?", "?", strconv.Itoa(int(id)), -1)
+	if err := services.DBCPsql.Raw(queryDetailInvestorByID).Scan(&investor).Error; err != nil {
 		return investor, err
 	}
 	return investor, nil
@@ -44,28 +44,28 @@ func CheckInvestorSwiftCode(ctx *iris.Context) {
 		SwiftCode string `json:"username"`
 	}
 
-	body := Body {
+	body := Body{
 		SwiftCode: swiftCode,
 	}
 
 	b := new(bytes.Buffer)
-	json.NewEncoder(b).Encode(body) 
+	json.NewEncoder(b).Encode(body)
 
-	res, _ := http.Post(config.GoWithDrawalPath+"/api/v1/cashout/swiftcode-check", "application/json; charset=utf-8", b)
+	res, _ := http.Post(config.GoWithdrawalPath+"/api/v1/cashout/swiftcode-check", "application/json; charset=utf-8", b)
 
 	resp := Response{}
-	
+
 	json.NewDecoder(res.Body).Decode(&resp)
 
 	if resp.Status == "404 Not Found." {
 		ctx.JSON(iris.StatusOK, iris.Map{
-			"status":    "success",
-			"data":      false,
+			"status": "success",
+			"data":   false,
 		})
 	} else {
 		ctx.JSON(iris.StatusOK, iris.Map{
-			"status":    "success",
-			"data":      true,
+			"status": "success",
+			"data":   true,
 		})
 	}
 }
@@ -73,9 +73,9 @@ func CheckInvestorSwiftCode(ctx *iris.Context) {
 func FetchDetail(ctx *iris.Context) {
 	stage := ctx.URLParam("stage")
 	request := ctx.URLParam("request")
-	
+
 	type CashoutInvestorID struct {
-		Id	uint64	`gorm:"column:id" json:"id"`
+		Id uint64 `gorm:"column:id" json:"id"`
 	}
 
 	listIdCashoutInvestors := []CashoutInvestorID{}
@@ -86,7 +86,7 @@ func FetchDetail(ctx *iris.Context) {
 		ctx.JSON(iris.StatusBadRequest, iris.Map{"status": "error", "message": "Can't process your request further, expected request query params value not empty"})
 		return
 	} else {
-		
+
 		if request == "ALL" {
 			if stage == "" {
 				queryPendingInvestorID = `
@@ -99,7 +99,7 @@ func FetchDetail(ctx *iris.Context) {
 					select i.id  from investor i join r_investor_cashout ric on i.id = ric."investorId" 
 					join cashout on cashout.id = ric."cashoutId" 
 				`
-				queryPendingInvestorID += strings.Replace("where cashout.stage like '?'","?",stage,-1)
+				queryPendingInvestorID += strings.Replace("where cashout.stage like '?'", "?", stage, -1)
 			}
 			services.DBCPsql.Raw(queryPendingInvestorID).Find(&listIdCashoutInvestors)
 			for _, v := range listIdCashoutInvestors {
@@ -122,7 +122,7 @@ func FetchDetail(ctx *iris.Context) {
 			} else if len(listStringId.Id) == 0 {
 				ctx.JSON(iris.StatusBadRequest, iris.Map{"status": "error", "message": "Request payload can't be empty"})
 				return
-			}else {
+			} else {
 				for _, v := range listStringId.Id {
 					if investor, err := GetInvestorDetailById(v); err != nil {
 						ctx.JSON(iris.StatusBadRequest, iris.Map{"status": "error", "message": err.Error()})
@@ -135,17 +135,16 @@ func FetchDetail(ctx *iris.Context) {
 		}
 	}
 
-
 	// 	if request == "ALL" && stage == ""{
 	// 		queryPendingInvestorID = `
-	// 			select i.id  from investor i join r_investor_cashout ric on i.id = ric."investorId" 
+	// 			select i.id  from investor i join r_investor_cashout ric on i.id = ric."investorId"
 	// 			join cashout on cashout.id = ric."cashoutId"
-	// 			where cashout.stage not like 'SUCCESS'; 
+	// 			where cashout.stage not like 'SUCCESS';
 	// 		`
 	// 	} else if request == "ALL" && stage != "" {
 	// 		queryPendingInvestorID = `
-	// 			select i.id  from investor i join r_investor_cashout ric on i.id = ric."investorId" 
-	// 			join cashout on cashout.id = ric."cashoutId" 
+	// 			select i.id  from investor i join r_investor_cashout ric on i.id = ric."investorId"
+	// 			join cashout on cashout.id = ric."cashoutId"
 	// 		`
 	// 		queryPendingInvestorID += strings.Replace("where cashout.stage like '?'","?",stage,-1)
 	// 	} else if request == "SPECIFIC" && stage == "" {
@@ -153,8 +152,6 @@ func FetchDetail(ctx *iris.Context) {
 	// 	} else if request == "SPECIFIC" && stage != "" {
 
 	// 	}
-		
-		
 
 	// 	if err != nil {
 	// 		ctx.JSON(iris.StatusBadRequest, iris.Map{"status": "error", "message": err.Error()})
@@ -169,20 +166,20 @@ func FetchDetail(ctx *iris.Context) {
 	// 	var queryPendingInvestorID string;
 	// 	if stage == "ALL" {
 	// 		queryPendingInvestorID = `
-	// 			select i.id  from investor i join r_investor_cashout ric on i.id = ric."investorId" 
+	// 			select i.id  from investor i join r_investor_cashout ric on i.id = ric."investorId"
 	// 			join cashout on cashout.id = ric."cashoutId"
 	// 			where cashout.stage not like 'SUCCESS';
 	// 		`
 	// 	} else {
 	// 		queryPendingInvestorID = `
-	// 			select i.id  from investor i join r_investor_cashout ric on i.id = ric."investorId" 
-	// 			join cashout on cashout.id = ric."cashoutId" 
+	// 			select i.id  from investor i join r_investor_cashout ric on i.id = ric."investorId"
+	// 			join cashout on cashout.id = ric."cashoutId"
 	// 		`
-	// 		queryPendingInvestorID += strings.Replace("where cashout.stage like '?'","?",stage,-1) 
+	// 		queryPendingInvestorID += strings.Replace("where cashout.stage like '?'","?",stage,-1)
 	// 	}
 
 	// 	services.DBCPsql.Raw(queryPendingInvestorID).Find(&listIdCashoutInvestors)
-		
+
 	// 	for _, v := range listIdCashoutInvestors {
 	// 		investor := GetInvestorDetailById(v.Id)
 	// 		listInvestor = append(listInvestor, investor)
@@ -192,7 +189,7 @@ func FetchDetail(ctx *iris.Context) {
 	// 	type Payload struct {
 	// 		Id []uint64 `json:"id"`
 	// 	}
-		
+
 	// 	listStringId := Payload{}
 	// 	err := ctx.ReadJSON(&listStringId)
 
@@ -208,8 +205,8 @@ func FetchDetail(ctx *iris.Context) {
 	// }
 
 	ctx.JSON(iris.StatusOK, iris.Map{
-		"status":    "success",
-		"data":      listInvestor,
+		"status": "success",
+		"data":   listInvestor,
 	})
 }
 
