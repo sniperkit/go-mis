@@ -339,7 +339,7 @@ func GetInvestorForTopup(ctx *iris.Context) {
 
 func GetInvestorById(ctx *iris.Context) {
 
-	_, err := strconv.ParseUint(ctx.Param("id"), 10, 64)
+	uintID, err := strconv.ParseUint(ctx.Param("id"), 10, 64)
 	if err != nil {
 		ctx.JSON(iris.StatusInternalServerError, iris.Map{
 			"status":  "error",
@@ -348,11 +348,9 @@ func GetInvestorById(ctx *iris.Context) {
 		return
 	}
 
-	query := `SELECT investor.*, cif."username"
-from investor
-join r_cif_investor rci on investor."id" = rci."investorId"
-join cif on cif."id" = rci."cifId"
-where investor."id" = ?`
+	query := `SELECT investor.*, cif."username" from investor join r_cif_investor rci on investor."id" = rci."investorId" 
+	join cif on cif."id" = rci."cifId"
+	where investor."id" = ?`
 
 	type investorWithAdditionalData struct {
 		Investor
@@ -360,7 +358,8 @@ where investor."id" = ?`
 	}
 
 	result := investorWithAdditionalData{}
-	if err := services.DBCPsql.Raw(query).Find(&result).Error; err != nil {
+
+	if err := services.DBCPsql.Raw(query, uintID).Scan(&result).Error; err != nil {
 		log.Println(err)
 	}
 

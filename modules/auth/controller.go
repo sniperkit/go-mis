@@ -61,41 +61,14 @@ func UserMisLogin(ctx *iris.Context) {
 	//
 	// loginForm.HashPassword()
 
-	/*
-		// gocas anomaly
-		u := Cas{Username: loginForm.Username, Password: loginForm.Password, UserType: "MIS"}
-		b := new(bytes.Buffer)
-		json.NewEncoder(b).Encode(u)
-		res, err := http.Post(config.GoCasApiPath+"/api/v1/auth", "application/json; charset=utf-8", b)
-		if err != nil {
-			fmt.Println(err)
-		}
-	*/
-
-	// fix for : REQUEST TIBA2 GANTUNG ENTAH KENAPA
-	// padahal di hit langsung ke go-cas dari mana aja jalan.
-
+	// gocas anomaly
 	u := Cas{Username: loginForm.Username, Password: loginForm.Password, UserType: "MIS"}
 	b := new(bytes.Buffer)
 	json.NewEncoder(b).Encode(u)
-
-	var url string = config.GoCasApiPath + "/api/v2/user-mis-login"
-
-	req, err := http.NewRequest("POST", url, b)
-	req.Header.Set("Content-Type", "application/json")
-
-	client := &http.Client{}
-	res, err := client.Do(req)
+	res, err := http.Post(config.GoCasApiPath+"/api/v1/auth", "application/json; charset=utf-8", b)
 	if err != nil {
-		ctx.JSON(iris.StatusInternalServerError, iris.Map{
-			"status":  "error",
-			"message": err.Error(),
-			"data":    iris.Map{},
-		})
-		return
+		fmt.Println(err)
 	}
-	defer res.Body.Close()
-	//////////
 
 	type casResponseData struct {
 		Token             string `json:"token"`
