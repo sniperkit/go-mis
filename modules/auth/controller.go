@@ -10,14 +10,16 @@ import (
 	"regexp"
 	"time"
 
+	"gopkg.in/kataras/iris.v4"
+
+	"strings"
+
 	"bitbucket.org/go-mis/config"
 	"bitbucket.org/go-mis/modules/r"
 	"bitbucket.org/go-mis/modules/role"
 	"bitbucket.org/go-mis/modules/user-mis"
 	"bitbucket.org/go-mis/services"
 	"github.com/dgrijalva/jwt-go"
-	"gopkg.in/kataras/iris.v4"
-	"strings"
 )
 
 func generateAccessToken() string {
@@ -59,21 +61,49 @@ func UserMisLogin(ctx *iris.Context) {
 	//
 	// loginForm.HashPassword()
 
+	/*
+		// gocas anomaly
+		u := Cas{Username: loginForm.Username, Password: loginForm.Password, UserType: "MIS"}
+		b := new(bytes.Buffer)
+		json.NewEncoder(b).Encode(u)
+		res, err := http.Post(config.GoCasApiPath+"/api/v1/auth", "application/json; charset=utf-8", b)
+		if err != nil {
+			fmt.Println(err)
+		}
+	*/
+
+	// fix for : REQUEST TIBA2 GANTUNG ENTAH KENAPA
+	// padahal di hit langsung ke go-cas dari mana aja jalan.
+
 	u := Cas{Username: loginForm.Username, Password: loginForm.Password, UserType: "MIS"}
-	fmt.Println(u)
 	b := new(bytes.Buffer)
 	json.NewEncoder(b).Encode(u)
-	fmt.Println(config.GoCasApiPath)
-	fmt.Println(config.SignStringKey)
-	res, _ := http.Post(config.GoCasApiPath+"/api/v1/auth", "application/json; charset=utf-8", b)
 
-	type casResponseData struct{
-		Token string `json:"token"`
-		IsAlreadyLoggedIn bool `json:"isAlreadyLoggedIn"`
+	var url string = config.GoCasApiPath + "/api/v2/user-mis-login"
+
+	req, err := http.NewRequest("POST", url, b)
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	res, err := client.Do(req)
+	if err != nil {
+		ctx.JSON(iris.StatusInternalServerError, iris.Map{
+			"status":  "error",
+			"message": err.Error(),
+			"data":    iris.Map{},
+		})
+		return
+	}
+	defer res.Body.Close()
+	//////////
+
+	type casResponseData struct {
+		Token             string `json:"token"`
+		IsAlreadyLoggedIn bool   `json:"isAlreadyLoggedIn"`
 	}
 
 	var casResp struct {
-		Status uint64 `json:"status"`
+		Status uint64          `json:"status"`
 		Data   casResponseData `json:"data"`
 	}
 
@@ -244,9 +274,9 @@ func EnsureAuth(ctx *iris.Context) {
 func EnsureIp(ctx *iris.Context) {
 	ips := strings.Split(config.WhiteList, ",")
 	fmt.Println(ctx.RemoteAddr())
-	if(contains(ips,ctx.RemoteAddr())){
+	if contains(ips, ctx.RemoteAddr()) {
 		accessToken := ctx.URLParam("accessToken")
-		if accessToken==""{
+		if accessToken == "" {
 			accessToken = ctx.RequestHeader("accessToken")
 		}
 		branchId := ctx.URLParam("branchId")

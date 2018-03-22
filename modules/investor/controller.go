@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -333,5 +334,38 @@ func GetInvestorForTopup(ctx *iris.Context) {
 		"status":    "success",
 		"totalRows": totalData.TotalRows,
 		"data":      investorSchema,
+	})
+}
+
+func GetInvestorById(ctx *iris.Context) {
+
+	_, err := strconv.ParseUint(ctx.Param("id"), 10, 64)
+	if err != nil {
+		ctx.JSON(iris.StatusInternalServerError, iris.Map{
+			"status":  "error",
+			"message": "Invalid ID",
+		})
+		return
+	}
+
+	query := `SELECT investor.*, cif."username"
+from investor
+join r_cif_investor rci on investor."id" = rci."investorId"
+join cif on cif."id" = rci."cifId"
+where investor."id" = ?`
+
+	type investorWithAdditionalData struct {
+		Investor
+		Username string `gorm:"column:username" json:"username"`
+	}
+
+	result := investorWithAdditionalData{}
+	if err := services.DBCPsql.Raw(query).Find(&result).Error; err != nil {
+		log.Println(err)
+	}
+
+	ctx.JSON(iris.StatusOK, iris.Map{
+		"status": "success",
+		"data":   result,
 	})
 }
