@@ -31,7 +31,6 @@ func FetchDatatables(ctx *iris.Context) {
 	page := ctx.URLParam("page")
 
 	investorName := ctx.URLParam("investorName")
-	stageId := ctx.URLParam("stage")
 	dateSendToMandiri := ctx.URLParam("dateSTM")
 
 	cashoutInvestors := []CashoutInvestor{}
@@ -61,10 +60,11 @@ func FetchDatatables(ctx *iris.Context) {
 		JOIN cif ON cif.id = r_cif_investor."cifId" 
 	`
 
-	if stage == "" {
+	if stage == "" || stage == "ALL" {
 		query += "where stage not like 'SUCCESS'"
 	} else if stage != "" && stage != "ALL" {
-		query += strings.Replace("WHERE stage ='?'", "?", stage, -1)
+		// query += strings.Replace("WHERE stage ='?'", "?", stage, -1)
+		query += ` WHERE stage ~* '` + stage + `'`
 	}
 
 	if len(strings.TrimSpace(search)) > 0 {
@@ -72,15 +72,8 @@ func FetchDatatables(ctx *iris.Context) {
 					cif."taxCardNo" ~* '` + search + `' OR cif."username"  ~* '` + search + `') `
 	}
 
-	fmt.Println("investor name:", investorName)
-	fmt.Println("stage :", stageId)
-	fmt.Println("date send to mandiri: ", dateSendToMandiri)
 	if len(investorName) > 0 {
 		query += ` AND cif.name ~* '` + investorName + `'`
-	}
-
-	if len(stageId) > 0 {
-		query += ` AND stage ~* '` + stageId + `'`
 	}
 
 	if len(dateSendToMandiri) > 0 {
@@ -146,58 +139,54 @@ func FetchDatatables(ctx *iris.Context) {
 
 // FetchAll - fetch cashout data
 func FetchAll(ctx *iris.Context) {
-	cashoutInvestors := []CashoutInvestor{}
+	var totalRows int
+	investorName := ctx.URLParam("investorName")
 	stage := ctx.URLParam("stage")
+	dateSendToMandiri := ctx.URLParam("dateSTM")
 
-	// query := "SELECT cashout.*, "
-	// query += "cif.\"name\" as \"investorName\", "
-	// query += "account.\"totalBalance\" as \"totalBalance\" "
-	// // query += "r_cif_borrower.\"borrowerId\" IS NOT NULL as \"isBorrower\", r_cif_investor.\"investorId\" IS NOT NULL as \"isInvestor\" "
-	// query += "FROM cashout "
-	// query += "LEFT JOIN r_investor_cashout ON r_investor_cashout.\"cashoutId\" = cashout.\"id\" "
-	// query += "LEFT JOIN investor ON investor.\"id\" = r_investor_cashout.\"investorId\" "
-	// query += "LEFT JOIN r_cif_investor ON r_cif_investor.\"investorId\" = investor.\"id\" "
-	// query += "LEFT JOIN cif ON r_cif_investor.\"cifId\" = cif.\"id\" "
-	// query += "LEFT JOIN r_account_investor ON r_account_investor.\"investorId\" = investor.\"id\" "
-	// query += "LEFT JOIN account ON r_account_investor.\"accountId\" = account.\"id\" "
+	cashoutInvestors := []CashoutInvestor{}
 
-	query := "SELECT r_cif_investor.\"cifId\", r_cif_investor.\"investorId\", r_account_transaction_credit_cashout.\"cashoutId\", r_account_investor.\"accountId\", cif.name AS \"investorName\", cashout.\"cashoutId\" AS \"cashoutNo\", cashout.amount, account.\"totalDebit\", account.\"totalCredit\", account.\"totalBalance\", account_transaction_credit.\"type\",  account_transaction_credit.\"transactionDate\", account_transaction_credit.remark, cashout.stage "
-	query += "FROM cashout "
-	query += "JOIN r_account_transaction_credit_cashout ON r_account_transaction_credit_cashout.\"cashoutId\" = cashout.id "
-	query += "JOIN r_account_transaction_credit ON r_account_transaction_credit.\"accountTransactionCreditId\" = r_account_transaction_credit_cashout.\"accountTransactionCreditId\" "
-	query += "JOIN account_transaction_credit ON account_transaction_credit.id = r_account_transaction_credit_cashout.\"accountTransactionCreditId\" "
-	query += "JOIN account ON account.id = r_account_transaction_credit.\"accountId\" "
-	query += "JOIN r_account_investor ON r_account_investor.\"accountId\" = account.id "
-	query += "JOIN r_cif_investor ON r_cif_investor.\"investorId\" = r_account_investor.\"investorId\" "
-	query += "JOIN cif ON cif.id = r_cif_investor.\"cifId\" "
+	query := `
+		SELECT r_cif_investor."cifId", r_cif_investor."investorId", r_account_transaction_credit_cashout."cashoutId", 
+		r_account_investor."accountId", cif.name AS "investorName", cashout."cashoutId" AS "cashoutNo", cashout.amount, 
+		account."totalDebit", account."totalCredit", account."totalBalance", account_transaction_credit."type",  account_transaction_credit."transactionDate", 
+		account_transaction_credit.remark, cashout.stage, count(*) OVER() AS full_count
+		FROM cashout
+		JOIN r_account_transaction_credit_cashout ON r_account_transaction_credit_cashout."cashoutId" = cashout.id
+		JOIN r_account_transaction_credit ON r_account_transaction_credit."accountTransactionCreditId" = r_account_transaction_credit_cashout."accountTransactionCreditId"
+		JOIN account_transaction_credit ON account_transaction_credit.id = r_account_transaction_credit_cashout."accountTransactionCreditId"
+		JOIN account ON account.id = r_account_transaction_credit."accountId"
+		JOIN r_account_investor ON r_account_investor."accountId" = account.id
+		JOIN r_cif_investor ON r_cif_investor."investorId" = r_account_investor."investorId"
+		JOIN cif ON cif.id = r_cif_investor."cifId" 
+	`
 
-	queryTotalData := "SELECT count(*) AS \"totalRows\" "
-	queryTotalData += "FROM cashout "
-	queryTotalData += "JOIN r_account_transaction_credit_cashout ON r_account_transaction_credit_cashout.\"cashoutId\" = cashout.id "
-	queryTotalData += "JOIN r_account_transaction_credit ON r_account_transaction_credit.\"accountTransactionCreditId\" = r_account_transaction_credit_cashout.\"accountTransactionCreditId\" "
-	queryTotalData += "JOIN account_transaction_credit ON account_transaction_credit.id = r_account_transaction_credit_cashout.\"accountTransactionCreditId\" "
-	queryTotalData += "JOIN account ON account.id = r_account_transaction_credit.\"accountId\" "
-	queryTotalData += "JOIN r_account_investor ON r_account_investor.\"accountId\" = account.id "
-	queryTotalData += "JOIN r_cif_investor ON r_cif_investor.\"investorId\" = r_account_investor.\"investorId\" "
-	queryTotalData += "JOIN cif ON cif.id = r_cif_investor.\"cifId\" "
-
-	if stage != "" {
-		query += strings.Replace("WHERE stage = '?'", "?", stage, -1)
-		queryTotalData += strings.Replace("WHERE stage = '?'", "?", stage, -1)
+	if stage == "" || stage == "ALL" {
+		query += "where stage not like 'SUCCESS'"
+	} else if stage != "" && stage != "ALL" {
+		query += ` WHERE stage ~* '` + stage + `'`
+		// query += strings.Replace("WHERE stage ='?'", "?", stage, -1)
 	}
 
-	totalData := TotalData{}
+	if len(investorName) > 0 {
+		query += ` AND cif.name ~* '` + investorName + `'`
+	}
+
+	if len(dateSendToMandiri) > 0 {
+		query += ` AND account_transaction_credit."transactionDate ~* '` + dateSendToMandiri + `'`
+	}
+
+	if len(cashoutInvestors) > 0 {
+		totalRows = cashoutInvestors[0].RowsFullCount
+	}
 
 	if err := services.DBCPsql.Raw(query).Find(&cashoutInvestors).Error; err != nil {
-		log.Println(err)
-	}
-	if err := services.DBCPsql.Raw(queryTotalData).Find(&totalData).Error; err != nil {
 		log.Println(err)
 	}
 
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"status":    "success",
-		"totalRows": totalData.TotalRows,
+		"totalRows": totalRows,
 		"data":      cashoutInvestors,
 	})
 }
