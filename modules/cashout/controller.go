@@ -72,10 +72,27 @@ func FetchDatatables(ctx *iris.Context) {
 					cif."taxCardNo" ~* '` + search + `' OR cif."username"  ~* '` + search + `') `
 	}
 
-	if len(investorName) > 0 && len(stageId) > 0 && len(dateSendToMandiri) > 0 {
-		query += ` AND (cif.name ~* '` + investorName + `' AND cashout."stage" ~* '` +
-			stageId + `' AND account_transaction_credit."transactionDate" ~* '` + dateSendToMandiri + `') `
+	fmt.Println("investor name:", investorName)
+	fmt.Println("stage :", stageId)
+	fmt.Println("date send to mandiri: ", dateSendToMandiri)
+	if len(investorName) > 0 {
+		query += ` AND cif.name ~* '` + investorName + `'`
 	}
+
+	if len(stageId) > 0 {
+		query += ` AND stage ~* '` + stageId + `'`
+	}
+
+	if len(dateSendToMandiri) > 0 {
+		query += ` AND account_transaction_credit."transactionDate ~* '` + dateSendToMandiri + `'`
+	}
+
+	/*
+		if len(investorName) > 0 && len(stageId) > 0 && len(dateSendToMandiri) > 0 {
+			query += ` AND (cif.name ~* '` + investorName + `' AND cashout."stage" ~* '` +
+				stageId + `' AND account_transaction_credit."transactionDate" ~* '` + dateSendToMandiri + `') `
+		}
+	*/
 
 	if len(strings.TrimSpace(orderBy)) > 0 && len(strings.TrimSpace(orderDir)) > 0 {
 		switch strings.ToUpper(orderBy) {
