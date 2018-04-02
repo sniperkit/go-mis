@@ -77,7 +77,7 @@ func FetchDatatables(ctx *iris.Context) {
 	}
 
 	if len(dateSendToMandiri) > 0 {
-		query += ` AND account_transaction_credit."transactionDate ~* '` + dateSendToMandiri + `'`
+		query += ` AND account_transaction_credit."transactionDate"::date = '` + dateSendToMandiri + `'`
 	}
 
 	/*
