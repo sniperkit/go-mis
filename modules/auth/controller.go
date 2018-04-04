@@ -93,7 +93,7 @@ func UserMisLogin(ctx *iris.Context) {
 		if casResp.StatusExtension == 4011 {
 			ctx.JSON(iris.StatusUnauthorized, iris.Map{
 				"status":  "error",
-				"message": "Account is locked due to too many failed logins. Please try again in 15 minutes",
+				"message": casResp.Message,
 			})
 			return
 		}
