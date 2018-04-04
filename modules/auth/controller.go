@@ -93,7 +93,7 @@ func UserMisLogin(ctx *iris.Context) {
 		if casResp.StatusExtension == 4011 {
 			ctx.JSON(iris.StatusUnauthorized, iris.Map{
 				"status":  "error",
-				"message": casResp.Message + ". Please try again in 15 minutes.",
+				"message": casResp.Message,
 			})
 			return
 		}
