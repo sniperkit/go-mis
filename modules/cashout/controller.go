@@ -47,7 +47,7 @@ func FetchDatatables(ctx *iris.Context) {
 
 	query := `
 		SELECT r_cif_investor."cifId", r_cif_investor."investorId", r_account_transaction_credit_cashout."cashoutId", 
-		r_account_investor."accountId", cif.name AS "investorName", cashout."cashoutId" AS "cashoutNo", cashout.amount, 
+		r_account_investor."accountId", cif.name AS "investorName", cif."username" as "username", cashout."cashoutId" AS "cashoutNo", cashout.amount, 
 		account."totalDebit", account."totalCredit", account."totalBalance", account_transaction_credit."type",  account_transaction_credit."transactionDate", 
 		account_transaction_credit.remark, cashout.stage, cashout."sentToMandiriAt" as "sentToMandiriAt", count(*) OVER() AS full_count
 		FROM cashout
@@ -149,7 +149,7 @@ func FetchAll(ctx *iris.Context) {
 
 	query := `
 		SELECT r_cif_investor."cifId", r_cif_investor."investorId", r_account_transaction_credit_cashout."cashoutId", 
-		r_account_investor."accountId", cif.name AS "investorName", cashout."cashoutId" AS "cashoutNo", cashout.amount, 
+		r_account_investor."accountId", cif.name AS "investorName", cif."username" as "username", cashout."cashoutId" AS "cashoutNo", cashout.amount, 
 		account."totalDebit", account."totalCredit", account."totalBalance", account_transaction_credit."type",  account_transaction_credit."transactionDate", 
 		account_transaction_credit.remark, cashout.stage, cashout."sentToMandiriAt" as "sentToMandiriAt",  count(*) OVER() AS full_count
 		FROM cashout

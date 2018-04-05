@@ -28,6 +28,7 @@ type CashoutInvestor struct {
 	CashoutID       uint64     `gorm:"column:cashoutId" json:"cashoutId"`
 	AccountID       uint64     `gorm:"column:accountId" json:"accountId"`
 	InvestorName    string     `gorm:"column:investorName" json:"investorName"`
+	Username        string     `gorm:"column:username" json:"username"`
 	CashoutNo       string     `gorm:"column:cashoutNo" json:"cashoutNo"`
 	Amount          float64    `gorm:"column:amount" json:"amount"`
 	TotalDebit      float64    `gorm:"column:totalDebit" json:"totalDebit"`
@@ -38,5 +39,5 @@ type CashoutInvestor struct {
 	Remark          string     `gorm:"column:remark" json:"remark"`
 	Stage           string     `gorm:"column:stage" json:"stage"`
 	RowsFullCount   int        `gorm:"column:full_count"`
-	UpdatedAt       *time.Time `gorm:"column:updatedAt" json:"updatedAt"`
+	SentToMandiriAt time.Time  `gorm:"column:sentToMandiriAt" json:"sentToMandiriAt"`
 }
