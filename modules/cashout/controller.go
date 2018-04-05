@@ -49,7 +49,7 @@ func FetchDatatables(ctx *iris.Context) {
 		SELECT r_cif_investor."cifId", r_cif_investor."investorId", r_account_transaction_credit_cashout."cashoutId", 
 		r_account_investor."accountId", cif.name AS "investorName", cashout."cashoutId" AS "cashoutNo", cashout.amount, 
 		account."totalDebit", account."totalCredit", account."totalBalance", account_transaction_credit."type",  account_transaction_credit."transactionDate", 
-		account_transaction_credit.remark, cashout.stage, cashout."updatedAt" as "updatedAt", count(*) OVER() AS full_count
+		account_transaction_credit.remark, cashout.stage, cashout."sentToMandiriAt" as "sentToMandiriAt", count(*) OVER() AS full_count
 		FROM cashout
 		JOIN r_account_transaction_credit_cashout ON r_account_transaction_credit_cashout."cashoutId" = cashout.id
 		JOIN r_account_transaction_credit ON r_account_transaction_credit."accountTransactionCreditId" = r_account_transaction_credit_cashout."accountTransactionCreditId"
@@ -151,7 +151,7 @@ func FetchAll(ctx *iris.Context) {
 		SELECT r_cif_investor."cifId", r_cif_investor."investorId", r_account_transaction_credit_cashout."cashoutId", 
 		r_account_investor."accountId", cif.name AS "investorName", cashout."cashoutId" AS "cashoutNo", cashout.amount, 
 		account."totalDebit", account."totalCredit", account."totalBalance", account_transaction_credit."type",  account_transaction_credit."transactionDate", 
-		account_transaction_credit.remark, cashout.stage, cashout."updatedAt" as "updatedAt",  count(*) OVER() AS full_count
+		account_transaction_credit.remark, cashout.stage, cashout."sentToMandiriAt" as "sentToMandiriAt",  count(*) OVER() AS full_count
 		FROM cashout
 		JOIN r_account_transaction_credit_cashout ON r_account_transaction_credit_cashout."cashoutId" = cashout.id
 		JOIN r_account_transaction_credit ON r_account_transaction_credit."accountTransactionCreditId" = r_account_transaction_credit_cashout."accountTransactionCreditId"
