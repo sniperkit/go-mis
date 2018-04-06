@@ -77,7 +77,7 @@ func FetchDatatables(ctx *iris.Context) {
 	}
 
 	if len(dateSendToMandiri) > 0 {
-		query += ` AND account_transaction_credit."transactionDate"::date = '` + dateSendToMandiri + `'`
+		query += ` AND cashout."sentToMandiriAt"::date = '` + dateSendToMandiri + `'`
 	}
 
 	/*
@@ -174,7 +174,7 @@ func FetchAll(ctx *iris.Context) {
 	}
 
 	if len(dateSendToMandiri) > 0 {
-		query += ` AND account_transaction_credit."transactionDate::date = '` + dateSendToMandiri + `'`
+		query += ` AND cashout."sentToMandiriAt"::date = '` + dateSendToMandiri + `'`
 	}
 
 	if cashoutId != "" {
