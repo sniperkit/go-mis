@@ -24,8 +24,8 @@ func FetchAll(ctx *iris.Context) {
 
 	queryTotalData := "SELECT count(cif.*) as \"totalRows\" "
 	queryTotalData += "FROM cif "
-	queryTotalData += "LEFT JOIN r_cif_borrower ON r_cif_borrower.\"cifId\" = cif.\"id\" "
-	queryTotalData += "LEFT JOIN r_cif_investor ON r_cif_investor.\"cifId\" = cif.\"id\" "
+	queryTotalData += "LEFT JOIN r_cif_borrower ON r_cif_borrower.\"cifId\" = cif.\"id\" and r_cif_borrower.\"deletedAt\" is null "
+	queryTotalData += "LEFT JOIN r_cif_investor ON r_cif_investor.\"cifId\" = cif.\"id\" and r_cif_investor.\"deletedAt\" is null "
 
 	if ctx.URLParam("search") != "" {
 		// queryTotalData += "WHERE cif.name LIKE '%" + ctx.URLParam("search") + "%' "
@@ -44,11 +44,10 @@ func FetchAll(ctx *iris.Context) {
 	query += "FROM cif "
 	query += "LEFT JOIN r_cif_borrower ON r_cif_borrower.\"cifId\" = cif.\"id\" "
 	query += "LEFT JOIN r_cif_investor ON r_cif_investor.\"cifId\" = cif.\"id\" "
-	query += "WHERE cif.\"deletedAt\" is null "
 
 	if ctx.URLParam("search") != "" {
 		// query += "WHERE cif.name LIKE '%" + ctx.URLParam("search") + "%' "
-		query += "AND cif.\"name\" ~* '" + ctx.URLParam("search") + "' "
+		query += "WHERE cif.\"name\" ~* '" + ctx.URLParam("search") + "' "
 	}
 
 	if ctx.URLParam("limit") != "" {
