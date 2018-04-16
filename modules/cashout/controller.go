@@ -151,6 +151,7 @@ func FetchAll(ctx *iris.Context) {
 	stage := ctx.URLParam("stage")
 	dateSendToMandiri := ctx.URLParam("dateSTM")
 	cashoutId := ctx.URLParam("cashoutId")
+	submenu := ctx.URLParam("submenu")
 
 	cashoutInvestors := []CashoutInvestor{}
 
@@ -170,7 +171,13 @@ func FetchAll(ctx *iris.Context) {
 	`
 
 	if stage == "" || stage == "ALL" {
-		query += "where stage not like 'SUCCESS'"
+		// query += "where stage not like 'SUCCESS'"
+		if submenu == "on-progress" {
+			query += "where stage not like 'SUCCESS' and stage not like 'CANCEL%' "
+		} else if submenu == "completed" && len(investorName) == 0 && len(dateSendToMandiri) == 0 {
+			query += "where stage like 'SUCCESS' or stage like 'CANCEL%' "
+		}
+
 	} else if stage != "" && stage != "ALL" {
 		query += ` WHERE stage ~* '` + stage + `'`
 		// query += strings.Replace("WHERE stage ='?'", "?", stage, -1)
