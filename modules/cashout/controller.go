@@ -29,6 +29,7 @@ func FetchDatatables(ctx *iris.Context) {
 	stage := ctx.URLParam("stage")
 	limit := ctx.URLParam("limit")
 	page := ctx.URLParam("page")
+	submenu := ctx.URLParam("submenu")
 
 	investorName := ctx.URLParam("investorName")
 	dateSendToMandiri := ctx.URLParam("dateSTM")
@@ -61,7 +62,13 @@ func FetchDatatables(ctx *iris.Context) {
 	`
 
 	if stage == "" || stage == "ALL" {
-		query += "where stage not like 'SUCCESS' and stage not like 'CANCEL_AND_REFUND' "
+		// query += "where stage not like 'SUCCESS' and stage not like 'CANCEL_AND_REFUND' "
+		if submenu == "on-progress" {
+			query += "where stage not like 'SUCCESS' and stage not like 'CANCEL%' "
+		} else if submenu == "completed" {
+			query += "where stage like 'SUCCESS' or stage like 'CANCEL%' "
+		}
+
 	} else if stage != "" && stage != "ALL" {
 		// query += strings.Replace("WHERE stage ='?'", "?", stage, -1)
 		query += ` WHERE stage ~* '` + stage + `'`
