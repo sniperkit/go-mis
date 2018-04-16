@@ -61,7 +61,7 @@ func FetchDatatables(ctx *iris.Context) {
 	`
 
 	if stage == "" || stage == "ALL" {
-		query += "where stage not like 'SUCCESS'"
+		query += "where stage not like 'SUCCESS' and stage not like 'CANCEL_AND_REFUND' "
 	} else if stage != "" && stage != "ALL" {
 		// query += strings.Replace("WHERE stage ='?'", "?", stage, -1)
 		query += ` WHERE stage ~* '` + stage + `'`
