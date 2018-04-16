@@ -65,7 +65,7 @@ func FetchDatatables(ctx *iris.Context) {
 		// query += "where stage not like 'SUCCESS' and stage not like 'CANCEL_AND_REFUND' "
 		if submenu == "on-progress" {
 			query += "where stage not like 'SUCCESS' and stage not like 'CANCEL%' "
-		} else if submenu == "completed" {
+		} else if submenu == "completed" && len(investorName) == 0 && len(dateSendToMandiri) == 0 {
 			query += "where stage like 'SUCCESS' or stage like 'CANCEL%' "
 		}
 
