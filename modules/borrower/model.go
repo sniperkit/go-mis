@@ -14,3 +14,16 @@ type Borrower struct {
 	DeletedAt        *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
 	DODate           *time.Time `gorm:"column:doDate" json:"doDate"`
 }
+
+type ProspectiveAvaraBorrower struct {
+	BorrowerID      uint64  `gorm:"column:borrowerId" json:"borrowerId"`
+	Name            string  `gorm:"column:name" json:"name"`
+	GroupName       string  `gorm:"column:groupName" json:"groupName"`
+	BranchID        uint64  `gorm:"column:branchId" json:"branchId"`
+	Week            int     `gorm:"column:week" json:"week"`
+	TotalPar        int     `gorm:"column:totalPar" json:"totalPar"`
+	TotalTR         int     `gorm:"column:totalTR" json:"totalTR"`
+	TotalPresence   int     `gorm:"column:totalPresence" json:"totalPresence"`
+	TotalAvara      int     `gorm:"column:totalAvara" json:"totalAvara"`
+	PresenceRatio   float64 `gorm:"column:presenceRatio" json:"presenceRatio"`
+}
