@@ -42,7 +42,7 @@ func CheckInvestorSwiftCode(ctx *iris.Context) {
 	swiftCode := ctx.Param("swiftCode")
 
 	type Body struct {
-		SwiftCode string `json:"username"`
+		SwiftCode string `json:"swiftCode"`
 	}
 
 	body := Body{
