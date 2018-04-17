@@ -27,3 +27,29 @@ type ProspectiveAvaraBorrower struct {
 	TotalAvara      int     `gorm:"column:totalAvara" json:"totalAvara"`
 	PresenceRatio   float64 `gorm:"column:presenceRatio" json:"presenceRatio"`
 }
+
+type BorrowerDetail struct {
+	ID           uint64 `gorm:"column:id" json:"id"`
+	BorrowerName string `gorm:"column:borrowerName" json:"borrowerName"`
+	PlaceOfBirth string `gorm:"column:placeOfBirth" json:"placeOfBirth"`
+	DateOfBirth  string `gorm:"column:dateOfBirth" json:"dateOfBirth"`
+	IDCardNo     string `gorm:"column:idCardNo" json:"idCardNo"`
+	IDCardFilename string `gorm:"column:idCardFilename" json:"idCardFilename"`
+	MaritalStatus string `gorm:"column:maritalStatus" json:"maritalStatus"`
+	MotherName   string `gorm:"column:mothersName" json:"motherName"`
+	Religion     string `gorm:"column:religion" json:"religion"`
+	Address      string `gorm:"column:address" json:"address"`
+	Kelurahan    string `gorm:"column:kelurahan" json:"kelurahan"`
+	Kecamatan    string `gorm:"column:kecamatan" json:"kecamatan"`
+	Occupation   string `gorm:"column:occupation" json:"occupation"`
+	Income       uint64 `gorm:"column:income" json:"income"`
+	RT           string `gorm:"column:rt" json:"rt"`
+	RW           string `gorm:"column:rw" json:"rw"`
+	BranchName   string `gorm:"column:branchName" json:"branchName"`
+	GroupName    string `gorm:"column:groupName" json:"groupName"`
+	PhoneNo      string `gorm:"column:phoneNo" json:"phoneNo"`
+	FoName       string `gorm:"column:foName" json:"foName"`
+	AgentName    string `gorm:"column:agentName" json:"agentName"`
+	AgentAddress string `gorm:"column:agentAddress" json:"agentAddress"`
+	AgentPhone	 string `gorm:"column:agentPhone" json:"agentPhone"`
+}

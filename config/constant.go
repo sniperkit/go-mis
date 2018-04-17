@@ -26,6 +26,7 @@ var (
 	GoBankingPath             string
 	GoLogPath                 string
 	GoBorrowerPath            string
+	GoLoanPath                string
 	Configuration             Config
 )
 
@@ -117,6 +118,7 @@ func init() {
 	SignStringKey = Configuration.SignString
 	GoBankingPath = Configuration.GoBankingPath
 	GoBorrowerPath = Configuration.GoBorrowerPath
+	GoLoanPath = Configuration.GoLoanPath
 	EnableEmergencyLoan = Configuration.EnableEmergencyLoan
 	WhiteList = Configuration.WhiteList
 
