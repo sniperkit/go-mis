@@ -1,0 +1,45 @@
+{
+  "psql": [
+    {
+      "db": "amartha",
+      "host": "uat-aws.amartha.id",
+      "port": "5432",
+      "username": "mis_amartha",
+      "password": "KWSamartha15",
+      "ssl_mode": "disable"
+    },
+    {
+      "db": "survey_0205",
+      "host": "localhost",
+      "port": "5432",
+      "username": "habibridho",
+      "password": "d6771jq",
+      "ssl_mode": "disable"
+    }
+  ],
+
+  "mysql": {
+    "db": "db_mis_amartha",
+    "host": "localhost",
+    "port": "32003",
+    "username": "root",
+    "password": null,
+    "ssl_mode": "disable"
+  },
+  "redis":{
+    "address":"localhost",
+    "port":6379,
+    "password":"",
+    "db":0
+  },
+  "goLoanPath":"http://dev.amartha.id:9807",
+  "uploaderPath":"http://dev.amartha.id:4000",
+  "goCasPath":"http://dev.amartha.id:4500",
+  "goLogPath": "http://localhost:5500",
+  "goBankingPath":"http://localhost:7878",
+  "goBorrowerPath":"http://dev.amartha.id:7788",
+  "whiteList":"127.0.0.1",
+  "enableEmergencyLoan":true,
+  "signString":"supersecret",
+  "firebaseType":"development"
+}
