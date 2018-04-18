@@ -76,8 +76,10 @@ func UserMisLogin(ctx *iris.Context) {
 	}
 
 	var casResp struct {
-		Status uint64          `json:"status"`
-		Data   casResponseData `json:"data"`
+		Status          uint64          `json:"status"`
+		Data            casResponseData `json:"data"`
+		StatusExtension int             `json:"status_extension"`
+		Message         string          `json:"message"`
 	}
 
 	json.NewDecoder(res.Body).Decode(&casResp)
@@ -88,6 +90,15 @@ func UserMisLogin(ctx *iris.Context) {
 	services.DBCPsql.Table("user_mis").Where("\"_username\" = ? AND \"deletedAt\" IS NULL AND (\"isSuspended\" = FALSE OR \"isSuspended\" IS NULL)", loginForm.Username).Find(&arrUserMisObj)
 
 	if casResp.Data.Token == "" {
+
+		if casResp.StatusExtension == 4011 {
+			ctx.JSON(iris.StatusUnauthorized, iris.Map{
+				"status":  "error",
+				"message": casResp.Message,
+			})
+			return
+		}
+
 		ctx.JSON(iris.StatusUnauthorized, iris.Map{
 			"status":  "error",
 			"message": "Invalid username/password. Please try again.",

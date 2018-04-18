@@ -24,12 +24,13 @@ func FetchAll(ctx *iris.Context) {
 
 	queryTotalData := "SELECT count(cif.*) as \"totalRows\" "
 	queryTotalData += "FROM cif "
-	queryTotalData += "LEFT JOIN r_cif_borrower ON r_cif_borrower.\"cifId\" = cif.\"id\" "
-	queryTotalData += "LEFT JOIN r_cif_investor ON r_cif_investor.\"cifId\" = cif.\"id\" "
+	queryTotalData += "LEFT JOIN r_cif_borrower ON r_cif_borrower.\"cifId\" = cif.\"id\" and r_cif_borrower.\"deletedAt\" is null "
+	queryTotalData += "LEFT JOIN r_cif_investor ON r_cif_investor.\"cifId\" = cif.\"id\" and r_cif_investor.\"deletedAt\" is null "
+	queryTotalData += "where cif.\"deletedAt\" is null "
 
 	if ctx.URLParam("search") != "" {
 		// queryTotalData += "WHERE cif.name LIKE '%" + ctx.URLParam("search") + "%' "
-		queryTotalData += "WHERE cif.\"name\" ~* '" + ctx.URLParam("search") + "' "
+		queryTotalData += "and cif.\"name\" ~* '" + ctx.URLParam("search") + "' "
 	}
 
 	services.DBCPsql.Raw(queryTotalData).Find(&totalData)
@@ -42,12 +43,13 @@ func FetchAll(ctx *iris.Context) {
 	query += "r_cif_borrower.\"borrowerId\" as \"borrowerId\", r_cif_investor.\"investorId\" as \"investorId\", "
 	query += "r_cif_borrower.\"borrowerId\" IS NOT NULL as \"isBorrower\", r_cif_investor.\"investorId\" IS NOT NULL as \"isInvestor\" "
 	query += "FROM cif "
-	query += "LEFT JOIN r_cif_borrower ON r_cif_borrower.\"cifId\" = cif.\"id\" "
-	query += "LEFT JOIN r_cif_investor ON r_cif_investor.\"cifId\" = cif.\"id\" "
+	query += "LEFT JOIN r_cif_borrower ON r_cif_borrower.\"cifId\" = cif.\"id\" and r_cif_borrower.\"deletedAt\" is null "
+	query += "LEFT JOIN r_cif_investor ON r_cif_investor.\"cifId\" = cif.\"id\" and r_cif_investor.\"deletedAt\" is null "
+	query += "where cif.\"deletedAt\" is null "
 
 	if ctx.URLParam("search") != "" {
 		// query += "WHERE cif.name LIKE '%" + ctx.URLParam("search") + "%' "
-		query += "WHERE cif.\"name\" ~* '" + ctx.URLParam("search") + "' "
+		query += "and cif.\"name\" ~* '" + ctx.URLParam("search") + "' "
 	}
 
 	if ctx.URLParam("limit") != "" {

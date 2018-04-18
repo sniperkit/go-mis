@@ -3,9 +3,11 @@ package cashout
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 
@@ -236,6 +238,7 @@ func UpdateStage(ctx *iris.Context) {
 	cashoutInvestorSchema := CashoutInvestor{}
 
 	if err := ctx.ReadJSON(&cashoutInvestorSchema); err != nil {
+		ErrorLogger("ReadJSON Error:", err)
 		ctx.JSON(iris.StatusInternalServerError, iris.Map{
 			"status":  "error",
 			"message": "Failed to read param",
@@ -310,4 +313,23 @@ func UpdateStage(ctx *iris.Context) {
 	})
 	return
 
+}
+
+// emergency error logger
+func ErrorLogger(desc string, logError error) {
+	startTime := time.Now()
+	// logfilename
+	filename := "./Go-Banking-Error.log"
+	// write log.
+	t := fmt.Sprintf("Process: %s. Time: %v, Error: %v.\n", desc, startTime, logError)
+	f, err := os.OpenFile(filename, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
+	if err != nil {
+		fmt.Println(err)
+	}
+	defer f.Close()
+
+	_, err = f.WriteString(t)
+	if err != nil {
+		fmt.Println(err)
+	}
 }
