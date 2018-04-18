@@ -79,8 +79,18 @@ func FetchDatatables(ctx *iris.Context) {
 					cif."taxCardNo" ~* '` + search + `' OR cif."username"  ~* '` + search + `') `
 	}
 
+	/*
+		if len(investorName) > 0 {
+			query += ` AND cif.name ~* '` + investorName + `'`
+		}
+	*/
+
 	if len(investorName) > 0 {
-		query += ` AND cif.name ~* '` + investorName + `'`
+		if submenu == "completed" {
+			query += `where stage like 'SUCCESS' AND cif.name ~* '` + investorName + `' or stage like 'CANCEL%' AND cif.name ~* '` + investorName + `' `
+		} else {
+			query += ` AND cif.name ~* '` + investorName + `'`
+		}
 	}
 
 	if len(dateSendToMandiri) > 0 {
@@ -183,8 +193,18 @@ func FetchAll(ctx *iris.Context) {
 		// query += strings.Replace("WHERE stage ='?'", "?", stage, -1)
 	}
 
+	/*
+		if len(investorName) > 0 {
+			query += ` AND cif.name ~* '` + investorName + `'`
+		}
+	*/
+
 	if len(investorName) > 0 {
-		query += ` AND cif.name ~* '` + investorName + `'`
+		if submenu == "completed" {
+			query += `where stage like 'SUCCESS' AND cif.name ~* '` + investorName + `' or stage like 'CANCEL%' AND cif.name ~* '` + investorName + `' `
+		} else {
+			query += ` AND cif.name ~* '` + investorName + `'`
+		}
 	}
 
 	if len(dateSendToMandiri) > 0 {
