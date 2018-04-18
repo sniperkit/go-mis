@@ -3,13 +3,13 @@ package cashout
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"bitbucket.org/go-mis/config"
 	"bitbucket.org/go-mis/services"
