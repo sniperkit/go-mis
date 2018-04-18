@@ -19,6 +19,7 @@ import (
 	"bitbucket.org/go-mis/config"
 	"encoding/json"
 	"bitbucket.org/go-mis/modules/httpClient"
+	"github.com/satori/go.uuid"
 )
 
 func Init() {
@@ -590,11 +591,21 @@ func GetProspectiveAvaraBorrowerByBranch(ctx *iris.Context) {
 	})
 }
 
-func GetProspectiveAvaraBorrowerDetail(ctx *iris.Context) {
-	borrowerID := ctx.Param("borrower_id")
+func SubmitAvaraOffer(ctx *iris.Context) {
+	payload := struct{
+		BorrowerID  uint64  `json:"borrowerId"`
+	}{}
+	if err := ctx.ReadJSON(&payload); err != nil {
+		ctx.JSON(iris.StatusBadRequest, iris.Map{
+			"status":  "error",
+			"message": err.Error(),
+		})
+		return
+	}
 
 	// Getting Loan Raw
-	goLoanEndpoint := fmt.Sprintf(`%s/loan/raw-by-borrower/%v`, config.GoLoanPath, borrowerID)
+	fmt.Printf("payload %+v\n", payload)
+	goLoanEndpoint := fmt.Sprintf(`%s/loan/raw-by-borrower/%v`, config.GoLoanPath, payload.BorrowerID)
 	resBody, err := httpClient.Get(goLoanEndpoint)
 	if err != nil {
 		fmt.Printf("error contacting go-loan: %+v", err)
@@ -611,43 +622,72 @@ func GetProspectiveAvaraBorrowerDetail(ctx *iris.Context) {
 	}
 
 	if len(loanRaws) < 1 {
-		fmt.Println("borrower not available for avara")
-		ctx.JSON(iris.StatusInternalServerError, nil)
+		fmt.Println("borrower not eligible for avara (no loan yet)")
+		ctx.JSON(iris.StatusBadRequest, nil)
 		return
 	}
 	// End of Getting Loan Raw
 
-	// Getting Borrower Detail
-	goBorrowerEndpoint := fmt.Sprintf(`%s/borrower/%v`, config.GoBorrowerPath, borrowerID)
-	var goBorrowerResp struct {
-		Status  int                         `json:"status"`
-		Code    int                         `json:"code"`
-		Message string                      `json:"message"`
-		Data    BorrowerDetail              `json:"data"`
-	}
-	resBody, err = httpClient.Get(goBorrowerEndpoint)
-	if err != nil {
-		fmt.Printf("error contacting go-borrower: %+v", err)
-		ctx.JSON(iris.StatusInternalServerError, nil)
-		return
+	for i := range loanRaws {
+		if loanRaws[i].LoanStage == "INSTALLMENT" && loanRaws[i].LoanType == "NORMAL" {
+			// Sending to node uploader
+			nodePayload := make(map[string]interface{}, 0)
+			err := json.Unmarshal([]byte(loanRaws[i].Raw), &nodePayload)
+			if err != nil {
+				fmt.Printf("error parsing raw data: %+v", err)
+				ctx.JSON(iris.StatusInternalServerError, nil)
+				return
+			}
+
+			nodePayload["token"] = "n0de-U>lo4d3r"
+			nodePayload["loanType"] = "AVARA"
+			nodePayload["uuid"], err = uuid.NewV4()
+			if err != nil {
+				fmt.Printf("error creating uuid: %+v", err)
+				ctx.JSON(iris.StatusInternalServerError, nil)
+				return
+			}
+
+			//// Plafond and installment will be selected from UK
+			nodePayload["plafond"] = 0
+			nodePayload["installment"] = 0
+
+			nodeUploaderEndpoint := fmt.Sprintf(`%s/uk/submit`, config.UploaderApiPath)
+			resBody, err := httpClient.Post(nodeUploaderEndpoint, nodePayload)
+			if err != nil {
+				fmt.Printf("error contacting node-uploader: %+v", err)
+				ctx.JSON(iris.StatusInternalServerError, nil)
+				return
+			}
+
+			var nodeResponse struct {
+				Code    int     `json:"code"`
+				Status  string  `json:"status"`
+				Message string  `json:"message"`
+			}
+			err = json.Unmarshal(resBody, &nodeResponse)
+			if err != nil {
+				fmt.Printf("error parsing node response body: %+v", err)
+				ctx.JSON(iris.StatusInternalServerError, nil)
+				return
+			}
+			if nodeResponse.Message != "Data has been submitted successfully." {
+				fmt.Printf("Failed to submit default survey data: %+v\n", nodeResponse)
+				fmt.Printf("nodePayload: %+v\n", nodePayload)
+				ctx.JSON(iris.StatusInternalServerError, nil)
+				return
+			}
+
+			ctx.JSON(iris.StatusOK, iris.Map{
+				"status": "success",
+				"data": nil,
+			})
+			return
+			// End of sending to node uploader
+		}
 	}
 
-	err = json.Unmarshal(resBody, &goBorrowerResp)
-	if err != nil {
-		fmt.Printf("error parsing response body: %+v", err)
-		ctx.JSON(iris.StatusInternalServerError, nil)
-		return
-	}
-	// End of Getting Borrower Detail
-
-	ctx.JSON(iris.StatusOK, iris.Map{
-		"status": "success",
-		"data": struct {
-			Borrower    BorrowerDetail  `json:"borrower"`
-			LoanRaw     loanRaw.LoanRawNew `json:"loanRaw"`
-		}{
-			Borrower:goBorrowerResp.Data,
-			LoanRaw:loanRaws[0],
-		},
-	})
+	fmt.Println("borrower not eligible for avara")
+	ctx.JSON(iris.StatusBadRequest, nil)
+	return
 }
