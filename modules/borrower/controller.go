@@ -594,6 +594,7 @@ func GetProspectiveAvaraBorrowerByBranch(ctx *iris.Context) {
 func SubmitAvaraOffer(ctx *iris.Context) {
 	payload := struct{
 		BorrowerID  uint64  `json:"borrowerId"`
+		AgentID     uint64  `json:"agentId"`
 	}{}
 	if err := ctx.ReadJSON(&payload); err != nil {
 		ctx.JSON(iris.StatusBadRequest, iris.Map{
@@ -641,6 +642,7 @@ func SubmitAvaraOffer(ctx *iris.Context) {
 
 			nodePayload["token"] = "n0de-U>lo4d3r"
 			nodePayload["loanType"] = "AVARA"
+			nodePayload["agentId"] = payload.AgentID
 			nodePayload["uuid"], err = uuid.NewV4()
 			if err != nil {
 				fmt.Printf("error creating uuid: %+v", err)
