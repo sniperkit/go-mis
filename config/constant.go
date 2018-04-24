@@ -118,7 +118,7 @@ func init() {
 	WhiteList = Configuration.WhiteList
 
 	// Postgresql Host Address
-	PsqlHostAddressMisAmartha = "host=" + Configuration.Psql[0].Host + " port=" + Configuration.Psql[0].Port + " user=" + Configuration.Psql[0].Username + " dbname=" + Configuration.Psql[0].Db + " sslmode=" + Configuration.Psql[0].SslMode
+	PsqlHostAddressMisAmartha = "host=" + Configuration.Psql[0].Host + " port=" + Configuration.Psql[0].Port + " user=" + Configuration.Psql[0].Username + " dbname=" + Configuration.Psql[0].Db + " sslmode=" + Configuration.Psql[0].SslMode + " fallback_application_name=go-mis"
 	if Configuration.Psql[0].Password != "" {
 		PsqlHostAddressMisAmartha += " password=" + Configuration.Psql[0].Password
 	}
