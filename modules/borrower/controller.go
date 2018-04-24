@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"bitbucket.org/go-mis/modules/httpClient"
 	"github.com/satori/go.uuid"
+	"math"
 )
 
 func Init() {
@@ -631,9 +632,29 @@ func SubmitAvaraOffer(ctx *iris.Context) {
 
 	for i := range loanRaws {
 		if loanRaws[i].LoanStage == "INSTALLMENT" && loanRaws[i].LoanType == "NORMAL" {
+			// Getting loan stat
+			goLoanEndpoint = fmt.Sprintf(`%s/loan/stat/%v`, config.GoLoanPath, loanRaws[i].LoanID)
+			resBody, err := httpClient.Get(goLoanEndpoint)
+			if err != nil {
+				fmt.Printf("error contacting go-loan for stat: %+v", err)
+				ctx.JSON(iris.StatusInternalServerError, nil)
+				return
+			}
+			stat := struct {
+				Tenor       int     `json:"tenor"`
+				Frequency   int     `json:"frequency"`
+			}{}
+			err = json.Unmarshal(resBody, &stat)
+			if err != nil {
+				fmt.Printf("error parsing response body from loan stat: %+v", err)
+				ctx.JSON(iris.StatusInternalServerError, nil)
+				return
+			}
+			// End of getting loan stat
+
 			// Sending to node uploader
 			nodePayload := make(map[string]interface{}, 0)
-			err := json.Unmarshal([]byte(loanRaws[i].Raw), &nodePayload)
+			err = json.Unmarshal([]byte(loanRaws[i].Raw), &nodePayload)
 			if err != nil {
 				fmt.Printf("error parsing raw data: %+v", err)
 				ctx.JSON(iris.StatusInternalServerError, nil)
@@ -650,12 +671,22 @@ func SubmitAvaraOffer(ctx *iris.Context) {
 				return
 			}
 
-			//// Plafond and installment will be selected from UK
+			//// Plafond and tenor will be selected from UK
 			nodePayload["plafond"] = 0
 			nodePayload["installment"] = 0
+			nodePayload["tenor"] = 4
+
+			//// Determining tenor boundary
+			tempTenorMax := stat.Tenor - stat.Frequency
+			tenorMax := tempTenorMax
+			if math.Mod(float64(tempTenorMax), float64(2)) != 0 {
+				tenorMax = tempTenorMax-1
+			}
+			nodePayload["tenorMin"] = 4
+			nodePayload["tenorMax"] = tenorMax
 
 			nodeUploaderEndpoint := fmt.Sprintf(`%s/uk/submit`, config.UploaderApiPath)
-			resBody, err := httpClient.Post(nodeUploaderEndpoint, nodePayload)
+			resBody, err = httpClient.Post(nodeUploaderEndpoint, nodePayload)
 			if err != nil {
 				fmt.Printf("error contacting node-uploader: %+v", err)
 				ctx.JSON(iris.StatusInternalServerError, nil)
