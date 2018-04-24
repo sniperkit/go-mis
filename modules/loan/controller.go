@@ -92,7 +92,7 @@ func FetchAll(ctx *iris.Context) {
 	// query += "LEFT JOIN disbursement ON disbursement.\"id\" = r_loan_disbursement.\"disbursementId\" "
 	// query += "WHERE branch.id = ? AND loan.\"deletedAt\" IS NULL AND loan.\"stage\" NOT IN ('END', 'END-EARLY') "
 
-	query := "SELECT loan.id as \"loanId\", cif.name AS \"borrower\", borrower.\"borrowerNo\", \"group\".\"name\" AS \"group\", loan.\"submittedLoanDate\", disbursement.\"disbursementDate\", loan.plafond, loan.tenor, loan.rate, loan.stage, loan.id, r_investor_product_pricing_loan.\"investorId\" as \"investorId\" FROM loan "
+	query := "SELECT loan.id as \"loanId\", cif.name AS \"borrower\", borrower.\"borrowerNo\", \"group\".\"name\" AS \"group\", loan.\"submittedLoanDate\", disbursement.\"disbursementDate\", loan.plafond, loan.tenor, loan.rate, loan.stage, loan.id, loan.\"loanType\", r_investor_product_pricing_loan.\"investorId\" as \"investorId\" FROM loan "
 	query += "JOIN r_loan_group ON r_loan_group.\"loanId\" = loan.id "
 	query += "JOIN r_loan_branch ON r_loan_branch.\"loanId\" = loan.id "
 	query += "JOIN r_loan_borrower ON r_loan_borrower.\"loanId\" = loan.id "
