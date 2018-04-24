@@ -20,6 +20,7 @@ type SurveySchema struct {
 	Group            string    `gorm:"column:group" json:"group"`
 	Agent            string    `gorm:"column:agent" json:"agent"`
 	Fullname         string    `gorm:"column:fullname" json:"fullname"`
+	LoanType         string    `gorm:"column:loanType" json:"loanType"`
 	CreditScoreGrade string    `gorm:"column:creditScoreGrade" json:"creditScoreGrade"`
 	CreditScoreValue float64   `gorm:"column:creditScoreValue" json:"creditScoreValue"`
 	CreatedAt        time.Time `gorm:"column:createdAt" json:"createdAt"`
@@ -96,7 +97,7 @@ func GetProspectiveBorrower(ctx *iris.Context) {
 	surveySchema := []SurveySchema{}
 	if len(roles) == 0 {
 		branchID := ctx.Get("BRANCH_ID")
-		q := `SELECT survey.*, branch."name" as "branch", "group"."name" as "group", agent.fullname as "agent"
+		q := `SELECT survey.*, branch."name" as "branch", "group"."name" as "group", agent.fullname as "agent", "_raw"->>'loanType' as "loanType"
 			FROM survey 
 			LEFT JOIN r_group_branch ON r_group_branch."groupId" = survey."groupId"
 			LEFT JOIN branch ON branch.id = r_group_branch."branchId"
@@ -121,7 +122,7 @@ func GetProspectiveBorrower(ctx *iris.Context) {
 			branchIds[i] = current.ID
 		}
 
-		q := `SELECT survey.*, branch."name" as "branch", "group"."name" as "group", agent.fullname as "agent"
+		q := `SELECT survey.*, branch."name" as "branch", "group"."name" as "group", agent.fullname as "agent", "_raw"->>'loanType' as "loanType"
 			FROM survey 
 			LEFT JOIN r_group_branch ON r_group_branch."groupId" = survey."groupId"
 			LEFT JOIN branch ON branch.id = r_group_branch."branchId"
