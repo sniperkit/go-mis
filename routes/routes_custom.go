@@ -135,7 +135,7 @@ func InitCustomApi() {
 		v2.Any("/borrower/reject/update-status/:id", borrower.ProspectiveBorrowerUpdateStatusToReject)
 		v2.Get("/borrower/total-by-branch/:branch_id", borrower.GetTotalBorrowerByBranchID)
 		v2.Get("/borrower/prospective-avara/:branch_id", borrower.GetProspectiveAvaraBorrowerByBranch)
-		v2.Post("/borrower/prospective-avara-offer", borrower.SubmitAvaraOffer)
+		v2.Any("/borrower/prospective-avara-offer", borrower.SubmitAvaraOffer)
 		v2.Any("/virtual-account-statement", virtualAccountStatement.GetVAStatement)
 		v2.Any("/agent", agent.GetAllAgentByBranchID)
 		v2.Any("/agent/branch/:id", agent.GetAllAgent)
