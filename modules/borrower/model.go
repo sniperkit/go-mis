@@ -26,6 +26,7 @@ type ProspectiveAvaraBorrower struct {
 	TotalPresence   int     `gorm:"column:totalPresence" json:"totalPresence"`
 	TotalAvara      int     `gorm:"column:totalAvara" json:"totalAvara"`
 	PresenceRatio   float64 `gorm:"column:presenceRatio" json:"presenceRatio"`
+	Offered         bool    `json:"offered"`
 }
 
 type BorrowerDetail struct {
@@ -53,3 +54,12 @@ type BorrowerDetail struct {
 	AgentAddress string `gorm:"column:agentAddress" json:"agentAddress"`
 	AgentPhone	 string `gorm:"column:agentPhone" json:"agentPhone"`
 }
+
+type BorrowerAvaraRequest struct {
+	Data    []struct{
+		BorrowerID  uint64  `json:"borrowerId"`
+		AgentID     uint64  `json:"agentId"`
+	}   `json:"data"`
+}
+
+var QUEUE_CREATE_AVARA_SURVEY = "QUEUE_CREATE_AVARA_SURVEY"

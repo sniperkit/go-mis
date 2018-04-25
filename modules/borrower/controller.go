@@ -593,6 +593,34 @@ func GetProspectiveAvaraBorrowerByBranch(ctx *iris.Context) {
 }
 
 func SubmitAvaraOffer(ctx *iris.Context) {
+	payload := BorrowerAvaraRequest{}
+	if err := ctx.ReadJSON(&payload); err != nil {
+		ctx.JSON(iris.StatusBadRequest, iris.Map{
+			"status":  "error",
+			"message": err.Error(),
+		})
+		return
+	}
+
+	for i, _ := range payload.Data {
+		fmt.Printf("Publish to queue%+v\n", payload.Data[i])
+		// publish to queue
+		err := services.QueueService.PublishQueue(QUEUE_CREATE_AVARA_SURVEY, payload.Data[i])
+		if err != nil {
+			fmt.Printf("error publishing queue: %+v", err)
+			ctx.JSON(iris.StatusInternalServerError, nil)
+			return
+		}
+	}
+
+	ctx.JSON(iris.StatusOK, iris.Map{
+		"status": "success",
+		"data": nil,
+	})
+	return
+}
+
+func foo(ctx *iris.Context) {
 	payload := struct{
 		BorrowerID  uint64  `json:"borrowerId"`
 		AgentID     uint64  `json:"agentId"`
