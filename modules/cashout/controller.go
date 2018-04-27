@@ -40,8 +40,9 @@ func FetchDatatables(ctx *iris.Context) {
 
 	dtTables = services.ParseDatatableURI(string(ctx.URI().FullURI()))
 	search := dtTables.Search.Value
-	orderBy := "NAME"
-	orderDir := "ASC"
+
+	orderBy := "TRANSACTIONDATE"
+	orderDir := "DESC"
 
 	if len(dtTables.Columns) > 0 && len(dtTables.OrderInfo) > 0 {
 		orderBy = dtTables.Columns[dtTables.OrderInfo[0].Column].Data
@@ -112,8 +113,10 @@ func FetchDatatables(ctx *iris.Context) {
 			query += ` ORDER BY r_account_transaction_credit_cashout."cashoutId" ` + orderDir
 		case "CASHOUTNO":
 			query += ` ORDER BY cashout."cashoutId" ` + orderDir
-		case "REQUESTDATE":
+		case "TRANSACTIONDATE":
 			query += ` ORDER BY account_transaction_credit."transactionDate" ` + orderDir
+		case "SENTTOMANDIRIAT":
+			query += ` ORDER BY cashout."sentToMandiriAt" ` + orderDir
 		case "INVESTORNAME":
 			query += ` ORDER BY cif.name ` + orderDir
 		case "TOTALDEBIT":
