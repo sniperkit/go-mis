@@ -14,8 +14,6 @@ import (
 
 	"bitbucket.org/go-mis/config"
 	"bitbucket.org/go-mis/routes"
-	"github.com/streadway/amqp"
-	"bitbucket.org/go-mis/services"
 )
 
 type User struct {
@@ -42,19 +40,6 @@ func main() {
 			OptionsPassthrough: true})
 		iris.Use(crs)
 	}
-
-	// Init queue
-	amqpConn, err := amqp.Dial(config.AmqpPath)
-	if err != nil {
-		panic(err)
-	}
-	defer amqpConn.Close()
-	amqpChan, err := amqpConn.Channel()
-	if err != nil {
-		panic(err)
-	}
-	defer amqpChan.Close()
-	services.InitQueueService(amqpConn, amqpChan)
 
 	// Initialize routes
 	routes.Init()

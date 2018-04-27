@@ -19,8 +19,6 @@ import (
 	"bitbucket.org/go-mis/config"
 	"encoding/json"
 	"bitbucket.org/go-mis/modules/httpClient"
-	"github.com/satori/go.uuid"
-	"math"
 )
 
 func Init() {
@@ -602,153 +600,36 @@ func SubmitAvaraOffer(ctx *iris.Context) {
 		return
 	}
 
-	for i := range payload.Data {
-		fmt.Printf("Publish to queue%+v\n", payload.Data[i])
-		// publish to queue
-		err := services.QueueService.PublishQueue(QUEUE_CREATE_AVARA_SURVEY, payload.Data[i])
-		if err != nil {
-			fmt.Printf("error publishing queue: %+v", err)
-			ctx.JSON(iris.StatusInternalServerError, nil)
-			return
-		}
+	goBorrowerEndpoint := fmt.Sprintf(`%s/borrower/process-avara`, config.GoBorrowerPath)
+	var responseBody struct {
+		Status  int                         `json:"status"`
+		Code    int                         `json:"code"`
+		Message string                      `json:"message"`
+		Error   string                      `json:"error"`
 	}
-
-	ctx.JSON(iris.StatusOK, iris.Map{
-		"status": "success",
-		"data": nil,
-	})
-	return
-}
-
-func foo(ctx *iris.Context) {
-	payload := struct{
-		BorrowerID  uint64  `json:"borrowerId"`
-		AgentID     uint64  `json:"agentId"`
-	}{}
-	if err := ctx.ReadJSON(&payload); err != nil {
-		ctx.JSON(iris.StatusBadRequest, iris.Map{
-			"status":  "error",
-			"message": err.Error(),
-		})
-		return
-	}
-
-	// Getting Loan Raw
-	fmt.Printf("payload %+v\n", payload)
-	goLoanEndpoint := fmt.Sprintf(`%s/loan/raw-by-borrower/%v`, config.GoLoanPath, payload.BorrowerID)
-	resBody, err := httpClient.Get(goLoanEndpoint)
+	resBody, err := httpClient.Post(goBorrowerEndpoint, payload)
 	if err != nil {
-		fmt.Printf("error contacting go-loan: %+v", err)
+		fmt.Printf("error contacting go borrower: %+v", err)
 		ctx.JSON(iris.StatusInternalServerError, nil)
 		return
 	}
 
-	loanRaws := []loanRaw.LoanRawNew{}
-	err = json.Unmarshal(resBody, &loanRaws)
+	err = json.Unmarshal(resBody, &responseBody)
 	if err != nil {
 		fmt.Printf("error parsing response body: %+v", err)
 		ctx.JSON(iris.StatusInternalServerError, nil)
 		return
 	}
 
-	if len(loanRaws) < 1 {
-		fmt.Println("borrower not eligible for avara (no loan yet)")
-		ctx.JSON(iris.StatusBadRequest, nil)
+	if responseBody.Code != 200 {
+		fmt.Printf("go-borrower response: %+v\n", responseBody)
+		ctx.JSON(iris.StatusBadRequest, responseBody.Error)
 		return
 	}
-	// End of Getting Loan Raw
 
-	for i := range loanRaws {
-		if loanRaws[i].LoanStage == "INSTALLMENT" && loanRaws[i].LoanType == "NORMAL" {
-			// Getting loan stat
-			goLoanEndpoint = fmt.Sprintf(`%s/loan/stat/%v`, config.GoLoanPath, loanRaws[i].LoanID)
-			resBody, err := httpClient.Get(goLoanEndpoint)
-			if err != nil {
-				fmt.Printf("error contacting go-loan for stat: %+v", err)
-				ctx.JSON(iris.StatusInternalServerError, nil)
-				return
-			}
-			stat := struct {
-				Tenor       int     `json:"tenor"`
-				Frequency   int     `json:"frequency"`
-			}{}
-			err = json.Unmarshal(resBody, &stat)
-			if err != nil {
-				fmt.Printf("error parsing response body from loan stat: %+v", err)
-				ctx.JSON(iris.StatusInternalServerError, nil)
-				return
-			}
-			// End of getting loan stat
-
-			// Sending to node uploader
-			nodePayload := make(map[string]interface{}, 0)
-			err = json.Unmarshal([]byte(loanRaws[i].Raw), &nodePayload)
-			if err != nil {
-				fmt.Printf("error parsing raw data: %+v", err)
-				ctx.JSON(iris.StatusInternalServerError, nil)
-				return
-			}
-
-			nodePayload["token"] = "n0de-U>lo4d3r"
-			nodePayload["loanType"] = "AVARA"
-			nodePayload["agentId"] = payload.AgentID
-			nodePayload["uuid"], err = uuid.NewV4()
-			if err != nil {
-				fmt.Printf("error creating uuid: %+v", err)
-				ctx.JSON(iris.StatusInternalServerError, nil)
-				return
-			}
-
-			//// Plafond and tenor will be selected from UK
-			nodePayload["plafond"] = 0
-			nodePayload["installment"] = 0
-			nodePayload["tenor"] = 4
-
-			//// Determining tenor boundary
-			tempTenorMax := stat.Tenor - stat.Frequency
-			tenorMax := tempTenorMax
-			if math.Mod(float64(tempTenorMax), float64(2)) != 0 {
-				tenorMax = tempTenorMax-1
-			}
-			nodePayload["tenorMin"] = 4
-			nodePayload["tenorMax"] = tenorMax
-
-			nodeUploaderEndpoint := fmt.Sprintf(`%s/uk/submit`, config.UploaderApiPath)
-			resBody, err = httpClient.Post(nodeUploaderEndpoint, nodePayload)
-			if err != nil {
-				fmt.Printf("error contacting node-uploader: %+v", err)
-				ctx.JSON(iris.StatusInternalServerError, nil)
-				return
-			}
-
-			var nodeResponse struct {
-				Code    int     `json:"code"`
-				Status  string  `json:"status"`
-				Message string  `json:"message"`
-			}
-			err = json.Unmarshal(resBody, &nodeResponse)
-			if err != nil {
-				fmt.Printf("error parsing node response body: %+v", err)
-				ctx.JSON(iris.StatusInternalServerError, nil)
-				return
-			}
-			if nodeResponse.Message != "Data has been submitted successfully." {
-				fmt.Printf("Failed to submit default survey data: %+v\n", nodeResponse)
-				fmt.Printf("nodePayload: %+v\n", nodePayload)
-				ctx.JSON(iris.StatusInternalServerError, nil)
-				return
-			}
-
-			ctx.JSON(iris.StatusOK, iris.Map{
-				"status": "success",
-				"data": nil,
-			})
-			return
-			// End of sending to node uploader
-		}
-	}
-
-	fmt.Println("borrower not eligible for avara")
-	ctx.JSON(iris.StatusBadRequest, nil)
+	ctx.JSON(iris.StatusOK, iris.Map{
+		"status": "success",
+		"data": nil,
+	})
 	return
 }

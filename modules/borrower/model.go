@@ -56,10 +56,8 @@ type BorrowerDetail struct {
 }
 
 type BorrowerAvaraRequest struct {
-	Data    []struct{
-		BorrowerID  uint64  `json:"borrowerId"`
-		AgentID     uint64  `json:"agentId"`
-	}   `json:"data"`
+	BorrowerID  []uint64  `json:"borrowerId"`
+	AgentID     uint64  `json:"agentId"`
 }
 
 var QUEUE_CREATE_AVARA_SURVEY = "QUEUE_CREATE_AVARA_SURVEY"

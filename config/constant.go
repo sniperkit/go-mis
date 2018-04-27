@@ -28,7 +28,6 @@ var (
 	GoBorrowerPath            string
 	GoLoanPath                string
 	Configuration             Config
-	AmqpPath                  string
 )
 
 type Config struct {
@@ -46,7 +45,6 @@ type Config struct {
 	GoLogPath           string      `json:"goLogPath"`
 	GoLoanPath          string      `json:"goLoanPath"`
 	GoBorrowerPath      string      `json:"goBorrowerPath"`
-	Amqp                string      `json:"amqp"`
 }
 
 type DbConfig struct {
@@ -123,7 +121,6 @@ func init() {
 	GoLoanPath = Configuration.GoLoanPath
 	EnableEmergencyLoan = Configuration.EnableEmergencyLoan
 	WhiteList = Configuration.WhiteList
-	AmqpPath = Configuration.Amqp
 
 	// Postgresql Host Address
 	PsqlHostAddressMisAmartha = "host=" + Configuration.Psql[0].Host + " port=" + Configuration.Psql[0].Port + " user=" + Configuration.Psql[0].Username + " dbname=" + Configuration.Psql[0].Db + " sslmode=" + Configuration.Psql[0].SslMode
