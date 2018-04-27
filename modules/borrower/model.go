@@ -26,7 +26,7 @@ type ProspectiveAvaraBorrower struct {
 	TotalPresence   int     `gorm:"column:totalPresence" json:"totalPresence"`
 	TotalAvara      int     `gorm:"column:totalAvara" json:"totalAvara"`
 	PresenceRatio   float64 `gorm:"column:presenceRatio" json:"presenceRatio"`
-	Offered         bool    `json:"offered"`
+	Status          string  `gorm:"column:status" json:"status"`
 }
 
 type BorrowerDetail struct {

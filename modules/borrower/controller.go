@@ -602,7 +602,7 @@ func SubmitAvaraOffer(ctx *iris.Context) {
 		return
 	}
 
-	for i, _ := range payload.Data {
+	for i := range payload.Data {
 		fmt.Printf("Publish to queue%+v\n", payload.Data[i])
 		// publish to queue
 		err := services.QueueService.PublishQueue(QUEUE_CREATE_AVARA_SURVEY, payload.Data[i])
