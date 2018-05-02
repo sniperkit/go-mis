@@ -585,7 +585,7 @@ func CheckingCampaignAndProgressIntoAccountTransaction(accountID uint64, orderNo
 	}
 	var campaignAmount float64 = float64(campaignData.Amount * quantityOfCampaignItem)
 
-	atc := accountTransactionCredit.AccountTransactionCredit{Type: "CAMPAIGN", Amount: campaignAmount, TransactionDate: time.Now(), Remark: "1KMSAJADAH"}
+	atc := accountTransactionCredit.AccountTransactionCredit{Type: "CAMPAIGN", Amount: campaignAmount, TransactionDate: time.Now(), Remark: campaignData.Name}
 	if err := db.Table("account_transaction_credit").Create(&atc).Error; err != nil {
 		return err
 	}
