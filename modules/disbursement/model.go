@@ -48,4 +48,5 @@ type DisbursementDetailByGroup struct {
 	DisbursementDate time.Time `gorm:"column:disbursementDate" json:"disbursementDate"`
 	Stage            string    `gorm:"column:stage" json:"stage"`
 	LoanStage        string    `gorm:"column:loanStage" json:"loanStage"`
+	AkadAvailable     bool    `gorm:"column:akadAvailable" json:"akadAvailable"`
 }
