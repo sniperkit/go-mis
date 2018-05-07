@@ -36,7 +36,7 @@ type Donations struct {
 }
 
 //GetClientInvestor get all investor data for email notification
-func GetClientInvestor(InvestorID uint64, OrderNo string, Stage string) ([]ClientInvestor, []ClientInvestorEmailBody, float64, float64) {
+func GetClientInvestor(InvestorID uint64, OrderNo string, Stage string) ([]ClientInvestor, []ClientInvestorEmailBody, float64, float64, float64) {
 	var InsuranceRate float64 = 0.015
 	clientInvestors := []ClientInvestor{}
 	var resultsEmails []ClientInvestorEmailBody
@@ -70,29 +70,35 @@ func GetClientInvestor(InvestorID uint64, OrderNo string, Stage string) ([]Clien
 	services.DBCPsql.Raw(query, InvestorID, Stage, OrderNo).Scan(&clientInvestors)
 
 	totalInsurance = 0
-	total = 0
-	for _, val := range clientInvestors {
-		total += val.Plafond
-		var emailBody ClientInvestorEmailBody
-		emailBody.BorrowerName = val.BorrowerName
-		emailBody.Purpose = val.Purpose
-		plafondStr := fmt.Sprintf("Rp %s", humanize.Commaf(val.Plafond))
-		emailBody.Plafond = plafondStr
-		emailBody.Tenor = val.Tenor
-		emailBody.DisbursementDate = val.DisbursementDate.Format("02-01-2006")
-		emailBody.RevenueProjection = fmt.Sprintf("Rp %s", humanize.Commaf(val.RevenueProjection))
-		resultsEmails = append(resultsEmails, emailBody)
+    total = 0
+    for _, val := range clientInvestors {
+        total += val.Plafond
+        var emailBody ClientInvestorEmailBody
+        emailBody.BorrowerName = val.BorrowerName
+        emailBody.Purpose = val.Purpose
+        plafondStr := fmt.Sprintf("Rp %s", humanize.Commaf(val.Plafond))
+        emailBody.Plafond = plafondStr
+        emailBody.Tenor = val.Tenor
+        emailBody.DisbursementDate = val.DisbursementDate.Format("02-01-2006")
+        emailBody.RevenueProjection = fmt.Sprintf("Rp %s", humanize.Commaf(val.RevenueProjection))
+        resultsEmails = append(resultsEmails, emailBody)
+    
+        if val.IsInsurance == true {
+            totalInsurance = totalInsurance + 1    
+        }
+    }
 
-		totalInsurance = totalInsurance + 1
-	}
-	totalInsuranceAmount = (total * (totalInsurance * InsuranceRate))
-		total = total + totalInsuranceAmount
-	return clientInvestors, resultsEmails, total, totalInsuranceAmount
+    // totalInsuranceAmount = (total * (totalInsurance * InsuranceRate))
+    totalInsuranceAmount = total * InsuranceRate
+    if totalInsurance > 0 {
+        total = total + totalInsuranceAmount
+    }
+	return clientInvestors, resultsEmails, total, totalInsuranceAmount, totalInsurance
 }
 
 func SendEmailIInvestmentSuccess(name string, toEmail string, OrderNo string, investorId uint64, voucherAmount float64) {
 	fmt.Println("#Email send investment success", toEmail)
-	_, clientInvestorsEmail, total, totalInsuranceAmount := GetClientInvestor(investorId, OrderNo, "INVESTOR")
+	_, clientInvestorsEmail, total, totalInsuranceAmount, totalInsurance := GetClientInvestor(investorId, OrderNo, "INVESTOR")
 
 	subs := map[string]interface{}{
 		"first_name": name,
@@ -109,11 +115,13 @@ func SendEmailIInvestmentSuccess(name string, toEmail string, OrderNo string, in
 	mandrill.SetTo(toEmail)
 	mandrill.SetBCC("investing@amartha.com")
 	mandrill.SetSubject("[Amartha] Selamat, Transaksi Anda Berhasil")
-	if totalInsuranceAmount > 0 {
+
+	if totalInsurance > 0 {
 		mandrill.SetTemplateAndRawBody("investment_balance_success_v3_jamkrindo", subs)
 	} else {
 		mandrill.SetTemplateAndRawBody("investment_balance_success_v3", subs)
 	}
+	
 	mandrill.SetBucket(true)
 	mandrill.SendEmail()
 }

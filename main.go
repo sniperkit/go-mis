@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"gopkg.in/iris-contrib/middleware.v4/cors"
-	"gopkg.in/iris-contrib/middleware.v4/logger"
 	"gopkg.in/iris-contrib/middleware.v4/recovery"
 	"gopkg.in/kataras/iris.v4"
 
@@ -28,8 +27,8 @@ func main() {
 	iris.Use(recovery.New())
 
 	// Initialize logger
-	iris.Use(logger.New())
-	iris.Use(NewHttpLog())
+	//iris.Use(logger.New())
+	//iris.Use(NewHttpLog())
 
 	// Check environment, if `dev` then let the CORS to `*`
 	if config.Env == "dev" || config.Env == "development" {

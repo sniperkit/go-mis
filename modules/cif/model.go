@@ -49,8 +49,8 @@ type InsertCif struct {
 	IsActivated         *bool      `gorm:"column:isActivated" json:"isActivated"`
 	IsValidated         *bool      `gorm:"column:isValidated" json:"isValidated"`
 	IsVerified          *bool      `gorm:"column:isVerified" json:"isVerified"`
-	CreatedAt           time.Time     `gorm:"column:createdAt" json:"createdAt"`
-	UpdatedAt           time.Time     `gorm:"column:updatedAt" json:"updatedAt"`
+	CreatedAt           time.Time  `gorm:"column:createdAt" json:"createdAt"`
+	UpdatedAt           time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
 	DeletedAt           *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
 }
 
@@ -97,6 +97,7 @@ type Cif struct {
 	UpdatedAt           string     `gorm:"column:updatedAt" json:"updatedAt"`
 	DeletedAt           *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
 	ValidationDate      string     `gorm:"column:validationDate" json:"validationDate"`
+	VerificationDate    time.Time  `gorm:"column:verificationDate" json:"verificationDate"`
 }
 
 type CifBorrower struct {

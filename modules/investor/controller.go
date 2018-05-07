@@ -1,18 +1,214 @@
 package investor
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"log"
+	"net/http"
 	"strconv"
+	"strings"
 
+	"bitbucket.org/go-mis/config"
 	"bitbucket.org/go-mis/modules/r"
 	"bitbucket.org/go-mis/modules/virtual-account"
 	"bitbucket.org/go-mis/services"
 	iris "gopkg.in/kataras/iris.v4"
 )
 
+type Response struct {
+	Status  string      `json:"status"`
+	Message string      `json:"message"`
+	Data    interface{} `json:"data"`
+	Success bool        `json:"success"`
+}
+
 func Init() {
 	services.DBCPsql.AutoMigrate(&Investor{})
 	services.BaseCrudInit(Investor{}, []Investor{})
+}
+
+func GetInvestorDetailById(id uint64) (investor Investor, err error) {
+	investor = Investor{}
+	queryDetailInvestorByID := `select * from investor `
+	queryDetailInvestorByID += strings.Replace("WHERE id = ?", "?", strconv.Itoa(int(id)), -1)
+	if err := services.DBCPsql.Raw(queryDetailInvestorByID).Scan(&investor).Error; err != nil {
+		return investor, err
+	}
+	return investor, nil
+}
+
+func CheckInvestorSwiftCode(ctx *iris.Context) {
+	swiftCode := ctx.Param("swiftCode")
+
+	type Body struct {
+		SwiftCode string `json:"swiftCode"`
+	}
+
+	body := Body{
+		SwiftCode: swiftCode,
+	}
+
+	b := new(bytes.Buffer)
+	json.NewEncoder(b).Encode(body)
+
+	res, _ := http.Post(config.GoWithdrawalPath+"/api/v1/cashout/swiftcode-check", "application/json; charset=utf-8", b)
+
+	resp := Response{}
+
+	json.NewDecoder(res.Body).Decode(&resp)
+
+	if resp.Status == "404 Not Found." {
+		ctx.JSON(iris.StatusOK, iris.Map{
+			"status": "success",
+			"data":   false,
+		})
+	} else {
+		ctx.JSON(iris.StatusOK, iris.Map{
+			"status": "success",
+			"data":   true,
+		})
+	}
+}
+
+func FetchDetail(ctx *iris.Context) {
+	stage := ctx.URLParam("stage")
+	request := ctx.URLParam("request")
+
+	type CashoutInvestorID struct {
+		Id uint64 `gorm:"column:id" json:"id"`
+	}
+
+	listIdCashoutInvestors := []CashoutInvestorID{}
+	listInvestor := []Investor{}
+	queryPendingInvestorID := ""
+
+	if request == "" {
+		ctx.JSON(iris.StatusBadRequest, iris.Map{"status": "error", "message": "Can't process your request further, expected request query params value not empty"})
+		return
+	} else {
+
+		if request == "ALL" {
+			if stage == "" {
+				queryPendingInvestorID = `
+				select i.id  from investor i join r_investor_cashout ric on i.id = ric."investorId" 
+				join cashout on cashout.id = ric."cashoutId"
+				where cashout.stage not like 'SUCCESS'; 
+				`
+			} else {
+				queryPendingInvestorID = `
+					select i.id  from investor i join r_investor_cashout ric on i.id = ric."investorId" 
+					join cashout on cashout.id = ric."cashoutId" 
+				`
+				queryPendingInvestorID += strings.Replace("where cashout.stage like '?'", "?", stage, -1)
+			}
+			services.DBCPsql.Raw(queryPendingInvestorID).Find(&listIdCashoutInvestors)
+			for _, v := range listIdCashoutInvestors {
+				if investor, err := GetInvestorDetailById(v.Id); err != nil {
+					ctx.JSON(iris.StatusBadRequest, iris.Map{"status": "error", "message": err.Error()})
+					return
+				} else {
+					listInvestor = append(listInvestor, investor)
+				}
+			}
+		} else {
+			type Payload struct {
+				Id []uint64 `json:"id"`
+			}
+
+			listStringId := Payload{}
+			if err := ctx.ReadJSON(&listStringId); err != nil {
+				ctx.JSON(iris.StatusBadRequest, iris.Map{"status": "error", "message": err.Error()})
+				return
+			} else if len(listStringId.Id) == 0 {
+				ctx.JSON(iris.StatusBadRequest, iris.Map{"status": "error", "message": "Request payload can't be empty"})
+				return
+			} else {
+				for _, v := range listStringId.Id {
+					if investor, err := GetInvestorDetailById(v); err != nil {
+						ctx.JSON(iris.StatusBadRequest, iris.Map{"status": "error", "message": err.Error()})
+						return
+					} else {
+						listInvestor = append(listInvestor, investor)
+					}
+				}
+			}
+		}
+	}
+
+	// 	if request == "ALL" && stage == ""{
+	// 		queryPendingInvestorID = `
+	// 			select i.id  from investor i join r_investor_cashout ric on i.id = ric."investorId"
+	// 			join cashout on cashout.id = ric."cashoutId"
+	// 			where cashout.stage not like 'SUCCESS';
+	// 		`
+	// 	} else if request == "ALL" && stage != "" {
+	// 		queryPendingInvestorID = `
+	// 			select i.id  from investor i join r_investor_cashout ric on i.id = ric."investorId"
+	// 			join cashout on cashout.id = ric."cashoutId"
+	// 		`
+	// 		queryPendingInvestorID += strings.Replace("where cashout.stage like '?'","?",stage,-1)
+	// 	} else if request == "SPECIFIC" && stage == "" {
+
+	// 	} else if request == "SPECIFIC" && stage != "" {
+
+	// 	}
+
+	// 	if err != nil {
+	// 		ctx.JSON(iris.StatusBadRequest, iris.Map{"status": "error", "message": err.Error()})
+	// 		return
+	// 	} else {
+	// 		for _, v := range listStringId.Id {
+	// 			investor := GetInvestorDetailById(v)
+	// 			listInvestor = append(listInvestor, investor)
+	// 		}
+	// 	}
+
+	// 	var queryPendingInvestorID string;
+	// 	if stage == "ALL" {
+	// 		queryPendingInvestorID = `
+	// 			select i.id  from investor i join r_investor_cashout ric on i.id = ric."investorId"
+	// 			join cashout on cashout.id = ric."cashoutId"
+	// 			where cashout.stage not like 'SUCCESS';
+	// 		`
+	// 	} else {
+	// 		queryPendingInvestorID = `
+	// 			select i.id  from investor i join r_investor_cashout ric on i.id = ric."investorId"
+	// 			join cashout on cashout.id = ric."cashoutId"
+	// 		`
+	// 		queryPendingInvestorID += strings.Replace("where cashout.stage like '?'","?",stage,-1)
+	// 	}
+
+	// 	services.DBCPsql.Raw(queryPendingInvestorID).Find(&listIdCashoutInvestors)
+
+	// 	for _, v := range listIdCashoutInvestors {
+	// 		investor := GetInvestorDetailById(v.Id)
+	// 		listInvestor = append(listInvestor, investor)
+	// 	}
+
+	// } else {
+	// 	type Payload struct {
+	// 		Id []uint64 `json:"id"`
+	// 	}
+
+	// 	listStringId := Payload{}
+	// 	err := ctx.ReadJSON(&listStringId)
+
+	// 	if err != nil {
+	// 		ctx.JSON(iris.StatusBadRequest, iris.Map{"status": "error", "message": err.Error()})
+	// 		return
+	// 	} else {
+	// 		for _, v := range listStringId.Id {
+	// 			investor := GetInvestorDetailById(v)
+	// 			listInvestor = append(listInvestor, investor)
+	// 		}
+	// 	}
+	// }
+
+	ctx.JSON(iris.StatusOK, iris.Map{
+		"status": "success",
+		"data":   listInvestor,
+	})
 }
 
 // InvestorWithoutVA - Retrieve list of investor without VA
@@ -138,5 +334,37 @@ func GetInvestorForTopup(ctx *iris.Context) {
 		"status":    "success",
 		"totalRows": totalData.TotalRows,
 		"data":      investorSchema,
+	})
+}
+
+func GetInvestorById(ctx *iris.Context) {
+
+	uintID, err := strconv.ParseUint(ctx.Param("id"), 10, 64)
+	if err != nil {
+		ctx.JSON(iris.StatusInternalServerError, iris.Map{
+			"status":  "error",
+			"message": "Invalid ID",
+		})
+		return
+	}
+
+	query := `SELECT investor.*, cif."username" from investor join r_cif_investor rci on investor."id" = rci."investorId" 
+	join cif on cif."id" = rci."cifId"
+	where investor."id" = ?`
+
+	type investorWithAdditionalData struct {
+		Investor
+		Username string `gorm:"column:username" json:"username"`
+	}
+
+	result := investorWithAdditionalData{}
+
+	if err := services.DBCPsql.Raw(query, uintID).Scan(&result).Error; err != nil {
+		log.Println(err)
+	}
+
+	ctx.JSON(iris.StatusOK, iris.Map{
+		"status": "success",
+		"data":   result,
 	})
 }

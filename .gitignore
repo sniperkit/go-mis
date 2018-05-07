@@ -7,3 +7,5 @@ config-test.json
 config-prod.json
 *.http
 .vscode
+InstallmentApproval.log
+Go-Banking-Error.log

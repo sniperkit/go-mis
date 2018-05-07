@@ -10,14 +10,16 @@ import (
 	"regexp"
 	"time"
 
+	"gopkg.in/kataras/iris.v4"
+
+	"strings"
+
 	"bitbucket.org/go-mis/config"
 	"bitbucket.org/go-mis/modules/r"
 	"bitbucket.org/go-mis/modules/role"
 	"bitbucket.org/go-mis/modules/user-mis"
 	"bitbucket.org/go-mis/services"
 	"github.com/dgrijalva/jwt-go"
-	"gopkg.in/kataras/iris.v4"
-	"strings"
 )
 
 func generateAccessToken() string {
@@ -59,22 +61,25 @@ func UserMisLogin(ctx *iris.Context) {
 	//
 	// loginForm.HashPassword()
 
+	// gocas anomaly
 	u := Cas{Username: loginForm.Username, Password: loginForm.Password, UserType: "MIS"}
-	fmt.Println(u)
 	b := new(bytes.Buffer)
 	json.NewEncoder(b).Encode(u)
-	fmt.Println(config.GoCasApiPath)
-	fmt.Println(config.SignStringKey)
-	res, _ := http.Post(config.GoCasApiPath+"/api/v1/auth", "application/json; charset=utf-8", b)
+	res, err := http.Post(config.GoCasApiPath+"/api/v1/auth", "application/json; charset=utf-8", b)
+	if err != nil {
+		fmt.Println(err)
+	}
 
-	type casResponseData struct{
-		Token string `json:"token"`
-		IsAlreadyLoggedIn bool `json:"isAlreadyLoggedIn"`
+	type casResponseData struct {
+		Token             string `json:"token"`
+		IsAlreadyLoggedIn bool   `json:"isAlreadyLoggedIn"`
 	}
 
 	var casResp struct {
-		Status uint64 `json:"status"`
-		Data   casResponseData `json:"data"`
+		Status          uint64          `json:"status"`
+		Data            casResponseData `json:"data"`
+		StatusExtension int             `json:"status_extension"`
+		Message         string          `json:"message"`
 	}
 
 	json.NewDecoder(res.Body).Decode(&casResp)
@@ -85,6 +90,15 @@ func UserMisLogin(ctx *iris.Context) {
 	services.DBCPsql.Table("user_mis").Where("\"_username\" = ? AND \"deletedAt\" IS NULL AND (\"isSuspended\" = FALSE OR \"isSuspended\" IS NULL)", loginForm.Username).Find(&arrUserMisObj)
 
 	if casResp.Data.Token == "" {
+
+		if casResp.StatusExtension == 4011 {
+			ctx.JSON(iris.StatusUnauthorized, iris.Map{
+				"status":  "error",
+				"message": casResp.Message,
+			})
+			return
+		}
+
 		ctx.JSON(iris.StatusUnauthorized, iris.Map{
 			"status":  "error",
 			"message": "Invalid username/password. Please try again.",
@@ -244,9 +258,9 @@ func EnsureAuth(ctx *iris.Context) {
 func EnsureIp(ctx *iris.Context) {
 	ips := strings.Split(config.WhiteList, ",")
 	fmt.Println(ctx.RemoteAddr())
-	if(contains(ips,ctx.RemoteAddr())){
+	if contains(ips, ctx.RemoteAddr()) {
 		accessToken := ctx.URLParam("accessToken")
-		if accessToken==""{
+		if accessToken == "" {
 			accessToken = ctx.RequestHeader("accessToken")
 		}
 		branchId := ctx.URLParam("branchId")

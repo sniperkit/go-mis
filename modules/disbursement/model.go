@@ -37,17 +37,18 @@ func (disbursementStageInput *DisbursementStageInput) UpdateDateValue() {
 }
 
 type DisbursementDetailByGroup struct {
-	InvestorId       uint64     `gorm:"column:investorId" json:"investorId"`
-	GroupID          uint64     `gorm:"column:groupId" json:"groupId"`
-	GroupName        string     `gorm:"column:groupName" json:"groupName"`
-	BranchName       string     `gorm:"column:branchName" json:"branchName"`
-	Borrower         string     `gorm:"column:borrower" json:"borrower"`
-	BorrowerNo       string     `gorm:"column:borrowerNo" json:"borrowerNo"`
-	LoanID           uint64     `gorm:"column:loanId" json:"loanId"`
-	Plafond          float64    `gorm:"column:plafond" json:"plafond"`
-	DisbursementDate time.Time  `gorm:"column:disbursementDate" json:"disbursementDate"`
-	Stage            string     `gorm:"column:stage" json:"stage"`
-	LoanStage        string     `gorm:"column:loanStage" json:"loanStage"`
+	InvestorId       uint64    `gorm:"column:investorId" json:"investorId"`
+	GroupID          uint64    `gorm:"column:groupId" json:"groupId"`
+	GroupName        string    `gorm:"column:groupName" json:"groupName"`
+	BranchName       string    `gorm:"column:branchName" json:"branchName"`
+	Borrower         string    `gorm:"column:borrower" json:"borrower"`
+	BorrowerNo       string    `gorm:"column:borrowerNo" json:"borrowerNo"`
+	LoanID           uint64    `gorm:"column:loanId" json:"loanId"`
+	Plafond          float64   `gorm:"column:plafond" json:"plafond"`
+	DisbursementDate time.Time `gorm:"column:disbursementDate" json:"disbursementDate"`
+	Stage            string    `gorm:"column:stage" json:"stage"`
+	LoanStage        string    `gorm:"column:loanStage" json:"loanStage"`
+	AkadAvailable     bool    `gorm:"column:akadAvailable" json:"akadAvailable"`
 	LWK1Date         *time.Time `gorm:"column:lwk1Date" json:"lwk1Date"`
 	LWK2Date         *time.Time `gorm:"column:lwk2Date" json:"lwk2Date"`
 	UPKDate          *time.Time `gorm:"column:upkDate" json:"upkDate"`
