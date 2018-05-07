@@ -50,7 +50,7 @@ func FetchAll(ctx *iris.Context) {
 }
 
 func GetDisbursementDetailByGroup(ctx *iris.Context) {
-	query := "SELECT investor.id AS \"investorId\", \"group\".id AS \"groupId\", \"group\".\"name\" AS \"groupName\", branch.\"name\" AS \"branchName\", borrower.\"borrowerNo\", cif.\"name\" AS \"borrower\", loan.id AS \"loanId\", loan.plafond, disbursement.\"disbursementDate\"::date, disbursement.stage, loan.stage AS \"loanStage\", borrower.\"lwk2Date\", borrower.\"upkDate\", borrower.\"id\" as \"borrowerId\", "
+	query := "SELECT investor.id AS \"investorId\", \"group\".id AS \"groupId\", \"group\".\"name\" AS \"groupName\", branch.\"name\" AS \"branchName\", borrower.\"borrowerNo\", cif.\"name\" AS \"borrower\", loan.id AS \"loanId\", loan.plafond, disbursement.\"disbursementDate\"::date, disbursement.stage, loan.stage AS \"loanStage\", borrower.\"lwk1Date\", borrower.\"lwk2Date\", borrower.\"upkDate\", borrower.\"id\" as \"borrowerId\", "
 	query += "case when loan.\"isLWK\" = true and loan.\"isUPK\" = true then true else false end as \"akadAvailable\" "
 	query += "FROM \"group\" "
 	query += "JOIN r_group_branch ON r_group_branch.\"groupId\" = \"group\".id "
