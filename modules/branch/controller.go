@@ -17,30 +17,19 @@ func Init() {
 // FetchAll - fetchAll branchs data
 /** Todo error handling */
 func FetchAll(ctx *iris.Context) {
-	// branch := getBranchWithoutManager()
-	// branchManager := getBranchManager()
-	// branch = combineBranchManager(branch, branchManager)
-
-	// query := "SELECT branch.id, area.\"name\" AS \"area\", branch.\"name\" AS \"name\", branch.city, branch.province, user_mis.fullname AS \"manager\", \"role\".\"name\" AS \"role\" "
-	// query += "FROM branch "
-	// query += "LEFT JOIN r_area_branch ON r_area_branch.\"branchId\" = branch.id "
-	// query += "LEFT JOIN area ON area.id = r_area_branch.\"areaId\" "
-	// query += "LEFT JOIN r_branch_user_mis ON r_branch_user_mis.\"branchId\" = branch.id "
-	// query += "LEFT JOIN user_mis ON user_mis.id = r_branch_user_mis.\"branchId\" "
-	// query += "LEFT JOIN r_user_mis_role ON r_user_mis_role.\"userMisId\" = user_mis.id "
-	// query += "LEFT JOIN \"role\" ON \"role\".id = r_user_mis_role.\"roleId\" "
-	// query += "WHERE (\"role\".\"name\" ~* 'branch manager' OR \"role\".id IS NULL) AND branch.\"deletedAt\" IS NULL "
-
-	query := "SELECT branch.id, area.\"name\" AS \"area\", branch.\"name\" AS \"name\", branch.city, branch.province, user_mis.fullname AS \"manager\", \"role\".\"name\" AS \"role\", \"role\".id  "
-	query += "FROM branch "
-	query += "LEFT JOIN r_branch_user_mis ON r_branch_user_mis.\"branchId\" = branch.id "
-	query += "LEFT JOIN user_mis ON user_mis.id = r_branch_user_mis.\"userMisId\" "
-	query += "LEFT JOIN r_user_mis_role ON r_user_mis_role.\"userMisId\" = \"user_mis\".id  "
-	query += "LEFT JOIN \"role\" ON \"role\".id = r_user_mis_role.\"roleId\" "
-	query += "LEFT JOIN r_area_branch ON r_area_branch.\"branchId\" = branch.id  "
-	query += "LEFT JOIN area ON area.id = r_area_branch.\"areaId\" "
-	query += "WHERE (\"role\".id IS NULL OR \"role\".\"name\" ~* 'branch manager' OR \"role\".\"name\" ~* 'Branch Manager') AND branch.\"deletedAt\" IS NULL "
-	query += "ORDER BY area.\"name\" ASC "
+	query := `SELECT branch.id, area."name" AS "area", branch."name" AS "name", 
+	branch.city, branch.province, user_mis.fullname AS "manager", 
+	"role"."name" AS "role", "role".id,
+	branch."branchNewCode" as "branchCode"
+	FROM branch
+	LEFT JOIN r_branch_user_mis ON r_branch_user_mis."branchId" = branch.id 
+	LEFT JOIN user_mis ON user_mis.id = r_branch_user_mis."userMisId"
+	LEFT JOIN r_user_mis_role ON r_user_mis_role."userMisId" = "user_mis".id
+	LEFT JOIN "role" ON "role".id = r_user_mis_role."roleId"
+	LEFT JOIN r_area_branch ON r_area_branch."branchId" = branch.id
+	LEFT JOIN area ON area.id = r_area_branch."areaId"
+	WHERE ("role".id IS NULL OR "role"."name" ~* 'branch manager' OR "role"."name" ~* 'Branch Manager')
+	AND branch."deletedAt" IS NULL ORDER BY area."name" ASC `
 
 	branch := []BranchManagerArea{}
 	services.DBCPsql.Raw(query).Scan(&branch)
@@ -52,16 +41,15 @@ func FetchAll(ctx *iris.Context) {
 }
 
 func GetBranchById(ctx *iris.Context) {
-
-	query := "SELECT branch.\"id\", branch.\"name\" AS \"name\", branch.\"province\", branch.\"city\" ,user_mis.\"fullname\" AS \"manager\", role.\"name\" AS \"role\", area.\"name\" AS \"area\", branch.\"addressDetail\" AS \"addressDetail\" "
-	query += "FROM branch "
-	query += "LEFT JOIN r_branch_user_mis ON r_branch_user_mis.\"branchId\" = branch.\"id\" "
-	query += "LEFT JOIN user_mis ON user_mis.\"id\" = r_branch_user_mis.\"userMisId\" "
-	query += "LEFT JOIN r_user_mis_role ON r_user_mis_role.\"userMisId\" = user_mis.\"id\" "
-	query += "LEFT JOIN \"role\" ON \"role\".\"id\" = r_user_mis_role.\"roleId\" "
-	query += "LEFT JOIN r_area_branch ON r_area_branch.\"branchId\" = branch.\"id\" "
-	query += "LEFT JOIN area ON area.\"id\" = r_area_branch.\"areaId\" "
-	query += "WHERE branch.\"deletedAt\" IS NULL AND branch.\"id\" = ? AND (role.\"name\" LIKE '%Branch Manager%' or role.\"name\" IS NULL)"
+	query := `SELECT branch."id", branch."name" AS "name", branch."province", branch."city" ,user_mis."fullname" AS "manager", role."name" AS "role", area."name" AS "area", branch."addressDetail" AS "addressDetail", branch."branchNewCode" as "branchCode"  
+	FROM branch 
+	LEFT JOIN r_branch_user_mis ON r_branch_user_mis."branchId" = branch."id" 
+	LEFT JOIN user_mis ON user_mis."id" = r_branch_user_mis."userMisId" 
+	LEFT JOIN r_user_mis_role ON r_user_mis_role."userMisId" = user_mis."id" 
+	LEFT JOIN "role" ON "role"."id" = r_user_mis_role."roleId" 
+	LEFT JOIN r_area_branch ON r_area_branch."branchId" = branch."id" 
+	LEFT JOIN area ON area."id" = r_area_branch."areaId" 
+	WHERE branch."deletedAt" IS NULL AND branch."id" = ? AND (role."name" LIKE '%Branch Manager%' or role."name" IS NULL)`
 
 	id := ctx.Get("id")
 	branch := BranchManagerArea{}
