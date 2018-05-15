@@ -20,7 +20,7 @@ func FetchAll(ctx *iris.Context) {
 	query := `SELECT branch.id, area."name" AS "area", branch."name" AS "name", 
 	branch.city, branch.province, user_mis.fullname AS "manager", 
 	"role"."name" AS "role", "role".id,
-	branch."branchNewCode" as "branchCode"
+	branch."branch_code"
 	FROM branch
 	LEFT JOIN r_branch_user_mis ON r_branch_user_mis."branchId" = branch.id 
 	LEFT JOIN user_mis ON user_mis.id = r_branch_user_mis."userMisId"
@@ -41,7 +41,7 @@ func FetchAll(ctx *iris.Context) {
 }
 
 func GetBranchById(ctx *iris.Context) {
-	query := `SELECT branch."id", branch."name" AS "name", branch."province", branch."city" ,user_mis."fullname" AS "manager", role."name" AS "role", area."name" AS "area", branch."addressDetail" AS "addressDetail", branch."branchNewCode" as "branchCode"  
+	query := `SELECT branch."id", branch."name" AS "name", branch."province", branch."city" ,user_mis."fullname" AS "manager", role."name" AS "role", area."name" AS "area", branch."addressDetail" AS "addressDetail", branch."branch_code"
 	FROM branch 
 	LEFT JOIN r_branch_user_mis ON r_branch_user_mis."branchId" = branch."id" 
 	LEFT JOIN user_mis ON user_mis."id" = r_branch_user_mis."userMisId" 
@@ -62,7 +62,7 @@ func GetBranchById(ctx *iris.Context) {
 }
 
 func GetBranchbyArea(ctx *iris.Context) (error, []BranchByArea) {
-	query := "SELECT branch.\"id\", area.name, branch.name FROM branch "
+	query := "SELECT branch.\"id\", area.name, branch.name, branch.\"branch_code\" FROM branch "
 	query += "LEFT JOIN r_area_branch ON r_area_branch.\"branchId\" = branch.id "
 	query += "LEFT JOIN area ON area.id = r_area_branch.\"areaId\" "
 	query += "WHERE r_area_branch.\"areaId\" = ? AND branch.\"deletedAt\" IS NULL"
