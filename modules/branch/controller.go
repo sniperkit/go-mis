@@ -61,7 +61,7 @@ func GetBranchById(ctx *iris.Context) {
 }
 
 func GetBranchbyArea(ctx *iris.Context) (error, []BranchByArea) {
-	query := "SELECT branch.\"id\", area.name, branch.name, branch.\"branch_code\" FROM branch "
+	query := "SELECT branch.\"id\", area.name, branch.name, branch.\"branchCode\" FROM branch "
 	query += "LEFT JOIN r_area_branch ON r_area_branch.\"branchId\" = branch.id "
 	query += "LEFT JOIN area ON area.id = r_area_branch.\"areaId\" "
 	query += "WHERE r_area_branch.\"areaId\" = ? AND branch.\"deletedAt\" IS NULL"
