@@ -20,3 +20,7 @@ type DataTransfer struct {
 type DataTransfers struct {
     Items []DataTransfer `json:"data"`
 }
+
+type ValidationDate struct {
+    CreatedAt string `gorm:"column:createdAt"`
+}
