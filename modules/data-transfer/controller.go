@@ -3,6 +3,8 @@ package dataTransfer
 import (
 	"bitbucket.org/go-mis/services"
 	"gopkg.in/kataras/iris.v4"
+
+    "fmt"
 )
 
 func Init() {
@@ -11,8 +13,8 @@ func Init() {
 }
 
 func Save(ctx *iris.Context) {
-	var payload DataTransfer
-	var dt DataTransfer
+	var payload DataTransfers
+	// var dt DataTransfer
 
 	err := ctx.ReadJSON(&payload)
 	if err != nil {
@@ -22,6 +24,9 @@ func Save(ctx *iris.Context) {
 		})
 		return
 	}
+
+    fmt.Println(payload)
+    /*
 	// Find data transfer by validation date
 	services.DBCPsql.Where("validation_date = ?", payload.ValidationDate).Find(&dt)
 	if dt.ID > 0 {
@@ -46,4 +51,5 @@ func Save(ctx *iris.Context) {
 		}
 	}
 	ctx.JSON(iris.StatusOK, iris.Map{"status": "success", "data": payload})
+    */
 }
