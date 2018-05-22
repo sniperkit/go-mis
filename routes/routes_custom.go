@@ -7,6 +7,7 @@ import (
 	"bitbucket.org/go-mis/modules/agent"
 	"bitbucket.org/go-mis/modules/area"
 	"bitbucket.org/go-mis/modules/auth"
+	"bitbucket.org/go-mis/modules/auto-recon"
 	"bitbucket.org/go-mis/modules/borrower"
 	"bitbucket.org/go-mis/modules/branch"
 	"bitbucket.org/go-mis/modules/cashout"
@@ -206,6 +207,9 @@ func InitCustomApi() {
 		v2.Any("/validation-teller/view/branch/:branchId/date/:date", validationTeller.GetDataValidationAndTransfer)
 		v2.Any("/data-transfer/vd-date", dataTransfer.AvailableValidationTellerDate)
 		v2.Any("/data-transfer/save", dataTransfer.Save)
+
+		// auto reconcile
+		v2.Any("/disbursement-transfer", autoRecon.DisbursementDataTransferSave)
 
 		// Mitra Management
 		v2.Any("/mitra-management/borrower/:borrowerType/date/:date", mitramanagement.GetBorrowerByInstallmentTypeAndDate)
