@@ -97,3 +97,33 @@ func GetUnmatchedDataTransfer(ctx *iris.Context) {
 	})
 	return
 }
+
+// get unmatched bank statement
+func GetUnmatchedBankStatement(ctx *iris.Context) {
+	var url string = config.GoFinAutoReconPath + "/api/v1/bank-statement/unmatched/" + ctx.Param("transferDateFrom") + "/" + ctx.Param("transferDateTo")
+	resp, err := http.Get(url)
+	if err != nil {
+		ctx.JSON(iris.StatusInternalServerError, iris.Map{
+			"status":  "error",
+			"message": err.Error(),
+			"data":    iris.Map{},
+		})
+		return
+	}
+	defer resp.Body.Close()
+
+	var body struct {
+		Status  string      `json:"status"`
+		Message string      `json:"message"`
+		Data    interface{} `json:"data"`
+		Success bool        `json:"success"`
+	}
+
+	json.NewDecoder(resp.Body).Decode(&body)
+
+	ctx.JSON(iris.StatusOK, iris.Map{
+		"status": "success",
+		"data":   body.Data,
+	})
+	return
+}
