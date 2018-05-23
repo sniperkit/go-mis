@@ -210,6 +210,8 @@ func InitCustomApi() {
 
 		// auto reconcile
 		v2.Any("/disbursement-transfer", autoRecon.DisbursementDataTransferSave)
+		v2.Any("/data-transfer/unmatched/branchId/:branchId/transactionType/:transacType/dateFrom/:transferDateFrom/dateTo/:transferDateTo", autoRecon.GetUnmatchedDataTransfer)
+		// v2.Any("/data-transfer/unmatched", autoRecon.GetUnmatchedDataTransfer)
 
 		// Mitra Management
 		v2.Any("/mitra-management/borrower/:borrowerType/date/:date", mitramanagement.GetBorrowerByInstallmentTypeAndDate)
