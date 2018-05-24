@@ -205,7 +205,7 @@ func InitCustomApi() {
 
 		v2.Any("/validation-teller/group-notes/:logType/save", validationTeller.SaveValidationTellerNotes)
 		v2.Any("/validation-teller/view/branch/:branchId/date/:date", validationTeller.GetDataValidationAndTransfer)
-		v2.Any("/data-transfer/vd-date", dataTransfer.AvailableValidationTellerDate)
+		v2.Any("/data-transfer/vd-date/branch/:branchId", dataTransfer.AvailableValidationTellerDate)
 		v2.Any("/data-transfer/save", dataTransfer.Save)
 
 		// auto reconcile

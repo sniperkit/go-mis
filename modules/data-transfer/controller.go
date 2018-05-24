@@ -11,22 +11,28 @@ func Init() {
 }
 
 // get open validation teller date
-func AvailableValidationTellerDate (ctx *iris.Context) {
+func AvailableValidationTellerDate(ctx *iris.Context) {
+	branchIDParam := ctx.Param("branchId")
 
-    query := `with vd as (select to_char(installment."createdAt"::date, 'YYYY-MM-DD') as "createdAt"
-    from installment 
+	query := `with vd as (select to_char(installment."createdAt"::date, 'YYYY-MM-DD') as "createdAt", sum(installment."cash_on_hand") as "amount"
+    from loan 
+    join r_loan_installment rli on rli."loanId" = loan.id and rli."deletedAt" isnull and loan."deletedAt" isnull
+    and loan.stage = 'INSTALLMENT' 
+    join installment on installment.id = rli."installmentId" and installment."deletedAt" isnull
+    join r_loan_branch rlb on rlb."loanId" = loan.id and rlb."deletedAt" isnull 
+    join branch on branch.id = rlb."branchId" and branch."deletedAt" isnull and branch.id = ?
     where installment."createdAt" >  CURRENT_DATE - INTERVAL '1 month'
-    group by 1)
+    group by (1))
     select * from vd
     where vd."createdAt" not in (select "validationDate" from data_transfer)`
 
-    vd := []ValidationDate{}
+	vd := []ValidationDate{}
 
-    services.DBCPsql.Raw(query).Find(&vd)
+	services.DBCPsql.Raw(query, branchIDParam).Find(&vd)
 
-    ctx.JSON(iris.StatusOK, iris.Map{
-		"status":    "success",
-		"data":      vd,
+	ctx.JSON(iris.StatusOK, iris.Map{
+		"status": "success",
+		"data":   vd,
 	})
 }
 
@@ -43,7 +49,7 @@ func Save(ctx *iris.Context) {
 	}
 
 	// Find data transfer by validation date
-   for _, val := range payload.Items {
+	for _, val := range payload.Items {
 		// Create new data transfer
 		if err := services.DBCPsql.Create(&val).Error; err != nil {
 			ctx.JSON(iris.StatusBadRequest, iris.Map{
@@ -52,6 +58,6 @@ func Save(ctx *iris.Context) {
 			})
 			return
 		}
-    }
+	}
 	ctx.JSON(iris.StatusOK, iris.Map{"status": "success", "data": payload})
 }
