@@ -13,7 +13,6 @@ import (
 func DisbursementDataTransferSave(ctx *iris.Context) {
 
 	payload := struct {
-		ID               uint64
 		TransferDate     string
 		DisburseDateFrom string
 		DisburseDateTo   string
@@ -154,6 +153,65 @@ func GetSettlementDraft(ctx *iris.Context) {
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"status": "success",
 		"data":   body.Data,
+	})
+	return
+}
+
+// save / update settlement draft
+func SaveSettlementDraft(ctx *iris.Context) {
+
+	payload := struct {
+		BankExcess          float64
+		BranchId            uint64
+		MatchedAmount       float64
+		MisExcess           float64
+		Stage               string
+		TransactionDateFrom string
+		TransactionDateTo   string
+		TransactionType     string
+	}{}
+
+	err := ctx.ReadJSON(&payload)
+	if err != nil {
+		ctx.JSON(iris.StatusBadRequest, iris.Map{
+			"message":      "Bad Request",
+			"errorMessage": err.Error(),
+		})
+		return
+	}
+
+	b := new(bytes.Buffer)
+	json.NewEncoder(b).Encode(payload)
+
+	var url string = config.GoFinAutoReconPath + "/api/v1/settlement/draft/save"
+	req, err := http.NewRequest("PUT", url, b)
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		ctx.JSON(iris.StatusInternalServerError, iris.Map{
+			"status":  "error",
+			"message": err.Error(),
+			"data":    iris.Map{},
+		})
+		return
+	}
+	defer resp.Body.Close()
+
+	var body struct {
+		Status  string      `json:"status"`
+		Message string      `json:"message"`
+		Data    interface{} `json:"data"`
+		Success bool        `json:"success"`
+	}
+
+	json.NewDecoder(resp.Body).Decode(&body)
+	fmt.Println(body)
+
+	ctx.JSON(iris.StatusOK, iris.Map{
+		"status": "success",
+		"data":   body.Message,
 	})
 	return
 }
