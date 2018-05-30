@@ -216,6 +216,7 @@ func InitCustomApi() {
 		v2.Any("/settlement/draft/transactionType/:transactionType/branchId/:branchId/dateFrom/:transferDateFrom/dateTo/:transferDateTo", autoRecon.GetSettlementDraft)
 		v2.Any("/disbursement-transfer/list/branchId/:branchId/transferDateFrom/:transferDateFrom/transferDateTo/:transferDateTo/disburseDateFrom/:disburseDateFrom/disburseDateTo/:disburseDateTo", autoRecon.GetDisbursementDataTransferList)
 		v2.Any("/data-transfer/list/branchId/:branchId/validationDateFrom/:validationDateFrom/validationDateTo/:validationDateTo/transferDateFrom/:transferDateFrom/transferDateTo/:transferDateTo", autoRecon.GetDataTransferList)
+		v2.Any("/data-transfer/detail/branchId/:branchId/validationDate/:validationDate/transferDate/:transferDate", autoRecon.GetDataTransferDetail)
 
 		// Mitra Management
 		v2.Any("/mitra-management/borrower/:borrowerType/date/:date", mitramanagement.GetBorrowerByInstallmentTypeAndDate)
