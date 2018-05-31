@@ -4,7 +4,7 @@ import "time"
 
 type Loan struct {
 	ID                   uint64     `gorm:"primary_key" gorm:"column:_id" json:"_id"`
-	LoanType           string      `gorm:"column:loanType" json:"loanType" sql:"default:NORMAL"`
+	LoanType             string     `gorm:"column:loanType" json:"loanType" sql:"default:NORMAL"`
 	LoanPeriod           int64      `gorm:"column:loanPeriod" json:"loanPeriod"`
 	AgreementType        string     `gorm:"column:agreementType" json:"agreementType"`
 	Subgroup             string     `gorm:"column:subgroup" json:"subgrop"`
@@ -25,11 +25,11 @@ type Loan struct {
 	Stage                string     `gorm:"column:stage" json:"stage"`
 	IsLWK                bool       `gorm:"column:isLWK" json:"isLWK" sql:"default:false"`
 	IsUPK                bool       `gorm:"column:isUPK" json:"IsUPK" sql:"default:false"`
-	IsInsurance					 bool				`gorm:"column:isInsurance" json:"isInsurance" sql:"default:false"`
-	IsInsuranceRequested bool 			`gorm:"column:isInsuranceRequested" json:"isInsuranceRequested" sql:"default:false"`
-	IsInsuranceRefund		 bool 			`gorm:"column:isInsuranceRefund" json:"isInsuranceRefund" sql:"default:false"`
-	InsuranceType				 string			`gorm:"column:insuranceType" json:"insuranceType"` // JAMKRINDO, ALLIANZ
-	EndType							 string     `gorm:"column:endType" json:"endType"` // EARLY, PENDING, PELDIN, INSURANCE
+	IsInsurance          bool       `gorm:"column:isInsurance" json:"isInsurance" sql:"default:false"`
+	IsInsuranceRequested bool       `gorm:"column:isInsuranceRequested" json:"isInsuranceRequested" sql:"default:false"`
+	IsInsuranceRefund    bool       `gorm:"column:isInsuranceRefund" json:"isInsuranceRefund" sql:"default:false"`
+	InsuranceType        string     `gorm:"column:insuranceType" json:"insuranceType"` // JAMKRINDO, ALLIANZ
+	EndType              string     `gorm:"column:endType" json:"endType"`             // EARLY, PENDING, PELDIN, INSURANCE
 	CreatedAt            time.Time  `gorm:"column:createdAt" json:"createdAt"`
 	UpdatedAt            time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
 	DeletedAt            *time.Time `gorm:"column:deletedAt" json:"deletedAt"`
@@ -39,7 +39,7 @@ type LoanDatatable struct {
 	ID                uint64  `gorm:"primary_key" gorm:"column:_id" json:"_id"`
 	LoanID            uint64  `gorm:"column:loanId" json:"loanId"`
 	BorrowerNo        string  `gorm:"column:borrowerNo" json:"borrowerNo"`
-	InvestorId       	uint64  `gorm:"column:investorId" json:"investorId"`
+	InvestorId        uint64  `gorm:"column:investorId" json:"investorId"`
 	Borrower          string  `gorm:"column:borrower" json:"borrower"`
 	Group             string  `gorm:"column:group" json:"group"`
 	SubmittedLoanDate string  `gorm:"column:submittedLoanDate" json:"submittedLoanDate"`
@@ -72,12 +72,12 @@ type LoanFetch struct {
 }
 
 type LoanBorrowerProfile struct {
-	BorrowerID	uint64    `gorm:"column:borrowerId" json:"borrowerId"`
-	CifNumber uint64 `gorm:"column:cifNumber" json:"cifNumber"`
-	Name      string `gorm:"name" json:"borrower"`
-	Area      string `gorm:"area" json:"area"`
-	Branch    string `gorm:"branch" json:"branch"`
-	Group     string `gorm:"group" json:"group"`
+	BorrowerID uint64 `gorm:"column:borrowerId" json:"borrowerId"`
+	CifNumber  uint64 `gorm:"column:cifNumber" json:"cifNumber"`
+	Name       string `gorm:"name" json:"borrower"`
+	Area       string `gorm:"area" json:"area"`
+	Branch     string `gorm:"branch" json:"branch"`
+	Group      string `gorm:"group" json:"group"`
 }
 
 type Akad struct {
@@ -97,7 +97,8 @@ type Akad struct {
 	AdminitrationFee   float64 `gorm:"column:administrationFee" json:"administrationFee"`
 	ServiceFee         float64 `gorm:"column:serviceFee" json:"serviceFee"`
 	DisbursementDate   string  `gorm:"column:disbursementDate" json:"disbursementDate"`
-	AgreementNo		   string  `gorm:"column:agreementNo" json:"agreementNo"`
+	AgreementNo        string  `gorm:"column:agreementNo" json:"agreementNo"`
+	AgreementNo2       string  `gorm:"column:agreementNo2" json:"agreementNo2"`
 }
 
 type LoanDropping struct {
@@ -119,11 +120,11 @@ type LoanStageHistory struct {
 }
 
 type RefundBase struct {
-	LoanID     uint64  `gorm:"column:loan_id"`
-	InvestorID uint64  `gorm:"column:investor_id"`
-	AccountID  uint64  `gorm:"column:account_id"`
-	Plafond    float64 `gorm:"column:plafond"`
-	IsInsurance bool `gorm:"column:isInsurance"`
+	LoanID      uint64  `gorm:"column:loan_id"`
+	InvestorID  uint64  `gorm:"column:investor_id"`
+	AccountID   uint64  `gorm:"column:account_id"`
+	Plafond     float64 `gorm:"column:plafond"`
+	IsInsurance bool    `gorm:"column:isInsurance"`
 }
 
 type AccountSum struct {
