@@ -3,11 +3,12 @@ package autoRecon
 import (
 	"fmt"
 
-	"bitbucket.org/go-mis/config"
 	"bytes"
 	"encoding/json"
-	"gopkg.in/kataras/iris.v4"
 	"net/http"
+
+	"bitbucket.org/go-mis/config"
+	"gopkg.in/kataras/iris.v4"
 )
 
 func DisbursementDataTransferSave(ctx *iris.Context) {
@@ -279,6 +280,36 @@ func GetDataTransferList(ctx *iris.Context) {
 // get data transfer detail
 func GetDataTransferDetail(ctx *iris.Context) {
 	var url string = config.GoFinAutoReconPath + "/api/v1/data-transfer/detail/" + ctx.Param("branchId") + "/" + ctx.Param("validationDate") + "/" + "/" + ctx.Param("transferDate")
+	resp, err := http.Get(url)
+	if err != nil {
+		ctx.JSON(iris.StatusInternalServerError, iris.Map{
+			"status":  "error",
+			"message": err.Error(),
+			"data":    iris.Map{},
+		})
+		return
+	}
+	defer resp.Body.Close()
+
+	var body struct {
+		Status  string      `json:"status"`
+		Message string      `json:"message"`
+		Data    interface{} `json:"data"`
+		Success bool        `json:"success"`
+	}
+
+	json.NewDecoder(resp.Body).Decode(&body)
+
+	ctx.JSON(iris.StatusOK, iris.Map{
+		"status": "success",
+		"data":   body.Data,
+	})
+	return
+}
+
+// get settlement detail
+func GetSettlementDetail(ctx *iris.Context) {
+	var url string = config.GoFinAutoReconPath + "/api/v1/transaction-reconciliation/settlement/" + ctx.Param("id")
 	resp, err := http.Get(url)
 	if err != nil {
 		ctx.JSON(iris.StatusInternalServerError, iris.Map{
