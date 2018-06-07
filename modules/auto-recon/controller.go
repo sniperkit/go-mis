@@ -336,3 +336,67 @@ func GetSettlementDetail(ctx *iris.Context) {
 	})
 	return
 }
+
+// get settlement by criteria
+func GetSettlementByCriteria(ctx *iris.Context) {
+	var url string = config.GoFinAutoReconPath + "/api/v1/transaction-reconciliation/settlement"
+
+	settlementId := ctx.URLParam("settlementId")
+	branchId := ctx.URLParam("branchId")
+	transactionType := ctx.URLParam("transactionType")
+	transactionDateFrom := ctx.URLParam("transactionDateFrom")
+	transactionDateTo := ctx.URLParam("transactionDateTo")
+
+	if branchId == "" || transactionDateFrom == "" || transactionDateTo == "" {
+		ctx.JSON(iris.StatusBadRequest, iris.Map{
+			"status":  "error",
+			"message": "branchId, transactionDateFrom, and transactionDateTo are mandatory",
+			"data":    iris.Map{},
+		})
+		return
+	}
+
+	req, err := http.NewRequest("GET", url, nil)
+
+	q := req.URL.Query()
+	q.Add("branchId", branchId)
+	q.Add("transactionDateFrom", transactionDateFrom)
+	q.Add("transactionDateTo", transactionDateTo)
+
+	if settlementId != "" {
+		q.Add("settlementId", settlementId)
+	}
+
+	if transactionType != "" {
+		q.Add("transactionType", transactionType)
+	}
+
+	req.URL.RawQuery = q.Encode()
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		ctx.JSON(iris.StatusInternalServerError, iris.Map{
+			"status":  "error",
+			"message": err.Error(),
+			"data":    iris.Map{},
+		})
+		return
+	}
+	defer resp.Body.Close()
+
+	var body struct {
+		Status  string      `json:"status"`
+		Message string      `json:"message"`
+		Data    interface{} `json:"data"`
+		Success bool        `json:"success"`
+	}
+
+	json.NewDecoder(resp.Body).Decode(&body)
+
+	ctx.JSON(iris.StatusOK, iris.Map{
+		"status": "success",
+		"data":   body.Data,
+	})
+	return
+}
