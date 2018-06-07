@@ -1,23 +1,23 @@
 package loan
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"strconv"
 	"time"
-	"errors"
-	
+
 	"bitbucket.org/go-mis/modules/account"
 	accountTransactionCredit "bitbucket.org/go-mis/modules/account-transaction-credit"
 	accountTransactionDebit "bitbucket.org/go-mis/modules/account-transaction-debit"
 	cif "bitbucket.org/go-mis/modules/cif"
 	"bitbucket.org/go-mis/modules/installment"
 	loanHistory "bitbucket.org/go-mis/modules/loan-history"
+	"bitbucket.org/go-mis/modules/product-pricing"
 	"bitbucket.org/go-mis/modules/r"
 	"bitbucket.org/go-mis/services"
-	"gopkg.in/kataras/iris.v4"
-	"bitbucket.org/go-mis/modules/product-pricing"
 	"github.com/jinzhu/gorm"
+	"gopkg.in/kataras/iris.v4"
 )
 
 func Init() {
@@ -242,8 +242,8 @@ func executeUpdateStage(id uint64, stage string) (string, error) {
 		services.DBCPsql.Table("r_investor_product_pricing_loan").Where(" \"loanId\" = ?", loanData.ID).Update("updatedAt", time.Now())
 		// services.DBCPsql.Table("r_investor_product_pricing_loan").Where(" \"loanId\" = ?", loanData.ID).Update("deletedAt", time.Now())
 	}
-	
-	// reset product pricing to retail 
+
+	// reset product pricing to retail
 	// if stageTo is `PRIVATE` or `MARKETPLACE`
 	if stage == `PRIVATE` || stage == `MARKETPLACE` {
 		productPricingSchema := productPricing.ProductPricing{}
@@ -288,11 +288,12 @@ func GetLoanDetail(ctx *iris.Context) {
 
 	services.DBCPsql.Raw(queryBorrowerObj, loanId).Scan(&borrowerObj)
 
-	queryInstallmentObj := "SELECT * "
-	queryInstallmentObj += "FROM installment "
-	queryInstallmentObj += "JOIN r_loan_installment ON r_loan_installment.\"installmentId\" = installment.\"id\" "
-	queryInstallmentObj += "JOIN loan ON loan.\"id\" = r_loan_installment.\"loanId\" "
-	queryInstallmentObj += "WHERE loan.\"id\" = ? and installment.\"deletedAt\" is null"
+	queryInstallmentObj := `SELECT * 
+	FROM installment 
+	JOIN r_loan_installment ON r_loan_installment."installmentId" = installment."id" 
+	JOIN loan ON loan."id" = r_loan_installment."loanId" 
+	WHERE loan."id" = ? and installment."deletedAt" is null
+	order by installment."createdAt" asc`
 
 	services.DBCPsql.Raw(queryInstallmentObj, loanId).Scan(&installmentObj)
 
@@ -305,46 +306,46 @@ func GetLoanDetail(ctx *iris.Context) {
 
 	services.DBCPsql.Raw(queryInvestorObj, loanId).Scan(&investorCifObj)
 
-	productPricingObj  := productPricing.ProductPricing{}
+	productPricingObj := productPricing.ProductPricing{}
 	queryProductPricing := "SELECT product_pricing.\"id\", product_pricing.\"returnOfInvestment\", product_pricing.\"administrationFee\", "
 	queryProductPricing += "product_pricing.\"serviceFee\", product_pricing.\"startDate\", product_pricing.\"endDate\", product_pricing.\"isInstitutional\" "
 	queryProductPricing += "FROM product_pricing "
 	queryProductPricing += "LEFT JOIN r_investor_product_pricing_loan ON r_investor_product_pricing_loan.\"productPricingId\"=product_pricing.\"id\" WHERE r_investor_product_pricing_loan.\"loanId\" = ?"
-	services.DBCPsql.Raw(queryProductPricing,loanId).Scan(&productPricingObj)
+	services.DBCPsql.Raw(queryProductPricing, loanId).Scan(&productPricingObj)
 
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"status": "success",
 		"data": iris.Map{
-			"loan":        loanObj,
-			"borrower":    borrowerObj,
-			"installment": installmentObj,
-			"investor":    investorCifObj,
-			"productPricing":    productPricingObj,
+			"loan":           loanObj,
+			"borrower":       borrowerObj,
+			"installment":    installmentObj,
+			"investor":       investorCifObj,
+			"productPricing": productPricingObj,
 		},
 	})
 }
 
 type BorrowerObj struct {
-	Fullname   string `gorm:"column:name" json:"name"`
-	BorrowerNo string `gorm:"column:borrowerNo" json:"borrowerNo"`
-	Branch 			string `gorm:"column:branch" json:"branch"`
-	BranchAddress	string `gorm:"column:addressDetail" json:"branchAddress"`
-	IdCardNo		string `gorm:"column:idCardNo" json:"idCardNo"`
-	Address		 	string `gorm:"column:address" json:"address"`
-	Kelurahan		string `gorm:"column:kelurahan" json:"kelurahan"`
-	Kecamatan		string `gorm:"column:kecamatan" json:"kecamatan"`
-	Group      	string `gorm:"column:group" json:"group"`
-	TempatLahir string `gorm:"column:tempatLahir" json:"tempatLahir"`
-	TanggalLahir string `gorm:"column:tanggalLahir" json:"tanggalLahir"`
-	BranchCity		string `gorm:"column:branchCity" json:"branchCity"`
-	BranchProvince	string `gorm:"column:branchProvince" json:"branchProvince"`
-	Desa		string `gorm:"column:desa" json:"desa"`
-	Status		string `gorm:"column:status" json:"status"`
-	NamaPenanggungJawab string `gorm:"column:nama_pj" json:"nama_pj"`
+	Fullname                   string `gorm:"column:name" json:"name"`
+	BorrowerNo                 string `gorm:"column:borrowerNo" json:"borrowerNo"`
+	Branch                     string `gorm:"column:branch" json:"branch"`
+	BranchAddress              string `gorm:"column:addressDetail" json:"branchAddress"`
+	IdCardNo                   string `gorm:"column:idCardNo" json:"idCardNo"`
+	Address                    string `gorm:"column:address" json:"address"`
+	Kelurahan                  string `gorm:"column:kelurahan" json:"kelurahan"`
+	Kecamatan                  string `gorm:"column:kecamatan" json:"kecamatan"`
+	Group                      string `gorm:"column:group" json:"group"`
+	TempatLahir                string `gorm:"column:tempatLahir" json:"tempatLahir"`
+	TanggalLahir               string `gorm:"column:tanggalLahir" json:"tanggalLahir"`
+	BranchCity                 string `gorm:"column:branchCity" json:"branchCity"`
+	BranchProvince             string `gorm:"column:branchProvince" json:"branchProvince"`
+	Desa                       string `gorm:"column:desa" json:"desa"`
+	Status                     string `gorm:"column:status" json:"status"`
+	NamaPenanggungJawab        string `gorm:"column:nama_pj" json:"nama_pj"`
 	TempatLahirPenanggungJawab string `gorm:"column:pj_tempatlahir" json:"pj_tempatlahir"`
-	TglLahirPenanggungJawab string `gorm:"column:pj_tgllahir" json:"pj_tgllahir"`
-	HubPenanggungJawab string `gorm:"column:hubungan" json:"data_hubungan"`
-	AgentName		string `gorm:"column:agentName" json:"agentName"`
+	TglLahirPenanggungJawab    string `gorm:"column:pj_tgllahir" json:"pj_tgllahir"`
+	HubPenanggungJawab         string `gorm:"column:hubungan" json:"data_hubungan"`
+	AgentName                  string `gorm:"column:agentName" json:"agentName"`
 }
 
 // GetAkadData - Get data to be shown in Akad
@@ -431,7 +432,7 @@ func GetAkadData(ctx *iris.Context) {
 		})
 		return
 	}
-	
+
 	floatTenor := float64(data.Tenor)
 	weeklyBase := Round(data.Plafond/floatTenor, 2)
 	weeklyMargin := Round(data.Rate*data.Plafond*data.ReturnOfInvestment/floatTenor, 2)
@@ -485,28 +486,28 @@ func GetAkadData(ctx *iris.Context) {
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"status": "success",
 		"data": iris.Map{
-			"_id":               data.ID,
-			"adminFee":			 data.AdminitrationFee,
-			"serviceFee":		 data.ServiceFee,
-			"disbursementDate":  data.DisbursementDate,
-			"agreementType":     sentAgreementType,
-			"majelisName":		 data.Group,
-			"purpose":           data.Purpose,
-			"plafond":           data.Plafond,
-			"tenor":             data.Tenor,
-			"installment":       data.Installment,
-			"rate": 			 data.Rate,
+			"_id":                data.ID,
+			"adminFee":           data.AdminitrationFee,
+			"serviceFee":         data.ServiceFee,
+			"disbursementDate":   data.DisbursementDate,
+			"agreementType":      sentAgreementType,
+			"majelisName":        data.Group,
+			"purpose":            data.Purpose,
+			"plafond":            data.Plafond,
+			"tenor":              data.Tenor,
+			"installment":        data.Installment,
+			"rate":               data.Rate,
 			"returnOfInvestment": data.ReturnOfInvestment,
-			"agreementNo":		data.AgreementNo,
-			"agreementNo2":		data.AgreementNo2,
-			"weeklyBase":        weeklyBase,
-			"weeklyMargin":      weeklyMargin,
-			"weeklyFeeBorrower": weeklyFeeBorrower,
-			"weeklyFeeInvestor": weeklyFeeInvestor,
-			"reserve":           reserve,
-			"borrower":          borrowerData,
-			"investorId":        data.InvestorID,
-			"investor":          investorData,
+			"agreementNo":        data.AgreementNo,
+			"agreementNo2":       data.AgreementNo2,
+			"weeklyBase":         weeklyBase,
+			"weeklyMargin":       weeklyMargin,
+			"weeklyFeeBorrower":  weeklyFeeBorrower,
+			"weeklyFeeInvestor":  weeklyFeeInvestor,
+			"reserve":            reserve,
+			"borrower":           borrowerData,
+			"investorId":         data.InvestorID,
+			"investor":           investorData,
 		},
 	})
 }
@@ -550,13 +551,13 @@ func RefundAndChangeStageTo(ctx *iris.Context) {
 		AccountTransactionDebitId: transaction.ID,
 	}
 	services.DBCPsql.Table("r_account_transaction_debit").Create(&rTransaction)
-	
+
 	// Check whether loan included insurance or NOT
-	// if yes, then refund the amount based on plafond * insurance-rate 
+	// if yes, then refund the amount based on plafond * insurance-rate
 	// insurance-rate = 1.5% = 0.015
 	if refundBase.IsInsurance {
 		insuranceRate := 0.015
-		
+
 		transactionInsurance := accountTransactionDebit.AccountTransactionDebit{
 			Type:            "REFUND-INSURANCE",
 			TransactionDate: time.Now(),
@@ -564,14 +565,14 @@ func RefundAndChangeStageTo(ctx *iris.Context) {
 			Remark:          "Refund insurance",
 		}
 		services.DBCPsql.Table("account_transaction_debit").Create(&transactionInsurance)
-	
+
 		// add new account_transaction_debit_loan entry
 		transactionLoanInsurance := accountTransactionDebit.AccountTransactionDebitLoan{
 			AccountTransactionDebitID: transactionInsurance.ID,
 			LoanID: refundBase.LoanID,
 		}
 		services.DBCPsql.Table("r_account_transaction_debit_loan").Create(&transactionLoanInsurance)
-	
+
 		// connect the entry to investor account
 		rTransactionInsurance := r.RAccountTransactionDebit{
 			AccountId:                 refundBase.AccountID,
@@ -663,47 +664,47 @@ func AssignInvestorToLoan(ctx *iris.Context) {
 	loanHistorySchema := &loanHistory.LoanHistory{StageFrom: loanSchema.Stage, StageTo: "INVESTOR", Remark: "MANUAL ASSIGN loanId=" + fmt.Sprintf("%v", loanSchema.ID) + " investorId=" + fmt.Sprintf("%v", rCifInvestorSchema.InvestorId)}
 
 	transac := services.DBCPsql.Begin()
-	err:=transac.Table("loan_history").Create(loanHistorySchema).Error
-	if err!=nil {
-		processErrorAndRollback(ctx,transac,err,"CREATE-LOAN-HISTORY")
+	err := transac.Table("loan_history").Create(loanHistorySchema).Error
+	if err != nil {
+		processErrorAndRollback(ctx, transac, err, "CREATE-LOAN-HISTORY")
 		return
 	}
 
 	fmt.Println("Insert r_loan_history")
 	rLoanHistorySchema := &r.RLoanHistory{LoanId: loanSchema.ID, LoanHistoryId: loanHistorySchema.ID}
-	err=transac.Table("r_loan_history").Create(rLoanHistorySchema).Error
+	err = transac.Table("r_loan_history").Create(rLoanHistorySchema).Error
 	fmt.Println("Insert r_loan_history_finish")
-	if err!=nil {
-		processErrorAndRollback(ctx,transac,err,"CREATE-R-LOAN-HISTORY")
+	if err != nil {
+		processErrorAndRollback(ctx, transac, err, "CREATE-R-LOAN-HISTORY")
 		return
 	}
 
-	fmt.Println("UpdateLoan",loanID)
-	err=transac.Exec(`update loan set stage='INVESTOR' where loan.id=?`,loanID).Error
+	fmt.Println("UpdateLoan", loanID)
+	err = transac.Exec(`update loan set stage='INVESTOR' where loan.id=?`, loanID).Error
 	fmt.Println("Finish update Loan")
-	if err!=nil {
-		processErrorAndRollback(ctx,transac,err,"UPDATE-STAGE-INVESTOR")
+	if err != nil {
+		processErrorAndRollback(ctx, transac, err, "UPDATE-STAGE-INVESTOR")
 		return
 	}
 	// Checking Function if investorId has a product pricing.
 	rInvestorProductPricing := r.RInvestorProductPricing{}
 	transac.Table("r_investor_product_pricing").Where("\"investorId\" = ?", investorId).Scan(&rInvestorProductPricing)
 	fmt.Println("ProductPricing")
-	if rInvestorProductPricing.ID == 0{
-		err=transac.Table("r_investor_product_pricing_loan").Where("\"loanId\" = ?", loanSchema.ID).UpdateColumn("investorId", rCifInvestorSchema.InvestorId).Error
-		if err!=nil {
-			processErrorAndRollback(ctx,transac,err,"UPDATE-R-CIF-INVESTOR")
+	if rInvestorProductPricing.ID == 0 {
+		err = transac.Table("r_investor_product_pricing_loan").Where("\"loanId\" = ?", loanSchema.ID).UpdateColumn("investorId", rCifInvestorSchema.InvestorId).Error
+		if err != nil {
+			processErrorAndRollback(ctx, transac, err, "UPDATE-R-CIF-INVESTOR")
 			return
 		}
-	}else{
-		err=transac.Table("r_investor_product_pricing_loan").Where("\"loanId\" = ?", loanSchema.ID).UpdateColumn("investorId", rCifInvestorSchema.InvestorId).Error
-		if err!=nil {
-			processErrorAndRollback(ctx,transac,err,"UPDATE-R-INVESTOR-PRODUCT-PRICING-LOAN")
+	} else {
+		err = transac.Table("r_investor_product_pricing_loan").Where("\"loanId\" = ?", loanSchema.ID).UpdateColumn("investorId", rCifInvestorSchema.InvestorId).Error
+		if err != nil {
+			processErrorAndRollback(ctx, transac, err, "UPDATE-R-INVESTOR-PRODUCT-PRICING-LOAN")
 			return
 		}
-		err=transac.Table("r_investor_product_pricing_loan").Where("\"loanId\" = ?", loanSchema.ID).UpdateColumn("productPricingId", rInvestorProductPricing.ProductPricingId).Error
-		if err!=nil {
-			processErrorAndRollback(ctx,transac,err,"UPDATE-R-INVESTOR-PRODUCT-PRICING-LOAN")
+		err = transac.Table("r_investor_product_pricing_loan").Where("\"loanId\" = ?", loanSchema.ID).UpdateColumn("productPricingId", rInvestorProductPricing.ProductPricingId).Error
+		if err != nil {
+			processErrorAndRollback(ctx, transac, err, "UPDATE-R-INVESTOR-PRODUCT-PRICING-LOAN")
 			return
 		}
 	}
@@ -713,39 +714,39 @@ func AssignInvestorToLoan(ctx *iris.Context) {
 	transac.Table("r_account_investor").Where("\"investorId\" = ?", rCifInvestorSchema.InvestorId).Scan(&rAccountInvestorSchema)
 
 	accountTransactionCreditSchema := &accountTransactionCredit.AccountTransactionCredit{Type: "INVEST", TransactionDate: time.Now(), Amount: loanSchema.Plafond, Remark: "MANUAL ASSIGN"}
-	err=transac.Table("account_transaction_credit").Create(accountTransactionCreditSchema).Error
-	if err!=nil {
-		processErrorAndRollback(ctx,transac,err,"UPDATE-ACCOUNT-TRANSACTION-CREDIT")
+	err = transac.Table("account_transaction_credit").Create(accountTransactionCreditSchema).Error
+	if err != nil {
+		processErrorAndRollback(ctx, transac, err, "UPDATE-ACCOUNT-TRANSACTION-CREDIT")
 		return
 	}
 
 	rAccountTransactionCreditSchema := &r.RAccountTransactionCredit{AccountId: rAccountInvestorSchema.AccountId, AccountTransactionCreditId: accountTransactionCreditSchema.ID}
-	err=transac.Table("r_account_transaction_credit").Create(rAccountTransactionCreditSchema).Error
-	if err!=nil {
-		processErrorAndRollback(ctx,transac,err,"UPDATE-R-ACCOUNT-TRANSACTION-CREDIT")
+	err = transac.Table("r_account_transaction_credit").Create(rAccountTransactionCreditSchema).Error
+	if err != nil {
+		processErrorAndRollback(ctx, transac, err, "UPDATE-R-ACCOUNT-TRANSACTION-CREDIT")
 		return
 	}
 	rAccounTransactionCreditLoanSchema := &r.RAccountTransactionCreditLoan{AccountTransactionCreditId: accountTransactionCreditSchema.ID, LoanId: loanSchema.ID}
-	err=transac.Table("r_account_transaction_credit_loan").Create(rAccounTransactionCreditLoanSchema).Error
-	if err!=nil {
-		processErrorAndRollback(ctx,transac,err,"r_account_transaction_credit_loan")
+	err = transac.Table("r_account_transaction_credit_loan").Create(rAccounTransactionCreditLoanSchema).Error
+	if err != nil {
+		processErrorAndRollback(ctx, transac, err, "r_account_transaction_credit_loan")
 		return
 	}
 
-	totalDebit := accountTransactionDebit.GetTotalAccountTransactionDebitByTransac(transac,rAccountInvestorSchema.AccountId)
-	totalCredit := accountTransactionCredit.GetTotalAccountTransactionCreditByTransac(transac,rAccountInvestorSchema.AccountId)
+	totalDebit := accountTransactionDebit.GetTotalAccountTransactionDebitByTransac(transac, rAccountInvestorSchema.AccountId)
+	totalCredit := accountTransactionCredit.GetTotalAccountTransactionCreditByTransac(transac, rAccountInvestorSchema.AccountId)
 
 	totalBalance := totalDebit - totalCredit
 
-	err=transac.Exec(`UPDATE "account" SET "totalDebit" = ?, "totalCredit" = ?, "totalBalance" = ?  WHERE (id = ?)`,totalDebit,totalCredit,totalBalance,rAccountInvestorSchema.AccountId).Error
+	err = transac.Exec(`UPDATE "account" SET "totalDebit" = ?, "totalCredit" = ?, "totalBalance" = ?  WHERE (id = ?)`, totalDebit, totalCredit, totalBalance, rAccountInvestorSchema.AccountId).Error
 
-	if err!=nil {
-		processErrorAndRollback(ctx,transac,err,"ACCOUNT")
+	if err != nil {
+		processErrorAndRollback(ctx, transac, err, "ACCOUNT")
 		return
 	}
 
-	queryReferal:=`with A as (
-select id, "inviterInvestorId" from referral where "inviteeInvestorId" = ` + strconv.FormatUint(rCifInvestorSchema.InvestorId,10) + ` and "inviterGetTimestamp" isnull and "deletedAt" isnull
+	queryReferal := `with A as (
+select id, "inviterInvestorId" from referral where "inviteeInvestorId" = ` + strconv.FormatUint(rCifInvestorSchema.InvestorId, 10) + ` and "inviterGetTimestamp" isnull and "deletedAt" isnull
 ),
 B as (
     update referral set "inviterGetTimestamp" = current_timestamp, "inviteeUseTimestamp" = current_timestamp
@@ -772,9 +773,9 @@ J as(
     returning account.id
 )
 select * from B`
-	err=transac.Exec(queryReferal).Error
-	if err!=nil {
-		processErrorAndRollback(ctx,transac,err,"REFERAL")
+	err = transac.Exec(queryReferal).Error
+	if err != nil {
+		processErrorAndRollback(ctx, transac, err, "REFERAL")
 		return
 	}
 	transac.Commit()
@@ -786,7 +787,7 @@ select * from B`
 }
 
 func processErrorAndRollback(ctx *iris.Context, db *gorm.DB, err error, process string) {
-	fmt.Println("#ERROR#MANUALASSIGN",process,err)
+	fmt.Println("#ERROR#MANUALASSIGN", process, err)
 	db.Rollback()
 	ctx.JSON(iris.StatusInternalServerError, iris.Map{"status": "error", "error": "Error on " + process + " " + err.Error()})
 }
