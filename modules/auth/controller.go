@@ -61,13 +61,14 @@ func UserMisLogin(ctx *iris.Context) {
 	//
 	// loginForm.HashPassword()
 
+	// gocas anomaly
 	u := Cas{Username: loginForm.Username, Password: loginForm.Password, UserType: "MIS"}
-	fmt.Println(u)
 	b := new(bytes.Buffer)
 	json.NewEncoder(b).Encode(u)
-	fmt.Println(config.GoCasApiPath)
-	fmt.Println(config.SignStringKey)
-	res, _ := http.Post(config.GoCasApiPath+"/api/v1/auth", "application/json; charset=utf-8", b)
+	res, err := http.Post(config.GoCasApiPath+"/api/v1/auth", "application/json; charset=utf-8", b)
+	if err != nil {
+		fmt.Println(err)
+	}
 
 	type casResponseData struct {
 		Token             string `json:"token"`

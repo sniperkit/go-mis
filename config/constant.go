@@ -27,6 +27,7 @@ var (
 	GoLogPath                 string
 	GoBorrowerPath            string
 	GoLoanPath                string
+	GoWithdrawalPath          string
 	Configuration             Config
 )
 
@@ -41,6 +42,7 @@ type Config struct {
 	SignString          string      `json:"signString"`
 	ApiVersion          string      `json:"apiVersion"`
 	EnableEmergencyLoan bool        `json:"enableEmergencyLoan"`
+	GoWithdrawalPath    string      `json:"goWithdrawalPath"`
 	GoBankingPath       string      `json:"goBankingPath"`
 	GoLogPath           string      `json:"goLogPath"`
 	GoLoanPath          string      `json:"goLoanPath"`
@@ -119,11 +121,12 @@ func init() {
 	GoBankingPath = Configuration.GoBankingPath
 	GoBorrowerPath = Configuration.GoBorrowerPath
 	GoLoanPath = Configuration.GoLoanPath
+	GoWithdrawalPath = Configuration.GoWithdrawalPath
 	EnableEmergencyLoan = Configuration.EnableEmergencyLoan
 	WhiteList = Configuration.WhiteList
 
 	// Postgresql Host Address
-	PsqlHostAddressMisAmartha = "host=" + Configuration.Psql[0].Host + " port=" + Configuration.Psql[0].Port + " user=" + Configuration.Psql[0].Username + " dbname=" + Configuration.Psql[0].Db + " sslmode=" + Configuration.Psql[0].SslMode
+	PsqlHostAddressMisAmartha = "host=" + Configuration.Psql[0].Host + " port=" + Configuration.Psql[0].Port + " user=" + Configuration.Psql[0].Username + " dbname=" + Configuration.Psql[0].Db + " sslmode=" + Configuration.Psql[0].SslMode + " fallback_application_name=go-mis"
 	if Configuration.Psql[0].Password != "" {
 		PsqlHostAddressMisAmartha += " password=" + Configuration.Psql[0].Password
 	}
