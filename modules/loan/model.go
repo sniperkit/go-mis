@@ -49,6 +49,7 @@ type LoanDatatable struct {
 	Rate              float64 `gorm:"column:rate" json:"rate"`
 	Stage             string  `gorm:"column:stage" json:"stage"`
 	LoanType          string  `gorm:"column:loanType" json:"loanType"`
+	AkadAvailable     bool    `gorm:"column:akadAvailable" json:"akadAvailable"`
 }
 
 type LoanFetch struct {

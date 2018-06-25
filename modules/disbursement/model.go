@@ -48,4 +48,9 @@ type DisbursementDetailByGroup struct {
 	DisbursementDate time.Time `gorm:"column:disbursementDate" json:"disbursementDate"`
 	Stage            string    `gorm:"column:stage" json:"stage"`
 	LoanStage        string    `gorm:"column:loanStage" json:"loanStage"`
+	AkadAvailable     bool    `gorm:"column:akadAvailable" json:"akadAvailable"`
+	LWK1Date         *time.Time `gorm:"column:lwk1Date" json:"lwk1Date"`
+	LWK2Date         *time.Time `gorm:"column:lwk2Date" json:"lwk2Date"`
+	UPKDate          *time.Time `gorm:"column:upkDate" json:"upkDate"`
+	BorrowerId       uint64     `gorm:"column:borrowerId" json:"borrowerId"`
 }
