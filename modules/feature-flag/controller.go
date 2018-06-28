@@ -7,10 +7,10 @@ import (
 	"strconv"
 )
 
-var control go_control.Control
+var Control go_control.Control
 
 func Init() {
-	control = go_control.Init("MIS", config.FlagServerPath)
+	Control = go_control.Init("MIS", config.FlagServerPath)
 }
 
 func GetStatusForFlag(ctx *iris.Context) {
@@ -28,6 +28,6 @@ func GetStatusForFlag(ctx *iris.Context) {
 
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"status": "success",
-		"enabled": control.IsEnabledForBranchID(flagName, branchID),
+		"enabled": Control.IsEnabledForBranchID(flagName, branchID),
 	})
 }

@@ -10,6 +10,8 @@ import (
 	"bitbucket.org/go-mis/modules/r"
 	"bitbucket.org/go-mis/services"
 	iris "gopkg.in/kataras/iris.v4"
+	"bitbucket.org/go-mis/modules/feature-flag"
+	"bitbucket.org/go-mis/modules/utility"
 )
 
 func Init() {
@@ -50,8 +52,16 @@ func FetchAll(ctx *iris.Context) {
 }
 
 func GetDisbursementDetailByGroup(ctx *iris.Context) {
-	query := "SELECT investor.id AS \"investorId\", \"group\".id AS \"groupId\", \"group\".\"name\" AS \"groupName\", branch.\"name\" AS \"branchName\", borrower.\"borrowerNo\", cif.\"name\" AS \"borrower\", loan.id AS \"loanId\", loan.plafond, disbursement.\"disbursementDate\"::date, disbursement.stage, loan.stage AS \"loanStage\", borrower.\"lwk1Date\", borrower.\"lwk2Date\", borrower.\"upkDate\", borrower.\"id\" as \"borrowerId\", "
-	query += "case when loan.\"isLWK\" = true and loan.\"isUPK\" = true then true else false end as \"akadAvailable\" "
+	query := ""
+
+	branchID := utility.ParseBranchIDFromContext(ctx.Get("BRANCH_ID"))
+	if feature_flag.Control.IsEnabledForBranchID("new-avara", branchID) {
+		query += "SELECT investor.id AS \"investorId\", \"group\".id AS \"groupId\", \"group\".\"name\" AS \"groupName\", branch.\"name\" AS \"branchName\", borrower.\"borrowerNo\", cif.\"name\" AS \"borrower\", loan.id AS \"loanId\", loan.plafond, disbursement.\"disbursementDate\"::date, disbursement.stage, loan.stage AS \"loanStage\", borrower.\"lwk1Date\", borrower.\"lwk2Date\", borrower.\"upkDate\", borrower.\"id\" as \"borrowerId\", "
+		query += "case when loan.\"isLWK\" = true and loan.\"isUPK\" = true then true else false end as \"akadAvailable\" "
+	} else {
+		query += "SELECT investor.id AS \"investorId\", \"group\".id AS \"groupId\", \"group\".\"name\" AS \"groupName\", branch.\"name\" AS \"branchName\", borrower.\"borrowerNo\", cif.\"name\" AS \"borrower\", loan.id AS \"loanId\", loan.plafond, disbursement.\"disbursementDate\"::date, disbursement.stage, loan.stage AS \"loanStage\" "
+	}
+
 	query += "FROM \"group\" "
 	query += "JOIN r_group_branch ON r_group_branch.\"groupId\" = \"group\".id "
 	query += "JOIN branch ON branch.id = r_group_branch.\"branchId\" "
