@@ -28,6 +28,8 @@ func GetStatusForFlag(ctx *iris.Context) {
 
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"status": "success",
-		"enabled": Control.IsEnabledForBranchID(flagName, branchID),
+		"data": iris.Map{
+			"enabled": Control.IsEnabledForBranchID(flagName, branchID),
+		},
 	})
 }
