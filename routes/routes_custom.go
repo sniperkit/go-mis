@@ -43,6 +43,7 @@ import (
 	"bitbucket.org/go-mis/modules/voucher"
 	"gopkg.in/iris-contrib/middleware.v4/cors"
 	"gopkg.in/kataras/iris.v4"
+	"bitbucket.org/go-mis/modules/feature-flag"
 )
 
 var baseURL = "/api/v2"
@@ -68,6 +69,9 @@ func InitCustomApi() {
 	iris.Any(baseURL+"/installment-approve-success/:stageFrom/:stageTo", installment.SubmitInstallmentByGroupIDAndTransactionDateWithStatus)
 	iris.Any(baseURL+"/installment-approve-success-custom-brooooo", installment.SubmitInstallmentByGroupIDAndTransactionDateWithStatusAndInstallmentId)
 	//iris.Any(baseURL+"/investor-check/view", investorCheck.FetchDatatables)
+
+	// Feature Flag
+	iris.Any("/feature-flag/:flagName/:branchID", feature_flag.GetStatusForFlag)
 
 	v2 := iris.Party(baseURL, auth.EnsureAuth)
 	{

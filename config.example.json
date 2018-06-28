@@ -41,5 +41,6 @@
   "whiteList":"127.0.0.1",
   "enableEmergencyLoan":true,
   "signString":"supersecret",
-  "firebaseType":"development"
+  "firebaseType":"development",
+  "flagServerPath": "http://localhost:4242/api/"
 }
