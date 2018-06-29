@@ -400,3 +400,55 @@ func GetSettlementByCriteria(ctx *iris.Context) {
 	})
 	return
 }
+
+// match single transaction
+func MatchSingleTransaction(ctx *iris.Context) {
+	payload := struct {
+		DataTransferId  uint64 `json:"dataTransferId"`
+		BankStatementId uint64 `json:"bankStatementId"`
+	}{}
+
+	err := ctx.ReadJSON(&payload)
+	if err != nil {
+		ctx.JSON(iris.StatusBadRequest, iris.Map{
+			"message":      "Bad Request",
+			"errorMessage": err.Error(),
+		})
+		return
+	}
+
+	b := new(bytes.Buffer)
+	json.NewEncoder(b).Encode(payload)
+
+	var url string = config.GoFinAutoReconPath + "/api/v1/transaction-reconciliation/match"
+	req, err := http.NewRequest("PUT", url, b)
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		ctx.JSON(iris.StatusInternalServerError, iris.Map{
+			"status":  "error",
+			"message": err.Error(),
+			"data":    iris.Map{},
+		})
+		return
+	}
+	defer resp.Body.Close()
+
+	var body struct {
+		Status  string      `json:"status"`
+		Message string      `json:"message"`
+		Data    interface{} `json:"data"`
+		Success bool        `json:"success"`
+	}
+
+	json.NewDecoder(resp.Body).Decode(&body)
+	fmt.Println(body)
+
+	ctx.JSON(iris.StatusOK, iris.Map{
+		"status": "success",
+		"data":   body.Message,
+	})
+	return
+}
