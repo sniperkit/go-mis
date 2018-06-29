@@ -15,6 +15,7 @@ type Branch struct {
 	Province      string           `gorm:"column:province" json:"province"`
 	Lat           float64          `gorm:"column:lat" json:"lat"`
 	Lng           float64          `gorm:"column:lng" json:"lng"`
+	BranchCode    string           `gorm:"column:branchCode" json:"branchCode"`
 	Geopoint      gormGIS.GeoPoint `gorm:"column:geopoint" sql:"type:geometry(Geometry,4326)"`
 	CreatedAt     time.Time        `gorm:"column:createdAt" json:"createdAt"`
 	UpdatedAt     time.Time        `gorm:"column:updatedAt" json:"updatedAt"`
@@ -37,6 +38,7 @@ type BranchManagerArea struct {
 	Area          string `gorm:"column:area" json:"area"`
 	Role          string `gorm:"column:role" json:"role"`
 	AddressDetail string `gorm:"column:addressDetail" json:"addressDetail"`
+	BranchCode    string `gorm:"column:branchCode" json:"branchCode"`
 }
 
 type BranchAreaManager struct {
