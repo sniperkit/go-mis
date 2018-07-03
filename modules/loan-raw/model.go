@@ -16,6 +16,18 @@ type LoanRaw struct {
 	DeletedAt *time.Time  `gorm:"column:deletedAt" json:"deletedAt"`
 }
 
+type LoanRawNew struct {
+	ID          uint64      `json:"id"`
+	LoanID      uint64      `json:"loanId"`
+	LoanType    string      `json:"loanType"`
+	LoanStage   string      `json:"loanStage"`
+	Version     string      `json:"_version"`
+	Raw         string      `json:"_raw" sql:"type:jsonb"`
+	CreatedAt   time.Time   `json:"createdAt"`
+	UpdatedAt   time.Time   `json:"updatedAt"`
+	DeletedAt   *time.Time  `json:"deletedAt"`
+}
+
 func (j JSONB) Value() (driver.Value, error) {
   	valueString, err := json.Marshal(j)
   	return string(valueString), err

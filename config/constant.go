@@ -25,7 +25,10 @@ var (
 	EnableEmergencyLoan       bool
 	GoBankingPath             string
 	GoLogPath                 string
+	GoBorrowerPath            string
+	GoLoanPath                string
 	GoWithdrawalPath          string
+	FlagServerPath            string
 	Configuration             Config
 	GoFinAutoReconPath        string
 )
@@ -45,6 +48,8 @@ type Config struct {
 	GoBankingPath       string      `json:"goBankingPath"`
 	GoLogPath           string      `json:"goLogPath"`
 	GoLoanPath          string      `json:"goLoanPath"`
+	GoBorrowerPath      string      `json:"goBorrowerPath"`
+	FlagServerPath      string      `json:"flagServerPath"`
 	GoFinAutoReconPath  string      `json:"goFinAutoReconPath"`
 }
 
@@ -119,9 +124,12 @@ func init() {
 	GoFinAutoReconPath = Configuration.GoFinAutoReconPath
 	SignStringKey = Configuration.SignString
 	GoBankingPath = Configuration.GoBankingPath
+	GoBorrowerPath = Configuration.GoBorrowerPath
+	GoLoanPath = Configuration.GoLoanPath
 	GoWithdrawalPath = Configuration.GoWithdrawalPath
 	EnableEmergencyLoan = Configuration.EnableEmergencyLoan
 	WhiteList = Configuration.WhiteList
+	FlagServerPath = Configuration.FlagServerPath
 
 	// Postgresql Host Address
 	PsqlHostAddressMisAmartha = "host=" + Configuration.Psql[0].Host + " port=" + Configuration.Psql[0].Port + " user=" + Configuration.Psql[0].Username + " dbname=" + Configuration.Psql[0].Db + " sslmode=" + Configuration.Psql[0].SslMode + " fallback_application_name=go-mis"

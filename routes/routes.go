@@ -42,6 +42,7 @@ import (
 	"bitbucket.org/go-mis/modules/virtual-account"
 	"bitbucket.org/go-mis/modules/virtual-account-statement"
 	"bitbucket.org/go-mis/modules/voucher"
+	"bitbucket.org/go-mis/modules/feature-flag"
 )
 
 // If domain is NOT specified,
@@ -96,6 +97,9 @@ func initializeAll() {
 
 	config.Domain = "disbursement-history"
 	disbursementHistory.Init()
+
+	config.Domain = "feature-flag"
+	feature_flag.Init()
 
 	config.Domain = "group"
 	group.Init()
@@ -197,6 +201,8 @@ func Init() {
 		disbursement.Init()
 	case "disbursement-history":
 		disbursementHistory.Init()
+	case "feature-flag":
+		feature_flag.Init()
 	case "group":
 		group.Init()
 	case "installment":

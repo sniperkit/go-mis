@@ -1,13 +1,17 @@
 package disbursement
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	disbursementHistory "bitbucket.org/go-mis/modules/disbursement-history"
 	"bitbucket.org/go-mis/modules/r"
 	"bitbucket.org/go-mis/services"
 	iris "gopkg.in/kataras/iris.v4"
+	"bitbucket.org/go-mis/modules/feature-flag"
+	"bitbucket.org/go-mis/modules/utility"
 )
 
 func Init() {
@@ -48,7 +52,16 @@ func FetchAll(ctx *iris.Context) {
 }
 
 func GetDisbursementDetailByGroup(ctx *iris.Context) {
-	query := "SELECT investor.id AS \"investorId\", \"group\".id AS \"groupId\", \"group\".\"name\" AS \"groupName\", branch.\"name\" AS \"branchName\", borrower.\"borrowerNo\", cif.\"name\" AS \"borrower\", loan.id AS \"loanId\", loan.plafond, disbursement.\"disbursementDate\"::date, disbursement.stage, loan.stage AS \"loanStage\" "
+	query := ""
+
+	bid := utility.ParseBranchIDFromContext(ctx.Get("BRANCH_ID"))
+	if feature_flag.Control.IsEnabledForBranchID("new-disbursement", bid) {
+		query += "SELECT investor.id AS \"investorId\", \"group\".id AS \"groupId\", \"group\".\"name\" AS \"groupName\", branch.\"name\" AS \"branchName\", borrower.\"borrowerNo\", cif.\"name\" AS \"borrower\", loan.id AS \"loanId\", loan.plafond, disbursement.\"disbursementDate\"::date, disbursement.stage, loan.stage AS \"loanStage\", borrower.\"lwk1Date\", borrower.\"lwk2Date\", borrower.\"upkDate\", borrower.\"id\" as \"borrowerId\", "
+		query += "case when loan.\"isLWK\" = true and loan.\"isUPK\" = true then true else false end as \"akadAvailable\" "
+	} else {
+		query += "SELECT investor.id AS \"investorId\", \"group\".id AS \"groupId\", \"group\".\"name\" AS \"groupName\", branch.\"name\" AS \"branchName\", borrower.\"borrowerNo\", cif.\"name\" AS \"borrower\", loan.id AS \"loanId\", loan.plafond, disbursement.\"disbursementDate\"::date, disbursement.stage, loan.stage AS \"loanStage\" "
+	}
+
 	query += "FROM \"group\" "
 	query += "JOIN r_group_branch ON r_group_branch.\"groupId\" = \"group\".id "
 	query += "JOIN branch ON branch.id = r_group_branch.\"branchId\" "
@@ -237,4 +250,51 @@ func UpdateDisbursementDate(ctx *iris.Context) {
 		"status": "success",
 		"data":   iris.Map{},
 	})
+}
+
+// set LWK/UPK date
+func SetLWKUPKDate(ctx *iris.Context) {
+	payload := struct {
+		DateType   string   `json:"dateType"`
+		LwkUpkDate string   `json:"lwkUpkDate"`
+		BorrowerId []uint64 `json:"borrowerId"`
+	}{}
+	if err := ctx.ReadJSON(&payload); err != nil {
+		ctx.JSON(iris.StatusBadRequest, iris.Map{
+			"status":  "error",
+			"message": err.Error(),
+		})
+		return
+	}
+	// parse string
+	layout := "2006-01-02"
+	str := payload.LwkUpkDate
+	t, err := time.Parse(layout, str)
+
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	// update borrower
+	query := ""
+	if payload.DateType == "lwk1" {
+		query = `update borrower set "lwk1Date"=? where id in (?)`
+	} else if payload.DateType == "lwk2" {
+		query = `update borrower set "lwk2Date"=? where id in (?)`
+	} else if payload.DateType == "upk" {
+		query = `update borrower set "upkDate"=? where id in (?)`
+	} else {
+		ctx.JSON(iris.StatusBadRequest, iris.Map{
+			"status":  "error",
+			"message": err.Error(),
+		})
+		return
+	}
+
+	services.DBCPsql.Exec(query, t, payload.BorrowerId)
+	ctx.JSON(iris.StatusOK, iris.Map{
+		"status": "success",
+		"data":   iris.Map{},
+	})
+
 }

@@ -3,6 +3,10 @@
 	"ignore": "test",
 	"package": [
 		{
+			"path": "bitbucket.org/Amartha/go-control",
+			"revision": ""
+		},
+		{
 			"checksumSHA1": "keA/DUpCUUVvjoRN8RiVkehRWGo=",
 			"path": "bitbucket.org/go-worker-topsheet/model",
 			"revision": "85910c4ccd65f153a6effde3ebdf72e3d87eb11b",
@@ -15,10 +19,64 @@
 			"revisionTime": "2017-06-08T00:51:49Z"
 		},
 		{
+			"checksumSHA1": "rhLUtXvcmouYuBwOq9X/nYKzvNg=",
+			"path": "github.com/dustin/go-humanize",
+			"revision": "77ed807830b4df581417e7f89eb81d4872832b72",
+			"revisionTime": "2017-08-28T04:11:59Z"
+		},
+		{
 			"checksumSHA1": "40Ns85VYa4smQPcewZ7SOdfLnKU=",
 			"path": "github.com/fatih/structs",
 			"revision": "a720dfa8df582c51dee1b36feabb906bde1588bd",
 			"revisionTime": "2017-01-03T08:10:50Z"
+		},
+		{
+			"checksumSHA1": "iXQlbJJGmkkHPdBkDx8Ll1i1S1c=",
+			"path": "github.com/go-redis/redis",
+			"revision": "0f9028adf0837cf93c9705817493e5f6997cf026",
+			"revisionTime": "2018-05-24T07:10:05Z"
+		},
+		{
+			"checksumSHA1": "L/n8TwOiRwhhL2TvFNafxB6rAwY=",
+			"path": "github.com/go-redis/redis/internal",
+			"revision": "0f9028adf0837cf93c9705817493e5f6997cf026",
+			"revisionTime": "2018-05-24T07:10:05Z"
+		},
+		{
+			"checksumSHA1": "GQZsUVg/+6UpQAYpc4luMvMutSI=",
+			"path": "github.com/go-redis/redis/internal/consistenthash",
+			"revision": "0f9028adf0837cf93c9705817493e5f6997cf026",
+			"revisionTime": "2018-05-24T07:10:05Z"
+		},
+		{
+			"checksumSHA1": "GE9tg94JwCzMbBwn3Q2LaFs5Rx0=",
+			"path": "github.com/go-redis/redis/internal/hashtag",
+			"revision": "0f9028adf0837cf93c9705817493e5f6997cf026",
+			"revisionTime": "2018-05-24T07:10:05Z"
+		},
+		{
+			"checksumSHA1": "AtcctlDri3zLh6U5sDnT4NULEtw=",
+			"path": "github.com/go-redis/redis/internal/pool",
+			"revision": "0f9028adf0837cf93c9705817493e5f6997cf026",
+			"revisionTime": "2018-05-24T07:10:05Z"
+		},
+		{
+			"checksumSHA1": "2DZs/18lBWzZk2rxWLVtPUzNXhs=",
+			"path": "github.com/go-redis/redis/internal/proto",
+			"revision": "0f9028adf0837cf93c9705817493e5f6997cf026",
+			"revisionTime": "2018-05-24T07:10:05Z"
+		},
+		{
+			"checksumSHA1": "sjbjSJrTdvyDwNjrWjTNeXgUhaU=",
+			"path": "github.com/go-redis/redis/internal/singleflight",
+			"revision": "0f9028adf0837cf93c9705817493e5f6997cf026",
+			"revisionTime": "2018-05-24T07:10:05Z"
+		},
+		{
+			"checksumSHA1": "SvyqZrzHTVxCIBoawql2ucvfWLE=",
+			"path": "github.com/go-redis/redis/internal/util",
+			"revision": "0f9028adf0837cf93c9705817493e5f6997cf026",
+			"revisionTime": "2018-05-24T07:10:05Z"
 		},
 		{
 			"path": "github.com/google/go-github/github",
@@ -177,6 +235,12 @@
 			"path": "github.com/shurcooL/sanitized_anchor_name",
 			"revision": "1dba4b3954bc059efc3991ec364f9f9a35f597d2",
 			"revisionTime": "2016-09-18T04:11:01Z"
+		},
+		{
+			"checksumSHA1": "6HQLUzskMvCLHDJ0msFjZ8IDqqI=",
+			"path": "github.com/sony/gobreaker",
+			"revision": "3cb67c77c1d1e72fda30c6970578164d24f806b6",
+			"revisionTime": "2017-11-08T10:09:24Z"
 		},
 		{
 			"checksumSHA1": "qR3q2rm/H13PX5Twte9x7PK9Td4=",

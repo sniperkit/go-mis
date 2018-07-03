@@ -16,6 +16,9 @@ import (
 	"github.com/jinzhu/gorm"
 	"github.com/kataras/go-errors"
 	iris "gopkg.in/kataras/iris.v4"
+	"bitbucket.org/go-mis/config"
+	"encoding/json"
+	"bitbucket.org/go-mis/modules/httpClient"
 )
 
 func Init() {
@@ -109,6 +112,7 @@ func CreateBorrowerData(ctx *iris.Context, payload map[string]interface{}, sourc
 	}
 
 	// reserve one loan record for this new borrower
+	payload["borrowerId"] = strconv.FormatUint(borrowerId, 10)
 	errLoan, loan := CreateLoan(payload)
 	if errLoan != nil {
 		ProcessErrorAndRollback(ctx, db, "Error Create object loan "+errLoan.Error())
@@ -555,4 +559,78 @@ func GetBorrowerByGroup(ctx *iris.Context) {
 		"data":   m,
 	})
 
+}
+
+func GetProspectiveAvaraBorrowerByBranch(ctx *iris.Context) {
+	branchID := ctx.Param("branch_id")
+
+	goBorrowerEndpoint := fmt.Sprintf(`%s/borrower/prospective-avara/%v`, config.GoBorrowerPath, branchID)
+	var responseBody struct {
+		Status  int                         `json:"status"`
+		Code    int                         `json:"code"`
+		Message string                      `json:"message"`
+		Data    []ProspectiveAvaraBorrower  `json:"data"`
+	}
+	resBody, err := httpClient.Get(goBorrowerEndpoint)
+	if err != nil {
+		fmt.Printf("error contacting go borrower: %+v", err)
+		ctx.JSON(iris.StatusInternalServerError, nil)
+		return
+	}
+
+	err = json.Unmarshal(resBody, &responseBody)
+	if err != nil {
+		fmt.Printf("error parsing response body: %+v", err)
+		ctx.JSON(iris.StatusInternalServerError, nil)
+		return
+	}
+
+	ctx.JSON(iris.StatusOK, iris.Map{
+		"status": "success",
+		"data": responseBody.Data,
+	})
+}
+
+func SubmitAvaraOffer(ctx *iris.Context) {
+	payload := BorrowerAvaraRequest{}
+	if err := ctx.ReadJSON(&payload); err != nil {
+		ctx.JSON(iris.StatusBadRequest, iris.Map{
+			"status":  "error",
+			"message": err.Error(),
+		})
+		return
+	}
+
+	goBorrowerEndpoint := fmt.Sprintf(`%s/borrower/process-avara`, config.GoBorrowerPath)
+	var responseBody struct {
+		Status  int                         `json:"status"`
+		Code    int                         `json:"code"`
+		Message string                      `json:"message"`
+		Error   string                      `json:"error"`
+	}
+	resBody, err := httpClient.Post(goBorrowerEndpoint, payload)
+	if err != nil {
+		fmt.Printf("error contacting go borrower: %+v", err)
+		ctx.JSON(iris.StatusInternalServerError, nil)
+		return
+	}
+
+	err = json.Unmarshal(resBody, &responseBody)
+	if err != nil {
+		fmt.Printf("error parsing response body: %+v", err)
+		ctx.JSON(iris.StatusInternalServerError, nil)
+		return
+	}
+
+	if responseBody.Code != 200 {
+		fmt.Printf("go-borrower response: %+v\n", responseBody)
+		ctx.JSON(iris.StatusBadRequest, responseBody.Error)
+		return
+	}
+
+	ctx.JSON(iris.StatusOK, iris.Map{
+		"status": "success",
+		"data": nil,
+	})
+	return
 }

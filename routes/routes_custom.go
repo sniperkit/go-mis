@@ -44,6 +44,7 @@ import (
 	"bitbucket.org/go-mis/modules/voucher"
 	"gopkg.in/iris-contrib/middleware.v4/cors"
 	"gopkg.in/kataras/iris.v4"
+	"bitbucket.org/go-mis/modules/feature-flag"
 )
 
 var baseURL = "/api/v2"
@@ -69,6 +70,9 @@ func InitCustomApi() {
 	iris.Any(baseURL+"/installment-approve-success/:stageFrom/:stageTo", installment.SubmitInstallmentByGroupIDAndTransactionDateWithStatus)
 	iris.Any(baseURL+"/installment-approve-success-custom-brooooo", installment.SubmitInstallmentByGroupIDAndTransactionDateWithStatusAndInstallmentId)
 	//iris.Any(baseURL+"/investor-check/view", investorCheck.FetchDatatables)
+
+	// Feature Flag
+	iris.Any("/feature-flag/:flagName/:branchID", feature_flag.GetStatusForFlag)
 
 	v2 := iris.Party(baseURL, auth.EnsureAuth)
 	{
@@ -119,6 +123,7 @@ func InitCustomApi() {
 		v2.Any("/installment/group/:group_id/by-transaction-date/:transaction_date/submit/:stageFrom/:stageTo", installment.SubmitInstallmentByGroupIDAndTransactionDateWithStatus)
 		v2.Any("/installment/submit/:installment_id/status/:status", installment.SubmitInstallmentByInstallmentIDWithStatus)
 		v2.Any("/disbursement", disbursement.FetchAll)
+		v2.Any("/disbursement/setDate/lwkUpkDate", disbursement.SetLWKUPKDate)
 		v2.Any("/disbursement/set/:loan_id/stage/:stage", disbursement.UpdateDisbursementStage)
 		v2.Any("/disbursement/get/branch/:branch_id/group/:group_id/disbursement-date/:disbursement_date", disbursement.GetDisbursementDetailByGroup)
 		v2.Any("/user-mis", userMis.FetchUserMisAreaBranchRole)
@@ -139,6 +144,8 @@ func InitCustomApi() {
 		v2.Any("/borrower/approve/update-status/:id", borrower.ProspectiveBorrowerUpdateStatus)
 		v2.Any("/borrower/reject/update-status/:id", borrower.ProspectiveBorrowerUpdateStatusToReject)
 		v2.Get("/borrower/total-by-branch/:branch_id", borrower.GetTotalBorrowerByBranchID)
+		v2.Get("/borrower/prospective-avara/:branch_id", borrower.GetProspectiveAvaraBorrowerByBranch)
+		v2.Any("/borrower/prospective-avara-offer", borrower.SubmitAvaraOffer)
 		v2.Any("/virtual-account-statement", virtualAccountStatement.GetVAStatement)
 		v2.Any("/agent", agent.GetAllAgentByBranchID)
 		v2.Any("/agent/branch/:id", agent.GetAllAgent)
