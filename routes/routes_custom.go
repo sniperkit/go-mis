@@ -7,6 +7,7 @@ import (
 	"bitbucket.org/go-mis/modules/agent"
 	"bitbucket.org/go-mis/modules/area"
 	"bitbucket.org/go-mis/modules/auth"
+	"bitbucket.org/go-mis/modules/auto-recon"
 	"bitbucket.org/go-mis/modules/borrower"
 	"bitbucket.org/go-mis/modules/branch"
 	"bitbucket.org/go-mis/modules/cashout"
@@ -211,7 +212,21 @@ func InitCustomApi() {
 
 		v2.Any("/validation-teller/group-notes/:logType/save", validationTeller.SaveValidationTellerNotes)
 		v2.Any("/validation-teller/view/branch/:branchId/date/:date", validationTeller.GetDataValidationAndTransfer)
+		v2.Any("/data-transfer/vd-date/branch/:branchId", dataTransfer.AvailableValidationTellerDate)
 		v2.Any("/data-transfer/save", dataTransfer.Save)
+
+		// auto reconcile
+		v2.Any("/disbursement-transfer", autoRecon.DisbursementDataTransferSave)
+		v2.Any("/data-transfer/unmatched/branchId/:branchId/transactionType/:transacType/dateFrom/:transferDateFrom/dateTo/:transferDateTo", autoRecon.GetUnmatchedDataTransfer)
+		v2.Any("/bank-statement/unmatched/dateFrom/:transferDateFrom/dateTo/:transferDateTo", autoRecon.GetUnmatchedBankStatement)
+		v2.Any("/settlement/draft/save", autoRecon.SaveSettlementDraft)
+		v2.Any("/settlement/draft/transactionType/:transactionType/branchId/:branchId/dateFrom/:transferDateFrom/dateTo/:transferDateTo", autoRecon.GetSettlementDraft)
+		v2.Any("/disbursement-transfer/list/branchId/:branchId/transferDateFrom/:transferDateFrom/transferDateTo/:transferDateTo/disburseDateFrom/:disburseDateFrom/disburseDateTo/:disburseDateTo", autoRecon.GetDisbursementDataTransferList)
+		v2.Any("/data-transfer/list/branchId/:branchId/validationDateFrom/:validationDateFrom/validationDateTo/:validationDateTo/transferDateFrom/:transferDateFrom/transferDateTo/:transferDateTo", autoRecon.GetDataTransferList)
+		v2.Any("/data-transfer/detail/branchId/:branchId/validationDate/:validationDate/transferDate/:transferDate", autoRecon.GetDataTransferDetail)
+		v2.Any("/transaction-reconciliation/settlement/:id", autoRecon.GetSettlementDetail)
+		v2.Get("/transaction-reconciliation/settlement", autoRecon.GetSettlementByCriteria)
+		v2.Any("/transaction-reconciliation/match", autoRecon.MatchSingleTransaction)
 
 		// Mitra Management
 		v2.Any("/mitra-management/borrower/:borrowerType/date/:date", mitramanagement.GetBorrowerByInstallmentTypeAndDate)

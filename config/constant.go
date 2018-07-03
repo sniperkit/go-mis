@@ -30,6 +30,7 @@ var (
 	GoWithdrawalPath          string
 	FlagServerPath            string
 	Configuration             Config
+	GoFinAutoReconPath        string
 )
 
 type Config struct {
@@ -49,6 +50,7 @@ type Config struct {
 	GoLoanPath          string      `json:"goLoanPath"`
 	GoBorrowerPath      string      `json:"goBorrowerPath"`
 	FlagServerPath      string      `json:"flagServerPath"`
+	GoFinAutoReconPath  string      `json:"goFinAutoReconPath"`
 }
 
 type DbConfig struct {
@@ -119,6 +121,7 @@ func init() {
 	P2pPath = Configuration.P2pPath
 	GoCasApiPath = Configuration.GoCasPath
 	GoLogPath = Configuration.GoLogPath
+	GoFinAutoReconPath = Configuration.GoFinAutoReconPath
 	SignStringKey = Configuration.SignString
 	GoBankingPath = Configuration.GoBankingPath
 	GoBorrowerPath = Configuration.GoBorrowerPath
