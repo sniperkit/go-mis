@@ -1,0 +1,46 @@
+{
+  "psql": [
+    {
+      "db": "",
+      "host": "",
+      "port": "",
+      "username": "",
+      "password": "",
+      "ssl_mode": ""
+    },
+    {
+      "db": "",
+      "host": "",
+      "port": "",
+      "username": "",
+      "password": "",
+      "ssl_mode": ""
+    }
+  ],
+
+  "mysql": {
+    "db": "",
+    "host": "",
+    "port": "",
+    "username": "",
+    "password": null,
+    "ssl_mode": ""
+  },
+  "redis":{
+    "address":"",
+    "port":6379,
+    "password":"",
+    "db":0
+  },
+  "goLoanPath":"",
+  "uploaderPath":"",
+  "goCasPath":"",
+  "goLogPath": "",
+  "goBankingPath":"",
+  "goBorrowerPath":"",
+  "whiteList":"",
+  "enableEmergencyLoan":true,
+  "signString":"",
+  "firebaseType":"",
+  "flagServerPath": ""
+}
