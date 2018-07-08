@@ -19,7 +19,7 @@ func FetchAll(ctx *iris.Context) {
 	roles := []role.Role{}
 	qRole := `SELECT "role".* FROM "role"
 		JOIN r_user_mis_role rumr ON rumr."roleId" = "role".id 
-		WHERE ("role"."name" ~* 'admin' OR "role"."name" ~* 'area') AND rumr."userMisId" = ?
+		WHERE ("role"."name" LIKE '%admin%' OR "role"."name" LIKE '%area%') AND rumr."userMisId" = ?
 	`
 
 	userMis := ctx.Get("USER_MIS").(userMis.UserMis)

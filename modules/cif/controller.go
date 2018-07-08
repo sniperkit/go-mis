@@ -29,8 +29,7 @@ func FetchAll(ctx *iris.Context) {
 	queryTotalData += "where cif.\"deletedAt\" is null "
 
 	if ctx.URLParam("search") != "" {
-		// queryTotalData += "WHERE cif.name LIKE '%" + ctx.URLParam("search") + "%' "
-		queryTotalData += "and cif.\"name\" ~* '" + ctx.URLParam("search") + "' "
+		queryTotalData += "and cif.\"name\" LIKE '%" + ctx.URLParam("search") + "%' "
 	}
 
 	services.DBCPsql.Raw(queryTotalData).Find(&totalData)
@@ -48,8 +47,7 @@ func FetchAll(ctx *iris.Context) {
 	query += "where cif.\"deletedAt\" is null "
 
 	if ctx.URLParam("search") != "" {
-		// query += "WHERE cif.name LIKE '%" + ctx.URLParam("search") + "%' "
-		query += "and cif.\"name\" ~* '" + ctx.URLParam("search") + "' "
+		query += "and cif.\"name\" LIKE '%" + ctx.URLParam("search") + "%' "
 	}
 
 	if ctx.URLParam("limit") != "" {

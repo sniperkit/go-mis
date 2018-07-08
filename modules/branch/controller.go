@@ -28,7 +28,7 @@ func FetchAll(ctx *iris.Context) {
 	LEFT JOIN "role" ON "role".id = r_user_mis_role."roleId"
 	LEFT JOIN r_area_branch ON r_area_branch."branchId" = branch.id
 	LEFT JOIN area ON area.id = r_area_branch."areaId"
-	WHERE ("role".id IS NULL OR "role"."name" ~* 'branch manager' OR "role"."name" ~* 'Branch Manager')
+	WHERE ("role".id IS NULL OR UPPER("role"."name") LIKE '%Branch Manager%')
 	AND branch."deletedAt" IS NULL ORDER BY area."name" ASC `
 
 	branch := []BranchManagerArea{}
