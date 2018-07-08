@@ -92,10 +92,10 @@ func FetchDatatables(ctx *iris.Context) {
 	}
 
 	if len(strings.TrimSpace(search)) > 0 {
-		query += ` AND (cif.name ~* '` + search + `' OR investor."investorNo"::text ~* '` + search + `' OR cif."idCardNo" ~* '` + search + `' OR  
-					cif."taxCardNo" ~* '` + search + `' OR cif."username"  ~* '` + search + `') `
+		query += ` AND (cif.name LIKE '%` + search + `%' OR investor."investorNo"::text LIKE '%` + search + `%' OR cif."idCardNo" LIKE '%` + search + `%' OR  
+					cif."taxCardNo" LIKE '%` + search + `%' OR cif."username" LIKE '%` + search + `%') `
 	} else {
-		query += "AND cif.name ~* '" + search + "' "
+		query += "AND cif.name LIKE '%" + search + "%' "
 	}
 
 	groupedBy := ` group by cif."id", cif."name", cif."phoneNo", cif."idCardNo", "bankAccountName", cif."taxCardNo",

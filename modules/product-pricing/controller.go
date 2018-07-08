@@ -19,7 +19,7 @@ func SearchInvestor(ctx *iris.Context) {
   from investor
   join r_cif_investor on r_cif_investor."investorId" = investor.id
   join cif on r_cif_investor."cifId" = cif.id
-  where cif.name ~* ?
+  where cif.name LIKE '%?%'
   and investor."isInstitutional" = true
   and not exists (
   	select 1 from r_investor_product_pricing ripp

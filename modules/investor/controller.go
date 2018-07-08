@@ -304,8 +304,8 @@ func GetInvestorForTopup(ctx *iris.Context) {
 	queryGetInvestor += "WHERE cif.\"deletedAt\" IS NULL AND investor.\"deletedAt\" IS NULL "
 
 	if ctx.URLParam("search") != "" {
-		queryCount += "AND cif.\"name\" ~* '" + ctx.URLParam("search") + "' "
-		queryGetInvestor += "AND cif.\"name\" ~* '" + ctx.URLParam("search") + "' "
+		queryCount += "AND cif.\"name\" LIKE '%" + ctx.URLParam("search") + "%' "
+		queryGetInvestor += "AND cif.\"name\" LIKE '%" + ctx.URLParam("search") + "%' "
 	}
 
 	var limitPagination int64 = 10

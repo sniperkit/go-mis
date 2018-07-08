@@ -63,7 +63,7 @@ func FetchAll(ctx *iris.Context) {
 	queryTotalData += "WHERE r_loan_branch.\"branchId\" = ? "
 
 	if ctx.URLParam("search") != "" {
-		queryTotalData += "AND cif.\"name\" ~* '" + ctx.URLParam("search") + "' "
+		queryTotalData += "AND cif.\"name\" LIKE '%" + ctx.URLParam("search") + "%' "
 	}
 
 	services.DBCPsql.Raw(queryTotalData, branchID).Find(&totalData)
@@ -118,13 +118,13 @@ func FetchAll(ctx *iris.Context) {
 	query += "WHERE r_loan_branch.\"branchId\" = ? "
 
 	if ctx.URLParam("search") != "" {
-		query += "AND (cif.\"name\" ~* '" + ctx.URLParam("search") + "' "
-		query += "OR \"group\".\"name\" ~* '" + ctx.URLParam("search") + "' "
-		query += "OR loan.stage ~* '" + ctx.URLParam("search") + "' "
+		query += "AND (cif.\"name\" LIKE '%" + ctx.URLParam("search") + "%' "
+		query += "OR \"group\".\"name\" LIKE '%" + ctx.URLParam("search") + "%' "
+		query += "OR loan.stage LIKE '%" + ctx.URLParam("search") + "%' "
 
 		if _, err := strconv.Atoi(ctx.URLParam("search")); err == nil {
 			query += "OR cast(loan.id as text) like '" + ctx.URLParam("search") + "' "
-			query += "OR cast(borrower.\"borrowerNo\" as text) ~* '" + ctx.URLParam("search") + "')"
+			query += "OR cast(borrower.\"borrowerNo\" as text) LIKE '%" + ctx.URLParam("search") + "%')"
 		} else {
 			query += ")"
 		}

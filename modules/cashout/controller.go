@@ -74,25 +74,25 @@ func FetchDatatables(ctx *iris.Context) {
 
 	} else if stage != "" && stage != "ALL" {
 		// query += strings.Replace("WHERE stage ='?'", "?", stage, -1)
-		query += ` WHERE stage ~* '` + stage + `'`
+		query += ` WHERE stage LIKE '%` + stage + `%'`
 	}
 
 	if len(strings.TrimSpace(search)) > 0 {
-		query += ` AND (cif.name ~* '` + search + `' OR investor."investorNo"::text ~* '` + search + `' OR cif."idCardNo" ~* '` + search + `' OR  
-					cif."taxCardNo" ~* '` + search + `' OR cif."username"  ~* '` + search + `') `
+		query += ` AND (cif.name LIKE '%` + search + `%' OR investor."investorNo"::text LIKE '%` + search + `%' OR cif."idCardNo" LIKE '%` + search + `%' OR  
+					cif."taxCardNo" LIKE '%` + search + `%' OR cif."username" LIKE '%` + search + `%') `
 	}
 
 	/*
 		if len(investorName) > 0 {
-			query += ` AND cif.name ~* '` + investorName + `'`
+			query += ` AND cif.name LIKE '%` + investorName + `%'`
 		}
 	*/
 
 	if len(investorName) > 0 {
 		if submenu == "completed" {
-			query += `where stage like 'SUCCESS' AND cif.name ~* '` + investorName + `' or stage like 'CANCEL%' AND cif.name ~* '` + investorName + `' `
+			query += `where stage like 'SUCCESS' AND cif.name LIKE '%` + investorName + `%' or stage like 'CANCEL%' AND cif.name LIKE '%` + investorName + `%' `
 		} else {
-			query += ` AND cif.name ~* '` + investorName + `'`
+			query += ` AND cif.name LIKE '%` + investorName + `%'`
 		}
 	}
 
@@ -102,8 +102,8 @@ func FetchDatatables(ctx *iris.Context) {
 
 	/*
 		if len(investorName) > 0 && len(stageId) > 0 && len(dateSendToMandiri) > 0 {
-			query += ` AND (cif.name ~* '` + investorName + `' AND cashout."stage" ~* '` +
-				stageId + `' AND account_transaction_credit."transactionDate" ~* '` + dateSendToMandiri + `') `
+			query += ` AND (cif.name LIKE '%` + investorName + `%' AND cashout."stage" LIKE '%` +
+				stageId + `%' AND account_transaction_credit."transactionDate" = '` + dateSendToMandiri + `') `
 		}
 	*/
 
@@ -194,21 +194,21 @@ func FetchAll(ctx *iris.Context) {
 		}
 
 	} else if stage != "" && stage != "ALL" {
-		query += ` WHERE stage ~* '` + stage + `'`
+		query += ` WHERE stage LIKE '%` + stage + `%'`
 		// query += strings.Replace("WHERE stage ='?'", "?", stage, -1)
 	}
 
 	/*
 		if len(investorName) > 0 {
-			query += ` AND cif.name ~* '` + investorName + `'`
+			query += ` AND cif.name LIKE '%` + investorName + `%'`
 		}
 	*/
 
 	if len(investorName) > 0 {
 		if submenu == "completed" {
-			query += `where stage like 'SUCCESS' AND cif.name ~* '` + investorName + `' or stage like 'CANCEL%' AND cif.name ~* '` + investorName + `' `
+			query += `where stage like 'SUCCESS' AND cif.name LIKE '%` + investorName + `%' or stage like 'CANCEL%' AND cif.name LIKE '%` + investorName + `%' `
 		} else {
-			query += ` AND cif.name ~* '` + investorName + `'`
+			query += ` AND cif.name LIKE '%` + investorName + `%'`
 		}
 	}
 
