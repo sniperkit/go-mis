@@ -5,6 +5,7 @@ import (
 	"log"
 	"strconv"
 	"time"
+	"strings"
 
 	"gopkg.in/kataras/iris.v4"
 
@@ -121,6 +122,27 @@ func GetInvestorAndFlushTempData(investorID uint64) {
 	request.Get(p2pFlushDataEndpoint).End()
 }
 
+func BulkInvestorAndFlushTempData(investorID []uint64) {
+	payload := struct {
+		Job					string	 `json:"job"`
+		SecretKey 	string 	 `json:"secretKey"`
+		Data				struct {
+			InvestorID	[]uint64 `json:"investorId"`
+		} `json:"data"`
+	}{}
+	payload.Job = "flush-datacache"
+	payload.Data.InvestorID = investorID
+	payload.SecretKey = "p2p4wesom3"
+
+	p2pFlushDataEndpoint := config.P2pPath + "/v2/queue/flush-cache"
+
+	investorIDtoString := strings.Trim(strings.Replace(fmt.Sprint(investorID), " ", ",", -1), "[]")
+
+	log.Println("try to reach node p2p link: " + p2pFlushDataEndpoint + " with InvestorId: " + investorIDtoString)
+	request := gorequest.New()
+	request.Post(p2pFlushDataEndpoint).Send(payload).End()
+}
+
 // fungsi-fungsi dewa
 func AcceptLoanOrder(ctx *iris.Context) {
 	// seting order no
@@ -135,7 +157,9 @@ func AcceptLoanOrder(ctx *iris.Context) {
 
 	//flush data after complete process accept loan order
 	accID := GetAccountId(orderNo)
-	go GetInvestorAndFlushTempData(accID.InvestorId)
+	// go GetInvestorAndFlushTempData(accID.InvestorId)
+	investorId := []uint64{accID.InvestorId}
+	go BulkInvestorAndFlushTempData(investorId)
 
 	ctx.JSON(iris.StatusOK, iris.Map{
 		"status": "success",
