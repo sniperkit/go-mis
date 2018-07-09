@@ -193,7 +193,7 @@ func FindInstallmentByGroupIDAndTransactionDate(branchID interface{}, groupID, s
 	return installmentDetails, nil
 }
 
-func StoreInstallment(db *gorm.DB, installmentId uint64, status string) error {
+func StoreInstallment(db *gorm.DB, installmentId uint64, status string) (uint64, error) {
 	convertedInstallmentId := strconv.FormatUint(installmentId, 10)
 	fmt.Println("[INFO] Storing installment. installmentID=" + convertedInstallmentId + " status=" + status)
 	installmentSchema := Installment{}
@@ -205,7 +205,7 @@ func StoreInstallment(db *gorm.DB, installmentId uint64, status string) error {
 		installmentSchema.Stage != "IN-REVIEW" &&
 		installmentSchema.Stage != "APPROVE" &&
 		installmentSchema.Stage != "APPROVE-CP" {
-		return errors.New("Current installment stage is NEITHER 'TELLER' NOR'PENDING' NOR 'IN-REVIEW' nor 'APPROVE'. System cannot continue to process your request. installmentId=" + convertedInstallmentId)
+		return 0, errors.New("Current installment stage is NEITHER 'TELLER' NOR'PENDING' NOR 'IN-REVIEW' nor 'APPROVE'. System cannot continue to process your request. installmentId=" + convertedInstallmentId)
 	}
 
 	if strings.ToUpper(status) == "REJECT" ||
@@ -216,7 +216,7 @@ func StoreInstallment(db *gorm.DB, installmentId uint64, status string) error {
 		strings.ToUpper(status) == "TELLER" {
 		log.Println("Installment data has been", status, ". Waiting worker. installmentId=", convertedInstallmentId)
 		UpdateStageInstallmentApproveOrReject(db, installmentId, installmentSchema.Stage, status)
-		return nil
+		return 0, nil
 	}
 
 	/*
@@ -241,7 +241,7 @@ func StoreInstallment(db *gorm.DB, installmentId uint64, status string) error {
 	loanInvestorAccountIDSchema := LoanInvestorAccountID{}
 	er := db.Raw(queryGetAccountInvestor, installmentId).Scan(&loanInvestorAccountIDSchema).Error
 	if er != nil {
-		return er
+		return 0, er
 	}
 
 	loanSchema := LoanSchema{}
@@ -251,7 +251,7 @@ func StoreInstallment(db *gorm.DB, installmentId uint64, status string) error {
 	if err := UpdateLoanStage(installmentSchema, loanSchema.ID, db); err != nil {
 		//DO NOT ROLLBACK
 		fmt.Errorf("Error on Update Loan Stage. Error = %s\n", loanSchema.ID, err.Error())
-		return nil
+		return 0, nil
 	}
 
 	// accountTransactionDebitAmount := frequency * (plafond / tenor) + ((paidInstallment - (frequency * (plafond/tenor))) * pplROI);
@@ -285,8 +285,8 @@ func StoreInstallment(db *gorm.DB, installmentId uint64, status string) error {
 	 */
 
 	UpdateStageInstallmentApproveOrReject(db, installmentId, "PROCESSING", status)
-	FlushInvestorData(db, loanInvestorAccountIDSchema.AccountID)
-	return nil
+	// FlushInvestorData(db, loanInvestorAccountIDSchema.AccountID)
+	return loanInvestorAccountIDSchema.InvestorID, nil
 }
 
 func FlushInvestorData(db *gorm.DB, accountID uint64) {
@@ -335,7 +335,7 @@ func SubmitInstallmentByInstallmentIDWithStatus(ctx *iris.Context) {
 
 	go func() {
 		db := services.DBCPsql.Begin()
-		err := StoreInstallment(db, installmentID, status)
+		_, err := StoreInstallment(db, installmentID, status)
 		if err != nil {
 			ProcessErrorAndRollback(ctx, db, err.Error())
 			return
@@ -406,10 +406,12 @@ func SubmitInstallmentByGroupIDAndTransactionDateWithStatus(ctx *iris.Context) {
 		// jumlah data yang akan diproses
 		willbeProceed := len(installmentDetailSchema)
 
+		var listInvestorID []uint64
+
 		for _, item := range installmentDetailSchema {
 			db := services.DBCPsql.Begin()
 			// go StoreInstallment(item.InstallmentID, status)
-			err := StoreInstallment(db, item.InstallmentID, stageTo)
+			investorId, err := StoreInstallment(db, item.InstallmentID, stageTo)
 			if err != nil {
 				fmt.Println(err)
 				ProcessErrorAndRollback(ctx, db, err.Error())
@@ -417,8 +419,12 @@ func SubmitInstallmentByGroupIDAndTransactionDateWithStatus(ctx *iris.Context) {
 			} else {
 				db.Commit()
 				succeeded += 1
+				listInvestorID = append(listInvestorID, investorId)
 			}
 		}
+
+		listInvestorID = Ints(listInvestorID)
+		go loanOrder.BulkInvestorAndFlushTempData(listInvestorID)
 
 		// end time
 		endTime := time.Now()
@@ -502,7 +508,7 @@ func SubmitInstallmentByGroupIDAndTransactionDateWithStatusAndInstallmentId(ctx 
 
 	for _, item := range installmentDetailSchema {
 		// go StoreInstallment(item.InstallmentID, status)
-		err := StoreInstallment(db, item.InstallmentID, "SUCCESS")
+		_, err := StoreInstallment(db, item.InstallmentID, "SUCCESS")
 		if err != nil {
 			ProcessErrorAndRollback(ctx, db, err.Error())
 			return
@@ -1065,4 +1071,19 @@ func GetRawPendingInstallmentData(currentStage string, branchId uint64, now stri
 	services.DBCPsql.Raw(query, now, now, now, now, now, branchId).Scan(&queryResult)
 	fmt.Println(queryResult)
 	return queryResult
+}
+
+// Ints returns a unique subset of the int slice provided.
+func Ints(input []uint64) []uint64 {
+	u := make([]uint64, 0, len(input))
+	m := make(map[uint64]bool)
+
+	for _, val := range input {
+		if _, ok := m[val]; !ok {
+			m[val] = true
+			u = append(u, val)
+		}
+	}
+
+	return u
 }
