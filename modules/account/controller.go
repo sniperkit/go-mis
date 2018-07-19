@@ -12,8 +12,7 @@ import (
 )
 
 func Init() {
-	services.DBCPsql.AutoMigrate(&Account{})
-	services.BaseCrudInit(Account{}, []Account{})
+		services.BaseCrudInit(Account{}, []Account{})
 }
 
 type ParamTopup struct {

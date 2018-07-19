@@ -23,8 +23,7 @@ import (
 )
 
 func Init() {
-	services.DBCPsql.AutoMigrate(&Loan{})
-	services.BaseCrudInit(Loan{}, []Loan{})
+		services.BaseCrudInit(Loan{}, []Loan{})
 }
 
 type TotalData struct {

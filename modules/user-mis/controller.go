@@ -15,8 +15,7 @@ import (
 )
 
 func Init() {
-	services.DBCPsql.AutoMigrate(&UserMis{})
-	services.BaseCrudInit(UserMis{}, []UserMis{})
+		services.BaseCrudInit(UserMis{}, []UserMis{})
 }
 
 func CreateUserMis(ctx *iris.Context) {

@@ -26,8 +26,7 @@ import (
 var InsuranceRate float64 = 0.015
 
 func Init() {
-	services.DBCPsql.AutoMigrate(&LoanOrder{})
-	services.BaseCrudInit(LoanOrder{}, []LoanOrder{})
+		services.BaseCrudInit(LoanOrder{}, []LoanOrder{})
 }
 
 func FetchAll(ctx *iris.Context) {

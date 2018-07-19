@@ -7,8 +7,7 @@ import (
 )
 
 func Init() {
-	services.DBCPsql.AutoMigrate(&ProductPricing{})
-	services.BaseCrudInit(ProductPricing{}, []ProductPricing{})
+		services.BaseCrudInit(ProductPricing{}, []ProductPricing{})
 }
 
 func SearchInvestor(ctx *iris.Context) {

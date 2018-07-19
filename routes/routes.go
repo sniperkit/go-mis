@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"bitbucket.org/go-mis/config"
+	"bitbucket.org/go-mis/services"
 
 	"bitbucket.org/go-mis/modules/access-token"
 	"bitbucket.org/go-mis/modules/account"
@@ -21,6 +22,7 @@ import (
 	"bitbucket.org/go-mis/modules/disbursement"
 	"bitbucket.org/go-mis/modules/disbursement-history"
 	"bitbucket.org/go-mis/modules/disbursement-report"
+	"bitbucket.org/go-mis/modules/feature-flag"
 	"bitbucket.org/go-mis/modules/group"
 	"bitbucket.org/go-mis/modules/installment"
 	"bitbucket.org/go-mis/modules/installment-history"
@@ -42,13 +44,57 @@ import (
 	"bitbucket.org/go-mis/modules/virtual-account"
 	"bitbucket.org/go-mis/modules/virtual-account-statement"
 	"bitbucket.org/go-mis/modules/voucher"
-	"bitbucket.org/go-mis/modules/feature-flag"
 )
 
 // If domain is NOT specified,
 // then it will automatically initialize all domain
 func initializeAll() {
 	fmt.Println("[INFO] Initializing all domain")
+
+	if config.AutoMigrate {
+		fmt.Println("AutoMigrate All")
+		services.DBCPsql.AutoMigrate(&systemParameter.SystemParameter{})
+		services.DBCPsql.AutoMigrate(&dataTransfer.DataTransfer{})
+		services.DBCPsql.AutoMigrate(&accessToken.AccessToken{})
+		services.DBCPsql.AutoMigrate(&account.Account{})
+		services.DBCPsql.AutoMigrate(&accountTransactionCredit.AccountTransactionCredit{})
+		services.DBCPsql.AutoMigrate(&accountTransactionDebit.AccountTransactionDebit{})
+		services.DBCPsql.AutoMigrate(&adjustment.Adjustment{})
+		services.DBCPsql.AutoMigrate(&agent.Agent{})
+		services.DBCPsql.AutoMigrate(&area.Area{})
+		services.DBCPsql.AutoMigrate(&borrower.Borrower{})
+		services.DBCPsql.AutoMigrate(&branch.Branch{})
+
+		services.DBCPsql.AutoMigrate(&cashout.Cashout{})
+		services.DBCPsql.AutoMigrate(&cashoutHistory.CashoutHistory{})
+		services.DBCPsql.AutoMigrate(&cif.Cif{})
+		services.DBCPsql.AutoMigrate(&disbursement.Disbursement{})
+		services.DBCPsql.AutoMigrate(&disbursementHistory.DisbursementHistory{})
+		services.DBCPsql.AutoMigrate(&group.Group{})
+		services.DBCPsql.AutoMigrate(&installment.Installment{})
+		services.DBCPsql.AutoMigrate(&installmentHistory.InstallmentHistory{})
+		services.DBCPsql.AutoMigrate(&investor.Investor{})
+		services.DBCPsql.AutoMigrate(&loan.Loan{})
+		services.DBCPsql.AutoMigrate(&loanHistory.LoanHistory{})
+		services.DBCPsql.AutoMigrate(&loanMonitoring.LoanMonitoring{})
+		services.DBCPsql.AutoMigrate(&loanOrder.LoanOrder{})
+		services.DBCPsql.AutoMigrate(&notification.Notification{})
+		services.DBCPsql.AutoMigrate(&productPricing.ProductPricing{})
+		services.DBCPsql.AutoMigrate(&profitAndLoss.ProfitAndLoss{})
+		services.DBCPsql.AutoMigrate(&role.Role{})
+		services.DBCPsql.AutoMigrate(&sector.Sector{})
+		services.DBCPsql.AutoMigrate(&survey.Survey{})
+		services.DBCPsql.AutoMigrate(&userMis.UserMis{})
+		services.DBCPsql.AutoMigrate(&virtualAccount.VirtualAccount{})
+		services.DBCPsql.AutoMigrate(&virtualAccountStatement.VirtualAccountStatement{})
+		services.DBCPsql.AutoMigrate(&voucher.Voucher{})
+		services.DBCPsql.AutoMigrate(&disbursementReport.DisbursementReport{})
+
+		services.DBCPsql.AutoMigrate(&mitramanagement.Status{})
+		services.DBCPsql.AutoMigrate(&mitramanagement.Reason{})
+	} else {
+		fmt.Println("Skip AutoMigrate All")
+	}
 
 	config.Domain = "system-parameter"
 	systemParameter.Init()
@@ -130,7 +176,7 @@ func initializeAll() {
 
 	config.Domain = "product-pricing"
 	productPricing.Init()
-	
+
 	config.Domain = "profit-and-loss"
 	profitAndLoss.Init()
 

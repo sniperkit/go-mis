@@ -18,8 +18,7 @@ type ParamAdjustment struct {
 }
 
 func Init() {
-	services.DBCPsql.AutoMigrate(&Adjustment{})
-	services.BaseCrudInit(Adjustment{}, []Adjustment{})
+		services.BaseCrudInit(Adjustment{}, []Adjustment{})
 }
 
 // SubmitAdjustment - submit adjustment

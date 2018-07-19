@@ -11,8 +11,7 @@ import (
 )
 
 func Init() {
-	services.DBCPsql.AutoMigrate(&Notification{})
-	services.BaseCrudInit(Notification{}, []Notification{})
+		services.BaseCrudInit(Notification{}, []Notification{})
 }
 
 func SendPush(ctx *iris.Context) {

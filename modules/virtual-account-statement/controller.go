@@ -6,8 +6,7 @@ import (
 )
 
 func Init() {
-	services.DBCPsql.AutoMigrate(&VirtualAccountStatement{})
-	services.BaseCrudInit(VirtualAccountStatement{}, []VirtualAccountStatement{})
+		services.BaseCrudInit(VirtualAccountStatement{}, []VirtualAccountStatement{})
 }
 
 type TransactionByBank struct {

@@ -15,8 +15,7 @@ const (
 )
 
 func Init() {
-	services.DBCPsql.AutoMigrate(&SystemParameter{})
-	services.BaseCrudInit(SystemParameter{}, []SystemParameter{})
+		services.BaseCrudInit(SystemParameter{}, []SystemParameter{})
 }
 
 // FindByKey - Find system parameter by key

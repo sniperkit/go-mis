@@ -15,8 +15,7 @@ import (
 )
 
 func Init() {
-	services.DBCPsql.AutoMigrate(&Disbursement{})
-	services.BaseCrudInit(Disbursement{}, []Disbursement{})
+		services.BaseCrudInit(Disbursement{}, []Disbursement{})
 }
 
 type TotalData struct {

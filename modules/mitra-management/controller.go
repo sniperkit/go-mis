@@ -14,9 +14,7 @@ import (
 )
 
 func Init() {
-	services.DBCPsql.AutoMigrate(&Status{})
-	services.DBCPsql.AutoMigrate(&Reason{})
-}
+		}
 
 const (
 	selectBorrowerQuery = ` select l.id as "loanId",

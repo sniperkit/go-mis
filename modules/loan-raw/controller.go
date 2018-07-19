@@ -6,8 +6,7 @@ import (
 )
 
 func Init() {
-	services.DBCPsql.AutoMigrate(&LoanRaw{})
-	services.BaseCrudInit(LoanRaw{}, []LoanRaw{})
+		services.BaseCrudInit(LoanRaw{}, []LoanRaw{})
 }
 
 func GetLoanRawById(ctx *iris.Context){

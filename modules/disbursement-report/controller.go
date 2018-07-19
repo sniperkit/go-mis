@@ -10,8 +10,7 @@ import (
 )
 
 func Init() {
-	services.DBCPsql.AutoMigrate(&DisbursementReport{})
-	services.BaseCrudInit(DisbursementReport{}, []DisbursementReport{})
+		services.BaseCrudInit(DisbursementReport{}, []DisbursementReport{})
 }
 
 func FetchAllActive(ctx *iris.Context) {

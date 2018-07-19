@@ -10,8 +10,7 @@ import (
 )
 
 func Init() {
-	services.DBCPsql.AutoMigrate(&Group{})
-	services.BaseCrudInit(Group{}, []Group{})
+		services.BaseCrudInit(Group{}, []Group{})
 }
 
 // FetchAll - fetchAll group data

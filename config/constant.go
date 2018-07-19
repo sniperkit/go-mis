@@ -31,6 +31,7 @@ var (
 	FlagServerPath            string
 	Configuration             Config
 	GoFinAutoReconPath        string
+	AutoMigrate               bool
 )
 
 type Config struct {
@@ -51,6 +52,7 @@ type Config struct {
 	GoBorrowerPath      string      `json:"goBorrowerPath"`
 	FlagServerPath      string      `json:"flagServerPath"`
 	GoFinAutoReconPath  string      `json:"goFinAutoReconPath"`
+	AutoMigrate         bool        `json:"autoMigrate"`
 }
 
 type DbConfig struct {
@@ -130,6 +132,7 @@ func init() {
 	EnableEmergencyLoan = Configuration.EnableEmergencyLoan
 	WhiteList = Configuration.WhiteList
 	FlagServerPath = Configuration.FlagServerPath
+	AutoMigrate = Configuration.AutoMigrate
 
 	// Postgresql Host Address
 	PsqlHostAddressMisAmartha = "host=" + Configuration.Psql[0].Host + " port=" + Configuration.Psql[0].Port + " user=" + Configuration.Psql[0].Username + " dbname=" + Configuration.Psql[0].Db + " sslmode=" + Configuration.Psql[0].SslMode + " fallback_application_name=go-mis"

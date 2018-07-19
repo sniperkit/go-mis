@@ -8,8 +8,7 @@ import (
 )
 
 func Init() {
-	services.DBCPsql.AutoMigrate(&Voucher{})
-	services.BaseCrudInit(Voucher{}, []Voucher{})
+		services.BaseCrudInit(Voucher{}, []Voucher{})
 }
 
 func FetchAll(ctx *iris.Context) {

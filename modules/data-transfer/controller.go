@@ -6,8 +6,7 @@ import (
 )
 
 func Init() {
-	services.DBCPsql.AutoMigrate(&DataTransfer{})
-	services.BaseCrudInit(DataTransfer{}, []DataTransfer{})
+		services.BaseCrudInit(DataTransfer{}, []DataTransfer{})
 }
 
 // get open validation teller date

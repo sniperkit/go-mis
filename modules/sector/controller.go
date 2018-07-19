@@ -6,8 +6,7 @@ import (
 )
 
 func Init() {
-	services.DBCPsql.AutoMigrate(&Sector{})
-	services.BaseCrudInit(Sector{}, []Sector{})
+		services.BaseCrudInit(Sector{}, []Sector{})
 }
 
 func GetSectorById(ctx *iris.Context){

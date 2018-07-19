@@ -24,8 +24,7 @@ type Response struct {
 }
 
 func Init() {
-	services.DBCPsql.AutoMigrate(&Investor{})
-	services.BaseCrudInit(Investor{}, []Investor{})
+		services.BaseCrudInit(Investor{}, []Investor{})
 }
 
 func GetInvestorDetailById(id uint64) (investor Investor, err error) {

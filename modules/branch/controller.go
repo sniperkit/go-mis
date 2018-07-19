@@ -10,8 +10,7 @@ import (
 )
 
 func Init() {
-	services.DBCPsql.AutoMigrate(&Branch{})
-	services.BaseCrudInit(Branch{}, []Branch{})
+		services.BaseCrudInit(Branch{}, []Branch{})
 }
 
 // FetchAll - fetchAll branchs data

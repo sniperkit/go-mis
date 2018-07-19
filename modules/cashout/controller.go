@@ -17,8 +17,7 @@ import (
 )
 
 func Init() {
-	services.DBCPsql.AutoMigrate(&Cashout{})
-	services.BaseCrudInit(Cashout{}, []Cashout{})
+		services.BaseCrudInit(Cashout{}, []Cashout{})
 }
 
 type TotalData struct {

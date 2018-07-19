@@ -7,8 +7,7 @@ import (
 )
 
 func Init() {
-	services.DBCPsql.AutoMigrate(&Campaign{})
-	services.BaseCrudInit(Campaign{}, []Campaign{})
+		services.BaseCrudInit(Campaign{}, []Campaign{})
 }
 
 //CampaignItem - this will store quantity of campaign item

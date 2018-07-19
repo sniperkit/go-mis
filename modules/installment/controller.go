@@ -27,8 +27,7 @@ import (
 )
 
 func Init() {
-	services.DBCPsql.AutoMigrate(&Installment{})
-	services.BaseCrudInit(Installment{}, []Installment{})
+		services.BaseCrudInit(Installment{}, []Installment{})
 }
 
 // FetchAll - fetchAll installment data

@@ -21,8 +21,7 @@ type Cas struct {
 }
 
 func Init() {
-	services.DBCPsql.AutoMigrate(&Agent{})
-	services.BaseCrudInit(Agent{}, []Agent{})
+		services.BaseCrudInit(Agent{}, []Agent{})
 }
 
 func GetAllAgentByBranchID(ctx *iris.Context) {

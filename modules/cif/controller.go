@@ -11,8 +11,7 @@ import (
 )
 
 func Init() {
-	services.DBCPsql.AutoMigrate(&Cif{})
-	services.BaseCrudInit(Cif{}, []Cif{})
+		services.BaseCrudInit(Cif{}, []Cif{})
 }
 
 type TotalData struct {

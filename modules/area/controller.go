@@ -7,8 +7,7 @@ import (
 )
 
 func Init() {
-	services.DBCPsql.AutoMigrate(&Area{})
-	services.BaseCrudInit(Area{}, []Area{})
+		services.BaseCrudInit(Area{}, []Area{})
 }
 
 // FetchAll - fetchAll agent data

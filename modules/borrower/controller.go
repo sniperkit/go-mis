@@ -22,8 +22,7 @@ import (
 )
 
 func Init() {
-	services.DBCPsql.AutoMigrate(&Borrower{})
-	services.BaseCrudInit(Borrower{}, []Borrower{})
+		services.BaseCrudInit(Borrower{}, []Borrower{})
 }
 
 func CheckBorrowerDO(idCardNo string) (bool, error) {
